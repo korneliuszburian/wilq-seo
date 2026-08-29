@@ -8,12 +8,18 @@ from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, Protocol
+
+from wilq.content.adjudication import (
+    AdjudicationError,
+    validate_retained_noindex_authorities,
+)
 
 HEX_HIGH_ENTROPY = "Hex High Entropy String"
 BASE64_HIGH_ENTROPY = "Base64 High Entropy String"
 
 ACF_INVENTORY = "docs/content-acf-inventory-20260828.json"
+CANONICAL_LEDGER = "docs/content-canonical-ledger-20260828.jsonl"
 AUTHORING_INVENTORY = "docs/content-dev-authoring-inventory-20260828.json"
 KEEP_ELIGIBILITY_CONTEXT = "docs/content-keep-eligibility-context-20260828.json"
 KEEP_ELIGIBILITY = "docs/content-keep-eligibility-20260828.json"
@@ -21,8 +27,6 @@ TARGET_MAPPING_SNAPSHOT = "docs/content-keep-target-mapping-snapshot-20260828.js
 STATE_JOURNAL = "docs/content-dev-state-journal-20260828.json"
 
 LOWER_HEX_64 = re.compile(r"[0-9a-f]{64}")
-LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}")
-SAFE_MUTATION_AUDIT_ID = re.compile(r"mutation_act_apply_wordpress_draft_handoff_[0-9a-f]{12}")
 SAFE_REGULATORY_EVIDENCE_ID = re.compile(r"ev_regulatory_source_review_[0-9a-f]{24}")
 SAFE_TARGET_MAPPING_ENDPOINT = "".join(
     (
@@ -44,25 +48,6 @@ KEEP_ELIGIBILITY_SOURCE_KEYS = (
     "state_journal",
     "target_mapping_snapshot",
 )
-JOURNAL_BINDING_DIGEST_KEYS = (
-    "content_digest",
-    "draft_package_digest",
-    "planning_digest",
-)
-JOURNAL_SOURCE_SHA256_KEYS = (
-    "acf_current_observation",
-    "action_binding_recovery",
-    "candidate_quality_audit",
-    "canonical_ledger",
-    "current_revision_export",
-    "dev_progress_overlay",
-    "dev_readback_archive",
-    "public_acf_inventory",
-    "public_sitemap_inventory",
-    "robot_manifest",
-    "source_pack_verification",
-)
-
 JsonPath = tuple[str | int, ...]
 
 
@@ -81,6 +66,20 @@ class Candidate:
     @property
     def hashed_secret(self) -> str:
         return hashlib.sha1(self.value.encode("utf-8"), usedforsecurity=False).hexdigest()
+
+
+class ReceiptOccurrence(Protocol):
+    @property
+    def authority(self) -> Literal["ledger", "journal"]: ...
+
+    @property
+    def path(self) -> tuple[str | int, ...]: ...
+
+    @property
+    def value(self) -> str: ...
+
+    @property
+    def detector(self) -> Literal["hex64", "hex40", "base64"]: ...
 
 
 def filter_detect_secrets_results(
@@ -108,18 +107,19 @@ def filter_detect_secrets_results(
 def _allowed_finding_identities(
     relative_path: str, repository_root: Path
 ) -> set[tuple[str, int, str, str]]:
+    if relative_path in {CANONICAL_LEDGER, STATE_JOURNAL}:
+        return _validated_authority_finding_identities(relative_path, repository_root)
     if relative_path not in {
         ACF_INVENTORY,
         AUTHORING_INVENTORY,
         KEEP_ELIGIBILITY_CONTEXT,
         KEEP_ELIGIBILITY,
         TARGET_MAPPING_SNAPSHOT,
-        STATE_JOURNAL,
     }:
         return set()
     try:
         source = (repository_root / relative_path).read_text(encoding="utf-8")
-        payload = json.loads(source, object_pairs_hook=_reject_duplicate_keys)
+        payload = _retained_payload(relative_path, source)
     except (OSError, UnicodeError, ValueError):
         return set()
 
@@ -156,6 +156,81 @@ def _allowed_finding_identities(
     return allowed
 
 
+def _validated_authority_finding_identities(
+    relative_path: str,
+    repository_root: Path,
+) -> set[tuple[str, int, str, str]]:
+    try:
+        ledger_bytes = (repository_root / CANONICAL_LEDGER).read_bytes()
+        journal_bytes = (repository_root / STATE_JOURNAL).read_bytes()
+        validated = validate_retained_noindex_authorities(ledger_bytes, journal_bytes)
+        source = (
+            ledger_bytes.decode("utf-8")
+            if relative_path == CANONICAL_LEDGER
+            else journal_bytes.decode("utf-8")
+        )
+    except (AdjudicationError, OSError, UnicodeError):
+        return set()
+    authority = "ledger" if relative_path == CANONICAL_LEDGER else "journal"
+    occurrences = [
+        occurrence
+        for occurrence in validated.receipt_occurrences
+        if occurrence.authority == authority
+    ]
+    if authority == "ledger":
+        return {
+            _occurrence_identity(relative_path, occurrence.path[0] + 1, occurrence)
+            for occurrence in occurrences
+            if isinstance(occurrence.path[0], int)
+            and _render_member(str(occurrence.path[-1]), occurrence.value)
+            in source.splitlines()[occurrence.path[0]]
+        }
+    return _journal_occurrence_identities(relative_path, source, occurrences)
+
+
+def _journal_occurrence_identities(
+    relative_path: str,
+    source: str,
+    occurrences: Sequence[ReceiptOccurrence],
+) -> set[tuple[str, int, str, str]]:
+    occurrences_by_member: dict[
+        tuple[str, str, Literal["hex64", "hex40", "base64"]],
+        list[ReceiptOccurrence],
+    ] = defaultdict(list)
+    for occurrence in occurrences:
+        key = occurrence.path[-1]
+        if isinstance(key, str):
+            occurrences_by_member[(key, occurrence.value, occurrence.detector)].append(occurrence)
+    line_numbers_by_member: dict[tuple[str, str], list[int]] = defaultdict(list)
+    rendered = {_render_member(key, value): (key, value) for key, value, _ in occurrences_by_member}
+    for line_number, line in enumerate(source.splitlines(), start=1):
+        member = rendered.get(line.strip().removesuffix(","))
+        if member is not None:
+            line_numbers_by_member[member].append(line_number)
+    allowed: set[tuple[str, int, str, str]] = set()
+    for (key, value, _detector), matching in occurrences_by_member.items():
+        lines = line_numbers_by_member[(key, value)]
+        if len(lines) != len(matching):
+            continue
+        for line_number in lines:
+            allowed.add(_occurrence_identity(relative_path, line_number, matching[0]))
+    return allowed
+
+
+def _occurrence_identity(
+    relative_path: str,
+    line_number: int,
+    occurrence: ReceiptOccurrence,
+) -> tuple[str, int, str, str]:
+    detector = {
+        "hex64": HEX_HIGH_ENTROPY,
+        "hex40": HEX_HIGH_ENTROPY,
+        "base64": BASE64_HIGH_ENTROPY,
+    }[occurrence.detector]
+    hashed = hashlib.sha1(occurrence.value.encode("utf-8"), usedforsecurity=False).hexdigest()
+    return relative_path, line_number, detector, hashed
+
+
 def _candidate_detector(relative_path: str, path: JsonPath, value: str) -> str | None:
     if relative_path == ACF_INVENTORY:
         if _is_indexed_member(path, "objects", ACF_DIGEST_KEYS) and LOWER_HEX_64.fullmatch(value):
@@ -185,17 +260,6 @@ def _candidate_detector(relative_path: str, path: JsonPath, value: str) -> str |
     if relative_path == TARGET_MAPPING_SNAPSHOT:
         return _target_mapping_snapshot_detector(path, value)
 
-    if relative_path != STATE_JOURNAL:
-        return None
-
-    if path == ("mutation_audits", 0, "id") and SAFE_MUTATION_AUDIT_ID.fullmatch(value):
-        return BASE64_HIGH_ENTROPY
-    if _is_journal_hex64_location(path) and LOWER_HEX_64.fullmatch(value):
-        return HEX_HIGH_ENTROPY
-    if path in {("repository", "head"), ("repository", "origin_main")} and LOWER_HEX_40.fullmatch(
-        value
-    ):
-        return HEX_HIGH_ENTROPY
     return None
 
 
@@ -268,27 +332,8 @@ def _target_mapping_snapshot_detector(path: JsonPath, value: str) -> str | None:
     return None
 
 
-def _is_journal_hex64_location(path: JsonPath) -> bool:
-    if _is_indexed_member(path, "drafts", ("readback_content_digest", "revision_digest")):
-        return True
-    if (
-        len(path) == 4
-        and path[0] == "mutation_audits"
-        and isinstance(path[1], int)
-        and path[2] == "binding"
-        and path[3] in JOURNAL_BINDING_DIGEST_KEYS
-    ):
-        return True
-    if (
-        len(path) == 3
-        and path[0] == "sources"
-        and path[1] in JOURNAL_SOURCE_SHA256_KEYS
-        and path[2] == "sha256"
-    ):
-        return True
-    if path == ("sources", "canonical_ledger", "summary_sha256"):
-        return True
-    return _is_indexed_member(path, "urls", ("current_revision_digest",))
+def _retained_payload(relative_path: str, source: str) -> Any:
+    return json.loads(source, object_pairs_hook=_reject_duplicate_keys)
 
 
 def _is_indexed_member(path: JsonPath, collection: str, keys: Sequence[str]) -> bool:

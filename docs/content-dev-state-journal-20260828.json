@@ -1347,11 +1347,27 @@
     },
     "canonical_ledger": {
       "path": "docs/content-canonical-ledger-20260828.jsonl",
-      "sha256": "b62a45476a51768c829b5878a934c013e2c5f0b852780f2ec4498c3b3feb5506",
-      "summary_sha256": "b5efa063a3daf1b8b09e7fb1b4152e5fdb5c815a4772d15d11243e25616856b4",
+      "sha256": "d57cbdd989c9970a597563c16fc100869ce93f5bd0dc56234d50e7875facbab2",
+      "summary_sha256": "bec4af9073c11c844dcfe2cdbb642484ec17fb28a0c6cc0a8306e578726d6928",
       "rows": 214,
       "redirect_target_receipts": 46,
-      "read_only": true
+      "read_only": true,
+      "summary_schema_version": "content_canonical_ledger_summary_v1",
+      "summary_digest_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "summary": {
+        "schema_version": "content_canonical_ledger_summary_v1",
+        "row_count": 214,
+        "final_disposition_counts": {
+          "keep": 57,
+          "noindex": 87,
+          "redirect": 46,
+          "remove": 24
+        },
+        "redirect_target_receipt_count": 46,
+        "publish_allowed_rows": 0,
+        "write_authorized_rows": 0,
+        "robot_ready_rows": 0
+      }
     },
     "source_pack_verification": {
       "path": "docs/content-source-pack-verification-20260828.json",
@@ -1374,6 +1390,255 @@
       "publish_ready": false,
       "write_authorized": false,
       "read_only": true
+    },
+    "noindex_re_adjudication": {
+      "schema_version": "content_noindex_re_adjudication_source_v2",
+      "input_reference": "noindex_integrated_decision_v1",
+      "input_receipt_sha256": "076a011873c80b290d9cac385d1fe9191652b8d906a336ab348cc09795fb5059",
+      "input_receipt_algorithm": "sha256_file_bytes_v1",
+      "judge_receipts": [
+        {
+          "role": "technical",
+          "artifact_reference": "noindex-technical-judge.json",
+          "sha256": "f79730480a36a1067c57661290f01c01335b80a0e5783f91348d7c0ac6e30c5e",
+          "algorithm": "sha256_file_bytes_v1"
+        },
+        {
+          "role": "strategy",
+          "artifact_reference": "noindex-strategy-judge.json",
+          "sha256": "21d67cdf1c2e987a1ab5190af0648ee7569dfa8007f648555ef72ebb05a8287e",
+          "algorithm": "sha256_file_bytes_v1"
+        },
+        {
+          "role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "sha256": "425515737734fdf8fbc698a39edb541fcea3eb1f50ea3f7b2fc719fa6e79fea8",
+          "algorithm": "sha256_file_bytes_v1"
+        }
+      ],
+      "judge_receipt_set_digest": "62254102cab84b0ab5752fd15d4b96eb9246a67e5aef9626fb4dfa3e4746688a",
+      "judge_receipt_set_digest_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "caveats": [
+        {
+          "caveat_id": "technical_cohort_exact_text_only",
+          "source_role": "technical",
+          "artifact_reference": "noindex-technical-judge.json",
+          "source_path": "/scope/limitations/0",
+          "text": "Exact-text uniqueness is cohort-local and is not a full-site semantic-duplication proof.",
+          "evidence_ids": [],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "technical_dev_noindex_is_global",
+          "source_role": "technical",
+          "artifact_reference": "noindex-technical-judge.json",
+          "source_path": "/scope/limitations/1",
+          "text": "Noindex on dev is global staging policy and was not treated as a per-URL SEO disposition.",
+          "evidence_ids": [],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "technical_redirect_requires_reviewed_action",
+          "source_role": "technical",
+          "artifact_reference": "noindex-technical-judge.json",
+          "source_path": "/scope/limitations/2",
+          "text": "A merge candidate is not authorization to redirect; target and revision still require the normal exact review/action workflow.",
+          "evidence_ids": [],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "strategy_gsc_single_day_partial",
+          "source_role": "strategy",
+          "artifact_reference": "noindex-strategy-judge.json",
+          "source_path": "/0/evidence_limitations/0",
+          "text": "GSC query-page is a partial single-day signal, not total demand.",
+          "evidence_ids": [
+            "ev_refresh_refresh_google_search_console_1b3e7318dbb9"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "strategy_wordpress_inventory_partial",
+          "source_role": "strategy",
+          "artifact_reference": "noindex-strategy-judge.json",
+          "source_path": "/0/evidence_limitations/1",
+          "text": "WordPress inventory coverage is partial even though the refresh was not truncated.",
+          "evidence_ids": [
+            "ev_refresh_refresh_wordpress_ekologus_722938c36872"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "strategy_ga4_ahrefs_not_url_level",
+          "source_role": "strategy",
+          "artifact_reference": "noindex-strategy-judge.json",
+          "source_path": "/0/evidence_limitations/2",
+          "text": "GA4 is stale/settling and Ahrefs is domain-level here; neither is treated as URL-level proof.",
+          "evidence_ids": [
+            "ev_refresh_refresh_ahrefs_cd955c67ff83",
+            "ev_refresh_refresh_google_analytics_4_a251af59265b"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "strategy_sitemap_scope_discrepancy",
+          "source_role": "strategy",
+          "artifact_reference": "noindex-strategy-judge.json",
+          "source_path": "/0/scope_caveat",
+          "text": "Fresh WordPress sitemap reports 215 URLs while the canonical ledger has 214; this audit covers the 87 ledger rows marked noindex, and the extra sitemap URL still requires reconciliation.",
+          "evidence_ids": [
+            "ev_refresh_refresh_wordpress_ekologus_722938c36872"
+          ],
+          "status": "superseded",
+          "disposition": "corrected_by_canonical_sitemap_inventory",
+          "correction": {
+            "statement_pl": "215 wpisów <loc> w sitemapach dev odpowiada 214 unikalnym ścieżkom; /baza-wiedzy/ występuje w page-sitemap.xml i category-sitemap.xml, więc nie istnieje 215. unikalny URL.",
+            "source_reference": "docs/content-sitemap-inventory-20260828.json",
+            "source_sha256": "0f0cd730f6b480b284da7be6631dfc4b22a0a645c4582abfe209367d82590c0c",
+            "evidence_ids": [
+              "ev_refresh_refresh_wordpress_ekologus_722938c36872"
+            ],
+            "observed_entry_count": 215,
+            "unique_path_count": 214,
+            "duplicate_path": "/baza-wiedzy/",
+            "duplicate_sitemaps": [
+              "category-sitemap.xml",
+              "page-sitemap.xml"
+            ]
+          }
+        },
+        {
+          "caveat_id": "tie_gsc_absence_not_no_demand",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/0",
+          "text": "Brak wiersza URL w jednodniowym, częściowym eksporcie GSC nie dowodzi braku popytu ani historycznych kliknięć.",
+          "evidence_ids": [
+            "ev_refresh_refresh_google_search_console_1b3e7318dbb9"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_gsc_exact_signal_scope",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/1",
+          "text": "Dokładny sygnał GSC występuje tylko dla animacji (1 wyświetlenie, 0 kliknięć, fraza brandowa) i archiwum rekultywacji (6 wyświetleń, 0 kliknięć, frazy remediacyjne).",
+          "evidence_ids": [
+            "ev_refresh_refresh_google_search_console_1b3e7318dbb9"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_wordpress_inventory_partial",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/2",
+          "text": "WordPress potwierdza istnienie i treść adresów, ale jego inwentarz ma status partial.",
+          "evidence_ids": [
+            "ev_refresh_refresh_wordpress_ekologus_722938c36872"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_ahrefs_http403_no_url_backlink_proof",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/3",
+          "text": "Ahrefs ma tylko manualny snapshot domeny. Odczyt backlink gap/refdomains zakończył się HTTP 403, dlatego nie ma dowodu backlinków na poziomie tych URL-i.",
+          "evidence_ids": [
+            "ev_refresh_refresh_ahrefs_cd955c67ff83"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_ga4_stale_no_url_level",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/4",
+          "text": "GA4 jest stale/settling i nie zawiera tutaj dowodu na poziomie ocenianych stron.",
+          "evidence_ids": [
+            "ev_refresh_refresh_google_analytics_4_a251af59265b"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_no_destructive_remove_without_backlink_proof",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/5",
+          "text": "Z powodu braku URL-level backlink proof żadna decyzja nie jest destrukcyjnym remove. Noindex oznacza zachowanie dostępnej strony i możliwość cofnięcia decyzji.",
+          "evidence_ids": [
+            "ev_refresh_refresh_ahrefs_cd955c67ff83"
+          ],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        },
+        {
+          "caveat_id": "tie_redirect_requires_content_preconditions",
+          "source_role": "tie_breaker",
+          "artifact_reference": "noindex-conflict-tiebreaker.json",
+          "source_path": "/global_evidence_caveats/6",
+          "text": "Merge_redirect jest dopuszczony tylko tam, gdzie cel odpowiada intencji; jeśli wskazano warunek przeniesienia treści lub aktualizacji prawnej, 301 nie powinien wejść wcześniej.",
+          "evidence_ids": [],
+          "status": "active",
+          "disposition": "applies",
+          "correction": null
+        }
+      ],
+      "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+      "caveat_set_digest_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "provenance": {
+        "recorded_at": "2026-08-29T12:37:58Z",
+        "base_revision": "33d18617ad96da33431bbd18f1a7fb15ca5c3e48",
+        "baseline_semantics": "additive_re_adjudication_over_older_operational_baseline_without_refreshing_top_level_state",
+        "raw_judge_artifacts_retained": false,
+        "raw_judge_retention_status": "external_ephemeral_judge_files_not_retained_receipts_only"
+      },
+      "confidence_authority": {
+        "tie_breaker_rows": "tie_breaker",
+        "non_tie_rows": "integrator_decision_packet"
+      },
+      "decision_receipt_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "adjudication_digest_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "decision_set_digest": "59c48861c47268d9b31c392e6d913a3c0e170b6b77d722034bbc7f7a83c384f5",
+      "decision_set_digest_algorithm": "sha256_utf8_json_sort_keys_compact_v1",
+      "rows": 87,
+      "resolved_rows": 78,
+      "blocked_rows": 9,
+      "recommended_action_counts": {
+        "blocked": 9,
+        "keep": 25,
+        "noindex": 17,
+        "redirect": 36,
+        "remove": 0
+      },
+      "terminal_redirect_target_rows": 36,
+      "read_only": true,
+      "operational_promotion": false
     }
   },
   "summary": {
@@ -1391,7 +1656,21 @@
     "unknown_unbound_applied_actions": 3,
     "vendor_object_identity_recheck_required": 7,
     "url_rows": 214,
-    "verified_keep_drafts": 8
+    "verified_keep_drafts": 8,
+    "noindex_re_adjudication": {
+      "rows": 87,
+      "resolved_rows": 78,
+      "blocked_rows": 9,
+      "recommended_action_counts": {
+        "blocked": 9,
+        "keep": 25,
+        "noindex": 17,
+        "redirect": 36,
+        "remove": 0
+      },
+      "terminal_redirect_target_rows": 36,
+      "operational_promotion_rows": 0
+    }
   },
   "urls": [
     {
@@ -1531,7 +1810,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/animacja-historii-i-glownych-uslug-ekologus",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "6a909a705ddcfae4a28e05787b11d5feb9a13afeba026c0da55f10acdfd33dec",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/o-firmie/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1630,7 +1921,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/baza-wiedzy",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "133607da89b840f8a402c51d84184114676383618096f3b604546e855574172f",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1688,7 +1991,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/bdo-kolejny-obowiazek-dla-przedsiebiorcy",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "2e9c88f3efc1b8eb2cbd950c3919047e6e41e8463cb6a1a29d6ab6f86457e234",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1757,7 +2072,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/brefy-po-rewizji-europejskiego-biura-ippc-nowy-projekt-konkluzji-bat",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "ebada93de523d9322bd90b4d389e60f18bffb8454ff0fb28ae867f6366aa1f2a",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/pozwolenie-zintegrowane-wymagania-i-procedury-ippc/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1786,7 +2113,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/burza-w-odpadach-2018-2019",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "8d965f34d994f9f30337b51f88ffaa8d2bdfa311bf8d320e722faec380f3ef04",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1815,7 +2154,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/ciagle-zmiany-w-prawie-wodnym",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "3034c5fe5158fc09dda55d4bd5ad4bca28cb641c819b6f20bf71f8812f479d8d",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1844,7 +2195,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/co-powinien-wiedziec-kierownik-skladowiska-odpadow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f1fbb9829c36df9565db019d8a4ec7b7a2c77d09d26b5c0b12c8fa5ecc5897d4",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -1916,7 +2279,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/czy-przygotowane-wieloletnie-plany-inwestycyjne-z-zakresu-gospodarki-odpadami-spelniaja-nowe-wymagania-prawne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f3c2b53f1ec44223dc36a2b32f20b9c1919c2eaa66df8629f79c6d7a19c71cbb",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/nowy-system-zarzadzania-odpadami-komunalnymi-w-polsce-dobrodziejstwo-czy-problemy/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2343,7 +2718,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/dofinansowanie-na-realizacje-uslug-rozwojowych-dla-msp",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "0ac9a960f81afd57233ae87f3fa7f7d5d72c309678256986db3a6a7d504ea602",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [],
@@ -2399,7 +2788,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/dotacje-na-szkolenia-z-krajowego-funduszu-szkoleniowego-2017",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "06d60fbdf768a44e7998a27b3b1322909fe278b3c82e69a0083488ec442d9f6e",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -2428,7 +2831,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/eko-check-lista-na-koniec-2023",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "a899ebc24e2c4e3f518d2163f4005294f34fba3d906931bad263beced540b6a1",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/zamkniecie-roku-w-ochronie-srodowiska-jak-uporzadkowac-obowiazki-i-wejsc-spokojnie-w-nowy-rok/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2498,7 +2913,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/fundusze-europejskie-dla-wojewodztwa-slaskiego-2021-2027-wsparcie-msp-na-rzecz-transformacji",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "d8ec9f45e53313eaed9d55531b6412f53b19758a247496d0c642220e13e89af8",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [],
@@ -2554,7 +2983,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/istotne-zmiany-prawne-dla-przedsiebiorcow-w-sierpniu-2019",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "e553fdbb33d5551e2803d25d3b67f207e807eb925ae817fa96fa8ca01c0f7d08",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2626,7 +3067,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/jak-postepowac-z-odpadami-w-swietle-nowej-ustawy-z-14-12-2012-r",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "618bcaf2c76a5221dba0bf97fdfd59f9dbb0f1c0362c1d7b500a86d70b4b0bad",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/magazynowanie-odpadow-wg-nowych-przepisow/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2696,7 +3149,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/jak-powinien-funkcjonowac-zaklad-ripok-mbp",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "6b9f874b4c303ec8682da1fc9125dafe49f5a1dcaf90e31c5a62434b6511e221",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/nowy-system-zarzadzania-odpadami-komunalnymi-w-polsce-dobrodziejstwo-czy-problemy/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2725,7 +3190,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kariera/ekspert-ds-ochrony-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "927f6c24a5dbde5df283874aba490260ec59a7745e61a2ac275659b4e0637e50",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2754,7 +3231,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kariera/handlowiec-ds-sprzedazy-srodkow-technicznych",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "177ca73c7c7c9e75553f78f6263d102d97d73b1b4d5b0cd234893d0096282e9d",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2783,7 +3272,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kariera/koordynator-ds-organizacji-i-obslugi-szkolen-oraz-eventow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f8e42ee86a014033b0ba8d51b531d51081123dbc86b5a9e19d4d528b82aaf2af",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2812,7 +3313,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kariera/specjlaista-ds-ochrony-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "5f746df5756065ebdeba98fb7519349f006ec4c3eeba1994f1faea5c5445f347",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2899,7 +3412,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/doradztwo-ekologiczne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c7aacae16b08c6fbc3acc1df914fe0d6cc19ea71f9e3b79dc9ec6883bbd78a95",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2928,7 +3453,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/gospodarka-odpadami",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "ccc51d7ade5afd268bc70ecca2038e7e707487fae1b49e651b4d4e4377cc7a83",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2957,7 +3494,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/gospodarka-wodno-sciekowa",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "9bae04f2d98ee53f78fbc04091078162b98d9509ecfadc96223d943430ec2ec5",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -2986,7 +3535,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/ochrona-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "2395fea0ba9875583eb5cc9a968032e7a9080d2d7e337c4965b3e917b80cff44",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3015,7 +3576,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/przepisy-prawa",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "d3ea78f58af32728872ea2797a4b94642aa51f0a536e3c45625cc67e5eff8889",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3044,7 +3617,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/rekultywacja",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "4789cce107efc6d3a9ac1836bb401feba59e75da0c94fe7fb9d6f2e4a154c143",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3073,7 +3658,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/sorbenty",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "a12199002d99f54f9390888a0db842df27c97ede3f296ece470b943aafcfbc91",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/sorbenty-czym-sa-jak-dzialaja-i-dlaczego-warto-je-stosowac/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3102,7 +3699,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/szkolenia-i-rozwoj",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c8eb60afc6071a1c848163fa7d64c49f4dcfaebe4e0678f690e2828307898624",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3131,7 +3740,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kategorie-bazy-wiedzy/wydarzenia",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "84a05062f442d99da034eeef8f7fdbc3d4cf7f1cbd2ada50d72534971b168dd4",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3160,7 +3781,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kiedy-niezbedne-jest-posiadanie-pozwolenia-wodnoprawnego",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "302c5da6f710587ce98f9c20d6c0f3c72b71269b2545966218ceb793f60015d2",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3313,7 +3946,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/kto-powinien-wnosic-oplaty-za-korzystanie-ze-srodowiska-i-skladac-informacje",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "640c3201f3ece7f81af0680e2c7dd59b3f0824d202699130726bfd8cb99145c8",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3342,7 +3987,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/magazynowanie-odpadow-skladowanie",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "6f41364045f133093fe53ab45606134d7959a270cf1eeca45cb7acde41109e40",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/magazynowanie-odpadow-wg-nowych-przepisow/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3371,7 +4028,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/magazynowanie-odpadow-wg-nowych-przepisow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "57e8ee18fe21446c73eb9de60f7472b31b645fbc76d0c2427482b5bd79060933",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3400,7 +4069,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/model-systemu-zarzadzania-energia-wg-iso-500012011",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "27e455fe011e563184e4b2a04e5ec9cc11e8dd51e6159cf13f8ac4510b758226",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/system-zarzadzania-energia-iso-50001/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3473,7 +4154,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nabor-na-projekty-goz-mazowsze",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "d11bb3ee20eab8e39b118cb17d91a31a9249efe14e1a5a21a9cdc1e7551d0412",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3544,7 +4237,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/najistotniejsze-zmiany-prawne-w-ustawie-o-udostepnianiu-informacji-o-srodowisku-i-jego-ochronie-udziale-spoleczenstwa-w-ochronie-srodowiska-oraz-o-ocenach-oddzialywania-na-srodowisko",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "ff5c63e78ede391f25fb6e9b044807d2fc81a6145b390793a1b91d4fac2fdc32",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/ocena-wplywu-projektow-na-srodowisko/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3573,7 +4278,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nie-zapomnij-o-pozwoleniu-zintegrowanym",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "52eb28a2d5554264b86a4e195b5ff64990c164c23dd7d7f05d0201f5985aee7e",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/pozwolenie-zintegrowane-wymagania-i-procedury-ippc/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3688,7 +4405,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nowe-obowiazki-ied-dla-instalacji-ippc",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "e9ee4ebb2bc8c1a67a552873c98d1b32adcb6f6ba54f3bc0564ddd316fdc9f45",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3717,7 +4446,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nowe-rozporzadzenia-do-ustawy-o-odpadach-ze-szczegolnym-uwzglednieniem-przepisow-dotyczacych-magazynowania-odpadow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "84ec7038a26c8404fcad1a7be5d75d29c58580c813836018a5dee378104d916f",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/magazynowanie-odpadow-wg-nowych-przepisow/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3746,7 +4487,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nowe-zasady-ustalania-oplat-za-uslugi-wodne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c781d7aad5b881630a0ea41345b640be00bc8b64a76443b46d6e1ba3ace2a5a3",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/odpowiedz-eksperta-oplaty-za-uslugi-wodne-za-odprowadzanie-wod-opadowych-i-zmniejszenie-naturalnej-retencji/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3775,7 +4528,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/nowy-system-zarzadzania-odpadami-komunalnymi-w-polsce-dobrodziejstwo-czy-problemy",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "e450fcbae7a9544856c5da5c894fdb5dd3e969285438541bde32d7e3950839f4",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -3889,7 +4654,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/obowiazki-finansowe-i-srodowiskowe-w-czerwcu-kluczowe-terminy-dla-przedsiebiorcow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c6ba8838089feddd0997402805ae2c07a11c8f5a28e24ea55ae6c7f11a69fc24",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/na-jakie-wymogi-prawne-zwiazane-ze-srodowiskiem-przygotowac-sie-w-2026/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [],
@@ -3945,7 +4722,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/obowiazki-przedsiebiorcow-prowadzacych-skladowiska-odpadow-w-swietle-obowiazujacych-przepisow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "a29ac2aaa9fc42b07fa944f12d45f28057ff1c9070df16ee53707674354432e0",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/co-powinien-wiedziec-kierownik-skladowiska-odpadow/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4020,7 +4809,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/obowiazkowe-pomiary-stezenia-radonu-co-powinien-wiedziec-pracodawca",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "5e177e0c1be3d3c7a39da5ce05c3cf0f831ab558fd9daaa78070fb2c5739b8fc",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/badania-obecnosci-radonu/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4049,7 +4850,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/obszary-dzialania/doradztwo-ekologiczne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c2dba96157f2e3ef5571f5a336af62746862c026aa1a7c3a0c8a6795cce08578",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4149,7 +4962,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/ochrona-srodowiska-w-procesie-inwestycyjnym-z-uwzglednieniem-zmian-prawnych-dotyczacych-ocen-oddzialywania-na-srodowisko",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "01bdc725fbc2e0b45bbacd8ca0f50522762860d9523eaf11b4c074297e958890",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/dokumentacja-srodowiskowa-w-procesie-inwestycyjnym/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4178,7 +5003,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/odeszla-wyjatkowa-osoba-wybitny-ekspert-ekologusa-pani-elzbieta-chrobak",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "ba468b4b3f871973c6bc8677083c06c17a07babc8e4314530e7326c2d16fbbef",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4207,7 +5044,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/odpowiedz-eksperta-dodatkowa-etykieta-na-pustych-pojemnikach-kod-odpadu-15-01-10",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "6f5f23fe105722a4f153dc9784a6c75829e05dfbf9ff3edf465b8eba7eb196d0",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4236,7 +5085,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/odpowiedz-eksperta-oplaty-za-uslugi-wodne-za-odprowadzanie-wod-opadowych-i-zmniejszenie-naturalnej-retencji",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "3690e2adef6ea15b8edb08ace2df603f5602bdd78bb356c37bb3e830a9a9de4b",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4265,7 +5126,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/odpowiedz-eksperta-z-zakresu-prawa-wodnego",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c6f82a84dffd06c0de98e3b0b707bcab12373b045494f812fecc996340389d34",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4336,7 +5209,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/oferta",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "91f52c7181b2e29445e4125a136ecdef43c3746ae6abecc815b3264fa44462e6",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -4710,7 +5595,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/oferta/oferta-pomiary-emisji",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "3d7864dfde63077550c5a477004e7602c386bb38fc58ed145a4b1137719257ab",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -5939,7 +6836,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/operaty-przeciwpozarowe-nowe-wymagania-dla-przedsiebiorcow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "13b4693150427f523fb680b21b5de00ab894c4b5a596d7fecfc6976ebb885b1e",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -5968,7 +6877,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/oplata-srodowiskowa-za-srodki-dezynfekcyjne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f1a5ade89d3091763b498b2e820cb64623de77756f939541f73690cf60624be7",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Uzyskać aktualną walidację eksperta prawnego oraz źródło urzędowe; do tego czasu nie wdrażać 301 ani remove. Dopuszczalny bezpieczny stan przejściowy: pozostawić dostępne i tymczasowo noindex."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -5997,7 +6920,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/oplaty-za-gospodarcze-korzystanie-ze-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "63fb4a9112bf8afbcf01df6ea68744f600b7e1a62e2a2c9ba9e66fb583345461",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/kto-powinien-wnosic-oplaty-za-korzystanie-ze-srodowiska-i-skladac-informacje/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6026,7 +6961,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/oplaty-za-korzystanie-ze-srodowiska-w-2018-r-nowy-wzor-wykazu-do-naliczania-oplat",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "cb697406fb721ccdd93b4d76f7d973573379d161887cc0a5f011bc4bdb3b60e2",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6055,7 +7002,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/ostatni-dzwonek-przygotuj-swoja-firme-na-wyzwania-eudr",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "7c5ed5421ebda29cb97e1dc4ffc6a70a9b0306008f652e13cc5095d94a725ccf",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6084,7 +7043,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/ostatni-miesiac-na-uzupelnienia-w-bdo-zadbaj-juz-teraz-o-swoja-ewidencje-i-sprawozdawczosc-za-2022r",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "8d3f6a26b928f20ea68d60615e919f87601321f939402a29cfa2b9976995c306",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/roczne-sprawozdanie-w-bdo-co-sprawdzic-przed-31-grudnia-aby-nie-narazic-sie-na-kary/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6269,7 +7240,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/planowane-zmiany-w-ustawie-oos-warto-wczesniej-przygotowac-inwestycje-do-uzyskania-dsu",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "3ae86daa1050f96020aac36532be28c732339993d903fc482e78b172c4be7a8d",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/zmiany-w-ustawie-o-ocenach-oddzialywania-na-srodowisko-co-powinien-wiedziec-inwestor/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6381,7 +7364,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/podsumowanie-spotkania-dla-eko-logusowych-kobiet",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "c9442fbfcffb6f897a926a98da0ac4bed8c2e38ead3a586469f32fa72aa4b4ef",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6410,7 +7405,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/podsumowanie-tegorocznego-spotkania-eko-kobiet",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "9e9d172487f3d4bce7393905c668d105c090108ec3987445cbcb57927cd938cd",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6482,7 +7489,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/podsumowanie-webinaru-dobre-praktyki-oznaczania-miejsc-magazynowania-odpadow-poziomu-odzysku-i-recyklingu-jak-poprawnie-go-wyliczyc",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "da36d42ee83cbdd185fcf3d3dfd10c87670f33d5903f11a3a550e456f11d2ad4",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/magazynowanie-odpadow-wg-nowych-przepisow/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6511,7 +7530,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/podsumowanie-webinaru-kogo-dotyczy-europejski-zielony-lad-srodki-na-innowacje-dla-msp-w-2022",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "da037387bc5f5c31813a35f0b1f1637055bc91bd84dced70e555b26433a33866",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6540,7 +7571,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/poszukujemy-do-wspolpracy-ekspertow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "bf2015cebbe98f8362ece926e27cc4e1fc40ca30cc6608cb80b6ced3492c6916",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak potwierdzenia właściciela, czy ogłoszenie współpracy nadal jest aktywne."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -6569,7 +7614,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/poznaj-najnowsza-oferte-uslug-eksperckich",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "7edbbd23e1f572ba721edd8fc632d91d80547c392d518d5fa288c7dc07af504f",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6598,7 +7655,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/pozwolenie-zintegrowane-magazynowanie-odpadow-niebezpiecznych",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "afa59670f5e916ceaf3b86b6a76b6c8175307897523eca0f2d947c88be683809",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6667,7 +7736,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/prawo-wodne-po-nowemu-kluczowe-zmiany-od-lipca-2017",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f0101f5c7fc25edbcd56e73663b315f526e6e8fcb856dafca6c2cb324ec7ee9e",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/operat-wodnoprawny-wszystko-co-musisz-wiedziec/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6696,7 +7777,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/prawo-zamowien-publicznych-w-praktyce-bledy-w-opisie-przedmiotu-zamowienia-a-kary-umowne",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "4685f795ccccc0ab9bb46108793ac313954e5cba863126e6f3403a76553c676c",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -6725,7 +7820,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/prezydent-podpisal-nowelizacje-ustawy-prawo-ochrony-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "6d3585eb090d14f64ccb1382d50fed7106516e0fedf1a1c596a553d0e33c9001",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [],
@@ -6781,7 +7890,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/przesuniecie-terminow-w-zakresie-sprawozdawczosci-w-bdo",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f97cc50617d687b71a6a3ee585b4bfd568fabe80ad0b321c088f6956e4a33d7c",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -6810,7 +7933,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/przygotowanie-do-sprawozdawczosci-srodowiskowej-2024-bdo-kobize-oplaty-srodowiskowe",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "134015bc034f487504de4c2380b7033f3a3b5b7bbeb9945f6688d47cf291110e",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/roczne-sprawozdanie-w-bdo-co-sprawdzic-przed-31-grudnia-aby-nie-narazic-sie-na-kary/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -6839,7 +7974,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/publikacja-konkluzji-bat-dla-branzy-duzych-obiektow-energetycznego-spalania-paliw",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "61bcba511b666aa642fbf0b6faab7d636f96f03b3b95aace10ad198dc8153874",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/pozwolenie-zintegrowane-wymagania-i-procedury-ippc/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [],
@@ -6976,7 +8123,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/rewolucje-prawne-w-odpadach-2018-2",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "dffd4a1b60d931151f4eaff5771a28074a576ea1aabef723e980f44f31a71a1d",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7333,7 +8492,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/spotkanie-ekokobiet-2018-2",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "241feaf32f912e24f9789b1811855be969246656d37f038b7ead20c56251341c",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7362,7 +8533,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/spotkanie-ekokobiet-2019",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "8f72ee576ac096589dd569142c4a8a9d65bafdc9ae338eb860ea364bca53644b",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7391,7 +8574,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/sprawdz-co-ci-grozi-jesli-nie-zlozysz-sprawozdania-z-zakresu-ochrony-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "a9f4cb62a5f4ae059fadaed7b655862fa3de63638c74f74919a020104592429a",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7420,7 +8615,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/sprawozdawczosc-srodowiskowa",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "8a481e9ca893147281d8214e2a94aa33756d97fd49c2c11e36a28fa8b7035de8",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/roczne-sprawozdanie-w-bdo-co-sprawdzic-przed-31-grudnia-aby-nie-narazic-sie-na-kary/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7449,7 +8656,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/system-zarzadzania-energia-iso-50001",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "67ea6290ebd983a22824df085768431368c2f6ef82198aeade961649c01cf1ad",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7478,7 +8697,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/szkody-w-srodowisku-jak-zapobiegac-i-naprawiac",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "eb87c18ad2a2d82294011b8bb356790ff4482633c7a02dbe124cec01cec4109b",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7652,7 +8883,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/szkolenie-zwiekszajace-swiadomosc-postepowania-w-przypadku-zagrozenia-przy-stanowisku-pracy",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "9841bad49bdf2fd5027993f43ce1ed53c352104ef1ff6cbf7c5aa8aafad19e46",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/oferta/bhp-i-p-poz/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7681,7 +8924,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/targi-expo-silesia-2013-x",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "3ff9ce6684fca252fb8a835ebcd9d36ac2dcc1096d0467645fb08b15e3b04cc7",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7837,7 +9092,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/wazne-zmiany-prawne-dla-firm-ktorym-do-31-grudnia-2025-beda-konczyc-sie-decyzje-na-wytwarzanie-zbieranie-i-przetwarzanie-odpadow",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "f836da84a4324f9540e5fe45bbbca2525263df153172ed3b304b051113db24e3",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/na-jakie-wymogi-prawne-zwiazane-ze-srodowiskiem-przygotowac-sie-w-2026/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -7895,7 +9162,21 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/wpis-do-ceeb-ostatni-dzwonek",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "a3404e5c6286607c9c522572dcd62d1ed464e9dca77116434dba818ac294dae5",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "blocked",
+        "recommended_action": "blocked",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "resolve_blockers_and_re_adjudicate",
+        "blockers": [
+          "Brak dowodu backlinkowego na poziomie URL; wymagany audyt backlinków oraz ponowna decyzja między noindex, redirect i zachowaniem."
+        ]
+      }
     },
     {
       "blocker_codes": [
@@ -7994,7 +9275,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/zaostrzone-kary-za-wykroczenia-i-przestepstwa-przeciwko-srodowisku-naturalnemu",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "4b43e3a8d37fa59711394c2e8687649196eae128f12a566893e41ea82ce6f974",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -8052,7 +9345,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/zestawienie-aktualnych-form-wsparcia-i-najnowszych-zmian-prawnych-w-ochronie-srodowiska",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "11d2ca07ed45c69d0472324528d45d4c431e0bb35ca89cfd522fa987bc975022",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "noindex",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -8081,7 +9386,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/zmiany-w-bdo-po-2020",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "71f24b1a86779c342ac2307c698ff0e514db53aef669fd68b12a6385c1ff4426",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -8110,7 +9427,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/zmiany-w-ustawie-o-ocenach-oddzialywania-na-srodowisko-co-powinien-wiedziec-inwestor",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "33e8fb63b9f4e3be35c8c03e6c406763d9cc7761b54221c2ac85e34e3370d007",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "keep",
+        "recommended_target_url": null,
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     },
     {
       "blocker_codes": [
@@ -8139,7 +9468,19 @@
       "robot_ready": false,
       "target_mapping_status": null,
       "url": "https://ekologus.dev.proudsite.pl/zmiany-w-ustawie-prawo-ochrony-srodowiska-wynikajace-z-wdrozenia-dyrektywy-2010-75-ue-w-sprawie-emisji-przemyslowych",
-      "write_authorized": false
+      "write_authorized": false,
+      "re_adjudication": {
+        "schema_version": "content_noindex_re_adjudication_resume_v2",
+        "input_reference": "noindex_integrated_decision_v1",
+        "adjudication_digest": "45a8ef7369c6a31ff8a60a605b6fb5a0d440fa3277c511d15a6ded47bc0a0da7",
+        "caveat_set_digest": "87dd862aa72edeefb37d0b964356697016c4c873d63d3e7aeb084fa954744122",
+        "status": "resolved",
+        "recommended_action": "redirect",
+        "recommended_target_url": "https://www.ekologus.pl/pozwolenie-zintegrowane-wymagania-i-procedury-ippc/",
+        "operational_promotion": false,
+        "next_gate": "human_review_before_typed_operational_promotion",
+        "blockers": []
+      }
     }
   ]
 }

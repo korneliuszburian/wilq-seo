@@ -13,6 +13,7 @@ from scripts.filter_detect_secrets import (
     ACF_INVENTORY,
     AUTHORING_INVENTORY,
     BASE64_HIGH_ENTROPY,
+    CANONICAL_LEDGER,
     HEX_HIGH_ENTROPY,
     KEEP_ELIGIBILITY,
     KEEP_ELIGIBILITY_CONTEXT,
@@ -28,7 +29,7 @@ KNOWLEDGE_SURFACE_FIXTURE = REPO_ROOT / "apps/dashboard/src/routes/KnowledgeSurf
 SECURITY_SCRIPT = REPO_ROOT / "scripts/security.sh"
 RETAINED_EVIDENCE_PATHS = (
     ACF_INVENTORY,
-    "docs/content-canonical-ledger-20260828.jsonl",
+    CANONICAL_LEDGER,
     AUTHORING_INVENTORY,
     KEEP_ELIGIBILITY_CONTEXT,
     KEEP_ELIGIBILITY,
@@ -87,6 +88,14 @@ def _write_json(repository_root: Path, relative_path: str, payload: object) -> s
     return source
 
 
+def _write_jsonl(repository_root: Path, relative_path: str, rows: list[object]) -> str:
+    path = repository_root / relative_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    source = "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n"
+    path.write_text(source, encoding="utf-8")
+    return source
+
+
 def _finding(
     relative_path: str,
     source: str,
@@ -107,6 +116,21 @@ def _finding(
         "hashed_secret": hashlib.sha1(value.encode("utf-8"), usedforsecurity=False).hexdigest(),
         "is_verified": False,
         "line_number": matching_lines[0],
+    }
+
+
+def _finding_at_line(
+    relative_path: str,
+    value: str,
+    line_number: int,
+    detector_type: str = HEX_HIGH_ENTROPY,
+) -> dict[str, object]:
+    return {
+        "type": detector_type,
+        "filename": relative_path,
+        "hashed_secret": hashlib.sha1(value.encode("utf-8"), usedforsecurity=False).hexdigest(),
+        "is_verified": False,
+        "line_number": line_number,
     }
 
 
@@ -135,71 +159,6 @@ def _valid_authoring_inventory_findings(repository_root: Path) -> list[dict[str,
         {"summary": {"source_sha256": values}},
     )
     return [_finding(AUTHORING_INVENTORY, source, key, value) for key, value in values.items()]
-
-
-def _valid_state_journal_findings(repository_root: Path) -> list[dict[str, object]]:
-    values = {
-        "readback_content_digest": _sha256("journal-readback"),
-        "revision_digest": _sha256("journal-revision"),
-        "content_digest": _sha256("journal-content"),
-        "draft_package_digest": _sha256("journal-package"),
-        "planning_digest": _sha256("journal-planning"),
-        "head": _sha256("journal-head")[:40],
-        "origin_main": _sha256("journal-origin-main")[:40],
-        "sha256": _sha256("journal-source"),
-        "summary_sha256": _sha256("journal-summary"),
-        "current_revision_digest": _sha256("journal-current-revision"),
-    }
-    ledger_digest = _sha256("journal-ledger")
-    mutation_id = "mutation_act_apply_wordpress_draft_handoff_" + _sha256("mutation-id")[:12]
-    source = _write_json(
-        repository_root,
-        STATE_JOURNAL,
-        {
-            "drafts": [
-                {
-                    "readback_content_digest": values["readback_content_digest"],
-                    "revision_digest": values["revision_digest"],
-                }
-            ],
-            "mutation_audits": [
-                {
-                    "id": mutation_id,
-                    "binding": {
-                        key: values[key]
-                        for key in (
-                            "content_digest",
-                            "draft_package_digest",
-                            "planning_digest",
-                        )
-                    },
-                }
-            ],
-            "repository": {
-                "head": values["head"],
-                "origin_main": values["origin_main"],
-            },
-            "sources": {
-                "public_acf_inventory": {"sha256": values["sha256"]},
-                "canonical_ledger": {
-                    "sha256": ledger_digest,
-                    "summary_sha256": values["summary_sha256"],
-                },
-            },
-            "urls": [{"current_revision_digest": values["current_revision_digest"]}],
-        },
-    )
-    return [
-        *[_finding(STATE_JOURNAL, source, key, value) for key, value in values.items()],
-        _finding(STATE_JOURNAL, source, "sha256", ledger_digest),
-        _finding(
-            STATE_JOURNAL,
-            source,
-            "id",
-            mutation_id,
-            BASE64_HIGH_ENTROPY,
-        ),
-    ]
 
 
 def _valid_keep_eligibility_context_findings(
@@ -369,10 +328,21 @@ def test_semantic_filter_suppresses_only_valid_digest_schema_locations(
         KEEP_ELIGIBILITY_CONTEXT: _valid_keep_eligibility_context_findings(tmp_path),
         KEEP_ELIGIBILITY: _valid_keep_eligibility_findings(tmp_path),
         TARGET_MAPPING_SNAPSHOT: _valid_target_mapping_snapshot_findings(tmp_path),
-        STATE_JOURNAL: _valid_state_journal_findings(tmp_path),
     }
 
     assert filter_detect_secrets_results(results, tmp_path) == {}
+
+
+def test_reconciled_retained_artifacts_have_no_unfiltered_secret_findings() -> None:
+    retained_paths = (
+        CANONICAL_LEDGER,
+        STATE_JOURNAL,
+        AUTHORING_INVENTORY,
+        KEEP_ELIGIBILITY,
+    )
+    results = _detect_secret_results_from(REPO_ROOT, *retained_paths)
+
+    assert filter_detect_secrets_results(results, REPO_ROOT) == {}
 
 
 def test_path_type_key_value_and_schema_mismatches_remain(tmp_path: Path) -> None:
@@ -599,6 +569,69 @@ def test_decoy_secret_under_exact_retained_filename_remains_reported(
     assert any(finding.get("type") == "Secret Keyword" for finding in remaining[ACF_INVENTORY])
 
 
+def test_canonical_ledger_allows_only_exact_nested_receipt_locations(tmp_path: Path) -> None:
+    digest = _sha256("ledger-unexpected-digest")
+    _write_jsonl(
+        tmp_path,
+        CANONICAL_LEDGER,
+        [{"url": "https://ekologus.dev.proudsite.pl/one/", "unexpected_digest": digest}],
+    )
+    finding = _finding_at_line(CANONICAL_LEDGER, digest, 1)
+    results: dict[str, object] = {CANONICAL_LEDGER: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
+def test_random_digest_under_formerly_allowed_ledger_key_remains_reported(
+    tmp_path: Path,
+) -> None:
+    digest = _sha256("random-unvalidated-adjudication-digest")
+    _write_jsonl(
+        tmp_path,
+        CANONICAL_LEDGER,
+        [{"re_adjudication": {"adjudication_digest": digest}}],
+    )
+    finding = _finding_at_line(CANONICAL_LEDGER, digest, 1)
+    results: dict[str, object] = {CANONICAL_LEDGER: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
+def test_canonical_ledger_jsonl_line_fails_closed_on_digest_path_collision(
+    tmp_path: Path,
+) -> None:
+    digest = _sha256("ledger-colliding-digest")
+    _write_jsonl(
+        tmp_path,
+        CANONICAL_LEDGER,
+        [
+            {
+                "re_adjudication": {"adjudication_digest": digest},
+                "unexpected_digest": digest,
+            }
+        ],
+    )
+    finding = _finding_at_line(CANONICAL_LEDGER, digest, 1)
+    results: dict[str, object] = {CANONICAL_LEDGER: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
+def test_state_journal_allows_judge_hashes_only_in_exact_receipt_list(
+    tmp_path: Path,
+) -> None:
+    digest = _sha256("journal-judge-decoy")
+    source = _write_json(
+        tmp_path,
+        STATE_JOURNAL,
+        {"sources": {"noindex_re_adjudication": {"unexpected_receipts": [{"sha256": digest}]}}},
+    )
+    finding = _finding(STATE_JOURNAL, source, "sha256", digest)
+    results: dict[str, object] = {STATE_JOURNAL: [finding]}
+
+    assert filter_detect_secrets_results(results, tmp_path) == results
+
+
 def test_keep_eligibility_exact_filename_decoy_remains_reported(tmp_path: Path) -> None:
     digest = _sha256("keep-eligibility-scanner-visible-digest")
     field_name = "mapping_" + "secret"
@@ -657,10 +690,7 @@ def test_target_mapping_exact_filename_decoy_remains_reported(tmp_path: Path) ->
 
 @pytest.mark.parametrize(
     "relative_path",
-    (
-        "docs/content-canonical-ledger-20260828.jsonl",
-        "docs/content-sitemap-inventory-20260828.json",
-    ),
+    ("docs/content-sitemap-inventory-20260828.json",),
 )
 def test_zero_finding_evidence_files_have_no_suppression_rule(
     tmp_path: Path, relative_path: str
