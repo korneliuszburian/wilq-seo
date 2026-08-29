@@ -161,7 +161,11 @@ def test_document_workspace_projects_claim_ledger_onto_full_revision(
         evidence_ids=["ev_wp_bdo"],
         source_connectors=["wordpress_ekologus"],
     )
-    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(
+        workspace_module,
+        "build_content_decision_context",
+        lambda _id, **_kwargs: context,
+    )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
     monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
     monkeypatch.setattr(
@@ -299,7 +303,11 @@ def test_document_workspace_route_projects_ledger_only_for_full_revision(
         )
         for work_item_id in revisions
     }
-    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(
+        workspace_module,
+        "build_content_decision_context",
+        lambda _id, **_kwargs: context,
+    )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
     monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
     monkeypatch.setattr(
@@ -371,6 +379,19 @@ def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:
         ("partial", "materiał częściowy"),
         ("unavailable", "materiał niedostępny"),
     ]
+
+
+def test_persisted_material_does_not_promote_summary_only_metadata() -> None:
+    item = ContentWorkItem(
+        id=WORK_ITEM_ID,
+        topic="BDO dla firm",
+        wordpress_content_summary="Utrwalone podsumowanie bez treści i struktury.",
+        wordpress_content_inventory_status="available",
+    )
+
+    material = workspace_module._persisted_material_from_item(item, url=SOURCE_URL)
+
+    assert material is None
 
 
 def test_document_workspace_projects_one_repair_action_after_human_changes() -> None:

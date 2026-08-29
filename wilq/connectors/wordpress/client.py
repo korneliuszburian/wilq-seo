@@ -4,7 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -62,6 +62,18 @@ WORDPRESS_AUTHORING_SECTION_LIMIT = 40
 WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
 WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
 WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS = 280
+WordPressMaterialContentType = Literal["posts", "pages", "uslugi"]
+_WORDPRESS_MATERIAL_CONTENT_TYPE_ALIASES: dict[str, WordPressMaterialContentType] = {
+    "post": "posts",
+    "posts": "posts",
+    "page": "pages",
+    "pages": "pages",
+    "uslugi": "uslugi",
+}
+# A material fallback makes at most three REST probes and one HTML request.
+# Three seconds per request bounds the cold transport path to roughly 12 seconds
+# without retries, matching the existing bounded WordPress metadata reads.
+WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS = 3.0
 _OMIT_ACF_CREATE_VALUE = object()
 _WORDPRESS_REST_SAFE_ERROR_ROOTS = {
     "acf",
@@ -1070,8 +1082,12 @@ def _read_wordpress_material_from_rest(
     read_base_url: str,
     auth: httpx.BasicAuth | None,
     rest_context: str,
+    content_type_hint: WordPressMaterialContentType | None,
 ) -> WordPressContentMaterial | None:
-    for content_type in WORDPRESS_CONTENT_TYPES:
+    content_types = (
+        (content_type_hint,) if content_type_hint is not None else WORDPRESS_CONTENT_TYPES
+    )
+    for content_type in content_types:
         try:
             response = client.get(
                 urljoin(read_base_url, f"wp-json/wp/v2/{content_type}"),
@@ -1086,6 +1102,7 @@ def _read_wordpress_material_from_rest(
                     # instead of silently falling back to rendered HTML.
                     **({"per_page": WORDPRESS_CONTENT_PER_PAGE} if requested_path == "/" else {}),
                 },
+                timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
         except httpx.HTTPError:
@@ -1104,7 +1121,7 @@ def _read_wordpress_material_from_rest(
 def _read_wordpress_material_from_html(
     client: httpx.Client, *, url: str
 ) -> WordPressContentMaterial:
-    response = client.get(url, timeout=20)
+    response = client.get(url, timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
     parser = _HtmlMetadataParser()
     parser.feed(response.text[:200_000])
@@ -1136,6 +1153,7 @@ def read_wordpress_content_material(
     url: str,
     connector_id: str = "wordpress_ekologus",
     *,
+    content_type_hint: str | None = None,
     http_client: httpx.Client | None = None,
 ) -> WordPressContentMaterial:
     """Read one public content object dynamically from REST or rendered HTML.
@@ -1151,7 +1169,7 @@ def read_wordpress_content_material(
     if credentials is None or missing_credentials(connector_id, credentials):
         raise WordPressDraftReadError("Brakuje konfiguracji WordPress do odczytu materiału.")
     owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=20)
+    client = http_client or httpx.Client(timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS)
     try:
         requested_path = urlparse(url).path.rstrip("/") or "/"
         slug = requested_path.rsplit("/", 1)[-1]
@@ -1177,6 +1195,9 @@ def read_wordpress_content_material(
             read_base_url=read_base_url,
             auth=auth,
             rest_context=rest_context,
+            content_type_hint=normalize_wordpress_material_content_type_hint(
+                content_type_hint
+            ),
         )
         if material is not None:
             return material
@@ -1186,6 +1207,18 @@ def read_wordpress_content_material(
     finally:
         if owns_client:
             client.close()
+
+
+def normalize_wordpress_material_content_type_hint(
+    value: str | None,
+) -> WordPressMaterialContentType | None:
+    """Allow only known REST endpoint hints; unknown inventory keeps bounded fallback."""
+
+    if value is None:
+        return None
+    return _WORDPRESS_MATERIAL_CONTENT_TYPE_ALIASES.get(
+        value.strip().strip("/").casefold()
+    )
 
 
 def _material_from_rest_item(

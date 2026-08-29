@@ -451,8 +451,7 @@ def read_content_inventory_material(
     with _inventory_material_cache_lock:
         cached = _inventory_material_cache.get(cache_key)
         if cached is not None and now - cached[0] < _INVENTORY_MATERIAL_CACHE_SECONDS:
-            cached_material = cached[1]
-            return cached_material.model_copy(update={"evidence_id": evidence_id})
+            return cached[1].model_copy(update={"evidence_id": evidence_id})
         if cached is not None:
             _inventory_material_cache.pop(cache_key, None)
     with _inventory_material_cache_lock:
@@ -469,7 +468,10 @@ def read_content_inventory_material(
             if cached is not None:
                 _inventory_material_cache.pop(cache_key, None)
         try:
-            wordpress_material = read_wordpress_content_material(url)
+            wordpress_material = read_wordpress_content_material(
+                url,
+                content_type_hint=item.content_type if item is not None else None,
+            )
         except WordPressDraftReadError as exc:
             response = ContentInventoryMaterialResponse(
                 status="blocked",
@@ -499,9 +501,10 @@ def read_content_inventory_material(
                 material_confidence=wordpress_material.material_confidence,
                 source_field_lineage=wordpress_material.source_field_lineage,
             )
-    with _inventory_material_cache_lock:
-        _inventory_material_cache[cache_key] = (now, response)
-    return response
+        completed_at = monotonic()
+        with _inventory_material_cache_lock:
+            _inventory_material_cache[cache_key] = (completed_at, response)
+        return response
 
 
 def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:

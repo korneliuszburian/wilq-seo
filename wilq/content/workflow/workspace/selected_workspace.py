@@ -61,21 +61,12 @@ def build_content_selected_workspace_with_context(
     revision_context_current: bool | None = None,
     item: ContentWorkItem | None = None,
 ) -> ContentSelectedWorkspace:
-    if revision_context_current is None and item is None:
-        workspace = build_content_document_workspace(work_item_id)
-    elif revision_context_current is None:
-        workspace = build_content_document_workspace(work_item_id, item=item)
-    elif item is None:
-        workspace = build_content_document_workspace(
-            work_item_id,
-            revision_context_current=revision_context_current,
-        )
-    else:
-        workspace = build_content_document_workspace(
-            work_item_id,
-            revision_context_current=revision_context_current,
-            item=item,
-        )
+    workspace = build_content_document_workspace(
+        work_item_id,
+        revision_context_current=revision_context_current,
+        item=item,
+        read_material=False,
+    )
     if workspace is None:
         return ContentSelectedWorkspace(
             status="missing",
