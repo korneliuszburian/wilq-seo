@@ -76,12 +76,8 @@ from wilq.content.workflow.store.store_queries import (
 )
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
-from wilq.content.workflow.target.target_mapping import (
-    ContentTargetMappingConfirmation,
-    ContentTargetMappingConfirmationCommand,
-    ContentTargetMappingConfirmationResult,
-    ContentTargetMappingPreview,
-    new_content_target_mapping_confirmation,
+from wilq.content.workflow.store.store_target_mapping import (
+    _TargetMappingConfirmationStoreMixin,
 )
 from wilq.schemas.actions import ActionMutationAuditRecord, AuditEvent, CodexRun
 from wilq.schemas.core import utc_now
@@ -288,109 +284,6 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
             ContentDraftRevision.model_validate(json.loads(cast(str, row["payload_json"])))
             for row in rows
         ]
-
-
-class _TargetMappingConfirmationStoreMixin(_StoreConnectionMixin):
-    def record_target_mapping_confirmation(
-        self,
-        *,
-        work_item_id: str,
-        preview: ContentTargetMappingPreview,
-        command: ContentTargetMappingConfirmationCommand,
-    ) -> ContentTargetMappingConfirmationResult:
-        with self._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
-            latest = _latest_target_mapping_confirmation(
-                connection,
-                work_item_id=work_item_id,
-                revision_id=preview.revision.revision_id,
-                target_contract_digest=(
-                    "" if preview.target is None else preview.target.target_contract_digest
-                ),
-                binding_digest="" if preview.binding_digest is None else preview.binding_digest,
-            )
-            confirmation = new_content_target_mapping_confirmation(
-                work_item_id=work_item_id,
-                preview=preview,
-                command=command,
-                confirmation_number=(
-                    1 if latest is None else latest.confirmation_number + 1
-                ),
-                created_at=utc_now().isoformat(),
-            )
-            if latest is not None and (
-                latest.confirmation_digest == confirmation.confirmation_digest
-            ):
-                return ContentTargetMappingConfirmationResult(
-                    status="idempotent",
-                    confirmation=latest,
-                )
-            connection.execute(
-                """
-                INSERT INTO content_target_mapping_confirmations (
-                  confirmation_id, work_item_id, revision_id, revision_digest,
-                  target_contract_digest, binding_digest, confirmation_number,
-                  confirmation_digest, created_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    confirmation.confirmation_id,
-                    confirmation.work_item_id,
-                    confirmation.revision.revision_id,
-                    confirmation.revision.content_digest,
-                    confirmation.target_contract_digest,
-                    confirmation.binding_digest,
-                    confirmation.confirmation_number,
-                    confirmation.confirmation_digest,
-                    confirmation.created_at,
-                    _model_json(confirmation),
-                ),
-            )
-        return ContentTargetMappingConfirmationResult(
-            status="created",
-            confirmation=confirmation,
-        )
-
-    def load_target_mapping_confirmation(
-        self,
-        *,
-        work_item_id: str,
-        revision_id: str,
-        target_contract_digest: str,
-        binding_digest: str,
-    ) -> ContentTargetMappingConfirmation | None:
-        with self._connect() as connection:
-            return _latest_target_mapping_confirmation(
-                connection,
-                work_item_id=work_item_id,
-                revision_id=revision_id,
-                target_contract_digest=target_contract_digest,
-                binding_digest=binding_digest,
-            )
-
-
-def _latest_target_mapping_confirmation(
-    connection: sqlite3.Connection,
-    *,
-    work_item_id: str,
-    revision_id: str,
-    target_contract_digest: str,
-    binding_digest: str,
-) -> ContentTargetMappingConfirmation | None:
-    row = connection.execute(
-        """
-        SELECT payload_json FROM content_target_mapping_confirmations
-        WHERE work_item_id = ? AND revision_id = ? AND target_contract_digest = ?
-          AND binding_digest = ?
-        ORDER BY confirmation_number DESC LIMIT 1
-        """,
-        (work_item_id, revision_id, target_contract_digest, binding_digest),
-    ).fetchone()
-    if row is None:
-        return None
-    return ContentTargetMappingConfirmation.model_validate(
-        json.loads(cast(str, row["payload_json"]))
-    )
 
 
 def _record_wordpress_revision_apply_started(

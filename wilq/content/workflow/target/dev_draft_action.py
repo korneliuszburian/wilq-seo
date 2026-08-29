@@ -21,6 +21,9 @@ from wilq.content.workflow.target.target_mapping import (
     build_content_target_draft_preview,
     build_content_target_mapping_preview,
 )
+from wilq.content.workflow.target.target_mapping_persistence import (
+    confirmation_for_live_target_mapping,
+)
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -333,14 +336,15 @@ def current_content_target_draft_preview(
         ),
         discovery=discovery,
     )
-    confirmation = None
-    if mapping.target is not None and mapping.binding_digest is not None:
-        confirmation = store.load_target_mapping_confirmation(
+    confirmation = confirmation_for_live_target_mapping(
+        state=store.load_target_mapping_draft_state(
             work_item_id=work_item_id,
             revision_id=revision_id,
-            target_contract_digest=mapping.target.target_contract_digest,
-            binding_digest=mapping.binding_digest,
-        )
+        ),
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        mapping=mapping,
+    )
     return build_content_target_draft_preview(
         work_item_id=work_item_id,
         revision_id=revision_id,
@@ -423,8 +427,10 @@ def _acf_clone_plan(preview: ContentTargetDraftPreview) -> ContentAcfClonePlan |
     surface = preview.target.target_contract.authoring_surface
     source_digest = surface.source_acf_digest if surface is not None else None
     fields_digest = surface.source_acf_fields_digest if surface is not None else None
-    if source_digest is None or fields_digest is None or any(
-        component.target_section_index is None for component in preview.components
+    if (
+        source_digest is None
+        or fields_digest is None
+        or any(component.target_section_index is None for component in preview.components)
     ):
         # Older local previews cannot have been produced by the current target
         # discovery contract. They remain executable only in compatibility
