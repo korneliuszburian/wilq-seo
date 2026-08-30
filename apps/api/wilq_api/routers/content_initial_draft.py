@@ -7,12 +7,20 @@ from typing import ParamSpec, TypeVar
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
+from pydantic import TypeAdapter
 
 from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts import initial_draft_queue
+from wilq.content.drafts.initial_draft_authority import (
+    InitialDraftAuthorityIntent,
+    InitialDraftAuthorityResolution,
+    StatusRead,
+    SubmitExpectation,
+    map_initial_draft_authority_response,
+)
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
     initial_draft_context_digest,
@@ -23,8 +31,12 @@ from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
+    ContentInitialDraftConflictResponse,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
+    ContentInitialDraftReuseRequest,
+    ContentWorkItemInitialDraftRequest,
+    ContentWorkItemInitialDraftResponse,
     parse_content_initial_draft_blocker_code,
 )
 from wilq.content.planning.generated_proposal_store import (
@@ -34,12 +46,19 @@ from wilq.content.planning.generated_proposal_store import (
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
-from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
-from wilq.storage.local_state import local_state_store
+from wilq.storage.local_state import local_state_store, state_db_path
 
 ContentInitialDraftSnapshotLoader = initial_draft_queue.ContentInitialDraftSnapshotLoader
+ContentInitialDraftAuthorityResolver = Callable[
+    [str, InitialDraftAuthorityIntent],
+    InitialDraftAuthorityResolution,
+]
+_CONTENT_WORK_ITEM_INITIAL_DRAFT_RESPONSE_ADAPTER: TypeAdapter[
+    ContentWorkItemInitialDraftResponse
+] = TypeAdapter(ContentWorkItemInitialDraftResponse)
 
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
@@ -136,33 +155,79 @@ def register_content_initial_draft_route(
     router: APIRouter,
     *,
     snapshot_loader: ContentInitialDraftSnapshotLoader,
+    authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
 ) -> None:
+    resolver = authority_resolver or _canonical_initial_draft_authority_resolver
+
     @router.post(
         "/api/content/work-items/{work_item_id}/initial-draft",
-        response_model=ContentInitialDraftResponse,
-        responses={409: {"model": ContentInitialDraftResponse}},
+        response_model=ContentWorkItemInitialDraftResponse,
+        responses={409: {"model": ContentInitialDraftConflictResponse}},
     )
     def content_work_item_initial_full_draft(
         work_item_id: str,
-        request: ContentInitialDraftRequest,
-    ) -> ContentInitialDraftResponse | JSONResponse:
-        return _submit_initial_draft(work_item_id, request, snapshot_loader)
+        request: ContentWorkItemInitialDraftRequest,
+    ) -> ContentWorkItemInitialDraftResponse | JSONResponse:
+        result = _submit_initial_draft(
+            work_item_id,
+            request,
+            snapshot_loader,
+            authority_resolver=resolver,
+        )
+        if isinstance(result, JSONResponse):
+            return result
+        return _content_work_item_initial_draft_response(result)
 
     @router.get(
         "/api/content/work-items/{work_item_id}/initial-draft",
-        response_model=ContentInitialDraftResponse,
+        response_model=ContentWorkItemInitialDraftResponse,
     )
     def content_work_item_initial_full_draft_status(
         work_item_id: str,
-    ) -> ContentInitialDraftResponse:
-        return _read_initial_draft_status(work_item_id, snapshot_loader=snapshot_loader)
+    ) -> ContentWorkItemInitialDraftResponse:
+        return _content_work_item_initial_draft_response(
+            _read_initial_draft_status(
+                work_item_id,
+                snapshot_loader=snapshot_loader,
+                authority_resolver=resolver,
+            )
+        )
+
+
+def _canonical_initial_draft_authority_resolver(
+    requested_work_item_id: str,
+    intent: InitialDraftAuthorityIntent,
+) -> InitialDraftAuthorityResolution:
+    return ContentWorkflowStore(state_db_path()).resolve_initial_draft_authority(
+        requested_work_item_id,
+        intent,
+    )
 
 
 def _submit_initial_draft(
     work_item_id: str,
-    request: ContentInitialDraftRequest,
+    request: ContentWorkItemInitialDraftRequest,
     snapshot_loader: ContentInitialDraftSnapshotLoader,
+    *,
+    authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
 ) -> ContentInitialDraftResponse | JSONResponse:
+    resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
+        work_item_id,
+        SubmitExpectation(
+            expected_production_classification_run_digest=(
+                request.expected_production_classification_run_digest
+                if isinstance(request, ContentInitialDraftReuseRequest)
+                else None
+            )
+        ),
+    )
+    guarded = map_initial_draft_authority_response(resolution)
+    if guarded is not None:
+        if guarded.status == "conflict":
+            return _content_initial_draft_conflict_response(guarded)
+        return guarded
+    if not isinstance(request, ContentInitialDraftRequest):
+        raise RuntimeError("Unclassified reuse request did not fail closed.")
     snapshot = snapshot_loader(work_item_id)
     client = content_codex_app_server_client()
     if initial_draft_queue.can_queue_initial_draft(snapshot, request, client):
@@ -182,8 +247,25 @@ def _submit_initial_draft(
         run_store=local_state_store(),
     )
     if result.status == "conflict":
-        return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
+        return _content_initial_draft_conflict_response(result)
     return result
+
+
+def _content_work_item_initial_draft_response(
+    response: ContentInitialDraftResponse,
+) -> ContentWorkItemInitialDraftResponse:
+    return _CONTENT_WORK_ITEM_INITIAL_DRAFT_RESPONSE_ADAPTER.validate_python(
+        response.model_dump(mode="python")
+    )
+
+
+def _content_initial_draft_conflict_response(
+    response: ContentInitialDraftResponse,
+) -> JSONResponse:
+    conflict = ContentInitialDraftConflictResponse.model_validate(
+        response.model_dump(mode="python")
+    )
+    return JSONResponse(status_code=409, content=conflict.model_dump(mode="json"))
 
 
 def _queued_initial_draft_response(
@@ -229,6 +311,25 @@ def _initial_draft_queue_full_response(
 
 
 def _read_initial_draft_status(
+    work_item_id: str,
+    *,
+    snapshot_loader: ContentInitialDraftSnapshotLoader | None = None,
+    authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
+) -> ContentInitialDraftResponse:
+    resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
+        work_item_id,
+        StatusRead(),
+    )
+    guarded = map_initial_draft_authority_response(resolution)
+    if guarded is not None:
+        return guarded
+    return _read_legacy_initial_draft_status(
+        work_item_id,
+        snapshot_loader=snapshot_loader,
+    )
+
+
+def _read_legacy_initial_draft_status(
     work_item_id: str,
     *,
     snapshot_loader: ContentInitialDraftSnapshotLoader | None = None,

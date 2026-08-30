@@ -7,6 +7,7 @@ import {
   reviewContentNewPageRevision,
   getActionMutationReadiness,
   getActionsMutationReadiness,
+  getContentWorkItemInitialDraft,
   getContentWorkItemSemanticReview,
   getContentWorkItemMeasurement,
   getContentRegulatorySourceSnapshot,
@@ -268,17 +269,22 @@ describe("content workflow API helpers", () => {
         proposal_id: request.expected_proposal_id,
         run_id: null,
         revision: null,
+        reuse_binding: null,
         runtime: {
           status: "not_started",
+          run_id: null,
           thread_id: null,
           turn_id: null,
+          event_methods: [],
+          item_types: [],
           external_call_attempted: false
         },
         blockers: [{
           code: "planning_not_ready",
           label: "Nie utworzono dokumentu nowej strony",
           reason: "Plan nie jest gotowy do utworzenia dokumentu.",
-          next_step: "Wygeneruj aktualny plan."
+          next_step: "Wygeneruj aktualny plan.",
+          source_codes: []
         }],
         safe_next_step: "Zatwierdź plan.",
         publish_ready: false
@@ -628,8 +634,10 @@ describe("content workflow API helpers", () => {
       proposal_id: "proposal/1",
       run_id: null,
       revision: null,
+      reuse_binding: null,
       runtime: {
         status: "not_started",
+        run_id: null,
         thread_id: null,
         turn_id: null,
         event_methods: [],
@@ -673,6 +681,83 @@ describe("content workflow API helpers", () => {
       expected_planning_input_digest: "b".repeat(64),
       requested_by: "wilku"
     });
+  });
+
+  it("transports reuse only through the existing-work initial-draft union", async () => {
+    const request = {
+      expected_production_classification_run_digest: "c".repeat(64),
+      requested_by: "wilku"
+    };
+    expect(() => {
+      // @ts-expect-error New-page initial draft accepts generation-shaped requests only.
+      createContentNewPageInitialDraft("brief_forbidden_reuse", request);
+    }).toThrow();
+    const conflict = {
+      status: "conflict",
+      work_item_id: "content_work_item_bdo",
+      proposal_id: null,
+      run_id: null,
+      revision: null,
+      reuse_binding: null,
+      runtime: {
+        status: "not_started",
+        run_id: null,
+        thread_id: null,
+        turn_id: null,
+        event_methods: [],
+        item_types: [],
+        external_call_attempted: false
+      },
+      blockers: [{
+        code: "stale_production_classification",
+        label: "Klasyfikacja zmieniła się",
+        reason: "Żądanie wskazuje starszą klasyfikację.",
+        next_step: "Odśwież workspace.",
+        source_codes: []
+      }],
+      safe_next_step: "Odśwież workspace.",
+      publish_ready: false
+    } as const;
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/work-items/content_work_item_bdo/initial-draft"
+      );
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return new Response(JSON.stringify(conflict), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await postContentWorkItemInitialDraft(request, "content_work_item_bdo");
+
+    expect(result).toEqual(conflict);
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(conflict), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    }));
+    await expect(
+      postContentWorkItemInitialDraft(request, "content_work_item_bdo")
+    ).rejects.toThrow();
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      ...conflict,
+      status: "blocked"
+    }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" }
+    }));
+    await expect(
+      postContentWorkItemInitialDraft(request, "content_work_item_bdo")
+    ).rejects.toThrow();
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify(conflict), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    }));
+    await expect(getContentWorkItemInitialDraft("content_work_item_bdo")).rejects.toThrow();
   });
 
 });

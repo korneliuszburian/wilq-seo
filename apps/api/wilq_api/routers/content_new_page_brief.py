@@ -6,13 +6,14 @@ from hashlib import sha256
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import TypeAdapter
 
 from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
 from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftGenerationResponse,
     ContentInitialDraftRequest,
-    ContentInitialDraftResponse,
 )
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -80,6 +81,9 @@ _NEW_PAGE_PLANNING_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-new-page-plan",
 )
+_CONTENT_INITIAL_DRAFT_GENERATION_RESPONSE_ADAPTER: TypeAdapter[
+    ContentInitialDraftGenerationResponse
+] = TypeAdapter(ContentInitialDraftGenerationResponse)
 
 
 def register_content_new_page_brief_routes(router: APIRouter) -> None:
@@ -158,9 +162,7 @@ def register_content_new_page_continuation_routes(router: APIRouter) -> None:
             catalog=build_content_inventory_catalog_cached(),
         )
         service_card = (
-            new_page_service_card(foundation.service_card_id)
-            if foundation is not None
-            else None
+            new_page_service_card(foundation.service_card_id) if foundation is not None else None
         )
         result = build_new_page_planning_input(
             brief=brief,
@@ -329,13 +331,13 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
 
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
-        response_model=ContentInitialDraftResponse,
+        response_model=ContentInitialDraftGenerationResponse,
     )
     def create_new_page_initial_draft(
         brief_id: str, request: ContentInitialDraftRequest
-    ) -> ContentInitialDraftResponse:
+    ) -> ContentInitialDraftGenerationResponse:
         brief, foundation, planning_input, proposal, workspace = _new_page_draft_inputs(brief_id)
-        return generate_new_page_initial_draft(
+        result = generate_new_page_initial_draft(
             brief=brief,
             foundation=foundation,
             planning_input=planning_input,
@@ -346,6 +348,9 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
             endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
+        )
+        return _CONTENT_INITIAL_DRAFT_GENERATION_RESPONSE_ADAPTER.validate_python(
+            result.model_dump(mode="python")
         )
 
     register_content_new_page_revision_review_routes(router)
@@ -572,17 +577,13 @@ def _run_new_page_planning_generation(
     try:
         workspace = _new_page_planning_proposal_workspace(brief_id)
         if workspace.readiness.status != "ready":
-            terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="stale_input"
-            )
+            terminalize_new_page_planning_claim(queued_response, claim_store, code="stale_input")
             return
         store = new_page_brief_store()
         brief = store.load_new_page_brief(brief_id)
         foundation = store.load_new_page_foundation(brief_id)
         if brief is None or foundation is None:
-            terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="stale_input"
-            )
+            terminalize_new_page_planning_claim(queued_response, claim_store, code="stale_input")
             return
         result = build_new_page_planning_input(
             brief=brief,
@@ -598,9 +599,7 @@ def _run_new_page_planning_generation(
             current is None
             or current.planning_input_digest != queued_response.planning_input_digest
         ):
-            terminalize_new_page_planning_claim(
-                queued_response, claim_store, code="stale_input"
-            )
+            terminalize_new_page_planning_claim(queued_response, claim_store, code="stale_input")
             return
         generated = generate_new_page_planning_proposal(
             workspace=workspace,
@@ -619,6 +618,4 @@ def _run_new_page_planning_generation(
                 job_planning_input_digest=generated.proposal_status.planning_input_digest,
             )
     except Exception:
-        terminalize_new_page_planning_claim(
-            queued_response, claim_store, code="runtime_failed"
-        )
+        terminalize_new_page_planning_claim(queued_response, claim_store, code="runtime_failed")

@@ -28,7 +28,7 @@ import {
   type ActionObject,
   type ContentDraftRevision,
   type ContentDraftRevisionReview,
-  type ContentInitialDraftResponse,
+  type ContentWorkItemInitialDraftResponse,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
   type ContentInventoryCatalogResponse,
@@ -1596,15 +1596,17 @@ function savedFullDraftRevision(): ContentDraftRevision {
 
 function initialDraftResponse(
   revision = savedFullDraftRevision()
-): ContentInitialDraftResponse {
+): ContentWorkItemInitialDraftResponse {
   return {
     status: "created",
     work_item_id: revision.work_item_id,
     proposal_id: "content_planning_proposal_bdo",
     run_id: "codex_content_initial_draft_bdo",
     revision,
+    reuse_binding: null,
     runtime: {
       status: "completed",
+      run_id: "codex_content_initial_draft_bdo",
       thread_id: "thread_initial_bdo",
       turn_id: "turn_initial_bdo",
       event_methods: ["turn/completed"],
