@@ -16,6 +16,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSourceProvenance,
+    ContentDraftRevisionState,
     ContentDraftRevisionStateStatus,
 )
 from wilq.content.workflow.pipeline_steps.decision_context import (
@@ -174,6 +175,7 @@ def build_content_document_workspace(
     work_item_id: str,
     *,
     revision_context_current: bool | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
     item: ContentWorkItem | None = None,
     read_material: bool = True,
 ) -> ContentDocumentWorkspace | None:
@@ -197,12 +199,16 @@ def build_content_document_workspace(
         source,
         material_current=read_material,
     )
-    revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
-    revision = _revision_with_claim_ledger(revision_state.latest_revision, item=item)
+    current_revision_state = (
+        revision_state
+        if revision_state is not None
+        else content_workflow_store().load_draft_revision_state(work_item_id)
+    )
+    revision = _revision_with_claim_ledger(current_revision_state.latest_revision, item=item)
     document = _canonical_document(
-        revision_state.status,
+        current_revision_state.status,
         revision,
-        getattr(revision_state, "latest_review", None),
+        getattr(current_revision_state, "latest_review", None),
     )
     document = _document_for_current_context(
         document,

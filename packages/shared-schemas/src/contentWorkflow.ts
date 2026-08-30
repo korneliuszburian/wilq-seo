@@ -560,29 +560,6 @@ export const ContentDocumentWorkspaceSchema = z.object({
   secondary_disclosures: z.array(z.string()).default([])
 });
 
-export const ContentSelectedWorkspaceSchema = z
-  .object({
-    response_type: z.literal("content_selected_workspace").default("content_selected_workspace"),
-    contract_version: z.literal("content_selected_workspace_v1").default("content_selected_workspace_v1"),
-    status: z.enum(["ready", "missing"]),
-    work_item_id: z.string().min(1),
-    operator_journey: z.lazy(() => ContentWorkflowOperatorJourneySchema),
-    workspace: ContentDocumentWorkspaceSchema.nullable().optional(),
-    reason: z.string().min(1),
-    safe_next_step: z.string().min(1)
-  })
-  .superRefine((value, context) => {
-    if (value.status === "ready" && !value.workspace) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Ready workspace requires exact workspace data." });
-    }
-    if (value.status === "missing" && value.workspace) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Missing workspace cannot carry workspace data." });
-    }
-    if (value.workspace && value.workspace.work_item_id !== value.work_item_id) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Workspace must match the selected work item." });
-    }
-  });
-
 export const ContentWorkflowEntryModeSchema = z.object({
   kind: z.enum(["refresh_existing", "new_page"]),
   label: z.string().min(1),
@@ -5138,7 +5115,6 @@ export type ContentWorkItemQueueCandidate = z.infer<
 export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentDecisionContext = z.infer<typeof ContentDecisionContextSchema>;
 export type ContentDocumentWorkspace = z.infer<typeof ContentDocumentWorkspaceSchema>;
-export type ContentSelectedWorkspace = z.infer<typeof ContentSelectedWorkspaceSchema>;
 export type ContentTargetDiscovery = z.infer<typeof ContentTargetDiscoverySchema>;
 export type ContentTargetMappingPreview = z.infer<typeof ContentTargetMappingPreviewSchema>;
 export type ContentTargetMappingConfirmation = z.infer<

@@ -16,6 +16,7 @@ from pydantic import (
 
 Classification = Literal["reuse", "refresh", "write", "blocked"]
 ClassificationSource = Literal["matched", "unmatched"]
+ClassificationLookupBasis = Literal["current", "retained", "historical_action_owner"]
 
 _HEX64 = r"^[0-9a-f]{64}$"
 _HEX40 = r"^[0-9a-f]{40}$"
@@ -205,6 +206,36 @@ class ContentProductionClassificationRow(_FrozenModel):
 
     def protects_work_item(self, work_item_id: str) -> bool:
         return work_item_id in _classification_authority_ids(self)
+
+    def lookup_basis_for_work_item(
+        self,
+        work_item_id: str,
+    ) -> ClassificationLookupBasis | None:
+        """Name the exact accepted identity that matched a selected workspace lookup."""
+
+        if work_item_id == self.current_work_item_id:
+            return "current"
+        if work_item_id == self.retained_work_item_id:
+            return "retained"
+        if any(action.bound_work_item_id == work_item_id for action in self.verified_actions):
+            return "historical_action_owner"
+        return None
+
+    @property
+    def reusable_work_item_id(self) -> str | None:
+        """Return only the exact owner from which a retained revision may be read."""
+
+        binding = self.retained_binding
+        if self.decision != "reuse" or binding is None:
+            return None
+        if binding.identity_reconciliation_status == "fork":
+            return binding.retained_work_item_id
+        historical_owners = tuple(
+            dict.fromkeys(action.bound_work_item_id for action in self.verified_actions)
+        )
+        if len(historical_owners) != 1 or historical_owners[0] == self.current_work_item_id:
+            return None
+        return historical_owners[0]
 
 
 class ContentProductionSourceReceipt(_FrozenModel):
@@ -693,6 +724,7 @@ WAVE0_PRODUCTION_ACCEPTANCE_POLICY = ContentProductionAcceptancePolicy(
 
 
 __all__ = [
+    "ClassificationLookupBasis",
     "ContentProductionAcceptancePolicy",
     "ContentProductionAudit",
     "ContentProductionBlocker",

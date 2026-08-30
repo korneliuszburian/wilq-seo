@@ -19,7 +19,6 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
   ContentDecisionContextSchema,
-  ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentPlanningInputSummarySchema,
@@ -425,120 +424,6 @@ describe("ContentDecisionContextSchema", () => {
     expect(context.authoring_target.object_id).toBeNull();
     expect(context.source_target_relation.status).toBe("unverified");
     expect("target_id" in context).toBe(false);
-  });
-});
-
-describe("ContentSelectedWorkspaceSchema", () => {
-  const operatorJourney = {
-    current_step_id: "draft",
-    steps: [
-      ["scope", "Zakres i cel", "complete", "ready", "zakres gotowy"],
-      ["section_map", "Plan sekcji", "complete", "ready", "plan sekcji gotowy"],
-      ["draft", "Szkic treści", "current", "ready", "czeka na wersję szkicu"],
-      ["review", "Sprawdzenie treści", "pending", "blocked", "czeka na wersję szkicu"],
-      ["dev_draft", "Szkic na devie", "pending", "blocked", "czeka na sprawdzenie wersji"]
-    ].map(([id, title, phase, readiness, statusLabel]) => ({
-      id,
-      title,
-      phase,
-      readiness,
-      status_label: statusLabel,
-      summary: "Stan etapu pochodzi z API.",
-      can_open: phase !== "pending",
-      can_submit: id === "draft",
-      blocker: id === "dev_draft" ? {
-        code: "missing_revision_bound_draft",
-        label: "Brakuje wersji gotowej do przekazania",
-        reason: "Najpierw zapisz i zatwierdź dokładną wersję tekstu."
-      } : null,
-      safe_next_step: "Wykonaj następny bezpieczny krok wskazany przez API."
-    }))
-  };
-  const workspace = {
-    response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v2",
-    work_item_id: "content_work_item_bdo",
-    work_kind: "refresh_existing",
-    service_label: "BDO",
-    source_snapshot: {
-      status: "available",
-      status_label: "materiał dostępny",
-      title: "BDO",
-      url: "https://ekologus.pl/bdo/",
-      extraction_method: "wordpress_rest.content",
-      lead: null,
-      content_excerpt: null,
-      ordered_sections: [],
-      faq_status: "not_observed",
-      cta_status: "not_observed",
-      reason: "Źródło odczytane.",
-      caveats: [],
-      evidence_ids: ["ev_wp_bdo"]
-    },
-    canonical_document: {
-      status: "not_created",
-      revision_id: null,
-      content_digest: null,
-      review_state: "unreviewed",
-      label: "Brak dokumentu",
-      reason: "Brak rewizji.",
-      preview: null
-    },
-    document_lineage: {
-      status: "not_recorded",
-      source_material_ids: [],
-      knowledge_cards: [],
-      unresolved_knowledge_card_ids: [],
-      reason: "Brak rewizji."
-    },
-    comparison: { status: "unavailable", reason: "Brak rewizji.", items: [] },
-    next_action: { kind: "prepare_document", label: "Przygotuj dokument", reason: "Brak rewizji." },
-    regulatory_review_candidates: [{
-      candidate_id: "bdo_sanctions_2026_08_02_r3",
-      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
-      source_title: "BDO: sankcje za naruszenia obowiązków",
-      observed_on: "2026-08-02",
-      requirement_ids: ["bdo_risks_and_sanctions"],
-      requirement_labels: ["Ryzyka i sankcje"],
-      review_status: "review_required",
-      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
-    }],
-    secondary_disclosures: []
-  };
-
-  it("keeps ready and missing selection states exact", () => {
-    const parsed = ContentSelectedWorkspaceSchema.parse({
-        status: "ready",
-        work_item_id: "content_work_item_bdo",
-        operator_journey: operatorJourney,
-        workspace,
-        reason: "Odczytano workspace.",
-        safe_next_step: "Przygotuj dokument"
-      });
-    expect(parsed.workspace?.regulatory_review_candidates).toEqual([
-      expect.objectContaining({ candidate_id: "bdo_sanctions_2026_08_02_r3" })
-    ]);
-    expect(parsed.workspace?.source_snapshot.status_label).toBe("materiał dostępny");
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
-        status: "missing",
-        work_item_id: "content_work_item_missing",
-        operator_journey: operatorJourney,
-        workspace: null,
-        reason: "Nie znaleziono strony.",
-        safe_next_step: "Wróć do wyboru."
-      }).success
-    ).toBe(true);
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
-        status: "ready",
-        work_item_id: "content_work_item_other",
-        operator_journey: operatorJourney,
-        workspace,
-        reason: "Odczytano workspace.",
-        safe_next_step: "Przygotuj dokument"
-      }).success
-    ).toBe(false);
   });
 });
 
