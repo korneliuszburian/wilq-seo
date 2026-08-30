@@ -1160,9 +1160,11 @@ function selectedWorkspace(
 ): ContentSelectedWorkspace {
   return {
     response_type: "content_selected_workspace",
-    contract_version: "content_selected_workspace_v1",
+    contract_version: "content_selected_workspace_v2",
     status: "ready",
     work_item_id: workspace.work_item_id,
+    requested_work_item_id: workspace.work_item_id,
+    production_decision: { status: "missing" },
     operator_journey: contentOperatorJourney(workspace, devDraftReady),
     workspace,
     reason: "WILQ odczytał dokładny workspace wskazanej strony.",
