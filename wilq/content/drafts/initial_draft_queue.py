@@ -143,9 +143,10 @@ class _InitialDraftDeadlineClient:
         remaining = (effective_initial_draft_deadline(run) - utc_now()).total_seconds()
         if remaining <= 0:
             raise TimeoutError("initial draft deadline expired")
-        return StdioCodexAppServerClient(
-            timeout_seconds=min(self._base.timeout_seconds, remaining)
-        ).run_structured_turn(request)
+        # The run owns the deadline.  The injected base client commonly has
+        # the app-server's short generic default, which must not truncate a
+        # bounded full-draft run before its persisted deadline.
+        return StdioCodexAppServerClient(timeout_seconds=remaining).run_structured_turn(request)
 
 
 class _ContextCheckedWorkflowStore:
