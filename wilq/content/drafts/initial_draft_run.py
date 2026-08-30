@@ -11,10 +11,7 @@ from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
-from wilq.codex.model_policy import (
-    configured_codex_model,
-    configured_codex_reasoning_effort,
-)
+from wilq.codex.model_policy import configured_codex_runtime_selection
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
@@ -77,9 +74,12 @@ def _initial_draft_run_metadata(prompt: str | None = None) -> _InitialDraftRunMe
     safety = assess_codex_prompt(effective_prompt, dry_run=False)
     if not safety.allowed:
         raise ValueError(f"Unsafe initial draft prompt: {safety.reason}")
+    selection = configured_codex_runtime_selection()
     return _InitialDraftRunMetadata(
-        model=configured_codex_model(),
-        model_reasoning_effort=configured_codex_reasoning_effort(),
+        model=selection.model if selection is not None else None,
+        model_reasoning_effort=(
+            selection.model_reasoning_effort if selection is not None else None
+        ),
         prompt_digest=safety.prompt_digest,
         prompt_template_id=prompt_template.registry_id,
     )
