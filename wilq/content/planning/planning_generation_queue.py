@@ -620,5 +620,10 @@ def queued_input_summary(
     service_card_id: str,
     planning_input_digest: str,
 ) -> ContentPlanningInputSummary | None:
-    queued = store.queued_response(work_item_id, service_card_id, planning_input_digest)
+    queued = store.queued_response(
+        work_item_id,
+        service_card_id,
+        planning_input_digest,
+        include_stale=True,
+    )
     return None if queued is None else queued.input_summary

@@ -179,6 +179,8 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         work_item_id: str,
         service_card_id: str,
         planning_input_digest: str,
+        *,
+        include_stale: bool = False,
     ) -> ContentPlanningProposalResponse | None:
         """Return the durable in-flight/failed response for an exact input."""
         connection = self._read_connection()
@@ -200,7 +202,11 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         if row is None or row["status"] not in {"queued", "blocked", "failed", "stale"}:
             return None
         response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
-        if row["status"] == "queued" and _job_is_stale(row["updated_at"]):
+        if (
+            not include_stale
+            and row["status"] == "queued"
+            and _job_is_stale(row["updated_at"])
+        ):
             # Let the API rebuild the current planning input. The queued
             # payload intentionally has no input summary, so projecting it as
             # a terminal failure would hide the exact digest needed for retry.
