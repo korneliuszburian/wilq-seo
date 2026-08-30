@@ -334,7 +334,7 @@ def content_work_item_draft_revision_review(
     revision_id: str,
     request: ContentDraftRevisionReviewRequest,
 ) -> ContentDraftRevisionReviewResponse | JSONResponse:
-    snapshot = _snapshot_for_work_item_or_404(work_item_id)
+    snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
     workspace = snapshot.revision_workspace
     latest_revision = workspace.latest_revision
     idempotent_retry = _review_request_matches_latest(
@@ -372,7 +372,7 @@ def content_work_item_draft_revision_review(
     if result.review is None:
         raise RuntimeError("Successful revision review is missing the saved decision.")
 
-    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    refreshed = semantic_review_snapshot_for_work_item_or_404(work_item_id)
     return ContentDraftRevisionReviewResponse(
         status="recorded" if result.status == "created" else "idempotent",
         review=result.review,
