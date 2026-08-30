@@ -12,6 +12,8 @@ import {
   getContentDiagnostics,
   getContentInventoryCatalog,
   getContentOperatorContext,
+  postContentWorkItemInitialDraft,
+  type ContentInitialDraftResponse,
   type ContentSelectedWorkspace,
   type ContentTargetDiscovery,
   type ContentTargetMappingPreview,
@@ -37,6 +39,36 @@ export type ContentDiagnosticsQuery = UseQueryResult<ContentDiagnosticsResponse,
 export type ContentInventoryCatalogQuery = UseQueryResult<ContentInventoryCatalogResponse, Error>;
 export type ContentOperatorContextQuery = UseQueryResult<ContentOperatorContext, Error>;
 export type ContentPlanningProposalQuery = UseQueryResult<ContentPlanningProposalResponse, Error>;
+export type ContentReusableInitialDraftQuery = UseQueryResult<ContentInitialDraftResponse, Error>;
+
+export function useContentReusableInitialDraft(
+  requestedWorkItemId: string,
+  productionClassificationRunDigest: string,
+  requestedBy: string
+): ContentReusableInitialDraftQuery {
+  return useQuery({
+    queryKey: [
+      "content-workflow",
+      "work-item",
+      requestedWorkItemId,
+      "initial-draft",
+      "reuse-revalidation",
+      productionClassificationRunDigest,
+      requestedBy
+    ],
+    queryFn: () => postContentWorkItemInitialDraft({
+      expected_production_classification_run_digest: productionClassificationRunDigest,
+      requested_by: requestedBy
+    }, requestedWorkItemId),
+    retry: false,
+    retryOnMount: false,
+    staleTime: Infinity,
+    refetchInterval: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
+  });
+}
 
 export function useContentTargetDiscovery(
   workItemId: string,
