@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { ContentSelectedWorkspace } from "../lib/api";
 import {
@@ -25,12 +25,14 @@ export function ContentDocumentWorkspaceCanvas({
   workspace,
   operatorJourney,
   requestedBy,
-  onOpenReview
+  onOpenReview,
+  leadingPanel
 }: {
   workspace: ContentDocumentWorkspace;
   operatorJourney: ContentSelectedWorkspace["operator_journey"];
   requestedBy: string;
   onOpenReview: () => void;
+  leadingPanel?: ReactNode;
 }) {
   const hasDocument = Boolean(workspace.canonical_document.preview);
   const [view, setView] = useState<View>(() => hasDocument ? "document" : "source");
@@ -65,13 +67,14 @@ export function ContentDocumentWorkspaceCanvas({
   return (
     <main className="mx-auto max-w-[92rem] px-4 py-5 lg:px-8" data-testid="content-text-workspace">
       <ContentWorkflowWorkspaceHeader />
+      {leadingPanel ? <div className="mt-4">{leadingPanel}</div> : null}
       <section className="rounded-2xl border border-action/25 bg-white p-5 shadow-sm lg:p-6">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Praca nad treścią</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-ink lg:text-3xl">
               {workspace.source_snapshot.title ?? "Wybrana strona"}
-            </h1>
+            </h2>
             {workspace.source_snapshot.url ? (
               <a className="mt-2 block break-all text-sm font-medium text-action hover:underline" href={workspace.source_snapshot.url} target="_blank" rel="noreferrer">
                 {workspace.source_snapshot.url}

@@ -1,4 +1,12 @@
+import type { ReactNode } from "react";
+
+import type { ContentDocumentWorkspace, ContentSelectedWorkspace } from "../../lib/api";
 import { ContentDocumentWorkspaceCanvas } from "../ContentDocumentWorkspaceCanvas";
+import {
+  ContentClassifiedProductionBlockerPanel,
+  ContentReusableProductionPanel,
+  ContentReusableRequesterPendingPanel
+} from "../ContentReusableProductionPanel";
 import { ContentWorkflowWorkspaceHeader } from "../ContentWorkflowWorkspaceHeader";
 import type { ContentSelectedWorkspaceQuery } from "./Shared";
 
@@ -10,7 +18,7 @@ export function ContentTextWorkspace({
 }: {
   workItemId: string;
   selectedWorkspace: ContentSelectedWorkspaceQuery;
-  requestedBy: string;
+  requestedBy: string | null;
   onOpenReview: (workItemId: string) => void;
 }) {
   if (selectedWorkspace.isLoading) {
@@ -21,11 +29,107 @@ export function ContentTextWorkspace({
   }
   const workspace = selectedWorkspace.data.workspace;
   if (!workspace) return <DocumentWorkspaceError onRetry={() => void selectedWorkspace.refetch()} />;
-  return <ContentDocumentWorkspaceCanvas
+  return <ProductionAwareDocumentWorkspace
+    selected={selectedWorkspace.data}
     workspace={workspace}
-    operatorJourney={selectedWorkspace.data.operator_journey}
     requestedBy={requestedBy}
     onOpenReview={() => onOpenReview(workItemId)}
+  />;
+}
+
+function ProductionAwareDocumentWorkspace({
+  selected,
+  workspace,
+  requestedBy,
+  onOpenReview
+}: {
+  selected: ContentSelectedWorkspace;
+  workspace: ContentDocumentWorkspace;
+  requestedBy: string | null;
+  onOpenReview: () => void;
+}) {
+  const productionDecision = selected.production_decision;
+  const canvasRequestedBy = requestedBy ?? "operator_local_dashboard";
+
+  switch (productionDecision.status) {
+    case "missing":
+      return <CurrentWorkspaceCanvas
+        workspace={workspace}
+        operatorJourney={selected.operator_journey}
+        requestedBy={canvasRequestedBy}
+        onOpenReview={onOpenReview}
+      />;
+    case "available":
+      switch (productionDecision.decision) {
+        case "reuse":
+          switch (productionDecision.reusable_document.status) {
+            case "ready":
+              return <CurrentWorkspaceCanvas
+                workspace={workspace}
+                operatorJourney={selected.operator_journey}
+                requestedBy={canvasRequestedBy}
+                onOpenReview={onOpenReview}
+                leadingPanel={requestedBy ? <ContentReusableProductionPanel
+                  selected={selected}
+                  productionDecision={productionDecision}
+                  reusableDocument={productionDecision.reusable_document}
+                  requestedBy={requestedBy}
+                /> : <ContentReusableRequesterPendingPanel />}
+              />;
+            case "blocked":
+              return <CurrentWorkspaceCanvas
+                workspace={workspace}
+                operatorJourney={selected.operator_journey}
+                requestedBy={canvasRequestedBy}
+                onOpenReview={onOpenReview}
+                leadingPanel={<ContentClassifiedProductionBlockerPanel
+                  reason={productionDecision.reusable_document.reason_pl}
+                  safeNextStep={productionDecision.reusable_document.safe_next_step_pl}
+                />}
+              />;
+            default:
+              return productionDecision.reusable_document satisfies never;
+          }
+        case "refresh":
+        case "write":
+        case "blocked":
+          return <CurrentWorkspaceCanvas
+            workspace={workspace}
+            operatorJourney={selected.operator_journey}
+            requestedBy={canvasRequestedBy}
+            onOpenReview={onOpenReview}
+            leadingPanel={<ContentClassifiedProductionBlockerPanel
+              reason={productionDecision.reason_pl}
+              safeNextStep={productionDecision.safe_next_step_pl}
+            />}
+          />;
+        default:
+          return productionDecision satisfies never;
+      }
+    default:
+      return productionDecision satisfies never;
+  }
+}
+
+function CurrentWorkspaceCanvas({
+  workspace,
+  operatorJourney,
+  requestedBy,
+  onOpenReview,
+  leadingPanel
+}: {
+  workspace: ContentDocumentWorkspace;
+  operatorJourney: ContentSelectedWorkspace["operator_journey"];
+  requestedBy: string;
+  onOpenReview: () => void;
+  leadingPanel?: ReactNode;
+}) {
+  return <ContentDocumentWorkspaceCanvas
+    workspace={workspace}
+    operatorJourney={operatorJourney}
+    requestedBy={requestedBy}
+    onOpenReview={onOpenReview}
+    leadingPanel={leadingPanel}
   />;
 }
 
