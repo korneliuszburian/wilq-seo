@@ -61,6 +61,7 @@ def register_content_model_routes(
     router: APIRouter,
     *,
     snapshot_loader: ContentModelSnapshotLoader,
+    semantic_review_snapshot_loader: ContentModelSnapshotLoader | None = None,
 ) -> None:
     register_content_regulatory_source_review_routes(router)
     register_content_selected_workspace_route(router)
@@ -80,7 +81,14 @@ def register_content_model_routes(
         ),
     )
     register_content_public_deployment_routes(router)
-    register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
+    register_content_semantic_review_routes(
+        router,
+        snapshot_loader=(
+            snapshot_loader
+            if semantic_review_snapshot_loader is None
+            else semantic_review_snapshot_loader
+        ),
+    )
     register_content_target_discovery_route(router)
     register_content_target_mapping_route(router)
 

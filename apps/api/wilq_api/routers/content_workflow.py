@@ -75,6 +75,29 @@ from wilq.content.workflow.store.store import content_workflow_store
 router = APIRouter()
 
 
+def semantic_review_snapshot_for_work_item_or_404(
+    work_item_id: str,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    """Rebuild semantic-review context from an immutable refresh binding.
+
+    Refresh preparation selects a service card explicitly.  Semantic review
+    must use that same persisted selection, otherwise the normal diagnostics
+    matcher can produce a different planning input and falsely mark the exact
+    revision context stale.
+    """
+
+    revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
+    revision = revision_state.latest_revision
+    binding = None if revision is None else revision.refresh_preparation_binding
+    if binding is None:
+        return _snapshot_for_work_item_or_404(work_item_id)
+    return _snapshot_for_work_item_or_404(
+        work_item_id,
+        revision_state_override=revision_state,
+        service_card_id_override=binding.service_card_id,
+    )
+
+
 @router.get(
     "/api/content/workflow-entry",
     response_model=ContentWorkflowEntryResponse,
@@ -674,6 +697,7 @@ def _revision_conflict_response(conflict: ContentDraftRevisionConflict) -> JSONR
 register_content_model_routes(
     router,
     snapshot_loader=_snapshot_for_work_item_or_404,
+    semantic_review_snapshot_loader=semantic_review_snapshot_for_work_item_or_404,
 )
 register_content_catalog_routes(router)
 register_content_production_classification_routes(router)
