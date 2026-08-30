@@ -95,6 +95,7 @@ def semantic_review_snapshot_for_work_item_or_404(
         work_item_id,
         revision_state_override=revision_state,
         service_card_id_override=binding.service_card_id,
+        prefer_revision_bound_proposal=True,
     )
 
 

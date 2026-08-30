@@ -14,7 +14,7 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
     binding = SimpleNamespace(service_card_id="ekologus_service_operat_wodnoprawny")
     revision = SimpleNamespace(refresh_preparation_binding=binding)
     expected_snapshot = object()
-    canonical_calls: list[tuple[str, object | None, str | None]] = []
+    canonical_calls: list[tuple[str, object | None, str | None, bool | None]] = []
 
     monkeypatch.setattr(
         content_workflow_router,
@@ -34,6 +34,7 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
                     received_work_item_id,
                     kwargs.get("revision_state_override"),
                     kwargs.get("service_card_id_override"),
+                    kwargs.get("prefer_revision_bound_proposal"),
                 )
             )
             or expected_snapshot
@@ -49,6 +50,7 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
     assert canonical_calls[0][0] == work_item_id
     assert canonical_calls[0][1] is not None
     assert canonical_calls[0][2] == binding.service_card_id
+    assert canonical_calls[0][3] is True
 
 
 def test_legacy_semantic_review_snapshot_keeps_default_loader(

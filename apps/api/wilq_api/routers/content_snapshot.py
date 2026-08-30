@@ -173,6 +173,25 @@ def _snapshot_builder(
     return build
 
 
+def _can_use_revision_bound_proposal(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    prefer_revision_bound_proposal: bool,
+) -> bool:
+    return snapshot.revision_workspace.context_current or prefer_revision_bound_proposal
+
+
+def _revision_bound_planning_digest(
+    revision_state: ContentDraftRevisionState,
+    prefer_revision_bound_proposal: bool,
+) -> str | None:
+    revision = revision_state.latest_revision
+    if revision is None or revision.planning_digest is None:
+        return None
+    if revision_state.latest_review is None and not prefer_revision_bound_proposal:
+        return None
+    return revision.planning_digest
+
+
 def snapshot_for_work_item_or_404(
     work_item_id: str,
     *,
@@ -184,6 +203,7 @@ def snapshot_for_work_item_or_404(
     selected_decision_override: ContentDecisionItem | None = None,
     selected_freshness_override: ContentFreshnessAssessment | None = None,
     service_card_id_override: str | None = None,
+    prefer_revision_bound_proposal: bool = False,
     resolve_planning_proposal: bool = True,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     diagnostics = (
@@ -222,20 +242,17 @@ def snapshot_for_work_item_or_404(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    revision_bound_proposal = (
-        proposal_store.latest_for_planning_digest(
-            work_item_id,
-            revision_state.latest_revision.planning_digest,
-        )
-        if (
-            revision_state.latest_revision is not None
-            and revision_state.latest_review is not None
-            and revision_state.latest_revision.planning_digest is not None
-        )
-        else None
+    revision_bound_digest = _revision_bound_planning_digest(
+        revision_state, prefer_revision_bound_proposal
     )
-    generated_planning_proposal: ContentPlanningProposal | None
-    if revision_bound_proposal is not None and snapshot.revision_workspace.context_current:
+    revision_bound_proposal = (
+        None
+        if revision_bound_digest is None
+        else proposal_store.latest_for_planning_digest(work_item_id, revision_bound_digest)
+    )
+    if revision_bound_proposal is not None and _can_use_revision_bound_proposal(
+        snapshot, prefer_revision_bound_proposal
+    ):
         generated_planning_proposal = revision_bound_proposal
     elif not resolve_planning_proposal:
         # The first selected-page read is a context projection. Planning has
