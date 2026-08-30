@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 import re
-from collections.abc import Iterable
-from hashlib import sha256
+from collections.abc import Callable, Iterable
 from typing import Literal
 from uuid import uuid4
 
@@ -22,8 +20,6 @@ from wilq.content.knowledge.work_item_service_profile import (
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
-    ContentPlanningInputBlocker,
-    ContentPlanningInputSummary,
     build_content_planning_input,
     content_planning_input_summary,
     planning_generation_blockers,
@@ -33,6 +29,31 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
+)
+from wilq.content.planning.generated_proposal_persistence import (
+    persist_generated_proposal,
+    proposal_from_output,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    blocked_from_input as _blocked_from_input,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    blocked_response as _blocked_response,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    planning_runtime_blocker as _planning_runtime_blocker,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    runtime_failure_response as _runtime_failure_response,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    stale_input_blocker as _stale_input_blocker,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    unexpected_planning_input_response as _unexpected_planning_input_response,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    unexpected_runtime_blocker as _unexpected_runtime_blocker,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
@@ -55,9 +76,9 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
-    ContentPlanningSection,
     build_content_planning_workspace,
 )
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.runtime.codex_run_lifecycle import save_terminal_codex_run
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -109,6 +130,8 @@ def generate_content_planning_proposal(
     client: CodexAppServerClientProtocol,
     store: ContentPlanningProposalStore,
     run_store: LocalStateStore,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+    pre_persistence_guard: Callable[[], ContentPlanningProposalResponse | None] | None = None,
 ) -> ContentPlanningProposalResponse:
     planning_input, early_response = _prepare_generation(
         snapshot=snapshot,
@@ -144,8 +167,13 @@ def generate_content_planning_proposal(
     completed_run = run.model_copy(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
-    proposal = _proposal_from_output(planning_input, output, completed_run)
-    return _persist_generated_proposal(
+    proposal = proposal_from_output(
+        planning_input,
+        output,
+        completed_run,
+        refresh_preparation_binding=refresh_preparation_binding,
+    )
+    return persist_generated_proposal(
         planning_input=planning_input,
         request=request,
         proposal=proposal,
@@ -154,6 +182,10 @@ def generate_content_planning_proposal(
         trace=trace,
         store=store,
         run_store=run_store,
+        pre_persistence_guard=pre_persistence_guard,
+        finish_run=_finish_persisted_run,
+        runtime_failure_response=_persistence_failure_response,
+        runtime_trace_with_run_id=_runtime_trace_with_run_id,
     )
 
 
@@ -269,31 +301,10 @@ def _prepare_generation(
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
             proposal=existing,
+            refresh_preparation_binding=existing.refresh_preparation_binding,
             safe_next_step="Sprawdź zapisaną wersję planu; model nie został uruchomiony ponownie.",
         )
     return planning_input, None
-
-
-def _unexpected_planning_input_response(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    request: ContentPlanningProposalRequest,
-) -> ContentPlanningProposalResponse:
-    return _blocked_response(
-        snapshot.preflight.item.id,
-        service_card_id=request.service_card_id,
-        planning_input_digest=None,
-        blockers=[_unexpected_runtime_blocker()],
-    )
-
-
-def _unexpected_runtime_blocker() -> ContentPlanningProposalBlocker:
-    return build_blocker(
-        ContentPlanningProposalBlocker,
-        code="runtime_failed",
-        label="Planowanie nie zwróciło kompletnego wejścia",
-        reason="WILQ nie otrzymał kompletnego stanu potrzebnego do bezpiecznego planowania.",
-        next_step="Odśwież workspace i uruchom nową próbę dopiero po sprawdzeniu blockerów.",
-    )
 
 
 def with_explicit_content_service_selection(
@@ -385,40 +396,25 @@ def _run_planning_turn(
             next_step="Odrzuć wynik i uruchom nową próbę po sprawdzeniu kontraktu.",
         )
         return None, trace, blocker, "blocked"
+    output, output_blocker = _validated_planning_output(planning_input, output)
+    if output_blocker is not None:
+        return None, trace, output_blocker, "blocked"
+    return output, trace, None, None
+
+
+def _validated_planning_output(
+    planning_input: ContentPlanningInput,
+    output: ContentPlanningModelOutput,
+) -> tuple[ContentPlanningModelOutput, ContentPlanningProposalBlocker | None]:
     output = canonicalize_model_inventory_headings(planning_input, output)
     output = canonicalize_regulatory_section_evidence(planning_input, output)
     output = canonicalize_regulatory_section_assertions(planning_input, output)
     quality_errors = planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
-        quality_reason = (
-            "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
-            if "missing_cta" in quality_errors
-            else (
-                "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie po jednym razie."
-            )
-            if "cta_pattern_coverage" in quality_errors
-            else "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
-            if "missing_query_assignments" in quality_errors
-            else "Plan ma dostępne sygnały pomiarowe, ale nie zawiera ich w planie obserwacji."
-            if {
-                "missing_measurement_metrics",
-                "missing_measurement_evidence",
-            }.intersection(quality_errors)
-            else "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, "
-            "które nie są użyteczną strukturą odpowiedzi dla czytelnika."
-        )
-        blocker = build_blocker(
-            ContentPlanningProposalBlocker,
-            code="quality_gate_failed",
-            label="Plan nie przeszedł bramki jakości",
-            reason=quality_reason,
-            next_step="Uruchom nową próbę po oczyszczeniu materiału wejściowego; WILQ nic nie zapisał.",  # noqa: E501
-            source_codes=quality_errors,
-        )
-        return None, trace, blocker, "blocked"
+        return output, _quality_gate_blocker(quality_errors)
     lineage_errors = planning_output_lineage_errors(planning_input, output)
     if lineage_errors:
-        blocker = build_blocker(
+        return output, build_blocker(
             ContentPlanningProposalBlocker,
             code="lineage_mismatch",
             label="Plan używa danych spoza wejścia",
@@ -426,8 +422,38 @@ def _run_planning_turn(
             next_step="Odrzuć wynik; nie poprawiaj obcego lineage ręcznie.",
             source_codes=lineage_errors,
         )
-        return None, trace, blocker, "blocked"
-    return output, trace, None, None
+    return output, None
+
+
+def _quality_gate_blocker(quality_errors: list[str]) -> ContentPlanningProposalBlocker:
+    return build_blocker(
+        ContentPlanningProposalBlocker,
+        code="quality_gate_failed",
+        label="Plan nie przeszedł bramki jakości",
+        reason=_quality_gate_reason(quality_errors),
+        next_step=(
+            "Uruchom nową próbę po oczyszczeniu materiału wejściowego; WILQ nic nie "
+            "zapisał."
+        ),
+        source_codes=quality_errors,
+    )
+
+
+def _quality_gate_reason(quality_errors: list[str]) -> str:
+    if "missing_cta" in quality_errors:
+        return "Plan nie zawiera żadnego bloku CTA wymaganego dla bezpiecznego następnego kroku."
+    if "cta_pattern_coverage" in quality_errors:
+        return "Plan nie obejmuje wszystkich zatwierdzonych wzorców CTA dokładnie po jednym razie."
+    if "missing_query_assignments" in quality_errors:
+        return "Plan zawiera exact zapytania, ale nie przypisuje żadnego z nich do sekcji."
+    if {"missing_measurement_metrics", "missing_measurement_evidence"}.intersection(
+        quality_errors
+    ):
+        return "Plan ma dostępne sygnały pomiarowe, ale nie zawiera ich w planie obserwacji."
+    return (
+        "Plan zawiera nagłówki nawigacyjne, promocyjne albo datowane, które nie są "
+        "użyteczną strukturą odpowiedzi dla czytelnika."
+    )
 
 
 def _validation_source_codes(error: ValidationError) -> list[str]:
@@ -656,159 +682,6 @@ def _planning_heading_quality_errors(headings: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(errors))
 
 
-def _persist_generated_proposal(
-    *,
-    planning_input: ContentPlanningInput,
-    request: ContentPlanningProposalRequest,
-    proposal: ContentPlanningProposal,
-    completed_run: CodexRun,
-    started_run: CodexRun,
-    trace: ContentCodexRuntimeTrace | None,
-    store: ContentPlanningProposalStore,
-    run_store: LocalStateStore,
-) -> ContentPlanningProposalResponse:
-    try:
-        store_status, stored = store.save_generated(
-            proposal,
-            completed_run,
-            replace_existing_exact_input=request.regenerate_stale_mapping,
-        )
-    except Exception:
-        blocker = build_blocker(
-            ContentPlanningProposalBlocker,
-            code="persistence_failed",
-            label="Nie zapisano planu",
-            reason="Atomowy zapis planu i zakończonego CodexRun nie powiódł się.",
-            next_step="Sprawdź prywatny store i uruchom nową próbę; częściowy plan nie jest dostępny.",  # noqa: E501
-        )
-        _finish_run(run_store, started_run, status="failed", error=blocker.code)
-        return _runtime_failure_response(
-            planning_input,
-            blocker,
-            status="failed",
-            trace=trace,
-            run_id=started_run.id,
-        )
-    return ContentPlanningProposalResponse(
-        status="idempotent" if store_status == "idempotent" else "created",
-        work_item_id=planning_input.work_item_id,
-        service_card_id=request.service_card_id,
-        planning_input_digest=planning_input.planning_input_digest,
-        input_summary=content_planning_input_summary(planning_input),
-        proposal=stored,
-        runtime=_runtime_trace_with_run_id(trace, started_run.id),
-        safe_next_step="Sprawdź strategię i każdą sekcję; plan pozostaje niezatwierdzony.",
-    )
-
-
-def _proposal_from_output(
-    planning_input: ContentPlanningInput,
-    output: ContentPlanningModelOutput,
-    run: CodexRun,
-) -> ContentPlanningProposal:
-    proposal_id = f"content_planning_proposal_{uuid4().hex}"
-    sections = [
-        ContentPlanningSection(
-            section_id=f"{proposal_id}_section_{index:02d}",
-            source_material_ids=_lineage_ids_for_evidence(
-                planning_input.source_facts,
-                section.evidence_ids,
-                field="source_material_ids",
-            ),
-            knowledge_card_ids=_lineage_ids_for_evidence(
-                planning_input.source_facts,
-                section.evidence_ids,
-                field="knowledge_card_ids",
-            ),
-            **section.model_dump(),
-        )
-        for index, section in enumerate(output.sections, start=1)
-    ]
-    proposal = ContentPlanningProposal(
-        work_item_id=planning_input.work_item_id,
-        planning_digest="0" * 64,
-        proposal_id=proposal_id,
-        codex_run_id=run.id,
-        generation_status="codex_generated",
-        input_schema_version=planning_input.schema_name,
-        criteria_version=planning_input.criteria_version,
-        planning_input_digest=planning_input.planning_input_digest,
-        final_canonical_url=planning_input.final_canonical_url,
-        service_card_id=planning_input.confirmed_service_card_id,
-        service_label=planning_input.service_label,
-        service_selection_confirmed=True,
-        target_reader=output.target_reader,
-        buyer_problem=output.buyer_problem,
-        buyer_trigger=output.buyer_trigger,
-        search_intent=output.search_intent,
-        angle=output.angle,
-        value_proposition=output.value_proposition,
-        cta_direction=(
-            output.cta_blocks[0].copy_direction
-            if output.cta_blocks
-            else planning_input.baseline_cta_direction
-        ),
-        internal_link_directions=[
-            f"{item.placement}: {item.target_url} ({item.anchor_direction})"
-            for item in output.internal_links
-        ],
-        sections=sections,
-        inventory_mapping=build_inventory_mapping(
-            planning_input,
-            output,
-            [section.section_id for section in sections],
-        ),
-        search_demand=planning_input.query_portfolio,
-        page_assets=output.page_assets,
-        faq=output.faq,
-        cta_blocks=output.cta_blocks,
-        internal_links=output.internal_links,
-        conditional_hypotheses=output.conditional_hypotheses,
-        measurement_plan=output.measurement_plan,
-        measurement_metrics=planning_input.measurement_metrics,
-        measurement_baseline_evidence_ids=planning_input.measurement_baseline_evidence_ids,
-        evidence_ids=planning_input.evidence_ids,
-        source_connectors=planning_input.source_connectors,
-        source_material_ids=sorted(
-            {
-                source_material_id
-                for fact in planning_input.source_facts
-                for source_material_id in fact.source_material_ids
-            }
-        ),
-        knowledge_card_ids=planning_input.knowledge_card_ids,
-        created_at=run.completed_at,
-    )
-    digest_payload = proposal.model_dump(
-        mode="json",
-        exclude={"planning_digest", "proposal_version", "created_at"},
-    )
-    digest = sha256(
-        json.dumps(
-            digest_payload,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
-    return proposal.model_copy(update={"planning_digest": digest})
-
-
-def _lineage_ids_for_evidence(
-    source_facts: Iterable[object],
-    evidence_ids: Iterable[str],
-    *,
-    field: Literal["source_material_ids", "knowledge_card_ids"],
-) -> list[str]:
-    allowed_evidence = set(evidence_ids)
-    values: set[str] = set()
-    for fact in source_facts:
-        fact_evidence_ids = getattr(fact, "evidence_ids", [])
-        if allowed_evidence.intersection(fact_evidence_ids):
-            values.update(getattr(fact, field, []))
-    return sorted(values)
-
-
 def _start_run(
     planning_input: ContentPlanningInput,
     run_store: LocalStateStore,
@@ -849,6 +722,31 @@ def _finish_run(
     return save_terminal_codex_run(run_store, run, status=status, error=error)
 
 
+def _finish_persisted_run(
+    run_store: LocalStateStore,
+    run: CodexRun,
+    status: Literal["blocked", "failed"],
+    error: str,
+) -> None:
+    _finish_run(run_store, run, status=status, error=error)
+
+
+def _persistence_failure_response(
+    planning_input: ContentPlanningInput,
+    blocker: ContentPlanningProposalBlocker,
+    status: Literal["blocked", "failed"],
+    trace: ContentCodexRuntimeTrace | None,
+    run_id: str,
+) -> ContentPlanningProposalResponse:
+    return _runtime_failure_response(
+        planning_input,
+        blocker,
+        status=status,
+        trace=trace,
+        run_id=run_id,
+    )
+
+
 def _runtime_trace_with_run_id(
     trace: ContentCodexRuntimeTrace | None,
     run_id: str,
@@ -858,7 +756,7 @@ def _runtime_trace_with_run_id(
     return trace.model_copy(update={"run_id": run_id})
 
 
-def _persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexRuntimeTrace:
+def persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexRuntimeTrace:
     """Keep a completed plan from looking like it never reached Codex after reload."""
 
     if not proposal.codex_run_id:
@@ -882,112 +780,13 @@ def _persisted_runtime_trace(proposal: ContentPlanningProposal) -> ContentCodexR
     )
 
 
-def _runtime_failure_response(
-    planning_input: ContentPlanningInput,
-    blocker: ContentPlanningProposalBlocker,
-    *,
-    status: Literal["blocked", "failed"],
-    trace: ContentCodexRuntimeTrace | None = None,
-    run_id: str | None = None,
-) -> ContentPlanningProposalResponse:
-    return ContentPlanningProposalResponse(
-        status=status,
-        work_item_id=planning_input.work_item_id,
-        service_card_id=planning_input.confirmed_service_card_id,
-        planning_input_digest=planning_input.planning_input_digest,
-        input_summary=content_planning_input_summary(planning_input),
-        runtime=(
-            trace.model_copy(update={"run_id": run_id})
-            if trace is not None and run_id is not None
-            else trace or ContentCodexRuntimeTrace(status="failed", run_id=run_id)
-        ),
-        blockers=[blocker],
-        safe_next_step=blocker.next_step,
-    )
-
-
-def _blocked_from_input(
-    work_item_id: str,
-    service_card_id: str,
-    blockers: list[ContentPlanningInputBlocker],
-    *,
-    planning_input_digest: str | None = None,
-    input_summary: ContentPlanningInputSummary | None = None,
-) -> ContentPlanningProposalResponse:
-    return _blocked_response(
-        work_item_id,
-        service_card_id=service_card_id,
-        planning_input_digest=planning_input_digest,
-        input_summary=input_summary,
-        blockers=[
-            build_blocker(
-                ContentPlanningProposalBlocker,
-                code=item.code,
-                label=item.label,
-                reason=item.reason,
-                next_step=item.next_step,
-            )
-            for item in blockers
-        ],
-    )
-
-
-def _blocked_response(
-    work_item_id: str,
-    *,
-    service_card_id: str | None,
-    planning_input_digest: str | None,
-    blockers: list[ContentPlanningProposalBlocker],
-    input_summary: ContentPlanningInputSummary | None = None,
-) -> ContentPlanningProposalResponse:
-    return ContentPlanningProposalResponse(
-        status="blocked",
-        work_item_id=work_item_id,
-        service_card_id=service_card_id,
-        planning_input_digest=planning_input_digest,
-        input_summary=input_summary,
-        blockers=blockers,
-        safe_next_step=blockers[0].next_step,
-    )
-
-
-def _stale_input_blocker() -> ContentPlanningProposalBlocker:
-    return build_blocker(
-        ContentPlanningProposalBlocker,
-        code="stale_input",
-        label="Wejście planu zmieniło się",
-        reason="Inventory, usługa, wiedza albo metryki mają inny exact digest.",
-        next_step="Odśwież dane i uruchom świadomie nową wersję planu.",
-    )
-
-
-def _planning_runtime_blocker(source_codes: list[str]) -> tuple[str, str, str]:
-    """Turn safe runtime codes into an operator-useful blocker."""
-
-    codes = set(source_codes)
-    if "codex_response_stream_disconnected" in codes:
-        return (
-            "Połączenie z Codexem zostało przerwane",
-            "Provider Codexa przerwał strumień odpowiedzi przed końcem tury; "
-            "WILQ nie otrzymał bezpiecznego planu.",
-            "Sprawdź status app-servera i połączenie, a potem uruchom nową próbę; "
-            "WILQ nic nie zapisał.",
-        )
-    if "codex_timeout" in codes:
-        return (
-            "Codex nie zakończył planowania w limicie czasu",
-            "App-server nie zwrócił bezpiecznego planu przed końcem ograniczonego okna.",
-            "Sprawdź status Codexa i uruchom nową próbę; WILQ nic nie zapisał.",
-        )
-    return (
-        "Codex nie zwrócił bezpiecznego planu",
-        "App-server nie zakończył turnu poprawnym ustrukturyzowanym wynikiem.",
-        "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
-    )
+_persisted_runtime_trace = persisted_runtime_trace
 
 
 __all__ = [
     "generate_content_planning_proposal",
+    "persisted_runtime_trace",
     "queue_content_planning_proposal",
     "read_content_planning_proposal",
+    "with_explicit_content_service_selection",
 ]

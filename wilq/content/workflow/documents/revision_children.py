@@ -23,6 +23,7 @@ def build_child_draft_revision_command(
 ) -> ContentDraftRevisionAppendCommand:
     if base_revision.planning_digest is None:
         raise ValueError("A child revision requires an exact planning binding.")
+    effective_metadata = _child_proposal_metadata(base_revision, proposal_metadata)
     return ContentDraftRevisionAppendCommand(
         schema_version=base_revision.schema_version,
         work_item_id=base_revision.work_item_id,
@@ -51,7 +52,23 @@ def build_child_draft_revision_command(
             if official_source_references is None
             else official_source_references
         ),
-        proposal_metadata=proposal_metadata,
+        proposal_metadata=effective_metadata,
+        refresh_preparation_binding=base_revision.refresh_preparation_binding,
         correction_reason=correction_reason,
         created_by=created_by,
     )
+
+
+def _child_proposal_metadata(
+    base_revision: ContentDraftRevision,
+    proposal_metadata: ContentDraftRevisionProposalMetadata | None,
+) -> ContentDraftRevisionProposalMetadata | None:
+    binding = base_revision.refresh_preparation_binding
+    if binding is None:
+        return proposal_metadata
+    base_metadata = base_revision.proposal_metadata
+    if proposal_metadata is None:
+        if base_metadata is None:
+            raise ValueError("Bound refresh child requires parent proposal metadata.")
+        proposal_metadata = base_metadata
+    return proposal_metadata.model_copy(update={"refresh_preparation_binding": binding})

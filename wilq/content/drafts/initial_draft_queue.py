@@ -11,11 +11,13 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
     StdioCodexAppServerClient,
 )
+from wilq.content.drafts.initial_draft_persistence import InitialDraftPrePersistenceGuardError
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftClaimContext,
     claim_initial_draft_run,
     effective_initial_draft_deadline,
-    initial_draft_context_digest,
+    initial_draft_context_digest_for_proposal,
+    initial_draft_proposal_context,
     safe_initial_draft_run_error,
     transition_initial_draft_run_if_status,
 )
@@ -41,6 +43,7 @@ from wilq.schemas.core import utc_now
 from wilq.storage.local_state import local_state_store
 
 ContentInitialDraftSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
+InitialDraftGenerationGuard = Callable[[], ContentInitialDraftResponse | None]
 
 
 class InitialDraftQueueFullError(RuntimeError):
@@ -65,25 +68,18 @@ def snapshot_initial_draft_context_digest(
         None,
     )
     item = getattr(getattr(snapshot, "preflight", None), "item", None)
-    proposal_id = proposal.proposal_id
-    planning_input_digest = proposal.planning_input_digest
-    if proposal_id is None or planning_input_digest is None:
-        raise ValueError("Initial draft context requires an exact generated proposal.")
-    return initial_draft_context_digest(
-            base_revision_id=getattr(
-                getattr(snapshot.revision_workspace, "latest_revision", None),
-                "revision_id",
-                None,
-            ),
-            draft_package_id=getattr(package, "id", None),
-            draft_package_digest=None if package is None else content_draft_package_digest(package),
-            final_canonical_url=getattr(item, "final_canonical_url", None)
-            or getattr(item, "intended_final_url", None),
-            service_card_id=getattr(proposal, "service_card_id", None),
-            proposal_id=proposal_id,
-            planning_digest=proposal.planning_digest,
-            planning_input_digest=planning_input_digest,
-        )
+    return initial_draft_context_digest_for_proposal(
+        base_revision_id=getattr(
+            getattr(snapshot.revision_workspace, "latest_revision", None),
+            "revision_id",
+            None,
+        ),
+        draft_package_id=getattr(package, "id", None),
+        draft_package_digest=None if package is None else content_draft_package_digest(package),
+        final_canonical_url=getattr(item, "final_canonical_url", None)
+        or getattr(item, "intended_final_url", None),
+        proposal_context=initial_draft_proposal_context(proposal),
+    )
 
 
 def can_queue_initial_draft(
@@ -158,10 +154,12 @@ class _ContextCheckedWorkflowStore:
         base: ContentWorkflowStore,
         snapshot_loader: ContentInitialDraftSnapshotLoader,
         work_item_id: str,
+        pre_persistence_guard: InitialDraftGenerationGuard | None = None,
     ) -> None:
         self._base = base
         self._snapshot_loader = snapshot_loader
         self._work_item_id = work_item_id
+        self._pre_persistence_guard = pre_persistence_guard
 
     def append_draft_revision(
         self,
@@ -169,6 +167,10 @@ class _ContextCheckedWorkflowStore:
         *,
         completed_codex_run: CodexRun | None = None,
     ) -> ContentDraftRevisionWriteResult:
+        if self._pre_persistence_guard is not None:
+            guarded = self._pre_persistence_guard()
+            if guarded is not None:
+                raise InitialDraftPrePersistenceGuardError(guarded)
         with current_initial_draft_context_guard(self._current_context_digest):
             return self._base.append_draft_revision(
                 command, completed_codex_run=completed_codex_run
@@ -182,6 +184,22 @@ class _ContextCheckedWorkflowStore:
         return snapshot_initial_draft_context_digest(snapshot, planning.proposal)
 
 
+def context_checked_initial_draft_workflow_store(
+    *,
+    snapshot_loader: ContentInitialDraftSnapshotLoader,
+    work_item_id: str,
+    pre_persistence_guard: InitialDraftGenerationGuard | None = None,
+) -> _ContextCheckedWorkflowStore:
+    """Expose the existing atomic append guard for direct and queued draft paths."""
+
+    return _ContextCheckedWorkflowStore(
+        content_workflow_store(),
+        snapshot_loader,
+        work_item_id,
+        pre_persistence_guard=pre_persistence_guard,
+    )
+
+
 def submit_initial_draft_to_queue(
     work_item_id: str,
     request: ContentInitialDraftRequest,
@@ -190,7 +208,13 @@ def submit_initial_draft_to_queue(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     executor: InitialDraftExecutor,
     stale_response: Callable[[str], ContentInitialDraftResponse] | None = None,
+    pre_generation_guard: InitialDraftGenerationGuard | None = None,
+    pre_persistence_guard: InitialDraftGenerationGuard | None = None,
 ) -> ContentInitialDraftResponse:
+    if pre_generation_guard is not None:
+        guarded = pre_generation_guard()
+        if guarded is not None:
+            return guarded
     snapshot = snapshot_loader(work_item_id)
     if not can_queue_initial_draft(snapshot, request, client):
         if stale_response is not None:
@@ -261,7 +285,14 @@ def submit_initial_draft_to_queue(
         return queued_initial_draft_response(work_item_id, proposal_id, run_id, True)
     try:
         executor.submit(
-            run_queued_initial_draft, work_item_id, request, client, run_id, snapshot_loader
+            run_queued_initial_draft,
+            work_item_id,
+            request,
+            client,
+            run_id,
+            snapshot_loader,
+            pre_generation_guard,
+            pre_persistence_guard,
         )
     except InitialDraftQueueFullError:
         transition_initial_draft_run_if_status(
@@ -297,8 +328,21 @@ def run_queued_initial_draft(
     client: StdioCodexAppServerClient,
     run_id: str,
     snapshot_loader: ContentInitialDraftSnapshotLoader,
+    pre_generation_guard: InitialDraftGenerationGuard | None = None,
+    pre_persistence_guard: InitialDraftGenerationGuard | None = None,
 ) -> None:
     try:
+        if pre_generation_guard is not None:
+            guarded = pre_generation_guard()
+            if guarded is not None:
+                snapshot = snapshot_loader(work_item_id)
+                _persist_terminal_preflight_run(
+                    snapshot=snapshot,
+                    request=request,
+                    result=guarded,
+                    run_id=run_id,
+                )
+                return
         snapshot = snapshot_loader(work_item_id)
         run = next(
             (item for item in local_state_store().list_codex_runs() if item.id == run_id), None
@@ -320,7 +364,10 @@ def run_queued_initial_draft(
             request=request,
             client=_InitialDraftDeadlineClient(client, run_id, snapshot_loader, work_item_id),
             workflow_store=_ContextCheckedWorkflowStore(
-                content_workflow_store(), snapshot_loader, work_item_id
+                content_workflow_store(),
+                snapshot_loader,
+                work_item_id,
+                pre_persistence_guard=pre_persistence_guard,
             ),
             run_store=local_state_store(),
             run_id=run_id,

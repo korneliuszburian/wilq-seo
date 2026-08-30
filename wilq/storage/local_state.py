@@ -184,6 +184,31 @@ class LocalStateStore(
               updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS content_refresh_preparation_authorizations (
+              authorization_id TEXT PRIMARY KEY,
+              authorization_digest TEXT NOT NULL UNIQUE,
+              work_item_id TEXT NOT NULL,
+              classification_run_id TEXT NOT NULL,
+              classification_run_digest TEXT NOT NULL,
+              decision_set_digest TEXT NOT NULL,
+              source_packet_row_digest TEXT NOT NULL,
+              canonical_path TEXT NOT NULL,
+              public_url TEXT NOT NULL,
+              planning_input_digest TEXT NOT NULL,
+              service_card_id TEXT NOT NULL,
+              authorized_by TEXT NOT NULL,
+              authorized_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL,
+              UNIQUE (
+                work_item_id,
+                classification_run_digest,
+                decision_set_digest,
+                source_packet_row_digest,
+                planning_input_digest,
+                service_card_id
+              )
+            );
             """
         )
         ensure_stop_reconciliation_schema(connection)

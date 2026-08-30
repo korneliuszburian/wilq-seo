@@ -2624,6 +2624,66 @@ export const ContentDraftRevisionProposalCtaLineageSchema = z.object({
   claim_ids: z.array(z.string().refine((value) => value.trim().length > 0)).default([])
 });
 
+const ContentRefreshPreparationDigestSchema = z.string().regex(/^[0-9a-f]{64}$/);
+
+export const ContentRefreshPreparationBindingSchema = z
+  .object({
+    authorization_id: z.string().trim().min(1),
+    authorization_digest: ContentRefreshPreparationDigestSchema,
+    classification_run_id: z.string().trim().min(1),
+    classification_run_digest: ContentRefreshPreparationDigestSchema,
+    decision_set_digest: ContentRefreshPreparationDigestSchema,
+    source_packet_row_digest: ContentRefreshPreparationDigestSchema,
+    current_work_item_id: z.string().trim().min(1),
+    canonical_path: z.string().trim().min(1),
+    public_url: z.string().trim().min(1),
+    service_card_id: z.string().trim().min(1),
+    planning_input_digest: ContentRefreshPreparationDigestSchema
+  })
+  .strict()
+  .superRefine((binding, context) => {
+    const expectedAuthorizationId =
+      `content_refresh_preparation_authorization_${binding.authorization_digest.slice(0, 24)}`;
+    if (binding.authorization_id !== expectedAuthorizationId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["authorization_id"],
+        message: "refresh preparation authorization ID must match its exact digest"
+      });
+    }
+  });
+
+const refreshPreparationBindingMatchesIdentity = (
+  binding: z.output<typeof ContentRefreshPreparationBindingSchema>,
+  identity: {
+    workItemId: string;
+    serviceCardId: string | null | undefined;
+    planningInputDigest: string | null | undefined;
+    finalCanonicalUrl: string | null | undefined;
+  }
+): boolean => {
+  if (
+    !identity.serviceCardId ||
+    !identity.planningInputDigest ||
+    !identity.finalCanonicalUrl ||
+    binding.current_work_item_id !== identity.workItemId ||
+    binding.service_card_id !== identity.serviceCardId ||
+    binding.planning_input_digest !== identity.planningInputDigest ||
+    binding.public_url !== identity.finalCanonicalUrl
+  ) return false;
+  try {
+    const parsed = new URL(identity.finalCanonicalUrl);
+    return binding.canonical_path === (parsed.pathname.replace(/\/+$/, "") || "/");
+  } catch {
+    return false;
+  }
+};
+
+const sameRefreshPreparationBinding = (
+  left: z.output<typeof ContentRefreshPreparationBindingSchema>,
+  right: z.output<typeof ContentRefreshPreparationBindingSchema>
+): boolean => JSON.stringify(left) === JSON.stringify(right);
+
 export const ContentDraftRevisionProposalMetadataSchema = z
   .object({
     source: z.literal("codex_app_server"),
@@ -2643,7 +2703,8 @@ export const ContentDraftRevisionProposalMetadataSchema = z
       "persisted_selected_components_and_declared_lineage",
       "persisted_full_document_and_declared_lineage"
     ]),
-    semantic_review_required: z.literal(true)
+    semantic_review_required: z.literal(true),
+    refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional()
   })
   .superRefine((metadata, context) => {
     const headings = metadata.selected_section_headings;
@@ -2848,11 +2909,55 @@ export const ContentDraftRevisionSchema = z.object({
   official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
+  refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
   correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
 }).superRefine((revision, context) => {
+  const refreshBinding = revision.refresh_preparation_binding;
+  const metadataBinding = revision.proposal_metadata?.refresh_preparation_binding;
+  if (refreshBinding) {
+    if (!refreshPreparationBindingMatchesIdentity(refreshBinding, {
+      workItemId: revision.work_item_id,
+      serviceCardId: revision.service_card_id,
+      planningInputDigest: revision.planning_input_digest,
+      finalCanonicalUrl: revision.final_canonical_url
+    })) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["refresh_preparation_binding"],
+        message: "refresh binding must match the exact revision identity"
+      });
+    }
+    if (
+      revision.proposal_metadata &&
+      (!metadataBinding || !sameRefreshPreparationBinding(metadataBinding, refreshBinding))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposal_metadata", "refresh_preparation_binding"],
+        message: "revision proposal metadata must carry the exact refresh binding"
+      });
+    }
+    if (
+      revision.base_revision_id === null &&
+      (!revision.proposal_metadata || !metadataBinding ||
+        !sameRefreshPreparationBinding(metadataBinding, refreshBinding))
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposal_metadata"],
+        message: "a root refresh revision requires exact proposal provenance"
+      });
+    }
+  } else if (metadataBinding) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["refresh_preparation_binding"],
+      message: "refresh proposal metadata requires the revision binding"
+    });
+  }
   if (revision.schema_version === "wilq_content_draft_revision_v1") {
     if (
       revision.document_kind !== "refresh_existing" ||
@@ -3865,8 +3970,24 @@ export const ContentPlanningProposalSchema = z.object({
   source_connectors: z.array(z.string()),
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
+  refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
   created_at: z.string().nullable().optional()
 }).superRefine((proposal, context) => {
+  if (proposal.refresh_preparation_binding && !refreshPreparationBindingMatchesIdentity(
+    proposal.refresh_preparation_binding,
+    {
+      workItemId: proposal.work_item_id,
+      serviceCardId: proposal.service_card_id,
+      planningInputDigest: proposal.planning_input_digest,
+      finalCanonicalUrl: proposal.final_canonical_url
+    }
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["refresh_preparation_binding"],
+      message: "refresh binding must match the exact planning proposal"
+    });
+  }
   if (proposal.goal === "refresh_existing") {
     if (!proposal.final_canonical_url?.trim()) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["final_canonical_url"], message: "Refresh proposal requires final_canonical_url." });
@@ -3948,13 +4069,30 @@ export const ContentPlanningWorkspaceSchema = z
     }
   });
 
-export const ContentPlanningProposalRequestSchema = z.object({
+export const ContentPlanningProposalRequestSchema = z.strictObject({
   service_card_id: z.string().min(1),
   expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
   operator_hint: z.string().max(500).default(""),
   requested_by: z.string().min(1),
   regenerate_stale_mapping: z.boolean().default(false),
-  regenerate_after_review: z.boolean().default(false)
+  regenerate_after_review: z.boolean().default(false),
+  refresh_preparation_authorization_id: z.string().trim().min(1).nullable().optional(),
+  expected_refresh_preparation_authorization_digest: ContentRefreshPreparationDigestSchema.nullable().optional()
+}).superRefine((request, context) => {
+  const hasAuthorizationId = request.refresh_preparation_authorization_id != null;
+  const hasAuthorizationDigest = request.expected_refresh_preparation_authorization_digest != null;
+  if (hasAuthorizationId !== hasAuthorizationDigest) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Refresh preparation authorization ID and digest must be supplied together."
+    });
+  }
+  if (hasAuthorizationId && (request.regenerate_stale_mapping || request.regenerate_after_review)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A refresh preparation authorization cannot authorize plan regeneration."
+    });
+  }
 });
 
 export const ContentPlanningProposalBlockerSchema = z.object({
@@ -4325,6 +4463,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
   planning_workspace: ContentPlanningWorkspaceSchema.nullable().optional(),
+  refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
   blockers: z.array(ContentPlanningProposalBlockerSchema).default([]),
   safe_next_step: z.string().min(1),
@@ -4346,6 +4485,35 @@ export const ContentPlanningProposalResponseSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["proposal"],
       message: "Planning response must match the nested exact proposal."
+    });
+  }
+  const responseBinding = response.refresh_preparation_binding;
+  const proposalBinding = response.proposal?.refresh_preparation_binding;
+  if (responseBinding && (
+    responseBinding.current_work_item_id !== response.work_item_id ||
+    responseBinding.service_card_id !== response.service_card_id ||
+    responseBinding.planning_input_digest !== response.planning_input_digest
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["refresh_preparation_binding"],
+      message: "planning response refresh binding must match its exact identity"
+    });
+  }
+  if (responseBinding && response.proposal && (
+    !proposalBinding || !sameRefreshPreparationBinding(responseBinding, proposalBinding)
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["refresh_preparation_binding"],
+      message: "planning response refresh binding must match its nested proposal"
+    });
+  }
+  if (!responseBinding && proposalBinding) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["refresh_preparation_binding"],
+      message: "bound planning proposal requires its response refresh binding"
     });
   }
   if (["created", "idempotent", "ready"].includes(response.status) && response.proposal && response.input_summary?.regulatory_profile_id) {
@@ -5220,6 +5388,9 @@ export type ContentDraftRevisionProposalSectionLineage = z.infer<
 >;
 export type ContentDraftRevisionProposalMetadata = z.infer<
   typeof ContentDraftRevisionProposalMetadataSchema
+>;
+export type ContentRefreshPreparationBinding = z.infer<
+  typeof ContentRefreshPreparationBindingSchema
 >;
 export type ContentDraftRevision = z.infer<typeof ContentDraftRevisionSchema>;
 export type ContentDraftRevisionDecision = z.infer<typeof ContentDraftRevisionDecisionSchema>;

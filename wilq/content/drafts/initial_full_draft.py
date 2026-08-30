@@ -24,7 +24,8 @@ from wilq.content.drafts.initial_draft_pipeline import (
 )
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
-    initial_draft_context_digest,
+    initial_draft_context_digest_for_proposal,
+    initial_draft_proposal_context,
     start_initial_draft_run,
 )
 from wilq.content.drafts.initial_draft_runtime import (
@@ -153,17 +154,14 @@ def _initial_draft_context_digest(
     if package is None:
         raise ValueError("Initial draft context requires a draft package.")
     item = snapshot.preflight.item
-    return initial_draft_context_digest(
+    return initial_draft_context_digest_for_proposal(
         base_revision_id=prepared.base_revision_id,
         draft_package_id=package.id,
         draft_package_digest=content_draft_package_digest(package),
         final_canonical_url=prepared.planning_input.final_canonical_url
         or item.final_canonical_url
         or item.intended_final_url,
-        service_card_id=prepared.planning_input.confirmed_service_card_id,
-        proposal_id=prepared.proposal.proposal_id or "",
-        planning_digest=prepared.proposal.planning_digest,
-        planning_input_digest=prepared.planning_input.planning_input_digest,
+        proposal_context=initial_draft_proposal_context(prepared.proposal),
     )
 
 
@@ -320,6 +318,21 @@ def _prepare_inputs(
             status="conflict",
             blockers=[_stale_input_blocker()],
         )
+    return _prepare_generation_contract(
+        snapshot=snapshot,
+        proposal=proposal,
+        planning_input=planning_input,
+        base_revision_id=None if latest_revision is None else latest_revision.revision_id,
+    )
+
+
+def _prepare_generation_contract(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+    base_revision_id: str | None,
+) -> _InitialDraftInputs | ContentInitialDraftResponse:
     generation = snapshot.structured_generation.structured_generation_result
     if generation.contract is None or generation.blockers:
         return _blocked_response(
@@ -348,7 +361,7 @@ def _prepare_inputs(
         planning_input=planning_input,
         proposal=proposal,
         generation_contract=generation_contract,
-        base_revision_id=None if latest_revision is None else latest_revision.revision_id,
+        base_revision_id=base_revision_id,
     )
 
 

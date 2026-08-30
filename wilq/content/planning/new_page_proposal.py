@@ -274,6 +274,7 @@ def _read_proposal(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
         proposal=proposal,
+        refresh_preparation_binding=proposal.refresh_preparation_binding,
         safe_next_step="Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu.",
     )
 
@@ -299,6 +300,7 @@ def _queue_proposal(
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=summary,
             proposal=existing,
+            refresh_preparation_binding=existing.refresh_preparation_binding,
             safe_next_step=(
                 "Plan już istnieje dla tego exact wejścia; "
                 "model nie został uruchomiony ponownie."
@@ -382,6 +384,7 @@ def _generate_proposal(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
         proposal=saved,
+        refresh_preparation_binding=saved.refresh_preparation_binding,
         runtime=(trace or ContentCodexRuntimeTrace(status="completed")).model_copy(
             update={"run_id": run.id}
         ),

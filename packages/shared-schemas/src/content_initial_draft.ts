@@ -24,7 +24,18 @@ export const ContentInitialDraftRequestSchema = z.strictObject({
   expected_proposal_id: NonBlankStringSchema,
   expected_planning_digest: Hex64Schema,
   expected_planning_input_digest: Hex64Schema,
-  requested_by: NonBlankStringSchema
+  requested_by: NonBlankStringSchema,
+  refresh_preparation_authorization_id: NonBlankStringSchema.nullable().optional(),
+  expected_refresh_preparation_authorization_digest: Hex64Schema.nullable().optional()
+}).superRefine((request, context) => {
+  const hasAuthorizationId = request.refresh_preparation_authorization_id != null;
+  const hasAuthorizationDigest = request.expected_refresh_preparation_authorization_digest != null;
+  if (hasAuthorizationId !== hasAuthorizationDigest) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Refresh preparation authorization ID and digest must be supplied together."
+    });
+  }
 });
 
 export const ContentInitialDraftReuseRequestSchema = z.strictObject({
@@ -80,6 +91,22 @@ export const ContentInitialDraftBlockerCodeSchema = z.enum([
   "production_classification_digest_required",
   "stale_production_classification",
   "production_generation_disabled",
+  "refresh_preparation_alias_not_current",
+  "refresh_preparation_decision_not_refresh",
+  "refresh_preparation_service_required",
+  "refresh_preparation_service_unavailable",
+  "refresh_preparation_service_not_approved",
+  "refresh_preparation_service_sources_missing",
+  "refresh_preparation_input_blocked",
+  "refresh_preparation_authorization_missing",
+  "refresh_preparation_authorization_foreign",
+  "refresh_preparation_authorization_digest_mismatch",
+  "refresh_preparation_authorization_service_mismatch",
+  "refresh_preparation_authorization_input_mismatch",
+  "refresh_preparation_authorization_stale",
+  "refresh_preparation_proposal_binding_mismatch",
+  "refresh_preparation_acknowledgement_mismatch",
+  "refresh_preparation_authorization_conflict",
   "missing_revision_owner",
   "latest_revision_missing",
   "latest_revision_drift",

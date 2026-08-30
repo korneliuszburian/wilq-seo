@@ -136,6 +136,32 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_refresh_preparation_authorizations (
+      authorization_id TEXT PRIMARY KEY,
+      authorization_digest TEXT NOT NULL UNIQUE,
+      work_item_id TEXT NOT NULL,
+      classification_run_id TEXT NOT NULL,
+      classification_run_digest TEXT NOT NULL,
+      decision_set_digest TEXT NOT NULL,
+      source_packet_row_digest TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      planning_input_digest TEXT NOT NULL,
+      service_card_id TEXT NOT NULL,
+      authorized_by TEXT NOT NULL,
+      authorized_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (
+        work_item_id,
+        classification_run_digest,
+        decision_set_digest,
+        source_packet_row_digest,
+        planning_input_digest,
+        service_card_id
+      )
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_draft_revisions (
       revision_id TEXT PRIMARY KEY,
       work_item_id TEXT NOT NULL,
@@ -292,6 +318,7 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
         connection.execute(statement)
     _ensure_content_human_review_updated_at(connection)
     _ensure_content_new_page_apply_result_json(connection)
+    _ensure_refresh_preparation_authorization_columns(connection)
     ensure_sqlite_schema_version(connection)
 
 
@@ -302,8 +329,7 @@ def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> N
     migrated = False
     if "updated_at" not in columns:
         connection.execute(
-            "ALTER TABLE content_human_reviews "
-            "ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''"
+            "ALTER TABLE content_human_reviews ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''"
         )
         migrated = True
     missing_timestamp = connection.execute(
@@ -325,12 +351,33 @@ def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> N
 def _ensure_content_new_page_apply_result_json(connection: sqlite3.Connection) -> None:
     columns = {
         str(row[1])
-        for row in connection.execute(
-            "PRAGMA table_info(content_new_page_revision_apply_claims)"
-        )
+        for row in connection.execute("PRAGMA table_info(content_new_page_revision_apply_claims)")
     }
     if "result_json" not in columns:
         connection.execute(
             "ALTER TABLE content_new_page_revision_apply_claims ADD COLUMN result_json TEXT"
         )
         connection.commit()
+
+
+def _ensure_refresh_preparation_authorization_columns(connection: sqlite3.Connection) -> None:
+    table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        ("content_refresh_preparation_authorizations",),
+    ).fetchone()
+    if table is None:
+        return
+    columns = {
+        str(row[1])
+        for row in connection.execute(
+            "PRAGMA table_info(content_refresh_preparation_authorizations)"
+        )
+    }
+    for name in ("canonical_path", "public_url"):
+        if name in columns:
+            continue
+        connection.execute(
+            "ALTER TABLE content_refresh_preparation_authorizations "
+            f"ADD COLUMN {name} TEXT NOT NULL DEFAULT ''"  # nosec B608 -- fixed names.
+        )
+    connection.commit()

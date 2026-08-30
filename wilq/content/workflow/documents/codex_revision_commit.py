@@ -10,7 +10,8 @@ from typing import Literal, cast
 
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
-    initial_draft_context_digest,
+    initial_draft_context_digest_for_proposal,
+    initial_draft_proposal_context_from_command,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionAppendCommand
 from wilq.schemas.actions import CodexRun
@@ -143,15 +144,21 @@ def prepare_codex_completion(
         raise ValueError("Codex proposal append requires its completed run.")
     redacted = CodexRun.model_validate(redact_mapping(completed_run.model_dump(mode="json")))
     if redacted.hook == "content_initial_full_draft":
-        expected_context = initial_draft_context_digest(
+        if (
+            redacted.proposal_id is None
+            or redacted.planning_digest != command.planning_digest
+            or redacted.planning_input_digest != command.planning_input_digest
+        ):
+            raise ValueError("Initial draft completion does not match its exact proposal binding.")
+        expected_context = initial_draft_context_digest_for_proposal(
             base_revision_id=command.base_revision_id,
             draft_package_id=command.draft_package_id,
             draft_package_digest=command.draft_package_digest,
             final_canonical_url=command.final_canonical_url,
-            service_card_id=command.service_card_id,
-            proposal_id=redacted.proposal_id or "",
-            planning_digest=command.planning_digest,
-            planning_input_digest=command.planning_input_digest or "",
+            proposal_context=initial_draft_proposal_context_from_command(
+                command,
+                proposal_id=redacted.proposal_id,
+            ),
         )
         if redacted.initial_draft_context_digest not in {None, expected_context}:
             raise ValueError("Initial draft context changed before append.")

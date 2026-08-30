@@ -27,6 +27,15 @@ describe("content initial draft contracts", () => {
     };
 
     expect(ContentInitialDraftRequestSchema.parse(generation)).toEqual(generation);
+    expect(ContentInitialDraftRequestSchema.safeParse({
+      ...generation,
+      refresh_preparation_authorization_id: "content_refresh_preparation_authorization_test"
+    }).success).toBe(false);
+    expect(ContentInitialDraftRequestSchema.parse({
+      ...generation,
+      refresh_preparation_authorization_id: "content_refresh_preparation_authorization_test",
+      expected_refresh_preparation_authorization_digest: digest("f")
+    }).expected_refresh_preparation_authorization_digest).toBe(digest("f"));
     expect(ContentInitialDraftReuseRequestSchema.parse(reuse)).toEqual(reuse);
     expect(ContentWorkItemInitialDraftRequestSchema.parse(generation)).toEqual(generation);
     expect(ContentWorkItemInitialDraftRequestSchema.parse(reuse)).toEqual(reuse);

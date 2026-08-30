@@ -15,6 +15,10 @@ from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+    refresh_preparation_binding_matches_content_identity,
+)
 from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
 
 ContentPlanningStage = Literal["scope", "section_map"]
@@ -155,9 +159,7 @@ class ContentPlanningProposal(BaseModel):
     sections: list[ContentPlanningSection] = Field(min_length=1)
     inventory_mapping: list[ContentPlanningInventoryMapping] = Field(default_factory=list)
     search_demand: ContentSearchDemandEvidence
-    page_assets: ContentPlanningPageAssets = Field(
-        default_factory=ContentPlanningPageAssets
-    )
+    page_assets: ContentPlanningPageAssets = Field(default_factory=ContentPlanningPageAssets)
     faq: list[ContentPlanningFaqItem] = Field(default_factory=list)
     cta_blocks: list[ContentPlanningCtaBlock] = Field(default_factory=list)
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
@@ -168,10 +170,9 @@ class ContentPlanningProposal(BaseModel):
         if any(not pattern.strip() for pattern in self.required_cta_patterns):
             raise ValueError("Required CTA patterns must be non-blank")
         return self
+
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)
-    conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(
-        default_factory=list
-    )
+    conditional_hypotheses: list[ContentPlanningConditionalHypothesis] = Field(default_factory=list)
     measurement_plan: ContentPlanningMeasurementPlan = Field(
         default_factory=ContentPlanningMeasurementPlan
     )
@@ -181,6 +182,7 @@ class ContentPlanningProposal(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     source_material_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
     created_at: datetime | None = None
 
     @model_validator(mode="after")
@@ -201,10 +203,7 @@ class ContentPlanningProposal(BaseModel):
                 raise ValueError("New-page proposal requires exact IA and document identity.")
             if self.new_page_document_identity.work_item_id != self.work_item_id:
                 raise ValueError("New-page proposal identity must match the work item.")
-            if (
-                self.new_page_document_identity.proposed_ia_location
-                != self.proposed_ia_location
-            ):
+            if self.new_page_document_identity.proposed_ia_location != self.proposed_ia_location:
                 raise ValueError("New-page proposal identity must match the IA location.")
             if self.inventory_mapping:
                 raise ValueError("New-page proposal cannot carry existing-page inventory mapping.")
@@ -217,6 +216,19 @@ class ContentPlanningProposal(BaseModel):
                 raise ValueError(
                     "New-page proposal sections must be created without existing-page inventory."
                 )
+        if self.refresh_preparation_binding is not None and (
+            self.goal != "refresh_existing"
+            or not refresh_preparation_binding_matches_content_identity(
+                self.refresh_preparation_binding,
+                work_item_id=self.work_item_id,
+                service_card_id=self.service_card_id,
+                planning_input_digest=self.planning_input_digest,
+                final_canonical_url=self.final_canonical_url,
+            )
+        ):
+            raise ValueError(
+                "Refresh preparation binding requires one exact refresh proposal receipt."
+            )
         return self
 
 
@@ -311,9 +323,7 @@ def build_content_planning_proposal(
                 "reader_question": _planning_reader_question(section.heading),
                 "inventory_disposition": _baseline_inventory_disposition(brief),
                 "inventory_heading": (
-                    section.heading
-                    if _baseline_inventory_disposition(brief) != "create"
-                    else None
+                    section.heading if _baseline_inventory_disposition(brief) != "create" else None
                 ),
                 "query_terms": [],
                 "evidence_ids": section.evidence_ids,
@@ -341,9 +351,7 @@ def build_content_planning_proposal(
         {
             "planning_digest": digest,
             "service_selection_confirmed": service_profile.service_selection_confirmed,
-            "human_override_review_required": (
-                service_profile.human_override_review_required
-            ),
+            "human_override_review_required": (service_profile.human_override_review_required),
             **payload,
         }
     )

@@ -37,6 +37,9 @@ from wilq.content.workflow.documents.revisions import (
 )
 from wilq.content.workflow.documents.store_measurement import MeasurementStoreMixin
 from wilq.content.workflow.documents.store_revision_review import record_draft_revision_review
+from wilq.content.workflow.store.refresh_preparation_atomic import (
+    assert_refresh_preparation_revision_current,
+)
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
@@ -79,6 +82,9 @@ from wilq.content.workflow.store.store_queries import (
 )
 from wilq.content.workflow.store.store_queries import (
     wordpress_revision_apply_in_progress as _wordpress_revision_apply_in_progress,
+)
+from wilq.content.workflow.store.store_refresh_preparation import (
+    RefreshPreparationAuthorizationStoreMixin,
 )
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
@@ -129,13 +135,14 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
         redacted_command = ContentDraftRevisionAppendCommand.model_validate(
             redact_mapping(command.model_dump(mode="json"))
         )
-        redacted_completion = prepare_codex_completion(
-            redacted_command,
-            completed_codex_run,
-        )
         content_digest = draft_revision_content_digest(redacted_command)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            assert_refresh_preparation_revision_current(connection, redacted_command)
+            redacted_completion = prepare_codex_completion(
+                redacted_command,
+                completed_codex_run,
+            )
             assert_initial_draft_current_context(
                 connection,
                 work_item_id=redacted_command.work_item_id,
@@ -589,6 +596,7 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,
+    RefreshPreparationAuthorizationStoreMixin,
     _TargetMappingConfirmationStoreMixin,
     _WordPressApplyStoreMixin,
     _ReviewStoreMixin,

@@ -11,8 +11,15 @@ from typing import Literal, cast
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.generation_claim_store import (
+    refresh_preparation_binding_columns_present,
+)
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
+from wilq.content.workflow.store.refresh_preparation_atomic import (
+    assert_refresh_preparation_proposal_current,
+)
 from wilq.schemas import CodexRun
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
@@ -69,7 +76,43 @@ def content_planning_proposal_store() -> ContentPlanningProposalStore:
     return ContentPlanningProposalStore(state_db_path())
 
 
-class ContentPlanningProposalStore:
+class _ContentPlanningProposalConvenienceMixin:
+    def for_input(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+        planning_input_digest: str,
+    ) -> ContentPlanningProposal | None:
+        raise NotImplementedError
+
+    def latest(
+        self,
+        work_item_id: str,
+        service_card_id: str | None = None,
+    ) -> ContentPlanningProposal | None:
+        raise NotImplementedError
+
+    def read_latest_or_none_for_input(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+        planning_input_digest: str,
+    ) -> ContentPlanningProposal | None:
+        """Read the latest proposal only when it matches the exact input."""
+
+        return self.for_input(work_item_id, service_card_id, planning_input_digest)
+
+    def latest_for_service(
+        self,
+        work_item_id: str,
+        service_card_id: str,
+    ) -> ContentPlanningProposal | None:
+        """Read the newest persisted proposal for one service card."""
+
+        return self.latest(work_item_id, service_card_id)
+
+
+class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
     def __init__(self, path: Path) -> None:
         self.path = path
 
@@ -112,15 +155,6 @@ class ContentPlanningProposalStore:
         finally:
             connection.close()
         return _proposal_from_row(row)
-
-    def read_latest_or_none_for_input(
-        self,
-        work_item_id: str,
-        service_card_id: str,
-        planning_input_digest: str,
-    ) -> ContentPlanningProposal | None:
-        """Read the latest proposal only when it matches the exact input."""
-        return self.for_input(work_item_id, service_card_id, planning_input_digest)
 
     def latest_for_planning_digest(
         self,
@@ -208,20 +242,6 @@ class ContentPlanningProposalStore:
             return None
         return response
 
-    def latest_for_service(
-        self,
-        work_item_id: str,
-        service_card_id: str,
-    ) -> ContentPlanningProposal | None:
-        """Read the newest persisted proposal for one service card.
-
-        Unlike ``latest_generation_response`` this includes successful jobs.
-        Read-only workflow status needs it to detect a newer ready proposal
-        that invalidates an older approved-plan draft.
-        """
-
-        return self.latest(work_item_id, service_card_id)
-
     def active_generation_response(
         self,
         work_item_id: str,
@@ -285,12 +305,14 @@ class ContentPlanningProposalStore:
         *,
         job_planning_input_digest: str,
         claim_version: int | None = None,
+        refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     ) -> PlanningTerminalSaveOutcome:
         return _save_terminal_response(
             self,
             response,
             job_planning_input_digest=job_planning_input_digest,
             claim_version=claim_version,
+            refresh_preparation_binding=refresh_preparation_binding,
         )
 
     def save_generated(
@@ -489,16 +511,34 @@ def _save_terminal_response(
     *,
     job_planning_input_digest: str,
     claim_version: int | None = None,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> PlanningTerminalSaveOutcome:
     if response.service_card_id is None:
         return "ignored"
     payload = redact_mapping(response.model_dump(mode="json"))
     status = response.status if response.status in {"blocked", "failed", "stale"} else "finished"
     exact_job_digest = job_planning_input_digest
+    expected_binding = (
+        _response_refresh_preparation_binding(response)
+        if refresh_preparation_binding is None
+        else refresh_preparation_binding
+    )
     with store.run_transaction() as connection:
         if claim_version is not None:
             if not _table_exists(connection, "content_planning_generation_claims"):
                 return "claim_stale"
+            if not refresh_preparation_binding_columns_present(connection):
+                return "claim_stale"
+            if not _terminal_response_matches_durable_binding(
+                connection,
+                response=response,
+                expected_binding=expected_binding,
+                work_item_id=response.work_item_id,
+                service_card_id=response.service_card_id,
+                planning_input_digest=exact_job_digest,
+            ):
+                return "claim_stale"
+            authorization_id, authorization_digest = _binding_identity(expected_binding)
             updated = connection.execute(
                 """
                     UPDATE content_planning_generation_jobs
@@ -513,6 +553,8 @@ def _save_terminal_response(
                           AND claim.planning_input_digest = ?
                           AND claim.claim_version = ?
                           AND claim.status = 'claimed'
+                          AND claim.refresh_preparation_authorization_id IS ?
+                          AND claim.refresh_preparation_authorization_digest IS ?
                       )
                     """,
                 (
@@ -525,6 +567,8 @@ def _save_terminal_response(
                     response.service_card_id,
                     exact_job_digest,
                     claim_version,
+                    authorization_id,
+                    authorization_digest,
                 ),
             )
             return "saved" if updated.rowcount == 1 else "claim_stale"
@@ -545,6 +589,52 @@ def _save_terminal_response(
     return "saved" if updated.rowcount > 0 else "ignored"
 
 
+def _terminal_response_matches_durable_binding(
+    connection: sqlite3.Connection,
+    *,
+    response: ContentPlanningProposalResponse,
+    expected_binding: ContentRefreshPreparationBinding | None,
+    work_item_id: str,
+    service_card_id: str,
+    planning_input_digest: str,
+) -> bool:
+    row = connection.execute(
+        """
+        SELECT payload_json
+        FROM content_planning_generation_jobs
+        WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+        LIMIT 1
+        """,
+        (work_item_id, service_card_id, planning_input_digest),
+    ).fetchone()
+    if row is None:
+        return False
+    try:
+        stored = ContentPlanningProposalResponse.model_validate_json(str(row["payload_json"]))
+    except ValueError:
+        return False
+    return (
+        _response_refresh_preparation_binding(response) == expected_binding
+        and _response_refresh_preparation_binding(stored) == expected_binding
+    )
+
+
+def _response_refresh_preparation_binding(
+    response: ContentPlanningProposalResponse,
+) -> ContentRefreshPreparationBinding | None:
+    if response.refresh_preparation_binding is not None:
+        return response.refresh_preparation_binding
+    return None if response.proposal is None else response.proposal.refresh_preparation_binding
+
+
+def _binding_identity(
+    binding: ContentRefreshPreparationBinding | None,
+) -> tuple[str | None, str | None]:
+    if binding is None:
+        return None, None
+    return binding.authorization_id, binding.authorization_digest
+
+
 def _save_generated(
     store: ContentPlanningProposalStore,
     proposal: ContentPlanningProposal,
@@ -555,6 +645,7 @@ def _save_generated(
     _validate_generated_proposal(proposal, completed_run)
     with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
+        assert_refresh_preparation_proposal_current(connection, proposal)
         existing_row = _proposal_row_for_input(
             connection,
             proposal.work_item_id,

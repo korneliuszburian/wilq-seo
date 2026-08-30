@@ -66,6 +66,7 @@ class InitialDraftAuthorityBlocked:
     reason_pl: str | None = None
     safe_next_step_pl: str | None = None
     source_codes: tuple[str, ...] = ()
+    classification_decision: Literal["reuse", "refresh", "write", "blocked"] | None = None
     status: Literal["blocked"] = field(default="blocked", init=False)
 
 

@@ -13,6 +13,15 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
     regulatory_response_lineage_errors,
 )
+from wilq.content.planning.generated_proposal_responses import (
+    blocked_from_input as _blocked_from_input,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    blocked_response as _blocked_response,
+)
+from wilq.content.planning.generated_proposal_responses import (
+    stale_input_blocker as _stale_input_blocker,
+)
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.proposal_quality import (
     inventory_mapping_has_unresolved_rows,
@@ -31,11 +40,7 @@ def read_content_planning_proposal(
 ) -> ContentPlanningProposalResponse:
     """Project only the proposal that is exact for the current planning input."""
 
-    from wilq.content.planning.generated_proposal import (
-        _blocked_from_input,
-        _blocked_response,
-        with_explicit_content_service_selection,
-    )
+    from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 
     service_card_id = snapshot.service_profile_context.service_card_id
     if service_card_id is None:
@@ -103,11 +108,7 @@ def _response_for_current_proposal(
     latest: ContentPlanningProposal | None,
     latest_is_current: bool,
 ) -> ContentPlanningProposalResponse:
-    from wilq.content.planning.generated_proposal import (
-        _blocked_response,
-        _persisted_runtime_trace,
-        _stale_input_blocker,
-    )
+    from wilq.content.planning.generated_proposal import persisted_runtime_trace
 
     if latest is None:
         return ContentPlanningProposalResponse(
@@ -167,6 +168,7 @@ def _response_for_current_proposal(
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
             proposal=remapped_proposal_projection(planning_input, latest),
+            refresh_preparation_binding=latest.refresh_preparation_binding,
             blockers=[
                 build_blocker(
                     ContentPlanningProposalBlocker,
@@ -191,7 +193,8 @@ def _response_for_current_proposal(
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=input_summary,
         proposal=latest,
-        runtime=_persisted_runtime_trace(latest),
+        refresh_preparation_binding=latest.refresh_preparation_binding,
+        runtime=persisted_runtime_trace(latest),
         safe_next_step="Sprawdź strukturę i przygotuj pełny tekst z tej dokładnej wersji planu.",
     )
 
@@ -206,8 +209,6 @@ def _regulatory_lineage_blocked_response(
     regulatory_errors = regulatory_response_lineage_errors(input_summary, proposal)
     if not regulatory_errors:
         return None
-    from wilq.content.planning.generated_proposal import _blocked_response
-
     return _blocked_response(
         planning_input.work_item_id,
         service_card_id=service_card_id,
