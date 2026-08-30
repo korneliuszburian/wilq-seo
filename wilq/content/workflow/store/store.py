@@ -38,6 +38,9 @@ from wilq.content.workflow.documents.revisions import (
 from wilq.content.workflow.documents.store_measurement import MeasurementStoreMixin
 from wilq.content.workflow.documents.store_revision_review import record_draft_revision_review
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
+from wilq.content.workflow.store.store_production_classification import (
+    ProductionClassificationStoreMixin,
+)
 from wilq.content.workflow.store.store_queries import (
     binding_is_current_and_approved as _binding_is_current_and_approved,
 )
@@ -581,6 +584,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
+    ProductionClassificationStoreMixin,
     _TargetMappingConfirmationStoreMixin,
     _WordPressApplyStoreMixin,
     _ReviewStoreMixin,

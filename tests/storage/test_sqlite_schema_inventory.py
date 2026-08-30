@@ -66,6 +66,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_planning_proposals",
         "content_planning_reviews",
         "content_private_source_reviews",
+        "content_production_classifications",
         "content_public_deployments",
         "content_public_source_reviews",
         "content_quality_reviews",

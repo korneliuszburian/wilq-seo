@@ -9,6 +9,9 @@ from apps.api.wilq_api.routers.content_catalog_routes import register_content_ca
 from apps.api.wilq_api.routers.content_model_routes import (
     register_content_model_routes,
 )
+from apps.api.wilq_api.routers.content_production_classification import (
+    register_content_production_classification_routes,
+)
 from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_work_item_or_404 as _snapshot_for_work_item_or_404,
 )
@@ -664,3 +667,4 @@ register_content_model_routes(
     snapshot_loader=_snapshot_for_work_item_or_404,
 )
 register_content_catalog_routes(router)
+register_content_production_classification_routes(router)
