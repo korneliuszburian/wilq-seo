@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from hashlib import sha256
 
+from wilq.codex.model_policy import CodexRuntimeSelection
 from wilq.content.drafts import initial_draft_run
 from wilq.content.drafts.initial_draft_run import _InitialDraftRunMetadata
 from wilq.schemas import CodexRun
@@ -94,14 +95,14 @@ def test_codex_run_history_keyset_paginates_equal_timestamps_without_gaps(
     assert all("prompt_digest" not in item.model_dump() for item in first_page.items)
 
 
-def test_initial_draft_run_records_exact_prompt_policy_and_materials(
-    tmp_path, monkeypatch
-) -> None:
-    monkeypatch.setattr(initial_draft_run, "configured_codex_model", lambda: "gpt-5.6-sol")
+def test_initial_draft_run_records_exact_prompt_policy_and_materials(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         initial_draft_run,
-        "configured_codex_reasoning_effort",
-        lambda: "xhigh",
+        "configured_codex_runtime_selection",
+        lambda: CodexRuntimeSelection(
+            model="gpt-5.6-terra",
+            model_reasoning_effort="max",
+        ),
     )
     prompt = "Bezpieczna instrukcja pełnego szkicu do review."
     store = LocalStateStore(tmp_path / "state.sqlite3")
@@ -117,8 +118,8 @@ def test_initial_draft_run_records_exact_prompt_policy_and_materials(
         prompt=prompt,
     )
 
-    assert run.model == "gpt-5.6-sol"
-    assert run.model_reasoning_effort == "xhigh"
+    assert run.model == "gpt-5.6-terra"
+    assert run.model_reasoning_effort == "max"
     assert run.prompt_template_id == "content_initial_draft@v2"
     assert run.prompt_digest == sha256(prompt.encode("utf-8")).hexdigest()
     assert run.source_material_ids == ["source_material_bdo"]

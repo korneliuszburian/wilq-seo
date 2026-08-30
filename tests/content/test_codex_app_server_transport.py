@@ -5,8 +5,10 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
 from pytest import MonkeyPatch
 
+from wilq.codex import app_server, model_policy
 from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     StdioCodexAppServerClient,
@@ -113,9 +115,9 @@ def _install_fake_app_server(bin_dir: Path) -> None:
     executable.chmod(0o700)
 
 
-def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
+def _isolated_client(
     tmp_path: Path, monkeypatch: MonkeyPatch
-) -> None:
+) -> tuple[StdioCodexAppServerClient, Path, Path, Path]:
     source_home = tmp_path / "source-home"
     source_codex_home = source_home / ".codex"
     source_xdg = tmp_path / "source-xdg"
@@ -125,7 +127,7 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     (source_home / ".npm").mkdir()
     (source_codex_home / "auth.json").write_text("fake-login", encoding="utf-8")
     (source_codex_home / "config.toml").write_text(
-        "model='gpt-test'\nmodel_provider='codex'\n"
+        "model='gpt-5.6-sol'\nmodel_reasoning_effort='ultra'\nmodel_provider='codex'\n"
         "[model_providers.codex]\n"
         "name='codex'\nbase_url='https://provider.example/v1'\n"
         "wire_api='responses'\nrequires_openai_auth=true\n"
@@ -140,15 +142,24 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     monkeypatch.setenv("CODEX_API_KEY", "must-not-cross")
     monkeypatch.setenv("OPENAI_API_KEY", "must-not-cross")
     monkeypatch.setenv("PATH", f"{fake_bin}{os.pathsep}{os.environ['PATH']}")
+    return StdioCodexAppServerClient(timeout_seconds=5), source_home, source_codex_home, source_xdg
 
-    result = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Return the constrained object.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
+
+def _request(instruction: str) -> CodexAppServerStructuredTurnRequest:
+    return CodexAppServerStructuredTurnRequest(
+        instruction=instruction,
+        application_context="application",
+        untrusted_context="untrusted",
+        output_schema={"type": "object"},
     )
+
+
+def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    client, source_home, source_codex_home, source_xdg = _isolated_client(tmp_path, monkeypatch)
+
+    result = client.run_structured_turn(_request("Return the constrained object."))
 
     assert result.status == "completed"
     payload = json.loads(result.output_text or "")
@@ -167,8 +178,11 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
         'web_search="disabled"',
         "mcp_servers={}",
         "features.remote_models=false",
-        'model="gpt-test"',
+        'model="gpt-5.6-terra"',
+        'model_reasoning_effort="max"',
     } <= overrides
+    assert 'model="gpt-5.6-sol"' not in overrides
+    assert 'model_reasoning_effort="ultra"' not in overrides
     assert not any(value.startswith("model_provider=") for value in overrides)
     assert not any(value.startswith("model_providers.") for value in overrides)
     assert {"apps", "browser_use", "multi_agent", "plugins", "shell_tool"} <= disabled
@@ -179,71 +193,79 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert thread["dynamicTools"] == []
     assert thread["config"]["web_search"] == "disabled"
     assert thread["config"]["mcp_servers"] == {}
-    assert payload["turn_params"]["model"] == "gpt-test"
+    assert payload["turn_params"]["model"] == "gpt-5.6-terra"
+    assert payload["turn_params"]["effort"] == "max"
     turn = payload["turn_params"]
     assert turn["environments"] == []
     assert turn["runtimeWorkspaceRoots"] == []
     assert turn["sandboxPolicy"] == {"type": "readOnly", "networkAccess": False}
 
-    blocked = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Attempt a tool.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
+
+def test_structured_turn_classifies_protocol_failures(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    client, *_ = _isolated_client(tmp_path, monkeypatch)
+
+    blocked = client.run_structured_turn(_request("Attempt a tool."))
     assert blocked.status == "blocked"
     assert blocked.external_call_attempted is True
     assert blocked.output_text is None
     assert [blocker.code for blocker in blocked.blockers] == ["codex_external_call_blocked"]
 
-    invalid_schema = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Reject this schema.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
+    invalid_schema = client.run_structured_turn(_request("Reject this schema."))
     assert invalid_schema.status == "failed"
     assert invalid_schema.output_text is None
     assert [blocker.code for blocker in invalid_schema.blockers] == [
         "codex_output_schema_invalid_other"
     ]
 
-    retried = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Retry transiently.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
+    retried = client.run_structured_turn(_request("Retry transiently."))
     assert retried.status == "completed"
 
-    stream_failure = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Terminal stream failure.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
+    stream_failure = client.run_structured_turn(_request("Terminal stream failure."))
     assert stream_failure.status == "failed"
     assert [blocker.code for blocker in stream_failure.blockers] == [
         "codex_response_stream_disconnected"
     ]
 
-    stderr_stream_failure = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
+    stderr_stream_failure = client.run_structured_turn(_request("Terminal stderr failure."))
+    assert stderr_stream_failure.status == "failed"
+    assert [blocker.code for blocker in stderr_stream_failure.blockers] == [
+        "codex_response_stream_disconnected"
+    ]
+
+
+@pytest.mark.parametrize(
+    "project_config",
+    [
+        "",
+        'model = "gpt-5.6-sol"\nmodel_reasoning_effort = "max"\n',
+        'model = "gpt-5.6-terra"\nmodel_reasoning_effort = "high"\n',
+    ],
+)
+def test_invalid_project_model_policy_blocks_before_starting_codex(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    project_config: str,
+) -> None:
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(project_config, encoding="utf-8")
+    monkeypatch.setattr(model_policy, "_PROJECT_CODEX_CONFIG_PATH", config_path)
+
+    async def unexpected_spawn(*args: object, **kwargs: object) -> None:
+        del args, kwargs
+        raise AssertionError("invalid project policy must not start Codex")
+
+    monkeypatch.setattr(app_server.asyncio, "create_subprocess_exec", unexpected_spawn)
+
+    result = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
         CodexAppServerStructuredTurnRequest(
-            instruction="Terminal stderr failure.",
+            instruction="Return the constrained object.",
             application_context="application",
             untrusted_context="untrusted",
             output_schema={"type": "object"},
         )
     )
-    assert stderr_stream_failure.status == "failed"
-    assert [blocker.code for blocker in stderr_stream_failure.blockers] == [
-        "codex_response_stream_disconnected"
-    ]
+
+    assert result.status == "failed"
+    assert [blocker.code for blocker in result.blockers] == ["codex_model_policy_invalid"]
