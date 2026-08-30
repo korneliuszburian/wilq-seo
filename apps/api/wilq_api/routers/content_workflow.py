@@ -12,6 +12,9 @@ from apps.api.wilq_api.routers.content_model_routes import (
 from apps.api.wilq_api.routers.content_production_classification import (
     register_content_production_classification_routes,
 )
+from apps.api.wilq_api.routers.content_refresh_preparation_authority import (
+    content_refresh_preparation_authority,
+)
 from apps.api.wilq_api.routers.content_snapshot import (
     snapshot_for_work_item_or_404 as _snapshot_for_work_item_or_404,
 )
@@ -31,6 +34,7 @@ from wilq.content.planning.dynamic_input import (
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
+from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalRequest
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
@@ -69,6 +73,7 @@ from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
 )
+from wilq.content.workflow.refresh_preparation import RefreshPreparationRuntimeAuthorized
 from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
 from wilq.content.workflow.store.store import content_workflow_store
 
@@ -91,11 +96,27 @@ def semantic_review_snapshot_for_work_item_or_404(
     binding = None if revision is None else revision.refresh_preparation_binding
     if binding is None:
         return _snapshot_for_work_item_or_404(work_item_id)
-    return _snapshot_for_work_item_or_404(
+    request = ContentPlanningProposalRequest(
+        service_card_id=binding.service_card_id,
+        expected_planning_input_digest=binding.planning_input_digest,
+        requested_by="semantic_review",
+        refresh_preparation_authorization_id=binding.authorization_id,
+        expected_refresh_preparation_authorization_digest=binding.authorization_digest,
+    )
+    resolved = content_refresh_preparation_authority().resolve_planning(work_item_id, request)
+    canonical = _snapshot_for_work_item_or_404(
         work_item_id,
         revision_state_override=revision_state,
         service_card_id_override=binding.service_card_id,
         prefer_revision_bound_proposal=True,
+    )
+    if not isinstance(resolved, RefreshPreparationRuntimeAuthorized):
+        return canonical
+    return resolved.snapshot.model_copy(
+        update={
+            "planning_workspace": canonical.planning_workspace,
+            "revision_workspace": canonical.revision_workspace,
+        }
     )
 
 

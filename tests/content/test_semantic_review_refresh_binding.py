@@ -11,7 +11,12 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     work_item_id = "content_work_item_refresh"
-    binding = SimpleNamespace(service_card_id="ekologus_service_operat_wodnoprawny")
+    binding = SimpleNamespace(
+        service_card_id="ekologus_service_operat_wodnoprawny",
+        planning_input_digest="a" * 64,
+        authorization_id="content_refresh_preparation_authorization_test",
+        authorization_digest="b" * 64,
+    )
     revision = SimpleNamespace(refresh_preparation_binding=binding)
     expected_snapshot = object()
     canonical_calls: list[tuple[str, object | None, str | None, bool | None]] = []
@@ -24,6 +29,11 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
                 latest_revision=revision if received_work_item_id == work_item_id else None
             )
         ),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_refresh_preparation_authority",
+        lambda: SimpleNamespace(resolve_planning=lambda *_args: object()),
     )
     monkeypatch.setattr(
         content_workflow_router,
