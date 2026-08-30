@@ -28,6 +28,9 @@ from apps.api.wilq_api.routers.content_planning_proposals import (
 from apps.api.wilq_api.routers.content_public_deployment import (
     register_content_public_deployment_routes,
 )
+from apps.api.wilq_api.routers.content_refresh_preparation import (
+    register_content_refresh_preparation_routes,
+)
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
@@ -69,6 +72,7 @@ def register_content_model_routes(
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
+    register_content_refresh_preparation_routes(router)
     register_content_section_focus_routes(
         router,
         planning_workspace_loader=lambda work_item_id: (

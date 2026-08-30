@@ -31,6 +31,7 @@ def selected_workspace_snapshot_for_work_item_or_404(
     *,
     store: ContentWorkflowStore | None = None,
     revision_state: ContentDraftRevisionState | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     """Build a vendor-free selected projection without entering the planning cache."""
 
@@ -50,6 +51,7 @@ def selected_workspace_snapshot_for_work_item_or_404(
         freshness=freshness,
         revision_state=current_revision,
         planning_decisions=planning_decisions,
+        service_card_id_override=service_card_id_override,
     )
     review = workflow_store.latest_human_review(work_item_id)
     if review is None:
@@ -61,6 +63,7 @@ def selected_workspace_snapshot_for_work_item_or_404(
             freshness=freshness,
             revision_state=current_revision,
             planning_decisions=planning_decisions,
+            service_card_id_override=service_card_id_override,
             human_review=review,
             audit=audit,
         )
@@ -111,6 +114,7 @@ def _build_selected_snapshot(
     planning_decisions: list[ContentPlanningDecision],
     human_review: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     return build_content_work_item_snapshot_response_from_selected_decision(
         selected,
@@ -120,6 +124,7 @@ def _build_selected_snapshot(
         revision_state=revision_state,
         planning_decisions=planning_decisions,
         generated_planning_proposal=None,
+        service_card_id_override=service_card_id_override,
     )
 
 

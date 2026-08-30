@@ -15,7 +15,12 @@ from wilq.codex.model_policy import configured_codex_runtime_selection
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
-from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionAppendCommand,
+)
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.runtime.codex_run_lifecycle import (
     transition_codex_run_if_status,
 )
@@ -66,6 +71,45 @@ class _InitialDraftRunMetadata:
     model_reasoning_effort: str | None
     prompt_digest: str
     prompt_template_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ContentInitialDraftProposalContext:
+    proposal_id: str
+    planning_digest: str
+    planning_input_digest: str
+    service_card_id: str | None
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None
+
+
+def initial_draft_proposal_context(
+    proposal: ContentPlanningProposal,
+) -> ContentInitialDraftProposalContext:
+    if proposal.proposal_id is None or proposal.planning_input_digest is None:
+        raise ValueError("Initial draft context requires an exact generated proposal.")
+    return ContentInitialDraftProposalContext(
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        service_card_id=getattr(proposal, "service_card_id", None),
+        refresh_preparation_binding=getattr(proposal, "refresh_preparation_binding", None),
+    )
+
+
+def initial_draft_proposal_context_from_command(
+    command: ContentDraftRevisionAppendCommand,
+    *,
+    proposal_id: str,
+) -> ContentInitialDraftProposalContext:
+    if command.planning_input_digest is None:
+        raise ValueError("Initial draft completion requires a planning input digest.")
+    return ContentInitialDraftProposalContext(
+        proposal_id=proposal_id,
+        planning_digest=command.planning_digest,
+        planning_input_digest=command.planning_input_digest,
+        service_card_id=command.service_card_id,
+        refresh_preparation_binding=command.refresh_preparation_binding,
+    )
 
 
 def _initial_draft_run_metadata(prompt: str | None = None) -> _InitialDraftRunMetadata:
@@ -154,6 +198,7 @@ def initial_draft_context_digest(
     proposal_id: str,
     planning_digest: str,
     planning_input_digest: str,
+    refresh_preparation_authorization_digest: str | None = None,
 ) -> str:
     payload = "\n".join(
         (
@@ -165,9 +210,35 @@ def initial_draft_context_digest(
             proposal_id,
             planning_digest,
             planning_input_digest,
+            refresh_preparation_authorization_digest or "",
         )
     )
     return sha256(payload.encode("utf-8")).hexdigest()
+
+
+def initial_draft_context_digest_for_proposal(
+    *,
+    base_revision_id: str | None,
+    draft_package_id: str | None,
+    draft_package_digest: str | None,
+    final_canonical_url: str | None,
+    proposal_context: ContentInitialDraftProposalContext,
+) -> str:
+    return initial_draft_context_digest(
+        base_revision_id=base_revision_id,
+        draft_package_id=draft_package_id,
+        draft_package_digest=draft_package_digest,
+        final_canonical_url=final_canonical_url,
+        service_card_id=proposal_context.service_card_id,
+        proposal_id=proposal_context.proposal_id,
+        planning_digest=proposal_context.planning_digest,
+        planning_input_digest=proposal_context.planning_input_digest,
+        refresh_preparation_authorization_digest=(
+            None
+            if proposal_context.refresh_preparation_binding is None
+            else proposal_context.refresh_preparation_binding.authorization_digest
+        ),
+    )
 
 
 def revision_matches_initial_draft_context(
@@ -177,18 +248,33 @@ def revision_matches_initial_draft_context(
     planning_digest: str,
     planning_input_digest: str,
     context_digest: str | None,
+    refresh_preparation_authorization_digest: str | None = None,
 ) -> bool:
     if context_digest is None:
         return False
-    return context_digest == initial_draft_context_digest(
+    revision_authorization_digest = (
+        None
+        if revision.refresh_preparation_binding is None
+        else revision.refresh_preparation_binding.authorization_digest
+    )
+    if revision_authorization_digest != refresh_preparation_authorization_digest:
+        return False
+    return context_digest == initial_draft_context_digest_for_proposal(
         base_revision_id=revision.revision_id,
         draft_package_id=revision.draft_package_id,
         draft_package_digest=revision.draft_package_digest,
         final_canonical_url=revision.final_canonical_url,
-        service_card_id=revision.service_card_id,
-        proposal_id=proposal_id,
-        planning_digest=planning_digest,
-        planning_input_digest=planning_input_digest,
+        proposal_context=ContentInitialDraftProposalContext(
+            proposal_id=proposal_id,
+            planning_digest=planning_digest,
+            planning_input_digest=planning_input_digest,
+            service_card_id=revision.service_card_id,
+            refresh_preparation_binding=(
+                None
+                if revision_authorization_digest is None
+                else revision.refresh_preparation_binding
+            ),
+        ),
     )
 
 
@@ -280,6 +366,11 @@ def _canonical_initial_draft_claim(
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
             context_digest=context_digest,
+            refresh_preparation_authorization_digest=(
+                None
+                if canonical_revision.refresh_preparation_binding is None
+                else canonical_revision.refresh_preparation_binding.authorization_digest
+            ),
         )
     ):
         return None
@@ -385,9 +476,11 @@ def claim_initial_draft_run(
         )
         connection.execute(
             "INSERT INTO codex_runs (id, started_at, payload_json) VALUES (?, ?, ?)",
-            (run.id, run.started_at.isoformat(), json.dumps(
-                run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-            )),
+            (
+                run.id,
+                run.started_at.isoformat(),
+                json.dumps(run.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
+            ),
         )
         return InitialDraftClaim(run=run, newly_claimed=True)
 
@@ -401,9 +494,7 @@ def finish_initial_draft_run(
 ) -> CodexRun | None:
     if run.status != "started":
         return None
-    return transition_initial_draft_run_if_status(
-        run_store, run, status=status, error=error
-    )
+    return transition_initial_draft_run_if_status(run_store, run, status=status, error=error)
 
 
 def transition_initial_draft_run_if_status(
@@ -415,9 +506,7 @@ def transition_initial_draft_run_if_status(
 ) -> CodexRun | None:
     if run.status != "started":
         return None
-    updated = run.model_copy(
-        update={"status": status, "completed_at": utc_now(), "error": error}
-    )
+    updated = run.model_copy(update={"status": status, "completed_at": utc_now(), "error": error})
     if not supports_run_transaction(run_store):
         return run_store.save_codex_run(updated)
     return transition_codex_run_if_status(
@@ -512,8 +601,12 @@ __all__ = [
     "claim_initial_draft_run",
     "InitialDraftClaim",
     "InitialDraftClaimContext",
+    "ContentInitialDraftProposalContext",
     "effective_initial_draft_deadline",
     "initial_draft_context_digest",
+    "initial_draft_context_digest_for_proposal",
+    "initial_draft_proposal_context",
+    "initial_draft_proposal_context_from_command",
     "transition_initial_draft_run_if_status",
     "safe_initial_draft_run_error",
     "start_initial_draft_run",

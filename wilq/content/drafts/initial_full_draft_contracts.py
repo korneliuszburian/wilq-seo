@@ -26,6 +26,9 @@ from wilq.content.workflow.documents.revisions import (
     validate_no_inline_link,
     validate_plain_internal_link_anchor,
 )
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBlockerCode,
+)
 
 _NonBlankWireString = Annotated[
     str,
@@ -43,6 +46,7 @@ ContentInitialDraftStatus = Literal[
 ContentInitialDraftBlockerCode = Literal[
     ContentPlanningInputBlockerCode,
     ProductionReuseBlockCode,
+    ContentRefreshPreparationBlockerCode,
     "planning_not_ready",
     "draft_not_started",
     "planning_not_generated",
@@ -98,6 +102,11 @@ class ContentInitialDraftRequest(BaseModel):
     expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     requested_by: str = Field(min_length=1)
+    refresh_preparation_authorization_id: str | None = Field(default=None, min_length=1)
+    expected_refresh_preparation_authorization_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
 
     @field_validator("expected_proposal_id", "requested_by")
     @classmethod
@@ -106,6 +115,22 @@ class ContentInitialDraftRequest(BaseModel):
         if not stripped:
             raise ValueError("Initial draft request fields cannot be blank.")
         return stripped
+
+    @model_validator(mode="after")
+    def require_complete_refresh_authorization_pair(self) -> ContentInitialDraftRequest:
+        if (self.refresh_preparation_authorization_id is None) != (
+            self.expected_refresh_preparation_authorization_digest is None
+        ):
+            raise ValueError(
+                "Refresh preparation authorization ID and digest must be supplied together."
+            )
+        if self.refresh_preparation_authorization_id is not None:
+            self.refresh_preparation_authorization_id = (
+                self.refresh_preparation_authorization_id.strip()
+            )
+            if not self.refresh_preparation_authorization_id:
+                raise ValueError("Refresh preparation authorization ID cannot be blank.")
+        return self
 
 
 class ContentInitialDraftReuseRequest(BaseModel):

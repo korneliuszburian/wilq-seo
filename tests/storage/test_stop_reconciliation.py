@@ -364,7 +364,7 @@ def test_dry_run_rejects_unsupported_schema_before_classification(tmp_path: Path
     manifest = _manifest(state_path)
     before = state_path.read_bytes()
 
-    with pytest.raises(StopReconciliationManifestError, match="schema version 6 or 7"):
+    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7 or 8"):
         plan_stop_reconciliation(
             LocalStateStore(state_path),
             manifest=manifest,
@@ -388,7 +388,10 @@ def test_apply_rejects_unsupported_schema_before_transaction(tmp_path: Path) -> 
     manifest = _manifest(state_path)
     before = state_path.read_bytes()
 
-    with pytest.raises(StopReconciliationManifestError, match="schema version 6 or 7") as failure:
+    with pytest.raises(
+        StopReconciliationManifestError,
+        match="schema version 6, 7 or 8",
+    ) as failure:
         _apply(store=LocalStateStore(state_path), manifest=manifest, backup_path=backup_path)
 
     assert failure.value.rollback_result == "not_started"
@@ -711,7 +714,7 @@ def test_first_authorized_apply_atomically_expands_v6_and_reconciles(tmp_path: P
     assert receipt.status == "applied"
     assert receipt.copied_count == receipt.reconciled_count == 20
     with sqlite3.connect(state_path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == SQLITE_SCHEMA_VERSION
         assert (
             connection.execute("SELECT COUNT(*) FROM codex_stop_reconciliation_batches").fetchone()[
                 0
@@ -831,7 +834,7 @@ def test_existing_v6_store_gains_reconciliation_schema_without_data_loss(
         .fetchall()
     )
 
-    assert LocalStateStore(state_path).status()["schema_version"] == SQLITE_SCHEMA_VERSION == 7
+    assert LocalStateStore(state_path).status()["schema_version"] == SQLITE_SCHEMA_VERSION
 
     with sqlite3.connect(state_path) as connection:
         after = connection.execute("SELECT id, started_at, payload_json FROM codex_runs").fetchall()

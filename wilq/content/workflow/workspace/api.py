@@ -25,10 +25,6 @@ from wilq.content.handoff.wordpress_execution import (
 from wilq.content.inventory.records import (
     ContentInventoryRecord,
 )
-from wilq.content.knowledge.cards import (
-    match_content_knowledge_cards,
-    select_content_knowledge_service_card,
-)
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
     build_content_work_item_service_profile_context,
@@ -120,7 +116,6 @@ from wilq.content.workflow.decisions.planning import (
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionState
 from wilq.content.workflow.pipeline_steps.queue import (
-    ContentWorkItemQueueBlocker,
     ContentWorkItemQueueCandidate,
     build_content_work_item_queue_candidate,
     build_content_work_item_queue_response,
@@ -185,12 +180,28 @@ from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
     wordpress_draft_write_authorization_verified as _wordpress_draft_write_authorization_verified,
 )
 from wilq.content.workflow.policies import wordpress_draft_writes_enabled
+from wilq.content.workflow.workspace.snapshot_service_selection import (
+    gate_snapshot_candidate_on_service_binding,
+    resolve_snapshot_service_selection,
+)
 from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentFreshnessAssessment,
     MetricFact,
 )
+
+
+def _gate_candidate_on_service_binding(
+    candidate: ContentWorkItemQueueCandidate,
+    *,
+    service_profile_context: ContentWorkItemServiceProfileContext,
+) -> ContentWorkItemQueueCandidate:
+    """Compatibility seam for existing callers of the extracted snapshot policy."""
+    return gate_snapshot_candidate_on_service_binding(
+        candidate,
+        service_profile_context=service_profile_context,
+    )
 
 
 def build_content_wordpress_draft_activation_packet_response(
@@ -430,6 +441,7 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
     revision_state: ContentDraftRevisionState | None = None,
     planning_decisions: list[ContentPlanningDecision] | None = None,
     generated_planning_proposal: ContentPlanningProposal | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse | None:
     decision = _select_content_work_item_decision_for_work_item(
         diagnostics.decision_queue,
@@ -464,6 +476,7 @@ def build_content_work_item_diagnostics_snapshot_response_for_work_item(
         revision_state=revision_state,
         planning_decisions=planning_decisions,
         generated_planning_proposal=generated_planning_proposal,
+        service_card_id_override=service_card_id_override,
     )
 
 
@@ -476,6 +489,7 @@ def build_content_work_item_snapshot_response_from_selected_decision(
     revision_state: ContentDraftRevisionState | None = None,
     planning_decisions: list[ContentPlanningDecision] | None = None,
     generated_planning_proposal: ContentPlanningProposal | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     """Assemble a selected-page snapshot without rebuilding global diagnostics."""
 
@@ -492,6 +506,7 @@ def build_content_work_item_snapshot_response_from_selected_decision(
         revision_state=revision_state,
         planning_decisions=planning_decisions,
         generated_planning_proposal=generated_planning_proposal,
+        service_card_id_override=service_card_id_override,
     )
 
 
@@ -505,6 +520,7 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
     revision_state: ContentDraftRevisionState | None = None,
     planning_decisions: list[ContentPlanningDecision] | None = None,
     generated_planning_proposal: ContentPlanningProposal | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     item = content_work_item_from_decision(decision)
     inventory_record = content_inventory_record_from_decision(decision)
@@ -525,6 +541,7 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         generated_planning_proposal=generated_planning_proposal,
         demand_metric_facts=decision.metric_facts,
         demand_source_page=decision.page,
+        service_card_id_override=service_card_id_override,
     )
 
 
@@ -607,49 +624,15 @@ def _build_content_work_item_snapshot_response(
     generated_planning_proposal: ContentPlanningProposal | None = None,
     demand_metric_facts: list[MetricFact] | None = None,
     demand_source_page: str | None = None,
+    service_card_id_override: str | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
-    knowledge_match = match_content_knowledge_cards(item)
-    scope_planning_decision = next(
-        (
-            decision
-            for decision in planning_decisions or []
-            if decision.stage == "scope"
-        ),
-        None,
-    )
-    proposal_confirms_service = _generated_proposal_confirms_service_selection(
-        item, generated_planning_proposal
-    )
-    selected_service_card_id = (
-        scope_planning_decision.service_card_id
-        if scope_planning_decision is not None
-        else (
-            generated_planning_proposal.service_card_id
-            if proposal_confirms_service and generated_planning_proposal is not None
-            else None
-        )
-    )
-    if selected_service_card_id is not None:
-        knowledge_match = select_content_knowledge_service_card(
-            knowledge_match,
-            selected_service_card_id,
-        )
-    service_profile_context = build_content_work_item_service_profile_context(
-        item,
-        knowledge_match=knowledge_match,
-        service_selection_confirmed=bool(
-            selected_service_card_id
-            and knowledge_match.service_card is not None
-            and (scope_planning_decision is not None or proposal_confirms_service)
-        ),
-        human_override_review_required=bool(
-            scope_planning_decision
-            and scope_planning_decision.human_override_review_required
-        ),
-    )
-    candidate = _gate_candidate_on_service_binding(
-        candidate,
-        service_profile_context=service_profile_context,
+    service_selection = resolve_snapshot_service_selection(
+        item=item,
+        candidate=candidate,
+        planning_decisions=planning_decisions,
+        generated_planning_proposal=generated_planning_proposal,
+        service_card_id_override=service_card_id_override,
+        service_profile_builder=build_content_work_item_service_profile_context,
     )
     stage_callbacks = SnapshotStageCallbacks(
         preflight=build_content_work_item_preflight_response,
@@ -667,9 +650,9 @@ def _build_content_work_item_snapshot_response(
         seed=seed,
         enrichment=enrichment,
         freshness_assessment=freshness_assessment,
-        candidate=candidate,
-        knowledge_match=knowledge_match,
-        service_profile_context=service_profile_context,
+        candidate=service_selection.candidate,
+        knowledge_match=service_selection.knowledge_match,
+        service_profile_context=service_selection.service_profile_context,
         measurement_window_id=f"measure_{item.id}",
         callbacks=SnapshotAssemblyCallbacks(
             preflight=partial(snapshot_preflight, callbacks=stage_callbacks),
@@ -689,69 +672,6 @@ def _build_content_work_item_snapshot_response(
         generated_planning_proposal=generated_planning_proposal,
         demand_metric_facts=demand_metric_facts,
         demand_source_page=demand_source_page,
-    )
-
-
-def _generated_proposal_confirms_service_selection(
-    item: ContentWorkItem,
-    proposal: ContentPlanningProposal | None,
-) -> bool:
-    """A current generated proposal can carry the chosen service without legacy scope review."""
-
-    return bool(
-        proposal
-        and proposal.work_item_id == item.id
-        and proposal.generation_status == "codex_generated"
-        and proposal.proposal_id
-        and proposal.planning_input_digest
-        and proposal.service_selection_confirmed
-        and proposal.service_card_id
-        and proposal.final_canonical_url
-        == (item.final_canonical_url or item.intended_final_url)
-    )
-
-
-def _gate_candidate_on_service_binding(
-    candidate: ContentWorkItemQueueCandidate,
-    *,
-    service_profile_context: ContentWorkItemServiceProfileContext,
-) -> ContentWorkItemQueueCandidate:
-    """Keep the first-screen planning state honest when service binding is absent.
-
-    Content preflight can still be useful for inventory diagnostics, but an
-    unbound item must never look ready to plan in the workflow snapshot.
-    """
-    if service_profile_context.binding_status != "unbound":
-        return candidate
-    blocker = ContentWorkItemQueueBlocker(
-        code="missing_service_binding",
-        label="Brakuje karty usługi",
-        reason=(
-            "Nie można przygotować planu bez typed powiązania strony z kartą usługi."
-        ),
-        next_step=service_profile_context.safe_next_step,
-        decision_id=candidate.decision_id,
-        evidence_ids=candidate.evidence_ids,
-        source_connectors=candidate.source_connectors,
-    )
-    return candidate.model_copy(
-        update={
-            "recommended_mode": "block",
-            "recommended_mode_label": "wstrzymaj — najpierw sprawdź",
-            "status_label": "brakuje karty usługi",
-            "reason": blocker.reason,
-            "preflight_status": "blocked",
-            "preflight_status_label": "zablokowane",
-            "safe_next_step": blocker.next_step,
-            "blockers": [
-                blocker,
-                *[
-                    existing
-                    for existing in candidate.blockers
-                    if existing.code != blocker.code
-                ],
-            ],
-        }
     )
 
 

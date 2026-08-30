@@ -47,6 +47,10 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationReadResult,
     ContentProductionClassificationRecordResult,
 )
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationAuthorizationIdempotentResponse,
+    ContentRefreshPreparationPreview,
+)
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
@@ -144,6 +148,14 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/selected-workspace",
     ): ContentSelectedWorkspace,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/refresh-preparation",
+    ): ContentRefreshPreparationPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/refresh-preparation/authorizations",
+    ): ContentRefreshPreparationAuthorizationIdempotentResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/target-discovery",

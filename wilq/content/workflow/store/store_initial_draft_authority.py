@@ -11,7 +11,11 @@ from wilq.content.drafts.initial_draft_authority import (
     InitialDraftAuthorityUnclassified,
     SubmitExpectation,
 )
-from wilq.content.workflow.decisions.production import ContentProductionClassificationRun
+from wilq.content.workflow.decisions.production import (
+    ClassificationLookupBasis,
+    ContentProductionClassificationRow,
+    ContentProductionClassificationRun,
+)
 from wilq.content.workflow.decisions.production_reuse import (
     ExactProductionReuseBlocked,
     resolve_exact_production_reuse,
@@ -78,6 +82,15 @@ class InitialDraftAuthorityStoreMixin:
             lookup_basis = row.lookup_basis_for_work_item(requested_work_item_id)
             if lookup_basis is None:
                 raise ValueError("Accepted classification lost its requested identity.")
+            if row.decision == "refresh":
+                return InitialDraftAuthorityBlocked(
+                    requested_work_item_id=requested_work_item_id,
+                    code="production_generation_disabled",
+                    reason_pl=row.rationale_pl,
+                    safe_next_step_pl=row.next_step_pl,
+                    source_codes=tuple(blocker.code for blocker in row.blockers),
+                    classification_decision="refresh",
+                )
             if (
                 isinstance(intent, SubmitExpectation)
                 and intent.expected_production_classification_run_digest is None
@@ -93,44 +106,18 @@ class InitialDraftAuthorityStoreMixin:
                     reason_pl=row.rationale_pl,
                     safe_next_step_pl=row.next_step_pl,
                     source_codes=tuple(blocker.code for blocker in row.blockers),
+                    classification_decision=row.decision,
                 )
             stale = _stale_reuse_resolution(run, requested_work_item_id)
             if stale is not None:
                 return stale
 
-            binding = row.retained_binding
-            current_work_item_id = row.current_work_item_id
-            if binding is None or current_work_item_id is None:
-                raise ValueError("Accepted reuse classification lost its retained binding.")
-            revision_owner = row.reusable_work_item_id
-            latest_revision, latest_review = _latest_reuse_revision_and_review(
+            return _resolve_reuse_authority(
                 connection,
-                revision_owner,
-            )
-            reuse = resolve_exact_production_reuse(
-                revision_owner_work_item_id=revision_owner,
-                expected_revision_id=binding.retained_revision_id,
-                expected_revision_digest=binding.retained_revision_digest,
-                latest_revision=latest_revision,
-                latest_review=latest_review,
-            )
-            if isinstance(reuse, ExactProductionReuseBlocked):
-                return InitialDraftAuthorityBlocked(
-                    requested_work_item_id=requested_work_item_id,
-                    code=reuse.code,
-                )
-            return InitialDraftAuthorityReused(
-                classification_run_id=run.run_id,
-                classification_run_digest=run.run_digest,
-                decision_set_digest=run.input.decision_set_digest,
-                requested_work_item_id=requested_work_item_id,
+                run=run,
+                row=row,
                 lookup_basis=lookup_basis,
-                current_work_item_id=current_work_item_id,
-                retained_work_item_id=row.retained_work_item_id,
-                revision_work_item_id=reuse.revision_owner_work_item_id,
-                identity_reconciliation_status=binding.identity_reconciliation_status,
-                revision=reuse.revision,
-                approved_review=reuse.review,
+                requested_work_item_id=requested_work_item_id,
             )
 
 
@@ -149,6 +136,47 @@ def _latest_reuse_revision_and_review(
         revision_id=revision.revision_id,
     )
     return (revision, review)
+
+
+def _resolve_reuse_authority(
+    connection: sqlite3.Connection,
+    *,
+    run: ContentProductionClassificationRun,
+    row: ContentProductionClassificationRow,
+    lookup_basis: ClassificationLookupBasis,
+    requested_work_item_id: str,
+) -> InitialDraftAuthorityResolution:
+    binding = row.retained_binding
+    current_work_item_id = row.current_work_item_id
+    if binding is None or current_work_item_id is None:
+        raise ValueError("Accepted reuse classification lost its retained binding.")
+    revision_owner = row.reusable_work_item_id
+    latest_revision, latest_review = _latest_reuse_revision_and_review(connection, revision_owner)
+    reuse = resolve_exact_production_reuse(
+        revision_owner_work_item_id=revision_owner,
+        expected_revision_id=binding.retained_revision_id,
+        expected_revision_digest=binding.retained_revision_digest,
+        latest_revision=latest_revision,
+        latest_review=latest_review,
+    )
+    if isinstance(reuse, ExactProductionReuseBlocked):
+        return InitialDraftAuthorityBlocked(
+            requested_work_item_id=requested_work_item_id,
+            code=reuse.code,
+        )
+    return InitialDraftAuthorityReused(
+        classification_run_id=run.run_id,
+        classification_run_digest=run.run_digest,
+        decision_set_digest=run.input.decision_set_digest,
+        requested_work_item_id=requested_work_item_id,
+        lookup_basis=lookup_basis,
+        current_work_item_id=current_work_item_id,
+        retained_work_item_id=row.retained_work_item_id,
+        revision_work_item_id=reuse.revision_owner_work_item_id,
+        identity_reconciliation_status=binding.identity_reconciliation_status,
+        revision=reuse.revision,
+        approved_review=reuse.review,
+    )
 
 
 def _stale_reuse_resolution(

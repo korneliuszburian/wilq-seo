@@ -21,6 +21,10 @@ from wilq.content.workflow.documents.content_html import validate_content_html
 from wilq.content.workflow.documents.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
 )
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+    refresh_preparation_binding_matches_content_identity,
+)
 from wilq.content.workflow.target.new_page import ContentNewPageDocumentIdentity
 
 if TYPE_CHECKING:
@@ -137,10 +141,9 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
         "persisted_selected_sections_and_declared_lineage",
         "persisted_selected_components_and_declared_lineage",
         "persisted_full_document_and_declared_lineage",
-    ] = (
-        "persisted_selected_sections_and_declared_lineage"
-    )
+    ] = "persisted_selected_sections_and_declared_lineage"
     semantic_review_required: Literal[True] = True
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
 
     @model_validator(mode="after")
     def require_selected_lineage(self) -> ContentDraftRevisionProposalMetadata:
@@ -400,6 +403,7 @@ class ContentDraftRevision(BaseModel):
     )
     claim_ledger: ContentClaimLedger | None = None
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
@@ -413,6 +417,15 @@ class ContentDraftRevision(BaseModel):
             created_by=self.created_by,
         )
         _validate_full_document(self)
+        _validate_refresh_preparation_binding(
+            binding=self.refresh_preparation_binding,
+            metadata=self.proposal_metadata,
+            base_revision_id=self.base_revision_id,
+            work_item_id=self.work_item_id,
+            service_card_id=self.service_card_id,
+            planning_input_digest=self.planning_input_digest,
+            final_canonical_url=self.final_canonical_url,
+        )
         return self
 
 
@@ -475,6 +488,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
         default_factory=list
     )
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
@@ -487,6 +501,15 @@ class ContentDraftRevisionAppendCommand(BaseModel):
             created_by=self.created_by,
         )
         _validate_full_document(self)
+        _validate_refresh_preparation_binding(
+            binding=self.refresh_preparation_binding,
+            metadata=self.proposal_metadata,
+            base_revision_id=self.base_revision_id,
+            work_item_id=self.work_item_id,
+            service_card_id=self.service_card_id,
+            planning_input_digest=self.planning_input_digest,
+            final_canonical_url=self.final_canonical_url,
+        )
         return self
 
 
@@ -597,6 +620,36 @@ def content_draft_package_digest(draft_package: ContentDraftPackage) -> str:
         separators=(",", ":"),
     )
     return sha256(canonical_json.encode("utf-8")).hexdigest()
+
+
+def _validate_refresh_preparation_binding(
+    *,
+    binding: ContentRefreshPreparationBinding | None,
+    metadata: ContentDraftRevisionProposalMetadata | None,
+    base_revision_id: str | None,
+    work_item_id: str,
+    service_card_id: str | None,
+    planning_input_digest: str | None,
+    final_canonical_url: str | None,
+) -> None:
+    if binding is None:
+        if metadata is not None and metadata.refresh_preparation_binding is not None:
+            raise ValueError("Refresh preparation metadata requires the revision binding.")
+        return
+    if not refresh_preparation_binding_matches_content_identity(
+        binding,
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=planning_input_digest,
+        final_canonical_url=final_canonical_url,
+    ):
+        raise ValueError("Refresh preparation revision binding does not match document identity.")
+    if metadata is None:
+        if base_revision_id is None:
+            raise ValueError("A root refresh revision requires exact proposal metadata.")
+        return
+    if metadata.refresh_preparation_binding != binding:
+        raise ValueError("Refresh preparation revision metadata must match its exact binding.")
 
 
 def _validate_full_document(

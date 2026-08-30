@@ -155,6 +155,77 @@ def test_initial_draft_queue_claim_is_durable_and_exact(tmp_path, monkeypatch) -
     assert runs[0].planning_input_digest == "b" * 64
 
 
+def test_authorized_refresh_queue_claim_has_one_exact_context_and_submission(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from wilq.content.workflow.refresh_preparation_contracts import (
+        ContentRefreshPreparationBinding,
+    )
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    submitted = []
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_INITIAL_DRAFT_EXECUTOR",
+        SimpleNamespace(submit=lambda fn, *args: submitted.append((fn, args))),
+    )
+    snapshot = _snapshot(latest_revision=None)
+    proposal = snapshot.planning_workspace.proposal
+    proposal.service_card_id = "ekologus_service_bdo_reporting"
+    proposal.refresh_preparation_binding = ContentRefreshPreparationBinding(
+        authorization_id="content_refresh_preparation_authorization_" + "c" * 24,
+        authorization_digest="c" * 64,
+        classification_run_id="content_production_classification_test",
+        classification_run_digest="d" * 64,
+        decision_set_digest="e" * 64,
+        source_packet_row_digest="f" * 64,
+        current_work_item_id="work",
+        canonical_path="/bdo-co-musi-wiedziec-przedsiebiorca",
+        public_url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        service_card_id="ekologus_service_bdo_reporting",
+        planning_input_digest="b" * 64,
+    )
+    snapshot.preflight = SimpleNamespace(
+        item=SimpleNamespace(
+            final_canonical_url="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+            intended_final_url=None,
+        )
+    )
+    request = _request().model_copy(
+        update={
+            "refresh_preparation_authorization_id": (
+                proposal.refresh_preparation_binding.authorization_id
+            ),
+            "expected_refresh_preparation_authorization_digest": (
+                proposal.refresh_preparation_binding.authorization_digest
+            ),
+        }
+    )
+
+    first = content_initial_draft._queue_initial_draft(
+        "work",
+        request,
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+    repeated = content_initial_draft._queue_initial_draft(
+        "work",
+        request,
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: snapshot,
+        snapshot,
+    )
+
+    assert first.run_id == repeated.run_id
+    assert len(submitted) == 1
+    assert store.list_codex_runs()[0].initial_draft_context_digest == (
+        initial_draft_queue.snapshot_initial_draft_context_digest(snapshot, proposal)
+    )
+
+
 def test_initial_draft_queue_ignores_started_run_from_another_proposal(
     tmp_path, monkeypatch
 ) -> None:

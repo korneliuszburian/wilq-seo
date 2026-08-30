@@ -12,6 +12,13 @@ from pydantic import TypeAdapter
 from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
+from apps.api.wilq_api.routers.content_initial_draft_refresh import (
+    read_authorized_refresh_initial_draft_status,
+    submit_authorized_refresh_initial_draft,
+)
+from apps.api.wilq_api.routers.content_refresh_preparation_authority import (
+    content_refresh_preparation_authority,
+)
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts import initial_draft_queue
 from wilq.content.drafts.initial_draft_authority import (
@@ -23,7 +30,8 @@ from wilq.content.drafts.initial_draft_authority import (
 )
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
-    initial_draft_context_digest,
+    initial_draft_context_digest_for_proposal,
+    initial_draft_proposal_context,
     revision_matches_initial_draft_context,
     transition_initial_draft_run_if_status,
 )
@@ -46,6 +54,10 @@ from wilq.content.planning.generated_proposal_store import (
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.refresh_preparation import (
+    ContentRefreshPreparationAuthority,
+    RefreshPreparationRuntimeAuthorized,
+)
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -56,6 +68,7 @@ ContentInitialDraftAuthorityResolver = Callable[
     [str, InitialDraftAuthorityIntent],
     InitialDraftAuthorityResolution,
 ]
+ContentRefreshPreparationAuthorityFactory = Callable[[], ContentRefreshPreparationAuthority]
 _CONTENT_WORK_ITEM_INITIAL_DRAFT_RESPONSE_ADAPTER: TypeAdapter[
     ContentWorkItemInitialDraftResponse
 ] = TypeAdapter(ContentWorkItemInitialDraftResponse)
@@ -65,20 +78,6 @@ _T = TypeVar("_T")
 
 
 InitialDraftQueueFullError = initial_draft_queue.InitialDraftQueueFullError
-
-
-def _can_queue_initial_draft(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    request: ContentInitialDraftRequest,
-) -> bool:
-    return initial_draft_queue.can_queue_initial_draft(snapshot, request)
-
-
-def _snapshot_initial_draft_context_digest(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    proposal: ContentPlanningProposal,
-) -> str:
-    return initial_draft_queue.snapshot_initial_draft_context_digest(snapshot, proposal)
 
 
 def _queue_initial_draft(
@@ -156,6 +155,7 @@ def register_content_initial_draft_route(
     *,
     snapshot_loader: ContentInitialDraftSnapshotLoader,
     authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
+    refresh_authority_factory: ContentRefreshPreparationAuthorityFactory | None = None,
 ) -> None:
     resolver = authority_resolver or _canonical_initial_draft_authority_resolver
 
@@ -173,6 +173,9 @@ def register_content_initial_draft_route(
             request,
             snapshot_loader,
             authority_resolver=resolver,
+            refresh_authority_factory=(
+                refresh_authority_factory or _canonical_refresh_preparation_authority
+            ),
         )
         if isinstance(result, JSONResponse):
             return result
@@ -189,7 +192,10 @@ def register_content_initial_draft_route(
             _read_initial_draft_status(
                 work_item_id,
                 snapshot_loader=snapshot_loader,
-                authority_resolver=resolver,
+                authority_resolver=authority_resolver,
+                refresh_authority_factory=(
+                    refresh_authority_factory or _canonical_refresh_preparation_authority
+                ),
             )
         )
 
@@ -210,6 +216,7 @@ def _submit_initial_draft(
     snapshot_loader: ContentInitialDraftSnapshotLoader,
     *,
     authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
+    refresh_authority_factory: ContentRefreshPreparationAuthorityFactory | None = None,
 ) -> ContentInitialDraftResponse | JSONResponse:
     resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
         work_item_id,
@@ -223,11 +230,53 @@ def _submit_initial_draft(
     )
     guarded = map_initial_draft_authority_response(resolution)
     if guarded is not None:
-        if guarded.status == "conflict":
-            return _content_initial_draft_conflict_response(guarded)
-        return guarded
+        refresh_exception = bool(
+            isinstance(request, ContentInitialDraftRequest)
+            and getattr(resolution, "classification_decision", None) == "refresh"
+        )
+        if not refresh_exception:
+            if guarded.status == "conflict":
+                return _content_initial_draft_conflict_response(guarded)
+            return guarded
     if not isinstance(request, ContentInitialDraftRequest):
-        raise RuntimeError("Unclassified reuse request did not fail closed.")
+        response = ContentInitialDraftResponse(
+            status="conflict",
+            work_item_id=work_item_id,
+            blockers=[
+                ContentInitialDraftBlocker(
+                    code="refresh_preparation_decision_not_refresh",
+                    label="Żądanie ponownego użycia nie dotyczy tej klasyfikacji",
+                    reason=(
+                        "Klasyfikacja refresh wymaga osobnej autoryzacji i nie może "
+                        "zostać obsłużona jako retained reuse."
+                    ),
+                    next_step="Otwórz przygotowanie refresh i zapisz dokładną autoryzację.",
+                )
+            ],
+            safe_next_step="Otwórz przygotowanie refresh i zapisz dokładną autoryzację.",
+        )
+        return _content_initial_draft_conflict_response(response)
+    authority = (refresh_authority_factory or _canonical_refresh_preparation_authority)()
+    refresh_resolution = authority.resolve_initial_draft(work_item_id, request)
+    refresh_block = authority.initial_draft_block_response(refresh_resolution, request)
+    if refresh_block is not None:
+        return _content_initial_draft_conflict_response(refresh_block)
+    if isinstance(refresh_resolution, RefreshPreparationRuntimeAuthorized):
+        return submit_authorized_refresh_initial_draft(
+            work_item_id=work_item_id,
+            request=request,
+            authority=authority,
+            initial_resolution=refresh_resolution,
+            client_factory=content_codex_app_server_client,
+            executor=_INITIAL_DRAFT_EXECUTOR,
+            conflict_response=_content_initial_draft_conflict_response,
+            legacy_status_reader=lambda item_id, loader: _read_legacy_initial_draft_status(
+                item_id,
+                snapshot_loader=loader,
+            ),
+            workflow_store=content_workflow_store(),
+            run_store=local_state_store(),
+        )
     snapshot = snapshot_loader(work_item_id)
     client = content_codex_app_server_client()
     if initial_draft_queue.can_queue_initial_draft(snapshot, request, client):
@@ -249,6 +298,10 @@ def _submit_initial_draft(
     if result.status == "conflict":
         return _content_initial_draft_conflict_response(result)
     return result
+
+
+def _canonical_refresh_preparation_authority() -> ContentRefreshPreparationAuthority:
+    return content_refresh_preparation_authority()
 
 
 def _content_work_item_initial_draft_response(
@@ -315,6 +368,7 @@ def _read_initial_draft_status(
     *,
     snapshot_loader: ContentInitialDraftSnapshotLoader | None = None,
     authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
+    refresh_authority_factory: ContentRefreshPreparationAuthorityFactory | None = None,
 ) -> ContentInitialDraftResponse:
     resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
         work_item_id,
@@ -322,6 +376,28 @@ def _read_initial_draft_status(
     )
     guarded = map_initial_draft_authority_response(resolution)
     if guarded is not None:
+        if (
+            authority_resolver is None
+            and getattr(resolution, "classification_decision", None) == "refresh"
+        ):
+            refresh_status = read_authorized_refresh_initial_draft_status(
+                work_item_id=work_item_id,
+                refresh_authority=(
+                    refresh_authority_factory or _canonical_refresh_preparation_authority
+                )(),
+                proposal_store=content_planning_proposal_store(),
+                workflow_store=content_workflow_store(),
+                legacy_status_reader=lambda item_id, loader: _read_legacy_initial_draft_status(
+                    item_id,
+                    snapshot_loader=loader,
+                ),
+            )
+            if refresh_status is not None:
+                return refresh_status
+            return _read_legacy_initial_draft_status(
+                work_item_id,
+                snapshot_loader=snapshot_loader,
+            )
         return guarded
     return _read_legacy_initial_draft_status(
         work_item_id,
@@ -563,6 +639,11 @@ def _canonical_revision_run(
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input_digest,
         context_digest=context_digest,
+        refresh_preparation_authorization_digest=(
+            None
+            if proposal.refresh_preparation_binding is None
+            else proposal.refresh_preparation_binding.authorization_digest
+        ),
     ):
         return None
     return next(
@@ -599,15 +680,12 @@ def _run_matches_revision_context(
     if run.initial_draft_base_revision_id == revision.revision_id:
         return True
     package_digest = getattr(revision, "draft_package_digest", None)
-    return run.initial_draft_context_digest == initial_draft_context_digest(
+    return run.initial_draft_context_digest == initial_draft_context_digest_for_proposal(
         base_revision_id=getattr(revision, "base_revision_id", None),
         draft_package_id=getattr(revision, "draft_package_id", None),
         draft_package_digest=package_digest,
         final_canonical_url=getattr(revision, "final_canonical_url", None),
-        service_card_id=getattr(revision, "service_card_id", None),
-        proposal_id=proposal_id,
-        planning_digest=proposal.planning_digest,
-        planning_input_digest=planning_input_digest,
+        proposal_context=initial_draft_proposal_context(proposal),
     )
 
 

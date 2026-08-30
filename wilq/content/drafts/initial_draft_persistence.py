@@ -27,6 +27,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionWriteResult,
 )
+from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
@@ -39,6 +40,14 @@ class InitialDraftRevisionStore(Protocol):
         *,
         completed_codex_run: CodexRun | None = None,
     ) -> ContentDraftRevisionWriteResult: ...
+
+
+class InitialDraftPrePersistenceGuardError(ValueError):
+    """Abort an append with the exact typed response produced by a source guard."""
+
+    def __init__(self, response: ContentInitialDraftResponse) -> None:
+        self.response = response
+        super().__init__(response.blockers[0].code if response.blockers else "initial_draft_guard")
 
 
 def persist_initial_draft(
@@ -140,6 +149,39 @@ def _append_revision(
             command,
             completed_codex_run=completed_run,
         )
+    except InitialDraftPrePersistenceGuardError as error:
+        blocker = error.response.blockers[0]
+        return _finish_failure(
+            snapshot=snapshot,
+            proposal=proposal,
+            run=run,
+            trace=trace,
+            run_store=run_store,
+            status="blocked",
+            blocker=blocker,
+        )
+    except RefreshPreparationAtomicityError as error:
+        return _finish_failure(
+            snapshot=snapshot,
+            proposal=proposal,
+            run=run,
+            trace=trace,
+            run_store=run_store,
+            status="blocked",
+            blocker=build_blocker(
+                ContentInitialDraftBlocker,
+                code=error.code,
+                label="Autoryzacja refresh nie jest już aktualna",
+                reason=(
+                    "Atomowy zapis wykrył zmianę klasyfikacji, autoryzacji lub "
+                    "źródłowego inputu."
+                ),
+                next_step=(
+                    "Odśwież przygotowanie refresh i uruchom nową próbę dla "
+                    "bieżącego receipt."
+                ),
+            ),
+        )
     except ValueError as error:
         if str(error) != "stale_initial_draft_context":
             raise
@@ -207,4 +249,8 @@ def _finish_failure(
     )
 
 
-__all__ = ["InitialDraftRevisionStore", "persist_initial_draft"]
+__all__ = [
+    "InitialDraftPrePersistenceGuardError",
+    "InitialDraftRevisionStore",
+    "persist_initial_draft",
+]

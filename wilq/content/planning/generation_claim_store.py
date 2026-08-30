@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal, NamedTuple, cast
 
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
 from wilq.storage.private_paths import prepare_private_store_path
@@ -17,7 +18,7 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-PlanningGenerationClaimOutcome = Literal["acquired", "in_flight"]
+PlanningGenerationClaimOutcome = Literal["acquired", "in_flight", "binding_conflict"]
 PlanningGenerationClaimFinalStatus = Literal["finished", "failed"]
 
 
@@ -49,7 +50,9 @@ class ContentPlanningGenerationClaimStore:
         service_card_id: str,
         planning_input_digest: str,
         claim_owner: str,
+        refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     ) -> PlanningGenerationClaim:
+        binding_identity = _refresh_preparation_claim_identity(refresh_preparation_binding)
         claim_key = _planning_generation_claim_key(
             work_item_id,
             service_card_id,
@@ -60,75 +63,33 @@ class ContentPlanningGenerationClaimStore:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
                 """
-                SELECT status, claimed_at, claim_version
+                SELECT status, claimed_at, claim_version,
+                       refresh_preparation_authorization_id,
+                       refresh_preparation_authorization_digest
                 FROM content_planning_generation_claims
                 WHERE claim_key = ?
                 """,
                 (claim_key,),
             ).fetchone()
             if row is not None:
-                status = cast(str, row["status"])
-                claimed_at = cast(str, row["claimed_at"])
-                claim_version = int(row["claim_version"])
-                if status == "claimed" and not _claim_is_stale(claimed_at, now=now):
-                    return PlanningGenerationClaim("in_flight", claim_version)
-                next_claim_version = claim_version + 1
-                connection.execute(
-                    """
-                    UPDATE content_planning_generation_claims
-                    SET status = 'claimed', claim_owner = ?, claim_version = ?,
-                        claimed_at = ?, updated_at = ?
-                    WHERE claim_key = ? AND claim_version = ?
-                    """,
-                    (
-                        claim_owner,
-                        next_claim_version,
-                        now.isoformat(),
-                        now.isoformat(),
-                        claim_key,
-                        claim_version,
-                    ),
+                return _existing_claim(
+                    connection,
+                    row=row,
+                    claim_key=claim_key,
+                    claim_owner=claim_owner,
+                    binding_identity=binding_identity,
+                    now=now,
                 )
-                return PlanningGenerationClaim("acquired", next_claim_version)
-            inserted = connection.execute(
-                """
-                INSERT INTO content_planning_generation_claims (
-                  claim_key,
-                  work_item_id,
-                  service_card_id,
-                  planning_input_digest,
-                  status,
-                  claim_owner,
-                  claim_version,
-                  claimed_at,
-                  updated_at
-                )
-                VALUES (?, ?, ?, ?, 'claimed', ?, 1, ?, ?)
-                ON CONFLICT(claim_key) DO NOTHING
-                """,
-                (
-                    claim_key,
-                    work_item_id,
-                    service_card_id,
-                    planning_input_digest,
-                    claim_owner,
-                    now.isoformat(),
-                    now.isoformat(),
-                ),
+            return _insert_claim(
+                connection,
+                claim_key=claim_key,
+                work_item_id=work_item_id,
+                service_card_id=service_card_id,
+                planning_input_digest=planning_input_digest,
+                claim_owner=claim_owner,
+                binding_identity=binding_identity,
+                now=now,
             )
-            if inserted.rowcount == 1:
-                return PlanningGenerationClaim("acquired", 1)
-            current = connection.execute(
-                """
-                SELECT claim_version
-                FROM content_planning_generation_claims
-                WHERE claim_key = ?
-                """,
-                (claim_key,),
-            ).fetchone()
-            if current is None:
-                raise RuntimeError("Planning generation claim disappeared during acquisition.")
-            return PlanningGenerationClaim("in_flight", int(current["claim_version"]))
 
     def finish(
         self,
@@ -139,7 +100,11 @@ class ContentPlanningGenerationClaimStore:
         claim_owner: str,
         claim_version: int,
         status: PlanningGenerationClaimFinalStatus,
+        refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     ) -> bool:
+        authorization_id, authorization_digest = _refresh_preparation_claim_identity(
+            refresh_preparation_binding
+        )
         claim_key = _planning_generation_claim_key(
             work_item_id,
             service_card_id,
@@ -152,6 +117,8 @@ class ContentPlanningGenerationClaimStore:
                 SET status = ?, updated_at = ?
                 WHERE claim_key = ? AND claim_owner = ? AND claim_version = ?
                   AND status = 'claimed'
+                  AND refresh_preparation_authorization_id IS ?
+                  AND refresh_preparation_authorization_digest IS ?
                 """,
                 (
                     status,
@@ -159,6 +126,8 @@ class ContentPlanningGenerationClaimStore:
                     claim_key,
                     claim_owner,
                     claim_version,
+                    authorization_id,
+                    authorization_digest,
                 ),
             )
         return updated.rowcount == 1
@@ -189,6 +158,7 @@ class ContentPlanningGenerationClaimStore:
             """
         )
         _ensure_claim_version_column(connection)
+        _ensure_refresh_preparation_binding_columns(connection)
         ensure_sqlite_schema_version(connection)
         return connection
 
@@ -215,6 +185,135 @@ def _claim_is_stale(claimed_at: str, *, now: datetime) -> bool:
     return age > planning_job_stale_after_seconds()
 
 
+def _refresh_preparation_claim_identity(
+    binding: ContentRefreshPreparationBinding | None,
+) -> tuple[str | None, str | None]:
+    if binding is None:
+        return None, None
+    return binding.authorization_id, binding.authorization_digest
+
+
+def _claim_matches_binding(
+    row: sqlite3.Row,
+    binding_identity: tuple[str | None, str | None],
+) -> bool:
+    return (
+        row["refresh_preparation_authorization_id"],
+        row["refresh_preparation_authorization_digest"],
+    ) == binding_identity
+
+
+def _existing_claim(
+    connection: sqlite3.Connection,
+    *,
+    row: sqlite3.Row,
+    claim_key: str,
+    claim_owner: str,
+    binding_identity: tuple[str | None, str | None],
+    now: datetime,
+) -> PlanningGenerationClaim:
+    claim_version = int(row["claim_version"])
+    is_active = str(row["status"]) == "claimed" and not _claim_is_stale(
+        cast(str, row["claimed_at"]), now=now
+    )
+    if is_active:
+        outcome: PlanningGenerationClaimOutcome = (
+            "in_flight" if _claim_matches_binding(row, binding_identity) else "binding_conflict"
+        )
+        return PlanningGenerationClaim(outcome, claim_version)
+    next_claim_version = claim_version + 1
+    authorization_id, authorization_digest = binding_identity
+    updated = connection.execute(
+        """
+        UPDATE content_planning_generation_claims
+        SET status = 'claimed', claim_owner = ?, claim_version = ?,
+            refresh_preparation_authorization_id = ?,
+            refresh_preparation_authorization_digest = ?,
+            claimed_at = ?, updated_at = ?
+        WHERE claim_key = ? AND claim_version = ?
+        """,
+        (
+            claim_owner,
+            next_claim_version,
+            authorization_id,
+            authorization_digest,
+            now.isoformat(),
+            now.isoformat(),
+            claim_key,
+            claim_version,
+        ),
+    )
+    if updated.rowcount != 1:
+        raise RuntimeError("Planning generation claim changed during acquisition.")
+    return PlanningGenerationClaim("acquired", next_claim_version)
+
+
+def _insert_claim(
+    connection: sqlite3.Connection,
+    *,
+    claim_key: str,
+    work_item_id: str,
+    service_card_id: str,
+    planning_input_digest: str,
+    claim_owner: str,
+    binding_identity: tuple[str | None, str | None],
+    now: datetime,
+) -> PlanningGenerationClaim:
+    authorization_id, authorization_digest = binding_identity
+    inserted = connection.execute(
+        """
+        INSERT INTO content_planning_generation_claims (
+          claim_key,
+          work_item_id,
+          service_card_id,
+          planning_input_digest,
+          status,
+          claim_owner,
+          claim_version,
+          refresh_preparation_authorization_id,
+          refresh_preparation_authorization_digest,
+          claimed_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, 'claimed', ?, 1, ?, ?, ?, ?)
+        ON CONFLICT(claim_key) DO NOTHING
+        """,
+        (
+            claim_key,
+            work_item_id,
+            service_card_id,
+            planning_input_digest,
+            claim_owner,
+            authorization_id,
+            authorization_digest,
+            now.isoformat(),
+            now.isoformat(),
+        ),
+    )
+    if inserted.rowcount == 1:
+        return PlanningGenerationClaim("acquired", 1)
+    row = connection.execute(
+        """
+        SELECT status, claimed_at, claim_version,
+               refresh_preparation_authorization_id,
+               refresh_preparation_authorization_digest
+        FROM content_planning_generation_claims
+        WHERE claim_key = ?
+        """,
+        (claim_key,),
+    ).fetchone()
+    if row is None:
+        raise RuntimeError("Planning generation claim disappeared during acquisition.")
+    return _existing_claim(
+        connection,
+        row=row,
+        claim_key=claim_key,
+        claim_owner=claim_owner,
+        binding_identity=binding_identity,
+        now=now,
+    )
+
+
 def _ensure_claim_version_column(connection: sqlite3.Connection) -> None:
     columns = {
         str(row[1])
@@ -230,10 +329,42 @@ def _ensure_claim_version_column(connection: sqlite3.Connection) -> None:
         )
 
 
+def _ensure_refresh_preparation_binding_columns(connection: sqlite3.Connection) -> None:
+    columns = {
+        str(row[1])
+        for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
+    }
+    for name in (
+        "refresh_preparation_authorization_id",
+        "refresh_preparation_authorization_digest",
+    ):
+        if name not in columns:
+            try:
+                connection.execute(
+                    "ALTER TABLE content_planning_generation_claims "
+                    f"ADD COLUMN {name} TEXT"  # nosec B608 -- fixed column names.
+                )
+            except sqlite3.OperationalError as error:
+                if "duplicate column name" not in str(error).lower():
+                    raise
+
+
+def refresh_preparation_binding_columns_present(connection: sqlite3.Connection) -> bool:
+    columns = {
+        str(row[1])
+        for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
+    }
+    return {
+        "refresh_preparation_authorization_id",
+        "refresh_preparation_authorization_digest",
+    }.issubset(columns)
+
+
 __all__ = [
     "ContentPlanningGenerationClaimStore",
     "PlanningGenerationClaim",
     "PlanningGenerationClaimFinalStatus",
     "PlanningGenerationClaimOutcome",
     "content_planning_generation_claim_store",
+    "refresh_preparation_binding_columns_present",
 ]

@@ -35,10 +35,12 @@ from wilq.content.planning.generation_claim_store import (
 )
 from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.storage.local_state import local_state_store
 
 ContentPlanningSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 PlanningClientFactory = Callable[[], StdioCodexAppServerClient]
+PlanningGenerationGuard = Callable[[], ContentPlanningProposalResponse | None]
 
 _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
@@ -59,6 +61,7 @@ def prepare_planning_generation(
     request: ContentPlanningProposalRequest,
     snapshot_loader: ContentPlanningSnapshotLoader,
     store: ContentPlanningProposalStore,
+    allow_automatic_stale_mapping_regeneration: bool = True,
 ) -> tuple[
     ContentPlanningInput | None,
     ContentPlanningProposalRequest,
@@ -69,6 +72,7 @@ def prepare_planning_generation(
         request=request,
         snapshot_loader=snapshot_loader,
         store=store,
+        allow_automatic_stale_mapping_regeneration=allow_automatic_stale_mapping_regeneration,
     )
     if existing_response is not None:
         return None, request, existing_response
@@ -109,12 +113,24 @@ def prepare_planning_generation(
     return planning_input, request, None
 
 
+def prepare_planning_generation_from_snapshot(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentPlanningProposalRequest,
+    store: ContentPlanningProposalStore,
+) -> tuple[ContentPlanningInput | None, ContentPlanningProposalResponse | None]:
+    """Prepare a pre-authorized snapshot without entering queue or model seams."""
+
+    return _prepare_generation(snapshot=snapshot, request=request, store=store)
+
+
 def existing_planning_generation_state(
     *,
     work_item_id: str,
     request: ContentPlanningProposalRequest,
     snapshot_loader: ContentPlanningSnapshotLoader,
     store: ContentPlanningProposalStore,
+    allow_automatic_stale_mapping_regeneration: bool = True,
 ) -> tuple[
     ContentWorkItemWorkflowSnapshotResponse | None,
     ContentPlanningProposalRequest,
@@ -147,7 +163,14 @@ def existing_planning_generation_state(
             for blocker in current.blockers
         )
     )
-    if stale_mapping or request.regenerate_after_review:
+    if (
+        (
+            stale_mapping
+            and allow_automatic_stale_mapping_regeneration
+            and request.refresh_preparation_authorization_id is None
+        )
+        or request.regenerate_after_review
+    ):
         request = request.model_copy(update={"regenerate_stale_mapping": True})
     elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
         return (
@@ -175,8 +198,18 @@ def enqueue_planning_generation(
     request: ContentPlanningProposalRequest,
     snapshot_loader: ContentPlanningSnapshotLoader,
     store: ContentPlanningProposalStore,
+    generation_guard: PlanningGenerationGuard | None = None,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> ContentPlanningProposalResponse:
-    result = planning_generation_generating_response(planning_input=planning_input, request=request)
+    if generation_guard is not None:
+        guarded = generation_guard()
+        if guarded is not None:
+            return guarded
+    result = planning_generation_generating_response(
+        planning_input=planning_input,
+        request=request,
+        refresh_preparation_binding=refresh_preparation_binding,
+    )
     outcome = store.enqueue_pending(
         work_item_id=work_item_id,
         service_card_id=request.service_card_id,
@@ -189,6 +222,12 @@ def enqueue_planning_generation(
             work_item_id, request.service_card_id, request.expected_planning_input_digest
         )
         if queued is not None:
+            if queued.refresh_preparation_binding != refresh_preparation_binding:
+                return planning_generation_binding_conflict_response(
+                    work_item_id=work_item_id,
+                    request=request,
+                    existing=queued,
+                )
             result = queued
     if outcome == "in_flight":
         active = store.active_generation_response(
@@ -206,11 +245,16 @@ def enqueue_planning_generation(
         request=request,
         snapshot_loader=snapshot_loader,
         store=store,
+        generation_guard=generation_guard,
+        refresh_preparation_binding=refresh_preparation_binding,
     )
 
 
 def planning_generation_generating_response(
-    *, planning_input: ContentPlanningInput, request: ContentPlanningProposalRequest
+    *,
+    planning_input: ContentPlanningInput,
+    request: ContentPlanningProposalRequest,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> ContentPlanningProposalResponse:
     return ContentPlanningProposalResponse(
         status="generating",
@@ -221,6 +265,7 @@ def planning_generation_generating_response(
         runtime=ContentCodexRuntimeTrace(
             status="not_started", run_id=f"planning_generation_{uuid4().hex}"
         ),
+        refresh_preparation_binding=refresh_preparation_binding,
         safe_next_step="Plan jest przygotowywany; ten widok odświeży się po zakończeniu.",
     )
 
@@ -258,6 +303,31 @@ def planning_generation_in_flight_response(
     )
 
 
+def planning_generation_binding_conflict_response(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    existing: ContentPlanningProposalResponse,
+) -> ContentPlanningProposalResponse:
+    blocker = ContentPlanningProposalBlocker(
+        code="refresh_preparation_proposal_binding_mismatch",
+        label="Istniejąca kolejka nie ma tej autoryzacji refresh",
+        reason=(
+            "Ten sam input ma trwałą próbę bez bieżącego exact receipt; WILQ nie "
+            "dołączy autoryzowanego generowania do obcej kolejki."
+        ),
+        next_step="Poczekaj na zakończenie starej próby albo odśwież kontekst refresh.",
+    )
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        service_card_id=request.service_card_id,
+        runtime=existing.runtime,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
 def schedule_queued_planning_generation(
     *,
     outcome: PlanningEnqueueOutcome,
@@ -266,6 +336,8 @@ def schedule_queued_planning_generation(
     request: ContentPlanningProposalRequest,
     snapshot_loader: ContentPlanningSnapshotLoader,
     store: ContentPlanningProposalStore,
+    generation_guard: PlanningGenerationGuard | None = None,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> ContentPlanningProposalResponse:
     if outcome not in {"queued", "existing"}:
         return result
@@ -280,7 +352,10 @@ def schedule_queued_planning_generation(
         service_card_id=request.service_card_id,
         planning_input_digest=request.expected_planning_input_digest,
         claim_owner=claim_owner,
+        refresh_preparation_binding=refresh_preparation_binding,
     )
+    if claim.outcome == "binding_conflict":
+        return planning_generation_claim_binding_conflict_response(result)
     if claim.outcome != "acquired":
         return result
     try:
@@ -292,6 +367,8 @@ def schedule_queued_planning_generation(
             claim_store,
             claim_owner,
             claim.claim_version,
+            generation_guard,
+            refresh_preparation_binding,
         )
     except Exception as error:
         result = planning_generation_failure_response(
@@ -306,11 +383,19 @@ def schedule_queued_planning_generation(
             ),
             error=error,
         )
+        result = terminal_response_with_refresh_context(
+            result,
+            store=store,
+            work_item_id=work_item_id,
+            request=request,
+            refresh_preparation_binding=refresh_preparation_binding,
+        )
         result = save_terminal_response_safely(
             store,
             result,
             job_planning_input_digest=request.expected_planning_input_digest,
             claim_version=claim.claim_version,
+            refresh_preparation_binding=refresh_preparation_binding,
         )
         claim_store.finish(
             work_item_id=work_item_id,
@@ -319,6 +404,7 @@ def schedule_queued_planning_generation(
             claim_owner=claim_owner,
             claim_version=claim.claim_version,
             status="failed",
+            refresh_preparation_binding=refresh_preparation_binding,
         )
     return result
 
@@ -330,17 +416,25 @@ def run_queued_planning_generation(
     claim_store: ContentPlanningGenerationClaimStore,
     claim_owner: str,
     claim_version: int,
+    generation_guard: PlanningGenerationGuard | None = None,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> ContentPlanningProposalResponse:
     store = content_planning_proposal_store()
     claim_status: PlanningGenerationClaimFinalStatus = "failed"
     try:
-        result = generate_content_planning_proposal(
-            snapshot=snapshot_loader(work_item_id),
-            request=request,
-            client=planning_codex_client(_default_client_factory),
-            store=store,
-            run_store=local_state_store(),
-        )
+        guarded = None if generation_guard is None else generation_guard()
+        if guarded is not None:
+            result = guarded
+        else:
+            result = generate_content_planning_proposal(
+                snapshot=snapshot_loader(work_item_id),
+                request=request,
+                client=planning_codex_client(_default_client_factory),
+                store=store,
+                run_store=local_state_store(),
+                refresh_preparation_binding=refresh_preparation_binding,
+                pre_persistence_guard=generation_guard,
+            )
     except Exception as error:
         result = planning_generation_failure_response(
             work_item_id=work_item_id,
@@ -355,11 +449,19 @@ def run_queued_planning_generation(
             error=error,
         )
     try:
+        result = terminal_response_with_refresh_context(
+            result,
+            store=store,
+            work_item_id=work_item_id,
+            request=request,
+            refresh_preparation_binding=refresh_preparation_binding,
+        )
         terminal_response = save_terminal_response_safely(
             store,
             result,
             job_planning_input_digest=request.expected_planning_input_digest,
             claim_version=claim_version,
+            refresh_preparation_binding=refresh_preparation_binding,
         )
         if terminal_response.status in {"created", "idempotent", "ready"}:
             claim_status = "finished"
@@ -371,6 +473,7 @@ def run_queued_planning_generation(
             claim_owner=claim_owner,
             claim_version=claim_version,
             status=claim_status,
+            refresh_preparation_binding=refresh_preparation_binding,
         )
     return terminal_response
 
@@ -387,18 +490,75 @@ def save_terminal_response_safely(
     *,
     job_planning_input_digest: str,
     claim_version: int,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> ContentPlanningProposalResponse:
     try:
         outcome = store.save_terminal_response(
             response,
             job_planning_input_digest=job_planning_input_digest,
             claim_version=claim_version,
+            refresh_preparation_binding=refresh_preparation_binding,
         )
     except Exception:
         return response
     if outcome == "claim_stale":
         return planning_generation_claim_stale_response(response)
     return response
+
+
+def terminal_response_with_refresh_context(
+    response: ContentPlanningProposalResponse,
+    *,
+    store: ContentPlanningProposalStore,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None,
+) -> ContentPlanningProposalResponse:
+    if refresh_preparation_binding is None:
+        return response
+    input_summary = queued_input_summary(
+        store=store,
+        work_item_id=work_item_id,
+        service_card_id=request.service_card_id,
+        planning_input_digest=request.expected_planning_input_digest,
+    )
+    if input_summary is None:
+        raise ValueError("Refresh terminal response requires the queued input summary.")
+    return ContentPlanningProposalResponse.model_validate(
+        {
+            **response.model_dump(mode="python"),
+            "work_item_id": work_item_id,
+            "service_card_id": request.service_card_id,
+            "planning_input_digest": request.expected_planning_input_digest,
+            "input_summary": input_summary,
+            "refresh_preparation_binding": refresh_preparation_binding,
+        }
+    )
+
+
+def planning_generation_claim_binding_conflict_response(
+    response: ContentPlanningProposalResponse,
+) -> ContentPlanningProposalResponse:
+    blocker = ContentPlanningProposalBlocker(
+        code="refresh_preparation_proposal_binding_mismatch",
+        label="Aktywny worker ma inną autoryzację refresh",
+        reason=(
+            "Ten sam input jest już objęty trwałym claimem z innym receipt; WILQ nie "
+            "pozwoli workerowi bez tego samego bindingu przejąć ani zakończyć kolejki."
+        ),
+        next_step="Poczekaj na bieżący worker albo odśwież przygotowanie refresh.",
+    )
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=response.work_item_id,
+        service_card_id=response.service_card_id,
+        planning_input_digest=response.planning_input_digest,
+        input_summary=response.input_summary,
+        runtime=response.runtime,
+        refresh_preparation_binding=response.refresh_preparation_binding,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
 
 
 def planning_generation_claim_stale_response(
@@ -417,6 +577,7 @@ def planning_generation_claim_stale_response(
         planning_input_digest=response.planning_input_digest,
         input_summary=response.input_summary,
         runtime=response.runtime,
+        refresh_preparation_binding=response.refresh_preparation_binding,
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )

@@ -69,6 +69,7 @@ from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_learning_proposal_response,
     build_content_work_item_measurement_outcome_response,
 )
+from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
 from wilq.content.workflow.store.store import content_workflow_store
 
 router = APIRouter()
@@ -134,6 +135,7 @@ def _build_editor_save_command(
             # retains the original proposal/run lineage; carrying that run ID
             # into this child would incorrectly require a second completion.
             proposal_metadata=None,
+            refresh_preparation_binding=latest_revision.refresh_preparation_binding,
             correction_reason=request.correction_reason,
             created_by=request.created_by,
         )
@@ -215,10 +217,17 @@ def content_work_item_draft_revision_save(
         revision_context_current=workspace.context_current,
         save_context=save_context,
     )
-    with current_editor_draft_context_guard(
-        lambda: _editor_save_context(_snapshot_for_work_item_or_404(work_item_id))
-    ):
-        result = content_workflow_store().append_draft_revision(command)
+    try:
+        with current_editor_draft_context_guard(
+            lambda: _editor_save_context(_snapshot_for_work_item_or_404(work_item_id))
+        ):
+            result = content_workflow_store().append_draft_revision(command)
+    except RefreshPreparationAtomicityError:
+        return _workspace_conflict_response(
+            code="stale_context",
+            snapshot=snapshot,
+            safe_next_step=revision_conflict_next_step("stale_context"),
+        )
     if result.status == "conflict":
         if result.conflict is None:
             raise RuntimeError("Revision append conflict is missing conflict details.")
