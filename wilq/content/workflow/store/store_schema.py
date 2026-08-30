@@ -121,6 +121,21 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_production_classifications (
+      input_digest TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL UNIQUE,
+      run_digest TEXT NOT NULL,
+      policy_id TEXT NOT NULL,
+      policy_digest TEXT NOT NULL,
+      packet_sha256 TEXT NOT NULL,
+      judge_sha256 TEXT NOT NULL,
+      recorded_by TEXT NOT NULL,
+      reviewed_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_draft_revisions (
       revision_id TEXT PRIMARY KEY,
       work_item_id TEXT NOT NULL,

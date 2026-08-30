@@ -39,6 +39,11 @@ from wilq.content.workflow.contracts.contracts import (
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.contracts.section_focus import ContentSectionFocusResponse
+from wilq.content.workflow.decisions.production import (
+    ContentProductionClassificationProjectionReadResult,
+    ContentProductionClassificationReadResult,
+    ContentProductionClassificationRecordResult,
+)
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
@@ -63,6 +68,18 @@ from wilq.content.workflow.workspace.selected_workspace import ContentSelectedWo
 from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
+    (
+        "POST",
+        "/api/content/production-classifications",
+    ): ContentProductionClassificationRecordResult,
+    (
+        "GET",
+        "/api/content/production-classifications/latest",
+    ): ContentProductionClassificationReadResult,
+    (
+        "GET",
+        "/api/content/production-classifications/work-items/{work_item_id}",
+    ): ContentProductionClassificationProjectionReadResult,
     (
         "GET",
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
@@ -377,6 +394,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
         if not route.path.startswith(
             (
                 "/api/content/work-items",
+                "/api/content/production-classifications",
                 "/api/content/knowledge-cards",
                 "/api/content/service-profile",
                 "/api/content/new-page-briefs",
