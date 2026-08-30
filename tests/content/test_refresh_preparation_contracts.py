@@ -115,9 +115,9 @@ def test_refresh_authorization_cannot_authorize_another_planning_turn(
     "operator",
     [
         "Bearer secret",
-        "Basic d2lsa3U6c2VjcmV0",
+        "Basic example-credential",
         "wilku\nother",
-        "https://wilku:secret@example.test",
+        "https://example.test/operator",
         "/private/operator",
         "token operator",
     ],
