@@ -77,14 +77,7 @@ class ProductionClassificationStoreMixin:
         self,
     ) -> ContentProductionClassificationRun | None:
         with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT * FROM content_production_classifications
-                ORDER BY recorded_at DESC, rowid DESC
-                LIMIT 1
-                """
-            ).fetchone()
-        return None if row is None else _classification_from_row(row)
+            return load_latest_production_classification_from_connection(connection)
 
     def load_production_classification_for_work_item(
         self,
@@ -134,4 +127,20 @@ def _classification_from_row(row: sqlite3.Row) -> ContentProductionClassificatio
     return run
 
 
-__all__ = ["ProductionClassificationStoreMixin"]
+def load_latest_production_classification_from_connection(
+    connection: sqlite3.Connection,
+) -> ContentProductionClassificationRun | None:
+    row = connection.execute(
+        """
+        SELECT * FROM content_production_classifications
+        ORDER BY recorded_at DESC, rowid DESC
+        LIMIT 1
+        """
+    ).fetchone()
+    return None if row is None else _classification_from_row(row)
+
+
+__all__ = [
+    "ProductionClassificationStoreMixin",
+    "load_latest_production_classification_from_connection",
+]

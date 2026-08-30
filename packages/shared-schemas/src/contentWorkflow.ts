@@ -4632,55 +4632,6 @@ export const ContentNewPageRevisionReviewResponseSchema = z.object({
   review: ContentDraftRevisionReviewSchema
 });
 
-export const ContentInitialDraftRequestSchema = z.object({
-  expected_proposal_id: z.string().min(1),
-  expected_planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
-  requested_by: z.string().min(1)
-});
-
-export const ContentInitialDraftBlockerSchema = z.object({
-  code: z.string().min(1),
-  label: z.string().min(1),
-  reason: z.string().min(1),
-  next_step: z.string().min(1),
-  source_codes: z.array(z.string()).default([]),
-  retry_after_seconds: z.number().int().positive().nullable().optional()
-});
-
-export const ContentInitialDraftResponseSchema = z.object({
-  status: z.enum(["generating", "created", "blocked", "failed", "conflict"]),
-  work_item_id: z.string().min(1),
-  proposal_id: z.string().nullable().optional(),
-  run_id: z.string().nullable().optional(),
-  revision: ContentDraftRevisionSchema.nullable().optional(),
-  runtime: ContentCodexRuntimeTraceSchema,
-  blockers: z.array(ContentInitialDraftBlockerSchema).default([]),
-  safe_next_step: z.string().min(1),
-  publish_ready: z.literal(false)
-}).superRefine((response, context) => {
-  if (response.status === "created") {
-    if (!response.revision || !response.run_id || response.blockers.length > 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "created initial draft requires revision and run without blockers"
-      });
-    }
-  } else if (response.status === "generating") {
-    if (response.revision || response.blockers.length === 0) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "generating initial draft requires blockers without revision"
-      });
-    }
-  } else if (response.revision || response.blockers.length === 0) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "non-created initial draft requires blockers without revision"
-    });
-  }
-});
-
 export const ContentSemanticDimensionSchema = z.enum([
   "answer_directness",
   "completeness",
@@ -5364,8 +5315,6 @@ export type ContentPlanningProposalRequest = z.input<
 export type ContentPlanningProposalResponse = z.infer<
   typeof ContentPlanningProposalResponseSchema
 >;
-export type ContentInitialDraftRequest = z.input<typeof ContentInitialDraftRequestSchema>;
-export type ContentInitialDraftResponse = z.infer<typeof ContentInitialDraftResponseSchema>;
 export type ContentRevisionRepairProposalRequest = z.input<
   typeof ContentRevisionRepairProposalRequestSchema
 >;

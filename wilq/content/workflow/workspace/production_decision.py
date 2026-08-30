@@ -17,6 +17,11 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationProjection,
     ContentProductionClassificationRow,
 )
+from wilq.content.workflow.decisions.production_reuse import (
+    ExactProductionReuseBlocked,
+    ProductionReuseBlockCode,
+    resolve_exact_production_reuse,
+)
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -27,14 +32,7 @@ _HEX64 = r"^[0-9a-f]{64}$"
 _PUBLIC_URL_VALIDATOR = TypeAdapter(AnyUrl)
 _NonEmptyString = Annotated[str, Field(min_length=1)]
 
-ContentReusableDocumentBlockCode = Literal[
-    "missing_revision_owner",
-    "latest_revision_missing",
-    "latest_revision_drift",
-    "latest_review_missing",
-    "latest_review_not_approved",
-    "latest_review_mismatch",
-]
+ContentReusableDocumentBlockCode = ProductionReuseBlockCode
 
 
 class _FrozenModel(BaseModel):
@@ -332,30 +330,20 @@ def _reusable_document(
     binding: ContentProductionRevisionBinding,
     state: ContentDraftRevisionState | None,
 ) -> ContentReusableDocument:
-    owner = binding.revision_work_item_id
-    if owner is None:
-        return _blocked_reusable_document("missing_revision_owner")
-    revision = None if state is None else state.latest_revision
-    if revision is None:
-        return _blocked_reusable_document("latest_revision_missing")
-    if (
-        revision.work_item_id != owner
-        or revision.revision_id != binding.revision_id
-        or revision.content_digest != binding.revision_digest
-    ):
-        return _blocked_reusable_document("latest_revision_drift")
-    review = None if state is None else state.latest_review
-    if review is None:
-        return _blocked_reusable_document("latest_review_missing")
-    if (
-        review.work_item_id != owner
-        or review.revision_id != binding.revision_id
-        or review.revision_digest != binding.revision_digest
-    ):
-        return _blocked_reusable_document("latest_review_mismatch")
-    if review.decision != "approved":
-        return _blocked_reusable_document("latest_review_not_approved")
-    return ContentReusableDocumentReady(status="ready", revision=revision, review=review)
+    resolution = resolve_exact_production_reuse(
+        revision_owner_work_item_id=binding.revision_work_item_id,
+        expected_revision_id=binding.revision_id,
+        expected_revision_digest=binding.revision_digest,
+        latest_revision=None if state is None else state.latest_revision,
+        latest_review=None if state is None else state.latest_review,
+    )
+    if isinstance(resolution, ExactProductionReuseBlocked):
+        return _blocked_reusable_document(resolution.code)
+    return ContentReusableDocumentReady(
+        status="ready",
+        revision=resolution.revision,
+        review=resolution.review,
+    )
 
 
 _REUSABLE_BLOCK_GUIDANCE: dict[ContentReusableDocumentBlockCode, tuple[str, str]] = {
