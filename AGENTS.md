@@ -129,12 +129,13 @@ record that state rather than silently publishing.
 ## Execution and review protocol
 
 - **Codex is the implementation executor.** Run it non-interactively with
-  SOL-ULTRA effort and capture the result:
-  `codex exec --ephemeral -m gpt-5.6-sol -c 'model_reasoning_effort="ultra"' -C <workdir> -o <last-message-file> "<task>"`
+  Terra at maximum reasoning effort and capture the result:
+  `codex exec --ephemeral -m gpt-5.6-terra -c 'model_reasoning_effort="max"' -C <workdir> -o <last-message-file> "<task>"`
   (add `-s read-only` unless the slice explicitly authorizes writes,
   `--json` for an inspectable trace, `--approve-for-me` only for authorized
-  workspace-write slices). SOL = the `gpt-5.6-sol` model; ultra = its maximum
-  reasoning effort with automatic task delegation.
+  workspace-write slices). Use `gpt-5.6-luna` at `max` for bounded,
+  high-volume execution or independent review when it fits the task. Do not
+  delegate to `gpt-5.6-sol` unless the owner explicitly reauthorizes it.
 - **The opencode agent is the reviewer.** It owns the task contract, delegates
   execution to Codex, verifies every Codex claim against local evidence
   (re-run the focused falsifier, inspect the diff), records proof in the
