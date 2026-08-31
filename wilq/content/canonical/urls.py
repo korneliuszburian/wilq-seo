@@ -10,8 +10,7 @@ CONTENT_SOURCE_SITE_HOSTS = {
     "ekologus.pl",
     "sklep.ekologus.pl",
 }
-CONTENT_AUTHORING_SITE_HOSTS = {"ekologus.dev.proudsite.pl"}
-_UNSAFE_PUBLIC_URL_CHARACTERS = re.compile(r"""[\x00-\x20\x7f<>"'`()\[\]{}|\\^]""")
+_UNSAFE_PUBLIC_URL_CHARACTERS = re.compile(r'''[\x00-\x20\x7f<>"'`()\[\]{}|\\^]''')
 
 
 def content_decision_final_canonical_url(decision: ContentDecisionItem) -> str | None:

@@ -16,11 +16,11 @@ def classify_content_kind(wordpress_content_type: str | None) -> ContentKind:
     """Classify from typed WordPress inventory, never from URL keywords."""
 
     normalized = (wordpress_content_type or "").strip().casefold()
-    if normalized in {"post", "posts"}:
+    if normalized == "post":
         return "editorial"
     if normalized == "uslugi":
         return "service"
-    if normalized in {"page", "pages"}:
+    if normalized == "page":
         return "landing_or_hub"
     if normalized in {
         "author",

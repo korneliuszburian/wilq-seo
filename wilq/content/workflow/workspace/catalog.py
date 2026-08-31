@@ -20,11 +20,7 @@ from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
 )
-from wilq.content.canonical.urls import (
-    CONTENT_AUTHORING_SITE_HOSTS,
-    content_is_safe_public_url,
-    content_url_host,
-)
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -73,14 +69,6 @@ class ContentInventoryCatalogItem(BaseModel):
     metrics_impressions: int = 0
 
 
-class ContentInventoryRestObject(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    url: str = Field(min_length=1)
-    content_type: str = Field(min_length=1)
-    evidence_id: str = Field(min_length=1)
-
-
 class ContentInventoryCoverage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -107,10 +95,6 @@ class ContentInventoryCatalogResponse(BaseModel):
     items: list[ContentInventoryCatalogItem] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
-    rest_content_objects: list[ContentInventoryRestObject] = Field(
-        default_factory=list,
-        exclude=True,
-    )
     coverage: ContentInventoryCoverage = Field(default_factory=ContentInventoryCoverage)
 
 
@@ -164,15 +148,18 @@ class ContentInventoryBindingResponse(BaseModel):
 def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     rows: dict[str, ContentInventoryCatalogItem] = {}
     metric_by_path = _catalog_metric_facts_by_path()
-    inventory_facts = _latest_wordpress_inventory_facts()
-    for fact in inventory_facts:
+    for fact in _latest_wordpress_inventory_facts():
         if fact.name != "content_object_seen":
             continue
         dimensions: dict[str, Any] = fact.dimensions
         if dimensions.get("editorial_eligible") == "false":
             continue
         url = str(dimensions.get("content_url") or dimensions.get("canonical_url") or "").strip()
-        if not content_is_safe_public_url(url) or is_commerce_only_url(url) or url in rows:
+        if (
+            not content_is_safe_public_url(url)
+            or is_commerce_only_url(url)
+            or url in rows
+        ):
             continue
         section_headings = _json_list(dimensions.get("section_headings_json"))
         headings = _json_list(dimensions.get("acf_section_headings_json"))
@@ -191,10 +178,16 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             _metric_numeric_value(fact) for fact in metric_facts if fact.name == "clicks"
         )
         metrics_impressions = sum(
-            _metric_numeric_value(fact) for fact in metric_facts if fact.name == "impressions"
+            _metric_numeric_value(fact)
+            for fact in metric_facts
+            if fact.name == "impressions"
         )
         metrics_query_count = len(
-            {fact.dimensions.get("query") for fact in metric_facts if fact.dimensions.get("query")}
+            {
+                fact.dimensions.get("query")
+                for fact in metric_facts
+                if fact.dimensions.get("query")
+            }
         )
         rows[url] = ContentInventoryCatalogItem(
             catalog_id=f"content_inventory_{sha256(url.encode()).hexdigest()[:20]}",
@@ -204,7 +197,9 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             title=_optional_text(dimensions.get("title_or_h1")),
             content_type=str(
                 dimensions.get("wordpress_post_type")
-                or wordpress_post_type_for_sitemap_group(str(dimensions.get("sitemap_group") or ""))
+                or wordpress_post_type_for_sitemap_group(
+                    str(dimensions.get("sitemap_group") or "")
+                )
                 or dimensions.get("content_type")
                 or "unknown"
             ),
@@ -233,14 +228,14 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     return ContentInventoryCatalogResponse(
         total_count=len(items),
         ready_count=sum(
-            item.material_status in {"content_summary", "content_and_structure"} for item in items
+            item.material_status in {"content_summary", "content_and_structure"}
+            for item in items
         ),
         partial_count=sum(item.material_status == "structure_only" for item in items),
         blocked_count=sum(item.material_status == "url_only" for item in items),
         items=items,
         source_connectors=sorted({item.source_connector for item in items}),
         evidence_ids=sorted({item.evidence_id for item in items}),
-        rest_content_objects=_authoring_rest_content_objects(inventory_facts),
         coverage=_inventory_coverage(),
     )
 
@@ -250,30 +245,12 @@ def _latest_wordpress_inventory_facts() -> list[Any]:
     return _latest_connector_refresh_facts("wordpress_ekologus")
 
 
-def _authoring_rest_content_objects(facts: list[Any]) -> list[ContentInventoryRestObject]:
-    objects = {
-        (
-            str(fact.dimensions.get("content_url") or "").strip(),
-            str(fact.dimensions.get("content_type") or "").strip(),
-            str(fact.evidence_id).strip(),
-        )
-        for fact in facts
-        if fact.name == "content_object_seen"
-        and fact.dimensions.get("inventory_source") == "wordpress_rest"
-        and content_url_host(str(fact.dimensions.get("content_url") or ""))
-        in CONTENT_AUTHORING_SITE_HOSTS
-    }
-    return [
-        ContentInventoryRestObject(url=url, content_type=content_type, evidence_id=evidence_id)
-        for url, content_type, evidence_id in sorted(objects)
-        if url and content_type and evidence_id
-    ]
-
-
 def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
     """Read one connector batch so catalog metrics never sum refresh history."""
     store = metric_store()
-    runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
+    runs = local_state_store().list_connector_refresh_runs(
+        connector_id=connector_id
+    )
     latest = next(
         (
             run
@@ -292,7 +269,9 @@ def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
 
 
 def _inventory_coverage() -> ContentInventoryCoverage:
-    runs = local_state_store().list_connector_refresh_runs(connector_id="wordpress_ekologus")
+    runs = local_state_store().list_connector_refresh_runs(
+        connector_id="wordpress_ekologus"
+    )
     latest = next(
         (
             run
@@ -469,7 +448,11 @@ def read_content_inventory_material(
     """Read one live material while reusing a caller's current inventory snapshot."""
     catalog = catalog or build_content_inventory_catalog_cached()
     item = next(
-        (candidate for candidate in catalog.items if candidate.url.rstrip("/") == url.rstrip("/")),
+        (
+            candidate
+            for candidate in catalog.items
+            if candidate.url.rstrip("/") == url.rstrip("/")
+        ),
         None,
     )
     evidence_id = item.evidence_id if item else None
@@ -537,7 +520,11 @@ def read_content_inventory_material(
 def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
     catalog = build_content_inventory_catalog_cached()
     item = next(
-        (candidate for candidate in catalog.items if candidate.url.rstrip("/") == url.rstrip("/")),
+        (
+            candidate
+            for candidate in catalog.items
+            if candidate.url.rstrip("/") == url.rstrip("/")
+        ),
         None,
     )
     if item is None:
@@ -557,12 +544,16 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
     material_status = item.material_status
     title = item.title
     material_source_kind = (
-        "wordpress_inventory_snapshot" if item.material_status != "url_only" else None
+        "wordpress_inventory_snapshot"
+        if item.material_status != "url_only"
+        else None
     )
     material_confidence = "source_bound" if item.material_status != "url_only" else None
     extraction_region = None
     source_field_lineage = (
-        ["wordpress_inventory.content_object_seen"] if item.material_status != "url_only" else []
+        ["wordpress_inventory.content_object_seen"]
+        if item.material_status != "url_only"
+        else []
     )
     if item.material_status == "url_only":
         material = read_content_inventory_material(item.url, catalog=catalog)
@@ -612,7 +603,9 @@ def inventory_metric_facts(url: str, path: str) -> list[Any]:
             (
                 connector_id,
                 str(getattr(latest, "id", "")) if latest is not None else "",
-                tuple(getattr(latest, "evidence_ids", ()) or ()) if latest is not None else (),
+                tuple(getattr(latest, "evidence_ids", ()) or ())
+                if latest is not None
+                else (),
             )
         )
     cache_key = (url.rstrip("/"), path, tuple(refresh_key))
@@ -647,14 +640,19 @@ def inventory_metric_facts(url: str, path: str) -> list[Any]:
 def _latest_metric_refresh(connector_id: str) -> Any | None:
     runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
     completed_reads = [
-        run for run in runs if run.mode.value == "vendor_read" and run.status.value == "completed"
+        run
+        for run in runs
+        if run.mode.value == "vendor_read" and run.status.value == "completed"
     ]
-
     def recency(run: Any) -> datetime:
         value = getattr(run, "completed_at", None) or getattr(run, "started_at", None)
         return value if isinstance(value, datetime) else datetime.min
 
-    return max(completed_reads, key=recency) if completed_reads else None
+    return (
+        max(completed_reads, key=recency)
+        if completed_reads
+        else None
+    )
 
 
 def _restrict_to_latest_refresh_batch(
