@@ -140,6 +140,29 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_kind_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      work_item_id TEXT NOT NULL,
+      classification_run_id TEXT NOT NULL,
+      classification_run_digest TEXT NOT NULL,
+      decision_set_digest TEXT NOT NULL,
+      source_packet_row_digest TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      planning_input_digest TEXT NOT NULL,
+      content_kind TEXT NOT NULL CHECK (content_kind = 'editorial'),
+      wordpress_content_type TEXT NOT NULL,
+      inventory_evidence_digest TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (
+        work_item_id, classification_run_digest, decision_set_digest,
+        source_packet_row_digest, canonical_path, public_url,
+        planning_input_digest, content_kind
+      )
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_refresh_preparation_authorizations (
       authorization_id TEXT PRIMARY KEY,
       authorization_digest TEXT NOT NULL UNIQUE,
@@ -358,6 +381,12 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "public_url",
             "content_kind",
             "service_card_id",
+        },
+        "content_kind_receipts": {
+            "canonical_path",
+            "public_url",
+            "content_kind",
+            "inventory_evidence_digest",
         },
     }
     for table, expected in required_columns.items():

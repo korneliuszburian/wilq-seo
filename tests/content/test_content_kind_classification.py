@@ -7,8 +7,10 @@ from wilq.content.workflow.content_kind import (
 
 def test_wordpress_inventory_classifies_content_without_url_heuristics() -> None:
     assert classify_content_kind("post") == "editorial"
+    assert classify_content_kind("posts") == "editorial"
     assert classify_content_kind("uslugi") == "service"
     assert classify_content_kind("page") == "landing_or_hub"
+    assert classify_content_kind("pages") == "landing_or_hub"
     assert classify_content_kind("category") == "taxonomy_or_system"
     assert classify_content_kind("unknown") == "ambiguous"
 

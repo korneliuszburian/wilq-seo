@@ -684,7 +684,7 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
                 url=url,
                 path=url.removeprefix("https://www.ekologus.pl").rstrip("/") or "/",
                 title="Syntetyczna strona do testu planowania",
-                content_type="posts",
+                content_type="uslugi",
                 content_summary="Syntetyczne podsumowanie publicznej treści.",
                 content_word_count=500,
                 section_count=1,
@@ -714,31 +714,28 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
         inventory_binding.inventory_decision_for_work_item,
     )
 
-    def metrics(url: str, path: str) -> list[MetricFact]:
-        del path
-        dimensions = {"query": "bdo dla firm", "page": url}
-        return [
-            MetricFact(
-                name="clicks",
-                value=12,
-                period="2026-07",
-                source_connector="google_search_console",
-                evidence_id="ev_connector_google_search_console_status",
-                dimensions=dimensions,
-                collected_at=_SYNTHETIC_COLLECTED_AT,
-            ),
-            MetricFact(
-                name="impressions",
-                value=120,
-                period="2026-07",
-                source_connector="google_search_console",
-                evidence_id="ev_connector_google_search_console_status",
-                dimensions=dimensions,
-                collected_at=_SYNTHETIC_COLLECTED_AT,
-            ),
-        ]
+    monkeypatch.setattr(
+        inventory_binding,
+        "inventory_metric_facts",
+        _synthetic_inventory_metrics,
+    )
 
-    monkeypatch.setattr(inventory_binding, "inventory_metric_facts", metrics)
+
+def _synthetic_inventory_metrics(url: str, path: str) -> list[MetricFact]:
+    del path
+    dimensions = {"query": "bdo dla firm", "page": url}
+    return [
+        MetricFact(
+            name=name,
+            value=value,
+            period="2026-07",
+            source_connector="google_search_console",
+            evidence_id="ev_connector_google_search_console_status",
+            dimensions=dimensions,
+            collected_at=_SYNTHETIC_COLLECTED_AT,
+        )
+        for name, value in (("clicks", 12), ("impressions", 120))
+    ]
 
 
 def _patch_codex_clients(

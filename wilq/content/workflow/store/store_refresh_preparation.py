@@ -10,6 +10,9 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
     ContentRefreshPreparationAuthorizationRecordResult,
 )
+from wilq.content.workflow.store.store_content_kind_receipt import (
+    assert_persisted_editorial_content_kind_receipt,
+)
 from wilq.content.workflow.store.store_production_classification import (
     load_latest_production_classification_from_connection,
 )
@@ -28,12 +31,10 @@ class RefreshPreparationAuthorizationStoreMixin:
             authorization.model_dump_json(),
             strict=True,
         )
-        if accepted.content_kind == "editorial":
-            raise ValueError(
-                "Editorial refresh authorization requires a persisted content-kind receipt."
-            )
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            if accepted.content_kind == "editorial":
+                assert_persisted_editorial_content_kind_receipt(connection, accepted)
             _assert_current_refresh_authorization(connection, accepted)
             existing_row = connection.execute(
                 """

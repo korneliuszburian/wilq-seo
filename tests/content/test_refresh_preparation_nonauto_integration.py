@@ -30,6 +30,7 @@ from wilq.content.knowledge import source_facts as source_facts_module
 from wilq.content.knowledge.cards import ContentKnowledgeServiceCandidate
 from wilq.content.planning.dynamic_input import build_content_planning_input
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     classification_counts,
@@ -262,6 +263,15 @@ def _authority(
         store=content_workflow_store(),
         snapshot_loader=snapshot_loader,  # type: ignore[arg-type]
         proposal_store=content_planning_proposal_store(),
+        content_kind_inventory_loader=lambda work_item_id: ContentKindInventoryBinding(
+            work_item_id=work_item_id,
+            canonical_path="/analiza-pozwolen-zintegrowanych",
+            public_url=_TARGET_URL,
+            wordpress_content_type="uslugi",
+            content_kind="service",
+            inventory_evidence_ids=("ev_connector_wordpress_ekologus_status",),
+            trusted=True,
+        ),
     )
 
 

@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.workflow.content_kind_receipt import (
+    ContentKindReceipt,
+    ContentKindReceiptRecordResult,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     ContentProductionClassificationRun,
@@ -24,6 +29,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
 RefreshPreparationSnapshotLoader = Callable[
     [str, str | None], ContentWorkItemWorkflowSnapshotResponse
 ]
+ContentKindInventoryLoader = Callable[[str], ContentKindInventoryBinding | None]
 
 
 class RefreshPreparationStore(Protocol):
@@ -55,6 +61,13 @@ class RefreshPreparationStore(Protocol):
         content_kind: str = "service",
     ) -> ContentRefreshPreparationAuthorization | None: ...
 
+    def record_content_kind_receipt(
+        self,
+        receipt: ContentKindReceipt,
+    ) -> ContentKindReceiptRecordResult: ...
+
+    def load_content_kind_receipt(self, receipt_id: str) -> ContentKindReceipt | None: ...
+
 
 @dataclass(frozen=True, slots=True)
 class RefreshPreparationUnclassified:
@@ -73,7 +86,7 @@ class RefreshPreparationRuntimeAuthorized:
     snapshot: ContentWorkItemWorkflowSnapshotResponse
     planning_input: ContentPlanningInput
     classification: ContentRefreshPreparationClassificationBinding
-    service_candidate: ContentRefreshPreparationServiceCandidate
+    service_candidate: ContentRefreshPreparationServiceCandidate | None
     authorization: ContentRefreshPreparationAuthorization
 
     @property
@@ -95,8 +108,20 @@ class RefreshClassificationContext:
     binding: ContentRefreshPreparationClassificationBinding
 
 
+@dataclass(frozen=True, slots=True)
+class RefreshPreparationRebuilt:
+    snapshot: ContentWorkItemWorkflowSnapshotResponse
+    planning_input: ContentPlanningInput
+    content_kind: Literal["service", "editorial"]
+    service_candidate: ContentRefreshPreparationServiceCandidate | None
+    content_kind_receipt: ContentKindReceipt | None
+    informational_blockers: list[ContentRefreshPreparationBlocker]
+
+
 __all__ = [
     "RefreshClassificationContext",
+    "ContentKindInventoryLoader",
+    "RefreshPreparationRebuilt",
     "RefreshPreparationRuntimeAuthorized",
     "RefreshPreparationRuntimeBlocked",
     "RefreshPreparationRuntimeResolution",

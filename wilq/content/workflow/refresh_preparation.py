@@ -11,12 +11,16 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.workflow.decisions.inventory_binding import (
+    content_kind_inventory_binding_for_work_item,
+)
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorizationRequest,
     ContentRefreshPreparationAuthorizationResponse,
     ContentRefreshPreparationPreview,
 )
 from wilq.content.workflow.refresh_preparation_models import (
+    ContentKindInventoryLoader,
     RefreshPreparationRuntimeAuthorized,
     RefreshPreparationRuntimeBlocked,
     RefreshPreparationRuntimeResolution,
@@ -43,10 +47,14 @@ class ContentRefreshPreparationAuthority:
         store: RefreshPreparationStore,
         snapshot_loader: RefreshPreparationSnapshotLoader,
         proposal_store: ContentPlanningProposalStore,
+        content_kind_inventory_loader: ContentKindInventoryLoader = (
+            content_kind_inventory_binding_for_work_item
+        ),
     ) -> None:
         self._store = store
         self._snapshot_loader = snapshot_loader
         self._proposal_store = proposal_store
+        self._content_kind_inventory_loader = content_kind_inventory_loader
 
     def preview(
         self,
@@ -59,6 +67,7 @@ class ContentRefreshPreparationAuthority:
             snapshot_loader=self._snapshot_loader,
             work_item_id=work_item_id,
             service_card_id=service_card_id,
+            content_kind_inventory_loader=self._content_kind_inventory_loader,
         )
 
     def authorize(
@@ -71,6 +80,7 @@ class ContentRefreshPreparationAuthority:
             snapshot_loader=self._snapshot_loader,
             work_item_id=work_item_id,
             request=request,
+            content_kind_inventory_loader=self._content_kind_inventory_loader,
         )
 
     def resolve_planning(
@@ -83,6 +93,7 @@ class ContentRefreshPreparationAuthority:
             snapshot_loader=self._snapshot_loader,
             work_item_id=work_item_id,
             request=request,
+            content_kind_inventory_loader=self._content_kind_inventory_loader,
         )
 
     def resolve_initial_draft(
@@ -96,6 +107,7 @@ class ContentRefreshPreparationAuthority:
             proposal_store=self._proposal_store,
             work_item_id=work_item_id,
             request=request,
+            content_kind_inventory_loader=self._content_kind_inventory_loader,
         )
 
     def planning_block_response(

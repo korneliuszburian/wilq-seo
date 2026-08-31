@@ -10,6 +10,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.production as production_module
+import wilq.content.workflow.workspace.api as workflow_api
 from apps.api.wilq_api.routers.content_initial_draft import register_content_initial_draft_route
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
@@ -18,10 +19,12 @@ from apps.api.wilq_api.routers.content_refresh_preparation import (
     register_content_refresh_preparation_routes,
 )
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
+from tests.content import dynamic_planning_test_support as planning_support
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     classification_counts,
@@ -354,12 +357,27 @@ def test_atomic_revision_append_rejects_unbound_refresh_child(
 
 
 def _authority(store: object) -> ContentRefreshPreparationAuthority:
+    def service_snapshot(work_item_id: str, service_card_id: str | None):
+        baseline = snapshot_for_work_item_or_404(work_item_id)
+        return workflow_api.build_content_work_item_snapshot_response_from_selected_decision(
+            planning_support._synthetic_planning_decision(BDO_URL),  # noqa: SLF001
+            freshness_assessment=baseline.freshness_assessment,
+            service_card_id_override=service_card_id,
+        )
+
     return ContentRefreshPreparationAuthority(
         store=cast(Any, store),
-        snapshot_loader=lambda work_item_id, _service_card_id: snapshot_for_work_item_or_404(
-            work_item_id
-        ),
+        snapshot_loader=service_snapshot,
         proposal_store=content_planning_proposal_store(),
+        content_kind_inventory_loader=lambda work_item_id: ContentKindInventoryBinding(
+            work_item_id=work_item_id,
+            canonical_path="/bdo-co-musi-wiedziec-przedsiebiorca",
+            public_url=BDO_URL,
+            wordpress_content_type="uslugi",
+            content_kind="service",
+            inventory_evidence_ids=("ev_connector_wordpress_ekologus_status",),
+            trusted=True,
+        ),
     )
 
 
@@ -369,12 +387,16 @@ def _app_client(authority: ContentRefreshPreparationAuthority) -> TestClient:
     register_content_refresh_preparation_routes(router, authority_factory=lambda: authority)
     register_content_planning_proposal_routes(
         router,
-        snapshot_loader=snapshot_for_work_item_or_404,
+        snapshot_loader=lambda work_item_id: authority._snapshot_loader(  # noqa: SLF001
+            work_item_id, None
+        ),
         refresh_authority_factory=lambda: authority,
     )
     register_content_initial_draft_route(
         router,
-        snapshot_loader=snapshot_for_work_item_or_404,
+        snapshot_loader=lambda work_item_id: authority._snapshot_loader(  # noqa: SLF001
+            work_item_id, None
+        ),
         refresh_authority_factory=lambda: authority,
     )
     app.include_router(router)
@@ -388,7 +410,7 @@ def _authorize(client: TestClient) -> dict[str, str]:
     )
     assert ready.status_code == 200, ready.text
     body = cast(dict[str, Any], ready.json())
-    assert body["status"] == "ready_to_authorize", body
+    assert body["status"] == "ready_to_authorize", body.get("blockers", body)
     classification = cast(dict[str, Any], body["classification"])
     authorized = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/refresh-preparation/authorizations",

@@ -10,6 +10,7 @@ CONTENT_SOURCE_SITE_HOSTS = {
     "ekologus.pl",
     "sklep.ekologus.pl",
 }
+CONTENT_AUTHORING_SITE_HOSTS = {"ekologus.dev.proudsite.pl"}
 _UNSAFE_PUBLIC_URL_CHARACTERS = re.compile(r'''[\x00-\x20\x7f<>"'`()\[\]{}|\\^]''')
 
 
@@ -62,6 +63,36 @@ def content_url_host(value: str | None) -> str | None:
 
 
 def content_is_safe_public_url(value: str | None) -> bool:
+    return _content_is_safe_url(value, CONTENT_SOURCE_SITE_HOSTS)
+
+
+def content_is_safe_authoring_url(value: str | None) -> bool:
+    """Accept only the one HTTPS dev authoring origin used for typed REST facts."""
+
+    return _content_is_safe_url(value, CONTENT_AUTHORING_SITE_HOSTS)
+
+
+def content_authoring_path_matches_public_url(
+    public_url: str | None,
+    authoring_url: str | None,
+) -> bool:
+    """Match one safe public URL to one safe dev REST URL by normalized path.
+
+    This is deliberately the one predicate used both to classify an otherwise
+    ambiguous public inventory row and to attach the REST evidence that made
+    that classification possible.  It never treats a host, query, fragment,
+    credential-bearing URL, or URL keyword as an identity signal.
+    """
+
+    return (
+        content_is_safe_public_url(public_url)
+        and content_is_safe_authoring_url(authoring_url)
+        and content_normalized_path(public_url).casefold()
+        == content_normalized_path(authoring_url).casefold()
+    )
+
+
+def _content_is_safe_url(value: str | None, allowed_hosts: set[str]) -> bool:
     if not value or value != value.strip() or _UNSAFE_PUBLIC_URL_CHARACTERS.search(value):
         return False
     parsed = urlparse(value)
@@ -72,7 +103,7 @@ def content_is_safe_public_url(value: str | None) -> bool:
     hostname = parsed.hostname.casefold() if parsed.hostname else None
     return (
         parsed.scheme.casefold() == "https"
-        and hostname in CONTENT_SOURCE_SITE_HOSTS
+        and hostname in allowed_hosts
         and parsed.username is None
         and parsed.password is None
         and port is None
