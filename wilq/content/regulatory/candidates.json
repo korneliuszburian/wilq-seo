@@ -203,9 +203,9 @@
       "source_url": "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/poradniki_branzowe/opracowania/Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf",
       "source_title": "Ekoportal: wytyczne do sporządzania wniosku o pozwolenie zintegrowane",
       "observed_on": "2026-08-30",
-      "requirement_ids": ["integrated_permit_initial_report", "integrated_permit_case_scope"],
+      "requirement_ids": ["integrated_permit_initial_report"],
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź zakres dokumentacji wniosku i relację wytycznych do aktualnych przepisów."
+      "safe_next_step": "Potwierdź warunkowy charakter raportu początkowego i nie rozszerzaj źródła na zakres całej sprawy."
     }
   ]
 }

@@ -139,6 +139,59 @@ def test_direct_review_rejects_a_superseded_snapshot_and_hides_old_fact(
     assert second.snapshot_id != first.snapshot_id
 
 
+def test_narrowed_candidate_hides_historical_overbroad_accepted_fact(tmp_path) -> None:
+    store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
+    current = next(
+        candidate
+        for candidate in regulatory_source_candidates()
+        if candidate.candidate_id == "integrated_permit_ekoportal_2026_08_30_r1"
+    )
+    historical = current.model_copy(
+        update={
+            "requirement_ids": [
+                "integrated_permit_initial_report",
+                "integrated_permit_case_scope",
+            ]
+        }
+    )
+    snapshot = _snapshot(store.path, current.candidate_id)
+    store.record(
+        _command(
+            candidate_id=current.candidate_id,
+            snapshot=snapshot,
+            requirement_ids=historical.requirement_ids,
+        ),
+        candidates=(historical,),
+        snapshot_store=RegulatorySourceSnapshotStore(store.path),
+    )
+
+    assert store.approved_source_facts() == ()
+
+
+def test_reassigned_candidate_hides_historical_subject_fact(tmp_path) -> None:
+    store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
+    current = next(
+        candidate
+        for candidate in regulatory_source_candidates()
+        if candidate.candidate_id == "integrated_permit_ekoportal_2026_08_30_r1"
+    )
+    historical = current.model_copy(
+        update={"canonical_paths": ["/historyczny-inny-material"]}
+    )
+    snapshot = _snapshot(store.path, current.candidate_id)
+    store.record(
+        _command(
+            candidate_id=current.candidate_id,
+            snapshot=snapshot,
+            requirement_ids=current.requirement_ids,
+        ),
+        candidates=(historical,),
+        snapshot_store=RegulatorySourceSnapshotStore(store.path),
+    )
+
+    assert store.approved_source_facts() == ()
+
+
 def test_source_snapshot_stays_bounded_without_persisting_source_body(tmp_path) -> None:
     from wilq.content.regulatory.source_snapshots import _MAX_SNAPSHOT_BYTES
 

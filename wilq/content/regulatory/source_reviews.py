@@ -266,10 +266,20 @@ class RegulatorySourceReviewStore:
 
     def approved_source_facts(self) -> tuple[ContentSourceFact, ...]:
         snapshot_store = RegulatorySourceSnapshotStore(self.path)
+        candidates = {
+            candidate.candidate_id: candidate for candidate in regulatory_source_candidates()
+        }
         return tuple(
             fact
             for review in self.list_reviews()
             if review.decision == "accepted"
+            and (candidate := candidates.get(review.candidate_id)) is not None
+            and review.source_url == candidate.source_url
+            and review.profile_id == candidate.profile_id
+            and review.profile_version == candidate.profile_version
+            and set(review.covered_requirement_ids).issubset(candidate.requirement_ids)
+            and set(review.service_card_ids).issubset(candidate.service_card_ids)
+            and set(review.canonical_paths).issubset(candidate.canonical_paths)
             and (latest := snapshot_store.latest(review.candidate_id)) is not None
             and latest.snapshot_id == review.source_snapshot_id
             if (fact := review.approved_source_fact()) is not None
