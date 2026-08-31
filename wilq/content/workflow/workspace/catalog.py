@@ -12,7 +12,10 @@ from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
     read_wordpress_content_material,
 )
-from wilq.connectors.wordpress.sitemap_policy import is_commerce_only_url
+from wilq.connectors.wordpress.sitemap_policy import (
+    is_commerce_only_url,
+    wordpress_post_type_for_sitemap_group,
+)
 from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
@@ -192,7 +195,14 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             url=url,
             path=_path(url),
             title=_optional_text(dimensions.get("title_or_h1")),
-            content_type=str(dimensions.get("content_type") or "unknown"),
+            content_type=str(
+                dimensions.get("wordpress_post_type")
+                or wordpress_post_type_for_sitemap_group(
+                    str(dimensions.get("sitemap_group") or "")
+                )
+                or dimensions.get("content_type")
+                or "unknown"
+            ),
             content_summary=summary,
             content_word_count=word_count,
             section_count=(

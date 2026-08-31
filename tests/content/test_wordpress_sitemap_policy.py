@@ -2,6 +2,7 @@ from wilq.connectors.wordpress.sitemap_policy import (
     sitemap_entry_policy,
     sitemap_group_for_url,
     sitemap_url_object,
+    wordpress_post_type_for_sitemap_group,
 )
 
 
@@ -13,6 +14,10 @@ def test_sitemap_policy_separates_editorial_and_commerce_maps() -> None:
     assert sitemap_entry_policy("pages") == ("true", "editorial")
     assert sitemap_entry_policy("products") == ("false", "commerce_catalog")
     assert sitemap_entry_policy("product_cat") == ("false", "commerce_catalog")
+    assert wordpress_post_type_for_sitemap_group("posts") == "post"
+    assert wordpress_post_type_for_sitemap_group("pages") == "page"
+    assert wordpress_post_type_for_sitemap_group("uslugi") == "uslugi"
+    assert wordpress_post_type_for_sitemap_group("category") is None
 
 
 def test_dev_content_maps_are_editorial_but_taxonomies_are_not() -> None:

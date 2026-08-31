@@ -9,6 +9,9 @@ from wilq.content.planning.decisions import (
     content_decision_title,
     content_decision_work_item_id_for_url,
 )
+from wilq.content.workflow.content_kind import (
+    classify_content_kind,
+)
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
@@ -177,6 +180,8 @@ def inventory_decision_for_work_item(
         best_average_position=metrics.best_average_position,
         wordpress_match="found",
         wordpress_match_confidence="high",
+        wordpress_content_type=item.content_type,
+        content_kind=classify_content_kind(item.content_type),
         wordpress_title_or_h1=item.title,
         wordpress_inventory_source=item.source_connector,
         wordpress_section_headings=section_headings,
@@ -225,6 +230,8 @@ def inventory_decision_for_work_item(
         next_step="Sprawdź dynamiczny materiał, wybierz usługę i wygeneruj plan.",
         risk=ActionRisk.low,
     )
+
+
 
 
 __all__ = [
