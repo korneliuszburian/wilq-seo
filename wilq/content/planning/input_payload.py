@@ -27,7 +27,7 @@ def refresh_planning_payload(
     *,
     item: ContentWorkItem,
     service_profile: ContentWorkItemServiceProfileContext,
-    candidate: ContentWorkItemServiceCandidate,
+    candidate: ContentWorkItemServiceCandidate | None,
     brief: ContentSalesBrief,
     baseline: ContentPlanningProposal,
     inventory: ContentPlanningInventory,
@@ -47,11 +47,12 @@ def refresh_planning_payload(
         evidence_ids,
     )
     return {
+        "content_kind": "editorial" if candidate is None else "service",
         "work_item_id": item.id,
         "final_canonical_url": brief.final_canonical_url,
         "service_candidates": service_profile.service_candidates,
-        "confirmed_service_card_id": candidate.service_card_id,
-        "service_label": candidate.service_label,
+        "confirmed_service_card_id": None if candidate is None else candidate.service_card_id,
+        "service_label": None if candidate is None else candidate.service_label,
         "inventory": inventory,
         "internal_link_candidates": internal_link_candidates,
         "target_reader": brief.target_reader,

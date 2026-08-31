@@ -139,7 +139,10 @@ def regulatory_draft_assurance_profile(
 ) -> ContentRegulatoryProfile | None:
     """Return the exact profile only when the planning coverage binds it."""
 
-    profile = regulatory_content_profile(service_card_id=planning_input.confirmed_service_card_id)
+    service_card_id = planning_input.confirmed_service_card_id
+    if service_card_id is None:
+        return None
+    profile = regulatory_content_profile(service_card_id=service_card_id)
     coverage = planning_input.regulatory_coverage
     if (
         profile is None
