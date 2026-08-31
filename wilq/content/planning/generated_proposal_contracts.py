@@ -206,7 +206,7 @@ class ContentPlanningModelOutput(BaseModel):
 
     language: Literal["pl-PL"] = "pl-PL"
     content_kind: PlanningContentKind = "service"
-    service_card_id: str | None = Field(default=None, min_length=1)
+    service_card_id: str | None = Field(min_length=1)
     target_reader: str = Field(min_length=1)
     buyer_problem: str = Field(min_length=1)
     buyer_trigger: str = Field(min_length=1)

@@ -166,7 +166,7 @@ def existing_planning_generation_state(
     current_is_exact_input = (
         current.work_item_id == work_item_id
         and current.service_card_id == request.service_card_id
-        and current.content_kind == request.content_kind
+        and getattr(current, "content_kind", "service") == request.content_kind
         and current.planning_input_digest == request.expected_planning_input_digest
     )
     current_has_existing_proposal = (
