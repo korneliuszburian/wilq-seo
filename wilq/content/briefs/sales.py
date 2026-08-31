@@ -285,7 +285,11 @@ def content_sales_brief_blockers(
 ) -> list[ContentSalesBriefBlocker]:
     blockers = [
         *_enrichment_blockers(enrichment),
-        *_knowledge_match_blockers(knowledge_match),
+        *(
+            []
+            if item.content_kind == "editorial"
+            else _knowledge_match_blockers(knowledge_match)
+        ),
     ]
     blockers.extend(_preflight_and_evidence_blockers(item, preflight, seed))
     blockers.extend(_source_fact_reference_blockers(item, preflight, seed.source_facts))

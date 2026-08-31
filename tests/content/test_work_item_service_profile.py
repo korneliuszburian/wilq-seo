@@ -61,6 +61,28 @@ def test_unbound_work_item_is_a_blocker_not_a_free_text_service_guess() -> None:
     assert "typed karty usługi" in context.reason
 
 
+def test_editorial_post_does_not_require_or_guess_a_service_card() -> None:
+    context = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id="content_work_item_editorial",
+            topic="Analiza pozwoleń zintegrowanych",
+            wordpress_content_type="post",
+            content_kind="editorial",
+            source_public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+            evidence_ids=["ev_wordpress_editorial"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert context.binding_status == "not_required"
+    assert context.decision_status == "ready"
+    assert context.service_card_id is None
+    assert context.service_candidates == []
+    assert context.knowledge_card_ids == []
+    assert context.cta_patterns == []
+    assert "redakcyjn" in context.reason
+
+
 def test_gsc_query_candidate_does_not_expose_service_claims_or_cta() -> None:
     page = "https://www.ekologus.pl/kariera/"
     context = build_content_work_item_service_profile_context(
