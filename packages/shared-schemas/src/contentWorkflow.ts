@@ -3068,10 +3068,11 @@ export const ContentDraftRevisionSchema = z.object({
   });
   const generatedText: Array<[string, Array<string | number>]> = [
     [revision.title, ["title"]],
-    ...Object.entries(revision.page_assets ?? {}).map(([field, value]) => [
-      value,
-      ["page_assets", field]
-    ] as [string, Array<string | number>]),
+    ...Object.entries(revision.page_assets ?? {}).flatMap(([field, value]) =>
+      typeof value === "string"
+        ? [[value, ["page_assets", field]] as [string, Array<string | number>]]
+        : []
+    ),
     ...revision.sections.flatMap((section, index) => [
       [section.heading, ["sections", index, "heading"]] as [string, Array<string | number>],
       [section.body_markdown, ["sections", index, "body_markdown"]] as [
