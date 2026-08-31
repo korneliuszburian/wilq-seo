@@ -61,6 +61,13 @@ export const ContentMeasurementWindowStatusSchema = z.enum([
   "closed"
 ]);
 export const ContentWordPressSectionInventoryStatusSchema = z.enum(["available", "missing"]);
+export const ContentKindSchema = z.enum([
+  "service",
+  "editorial",
+  "landing_or_hub",
+  "taxonomy_or_system",
+  "ambiguous"
+]);
 
 export const ContentWorkItemSchema = z.object({
   id: z.string(),
@@ -69,6 +76,8 @@ export const ContentWorkItemSchema = z.object({
   final_canonical_url: z.string().nullable().optional(),
   intended_final_url: z.string().nullable().optional(),
   preview_url: z.string().nullable().optional(),
+  wordpress_content_type: z.string().nullable().optional(),
+  content_kind: ContentKindSchema.default("ambiguous"),
   wordpress_title_or_h1: z.string().nullable().optional(),
   wordpress_section_headings: z.array(z.string()).default([]),
   wordpress_section_count: z.number().nullable().optional(),
@@ -3617,7 +3626,8 @@ export const ContentWorkflowOperatorJourneySchema = z.object({
 export const ContentWorkItemServiceProfileBindingStatusSchema = z.enum([
   "not_evaluated",
   "bound",
-  "unbound"
+  "unbound",
+  "not_required"
 ]);
 
 export const ContentWorkItemServiceProfileDecisionStatusSchema = z.enum([

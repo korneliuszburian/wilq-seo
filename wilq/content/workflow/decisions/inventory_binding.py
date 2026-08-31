@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.operator_copy import unique
 from wilq.content.planning.decisions import (
     content_decision_metrics,
@@ -10,7 +11,8 @@ from wilq.content.planning.decisions import (
     content_decision_work_item_id_for_url,
 )
 from wilq.content.workflow.content_kind import (
-    classify_content_kind,
+    ContentKind,
+    classify_content_kind_from_inventory,
 )
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
@@ -130,6 +132,29 @@ def _inventory_decision_status(
     return "ready" if material_ready or item.material_status != "url_only" else "blocked"
 
 
+def _content_kind_binding(
+    item: ContentInventoryCatalogItem,
+    catalog: ContentInventoryCatalogResponse,
+    metric_evidence_ids: list[str],
+) -> tuple[str | None, ContentKind, list[str]]:
+    content_type, content_kind = classify_content_kind_from_inventory(
+        item.content_type,
+        public_url=item.url,
+        dev_objects=[
+            (object_.url, object_.content_type) for object_ in catalog.rest_content_objects
+        ],
+    )
+    classification_evidence_ids = [
+        object_.evidence_id
+        for object_ in catalog.rest_content_objects
+        if content_kind != "ambiguous"
+        and object_.content_type == content_type
+        and content_normalized_path(object_.url) == content_normalized_path(item.url)
+    ]
+    evidence_ids = unique([item.evidence_id, *classification_evidence_ids, *metric_evidence_ids])
+    return content_type, content_kind, evidence_ids
+
+
 def inventory_decision_for_work_item(
     work_item_id: str,
     *,
@@ -143,7 +168,6 @@ def inventory_decision_for_work_item(
         return None
     material = read_content_inventory_material(item.url, catalog=catalog) if read_material else None
     resolved = resolve_inventory_material(item, material)
-    content_text = resolved.content_text
     content_summary = resolved.content_summary
     section_headings = resolved.section_headings
     acf_headings = resolved.acf_headings
@@ -152,7 +176,11 @@ def inventory_decision_for_work_item(
     facts = [fact for fact in all_metric_facts if fact.source_connector == "google_search_console"]
     queries = unique(str(fact.dimensions.get("query") or "") for fact in facts)
     metrics = content_decision_metrics(facts, queries)
-    evidence_ids = unique([item.evidence_id, *(fact.evidence_id for fact in all_metric_facts)])
+    wordpress_content_type, content_kind, evidence_ids = _content_kind_binding(
+        item,
+        catalog,
+        [fact.evidence_id for fact in all_metric_facts],
+    )
     source_connectors = unique(
         [item.source_connector, *(fact.source_connector for fact in all_metric_facts)]
     )
@@ -162,11 +190,10 @@ def inventory_decision_for_work_item(
         query_count=len(queries),
         metrics=metrics,
     )
-    decision_status = _inventory_decision_status(item, resolved.ready, allow_material_pending)
     return ContentDecisionItem(
         id=work_item_id.removeprefix("content_work_item_"),
         decision_type="refresh_or_merge",
-        status=decision_status,
+        status=_inventory_decision_status(item, resolved.ready, allow_material_pending),
         title=title,
         summary=content_summary or "Istniejący adres WordPress do odczytu i decyzji contentowej.",
         page=item.url,
@@ -180,22 +207,22 @@ def inventory_decision_for_work_item(
         best_average_position=metrics.best_average_position,
         wordpress_match="found",
         wordpress_match_confidence="high",
-        wordpress_content_type=item.content_type,
-        content_kind=classify_content_kind(item.content_type),
+        wordpress_content_type=wordpress_content_type,
+        content_kind=content_kind,
         wordpress_title_or_h1=item.title,
         wordpress_inventory_source=item.source_connector,
         wordpress_section_headings=section_headings,
         wordpress_section_count=len(section_headings) if section_headings else item.section_count,
         wordpress_section_inventory_status="available" if section_headings else "missing",
         wordpress_content_summary=content_summary,
-        wordpress_content_text=content_text,
+        wordpress_content_text=resolved.content_text,
         wordpress_content_source_kind=resolved.source_kind,
         wordpress_content_extraction_region=resolved.extraction_region,
         wordpress_content_material_confidence=resolved.material_confidence,
         wordpress_content_source_field_lineage=resolved.source_field_lineage,
         wordpress_content_word_count=resolved.content_word_count,
         wordpress_content_inventory_status=(
-            "available" if content_summary or content_text else "missing"
+            "available" if content_summary or resolved.content_text else "missing"
         ),
         wordpress_content_inventory_note=(
             None
@@ -217,8 +244,6 @@ def inventory_decision_for_work_item(
         content_gate_summary="Istniejąca treść wymaga decyzji odświeżenia; nie twórz duplikatu.",
         source_connectors=source_connectors,
         evidence_ids=evidence_ids,
-        # Keep the bounded GSC preview for the queue, but retain exact GA4
-        # landing facts so planning can bind behavior to the selected page.
         metric_facts=[
             *(facts if include_all_metric_facts else facts[:8]),
             *[fact for fact in all_metric_facts if fact.source_connector == "google_analytics_4"],
@@ -230,8 +255,6 @@ def inventory_decision_for_work_item(
         next_step="Sprawdź dynamiczny materiał, wybierz usługę i wygeneruj plan.",
         risk=ActionRisk.low,
     )
-
-
 
 
 __all__ = [
