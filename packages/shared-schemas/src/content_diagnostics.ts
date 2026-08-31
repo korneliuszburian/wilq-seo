@@ -5,7 +5,7 @@ import {
   ConnectorStatusSchema,
   MetricFactSchema
 } from "./connectors";
-import { ContentFreshnessAssessmentSchema } from "./contentWorkflow";
+import { ContentFreshnessAssessmentSchema, ContentKindSchema } from "./contentWorkflow";
 import { TacticalQueueItemSchema } from "./marketing";
 
 export const ContentDiagnosticSectionSchema = z.object({
@@ -106,6 +106,8 @@ export const ContentDecisionItemSchema = z.object({
   wordpress_match_label: z.string().nullable().optional(),
   wordpress_match_confidence: z.string().nullable().optional(),
   wordpress_match_confidence_label: z.string().nullable().optional(),
+  wordpress_content_type: z.string().nullable().optional(),
+  content_kind: ContentKindSchema.default("ambiguous"),
   wordpress_title_or_h1: z.string().nullable().optional(),
   wordpress_inventory_source: z.string().nullable().optional(),
   wordpress_modified_gmt: z.string().nullable().optional(),
