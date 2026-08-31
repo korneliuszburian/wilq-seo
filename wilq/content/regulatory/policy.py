@@ -501,12 +501,7 @@ def regulatory_content_coverage(
         profiles=profiles,
     )
     if profile is None:
-        return ContentRegulatoryCoverage(
-            applicability_status=(
-                "review_required" if service_card_id is None and canonical_path else "not_required"
-            ),
-            canonical_path=canonical_path,
-        )
+        return ContentRegulatoryCoverage()
     today = as_of or date.today()
     required_ids = {requirement.id for requirement in profile.requirements}
     approved_facts = [

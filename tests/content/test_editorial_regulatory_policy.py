@@ -69,7 +69,7 @@ def test_integrated_permit_article_exposes_current_official_review_candidates() 
     }
 
 
-def test_unassessed_editorial_scope_fails_closed() -> None:
+def test_unprofiled_editorial_scope_does_not_invent_a_regulatory_gate() -> None:
     coverage = regulatory_content_coverage(
         service_card_id=None,
         canonical_path="/artykul-bez-oceny-regulacyjnej",
@@ -78,10 +78,9 @@ def test_unassessed_editorial_scope_fails_closed() -> None:
     )
 
     gap = regulatory_coverage_gap(coverage)
-    assert coverage.applicability_status == "review_required"
-    assert coverage.complete is False
-    assert gap is not None
-    assert gap.label == "Zakres regulacyjny artykułu wymaga oceny"
+    assert coverage.applicability_status == "not_required"
+    assert coverage.complete is True
+    assert gap is None
 
 
 def test_editorial_draft_assurance_resolves_profile_without_service_card() -> None:

@@ -14,8 +14,6 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
-from wilq.content.planning import dynamic_input
-from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.documents.revision_children import (
     build_child_draft_revision_command,
 )
@@ -66,11 +64,6 @@ def _editorial_harness(
 ) -> tuple[TestClient, EditorialPlanningClient]:
     client, _service_runtime = configure_planning_harness(monkeypatch, tmp_path)
     runtime = EditorialPlanningClient()
-    monkeypatch.setattr(
-        dynamic_input,
-        "regulatory_content_coverage",
-        lambda **_kwargs: ContentRegulatoryCoverage(),
-    )
     monkeypatch.setattr(
         "apps.api.wilq_api.routers.content_codex_runtime.content_codex_app_server_client",
         lambda: runtime,
