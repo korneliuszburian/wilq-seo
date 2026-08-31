@@ -558,7 +558,8 @@ describe("ContentDraftRevisionSchema", () => {
         meta_title: "Doradztwo środowiskowe — Ekologus",
         meta_description: "Sprawdź zakres usługi.",
         h1: "Kiedy firma potrzebuje doradztwa środowiskowego",
-        lead: "Najpierw sprawdź sytuację firmy."
+        lead: "Najpierw sprawdź sytuację firmy.",
+        byline: null
       },
       sections: [{
         ...common.sections[0],
@@ -591,6 +592,7 @@ describe("ContentDraftRevisionSchema", () => {
       }]
     });
     expect(parsed.page_assets?.meta_description).toBe("Sprawdź zakres usługi.");
+    expect(parsed.page_assets?.byline).toBeNull();
     expect(parsed.sections[0].section_id).toBe("section_when_support");
     expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
     expect(parsed.cta_blocks[0].placement).toBe("after_content");
