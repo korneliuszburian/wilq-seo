@@ -682,9 +682,15 @@ def _revision_context_is_current(
     )
     if not baseline_current or revision.schema_version == "wilq_content_draft_revision_v1":
         return baseline_current
-    return bool(
+    planning_current = bool(
         revision.planning_input_digest is not None
         and revision.planning_input_digest == planning_input_digest
+        and revision.content_kind == item.content_kind
+    )
+    if revision.content_kind == "editorial":
+        return planning_current and revision.service_card_id is None and service_card_id is None
+    return bool(
+        planning_current
         and revision.service_card_id is not None
         and revision.service_card_id == service_card_id
     )

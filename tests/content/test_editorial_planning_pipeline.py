@@ -112,6 +112,28 @@ def _assert_editorial_child_save(
     )
     assert child.content_kind == "editorial"
     assert child.service_card_id is None
+    evidence_ids = list(
+        dict.fromkeys(
+            evidence_id
+            for section in revision["sections"]
+            for evidence_id in section["evidence_ids"]
+        )
+    )
+    reviewed = client.post(
+        f"/api/content/work-items/{WORK_ITEM_ID}/draft-revisions/"
+        f"{revision['revision_id']}/review",
+        json={
+            "expected_revision_digest": revision["content_digest"],
+            "reviewed_by": "wilku",
+            "decision": "needs_changes",
+            "notes": "Sprawdzono dokładną zapisaną wersję editorial.",
+            "checked_items": ["tekst", "dowody", "CTA"],
+            "evidence_ids": evidence_ids,
+        },
+    )
+    assert reviewed.status_code == 200, reviewed.json()
+    assert reviewed.json()["workspace"]["context_current"] is True
+    assert reviewed.json()["workspace"]["can_save"] is True
     monkeypatch.setattr(
         content_workflow_router,
         "_validate_revision_sections",
@@ -128,8 +150,11 @@ def _assert_editorial_child_save(
     )
     assert saved.status_code == 200, saved.json()
     assert saved.json()["revision"]["content_kind"] == "editorial"
+    assert saved.json()["revision"]["schema_version"] == "wilq_content_draft_revision_v2"
     assert saved.json()["revision"]["service_card_id"] is None
     assert saved.json()["revision"]["service_digest"] is None
+    assert saved.json()["workspace"]["context_current"] is True
+    assert saved.json()["workspace"]["can_review"] is True
 
 
 def test_editorial_request_generates_persists_and_reads_without_service(
