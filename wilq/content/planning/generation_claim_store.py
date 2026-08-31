@@ -8,7 +8,9 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Literal, NamedTuple, cast
 
+from wilq.content.planning.generation_claim_schema import ensure_generation_claim_schema
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
+from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import DEFAULT_STATE_DB, state_db_path
@@ -47,15 +49,20 @@ class ContentPlanningGenerationClaimStore:
         self,
         *,
         work_item_id: str,
-        service_card_id: str,
+        service_card_id: str | None,
         planning_input_digest: str,
         claim_owner: str,
         refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+        content_kind: PlanningContentKind = "service",
     ) -> PlanningGenerationClaim:
+        subject = ContentPlanningSubject(
+            content_kind=content_kind,
+            service_card_id=service_card_id,
+        )
         binding_identity = _refresh_preparation_claim_identity(refresh_preparation_binding)
         claim_key = _planning_generation_claim_key(
             work_item_id,
-            service_card_id,
+            subject,
             planning_input_digest,
         )
         now = self._clock()
@@ -63,7 +70,8 @@ class ContentPlanningGenerationClaimStore:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
                 """
-                SELECT status, claimed_at, claim_version,
+                SELECT status, claimed_at, claim_version, work_item_id, service_card_id,
+                       content_kind, subject_key, planning_input_digest,
                        refresh_preparation_authorization_id,
                        refresh_preparation_authorization_digest
                 FROM content_planning_generation_claims
@@ -77,6 +85,9 @@ class ContentPlanningGenerationClaimStore:
                     row=row,
                     claim_key=claim_key,
                     claim_owner=claim_owner,
+                    work_item_id=work_item_id,
+                    subject=subject,
+                    planning_input_digest=planning_input_digest,
                     binding_identity=binding_identity,
                     now=now,
                 )
@@ -84,7 +95,7 @@ class ContentPlanningGenerationClaimStore:
                 connection,
                 claim_key=claim_key,
                 work_item_id=work_item_id,
-                service_card_id=service_card_id,
+                subject=subject,
                 planning_input_digest=planning_input_digest,
                 claim_owner=claim_owner,
                 binding_identity=binding_identity,
@@ -95,19 +106,24 @@ class ContentPlanningGenerationClaimStore:
         self,
         *,
         work_item_id: str,
-        service_card_id: str,
+        service_card_id: str | None,
         planning_input_digest: str,
         claim_owner: str,
         claim_version: int,
         status: PlanningGenerationClaimFinalStatus,
         refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+        content_kind: PlanningContentKind = "service",
     ) -> bool:
+        subject = ContentPlanningSubject(
+            content_kind=content_kind,
+            service_card_id=service_card_id,
+        )
         authorization_id, authorization_digest = _refresh_preparation_claim_identity(
             refresh_preparation_binding
         )
         claim_key = _planning_generation_claim_key(
             work_item_id,
-            service_card_id,
+            subject,
             planning_input_digest,
         )
         with self._connect() as connection:
@@ -116,6 +132,8 @@ class ContentPlanningGenerationClaimStore:
                 UPDATE content_planning_generation_claims
                 SET status = ?, updated_at = ?
                 WHERE claim_key = ? AND claim_owner = ? AND claim_version = ?
+                  AND work_item_id = ? AND content_kind = ? AND subject_key = ?
+                  AND planning_input_digest = ?
                   AND status = 'claimed'
                   AND refresh_preparation_authorization_id IS ?
                   AND refresh_preparation_authorization_digest IS ?
@@ -126,6 +144,10 @@ class ContentPlanningGenerationClaimStore:
                     claim_key,
                     claim_owner,
                     claim_version,
+                    work_item_id,
+                    subject.content_kind,
+                    subject.subject_key,
+                    planning_input_digest,
                     authorization_id,
                     authorization_digest,
                 ),
@@ -141,35 +163,29 @@ class ContentPlanningGenerationClaimStore:
         self.path.chmod(0o600)
         connection.row_factory = sqlite3.Row
         reject_newer_sqlite_schema(connection)
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS content_planning_generation_claims (
-              claim_key TEXT PRIMARY KEY,
-              work_item_id TEXT NOT NULL,
-              service_card_id TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              status TEXT NOT NULL CHECK (status IN ('claimed', 'finished', 'failed')),
-              claim_owner TEXT NOT NULL,
-              claim_version INTEGER NOT NULL DEFAULT 1 CHECK (claim_version >= 1),
-              claimed_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              UNIQUE (work_item_id, service_card_id, planning_input_digest)
-            )
-            """
-        )
-        _ensure_claim_version_column(connection)
-        _ensure_refresh_preparation_binding_columns(connection)
+        ensure_generation_claim_schema(connection)
         ensure_sqlite_schema_version(connection)
+        connection.commit()
         return connection
 
 
 def _planning_generation_claim_key(
     work_item_id: str,
-    service_card_id: str,
+    subject: ContentPlanningSubject,
     planning_input_digest: str,
 ) -> str:
+    identity = (
+        [work_item_id, subject.subject_key, planning_input_digest]
+        if subject.content_kind == "service"
+        else [
+            work_item_id,
+            subject.content_kind,
+            subject.subject_key,
+            planning_input_digest,
+        ]
+    )
     payload = json.dumps(
-        [work_item_id, service_card_id, planning_input_digest],
+        identity,
         ensure_ascii=False,
         separators=(",", ":"),
     )
@@ -209,10 +225,27 @@ def _existing_claim(
     row: sqlite3.Row,
     claim_key: str,
     claim_owner: str,
+    work_item_id: str,
+    subject: ContentPlanningSubject,
+    planning_input_digest: str,
     binding_identity: tuple[str | None, str | None],
     now: datetime,
 ) -> PlanningGenerationClaim:
     claim_version = int(row["claim_version"])
+    if (
+        row["work_item_id"],
+        row["service_card_id"],
+        row["content_kind"],
+        row["subject_key"],
+        row["planning_input_digest"],
+    ) != (
+        work_item_id,
+        subject.service_card_id,
+        subject.content_kind,
+        subject.subject_key,
+        planning_input_digest,
+    ):
+        return PlanningGenerationClaim("binding_conflict", claim_version)
     is_active = str(row["status"]) == "claimed" and not _claim_is_stale(
         cast(str, row["claimed_at"]), now=now
     )
@@ -230,7 +263,8 @@ def _existing_claim(
             refresh_preparation_authorization_id = ?,
             refresh_preparation_authorization_digest = ?,
             claimed_at = ?, updated_at = ?
-        WHERE claim_key = ? AND claim_version = ?
+        WHERE claim_key = ? AND claim_version = ? AND work_item_id = ?
+          AND content_kind = ? AND subject_key = ? AND planning_input_digest = ?
         """,
         (
             claim_owner,
@@ -241,6 +275,10 @@ def _existing_claim(
             now.isoformat(),
             claim_key,
             claim_version,
+            work_item_id,
+            subject.content_kind,
+            subject.subject_key,
+            planning_input_digest,
         ),
     )
     if updated.rowcount != 1:
@@ -253,7 +291,7 @@ def _insert_claim(
     *,
     claim_key: str,
     work_item_id: str,
-    service_card_id: str,
+    subject: ContentPlanningSubject,
     planning_input_digest: str,
     claim_owner: str,
     binding_identity: tuple[str | None, str | None],
@@ -266,6 +304,8 @@ def _insert_claim(
           claim_key,
           work_item_id,
           service_card_id,
+          content_kind,
+          subject_key,
           planning_input_digest,
           status,
           claim_owner,
@@ -275,13 +315,15 @@ def _insert_claim(
           claimed_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, 'claimed', ?, 1, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, 'claimed', ?, 1, ?, ?, ?, ?)
         ON CONFLICT(claim_key) DO NOTHING
         """,
         (
             claim_key,
             work_item_id,
-            service_card_id,
+            subject.service_card_id,
+            subject.content_kind,
+            subject.subject_key,
             planning_input_digest,
             claim_owner,
             authorization_id,
@@ -294,7 +336,8 @@ def _insert_claim(
         return PlanningGenerationClaim("acquired", 1)
     row = connection.execute(
         """
-        SELECT status, claimed_at, claim_version,
+        SELECT status, claimed_at, claim_version, work_item_id, service_card_id,
+               content_kind, subject_key, planning_input_digest,
                refresh_preparation_authorization_id,
                refresh_preparation_authorization_digest
         FROM content_planning_generation_claims
@@ -309,44 +352,12 @@ def _insert_claim(
         row=row,
         claim_key=claim_key,
         claim_owner=claim_owner,
+        work_item_id=work_item_id,
+        subject=subject,
+        planning_input_digest=planning_input_digest,
         binding_identity=binding_identity,
         now=now,
     )
-
-
-def _ensure_claim_version_column(connection: sqlite3.Connection) -> None:
-    columns = {
-        str(row[1])
-        for row in connection.execute(
-            "PRAGMA table_info(content_planning_generation_claims)"
-        )
-    }
-    if "claim_version" not in columns:
-        connection.execute(
-            "ALTER TABLE content_planning_generation_claims "
-            "ADD COLUMN claim_version INTEGER NOT NULL DEFAULT 1 "
-            "CHECK (claim_version >= 1)"
-        )
-
-
-def _ensure_refresh_preparation_binding_columns(connection: sqlite3.Connection) -> None:
-    columns = {
-        str(row[1])
-        for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
-    }
-    for name in (
-        "refresh_preparation_authorization_id",
-        "refresh_preparation_authorization_digest",
-    ):
-        if name not in columns:
-            try:
-                connection.execute(
-                    "ALTER TABLE content_planning_generation_claims "
-                    f"ADD COLUMN {name} TEXT"  # nosec B608 -- fixed column names.
-                )
-            except sqlite3.OperationalError as error:
-                if "duplicate column name" not in str(error).lower():
-                    raise
 
 
 def refresh_preparation_binding_columns_present(connection: sqlite3.Connection) -> bool:

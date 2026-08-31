@@ -68,6 +68,7 @@ export const ContentKindSchema = z.enum([
   "taxonomy_or_system",
   "ambiguous"
 ]);
+export const ContentPlanningKindSchema = z.enum(["service", "editorial"]);
 
 export const ContentWorkItemSchema = z.object({
   id: z.string(),
@@ -3915,6 +3916,7 @@ export const ContentPlanningProposalSchema = z.object({
   criteria_version: z.string().default("wilq_people_first_planning_v5"),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   goal: z.enum(["refresh_existing", "new_page"]).default("refresh_existing"),
+  content_kind: ContentPlanningKindSchema.optional(),
   final_canonical_url: z.string().min(1).nullable().optional(),
   proposed_ia_location: z.string().trim().min(3).nullable().optional(),
   new_page_document_identity: ContentNewPageDocumentIdentitySchema.nullable().optional(),
@@ -4468,6 +4470,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
     "failed"
   ]),
   work_item_id: z.string().min(1),
+  content_kind: ContentPlanningKindSchema.optional(),
   service_card_id: z.string().nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
@@ -4489,6 +4492,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   }
   if (response.proposal && (
     response.proposal.work_item_id !== response.work_item_id ||
+    (response.proposal.content_kind ?? "service") !== (response.content_kind ?? "service") ||
     response.proposal.service_card_id !== response.service_card_id ||
     response.proposal.planning_input_digest !== response.planning_input_digest
   )) {
