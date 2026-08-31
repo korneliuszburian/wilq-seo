@@ -142,11 +142,14 @@ class ContentRefreshPreparationBinding(_StrictModel):
     current_work_item_id: _NonBlank
     canonical_path: _NonBlank
     public_url: _NonBlank
-    service_card_id: _NonBlank
+    content_kind: Literal["service", "editorial"] = "service"
+    service_card_id: _NonBlank | None = None
     planning_input_digest: str = Field(pattern=_HEX64)
 
     @model_validator(mode="after")
     def require_deterministic_id(self) -> ContentRefreshPreparationBinding:
+        if (self.content_kind == "service") != (self.service_card_id is not None):
+            raise ValueError("Refresh binding service identity must match its content kind.")
         expected = f"content_refresh_preparation_authorization_{self.authorization_digest[:24]}"
         if self.authorization_id != expected:
             raise ValueError("Refresh preparation authorization ID does not match its digest.")
@@ -158,7 +161,8 @@ class ContentRefreshPreparationAuthorizationRequest(_StrictModel):
     expected_production_classification_decision_set_digest: str = Field(pattern=_HEX64)
     expected_production_classification_source_packet_row_digest: str = Field(pattern=_HEX64)
     expected_planning_input_digest: str = Field(pattern=_HEX64)
-    service_card_id: _NonBlank
+    content_kind: Literal["service", "editorial"] = "service"
+    service_card_id: _NonBlank | None = None
     authorized_by: str = Field(min_length=1, max_length=160)
     acknowledged_classification_blocker_codes: list[str] = Field(default_factory=list)
 
@@ -185,9 +189,20 @@ class ContentRefreshPreparationAuthorizationRequest(_StrictModel):
             )
         return normalized
 
+    @model_validator(mode="after")
+    def require_conditional_service_identity(
+        self,
+    ) -> ContentRefreshPreparationAuthorizationRequest:
+        if (self.content_kind == "service") != (self.service_card_id is not None):
+            raise ValueError("Refresh request service identity must match its content kind.")
+        return self
+
 
 class ContentRefreshPreparationAuthorization(_StrictModel):
-    schema_version: Literal["wilq_content_refresh_preparation_authorization_v1"] = (
+    schema_version: Literal[
+        "wilq_content_refresh_preparation_authorization_v1",
+        "wilq_content_refresh_preparation_authorization_v2",
+    ] = (
         "wilq_content_refresh_preparation_authorization_v1"
     )
     authorization_id: _NonBlank
@@ -200,7 +215,8 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
     canonical_path: _NonBlank
     public_url: _NonBlank
     planning_input_digest: str = Field(pattern=_HEX64)
-    service_card_id: _NonBlank
+    content_kind: Literal["service", "editorial"] = "service"
+    service_card_id: _NonBlank | None = None
     acknowledged_classification_blocker_codes: list[str] = Field(default_factory=list)
     authorized_by: str = Field(min_length=1, max_length=160)
     principal_id: Literal["local_operator"] = "local_operator"
@@ -241,6 +257,7 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
             canonical_path=self.canonical_path,
             public_url=self.public_url,
             planning_input_digest=self.planning_input_digest,
+            content_kind=self.content_kind,
             service_card_id=self.service_card_id,
             acknowledged_classification_blocker_codes=self.acknowledged_classification_blocker_codes,
             authorized_by=self.authorized_by,
@@ -250,6 +267,15 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
         expected_id = f"content_refresh_preparation_authorization_{digest[:24]}"
         if self.authorization_id != expected_id:
             raise ValueError("Refresh preparation authorization ID does not match its receipt.")
+        if (self.content_kind == "service") != (self.service_card_id is not None):
+            raise ValueError("Refresh authorization service identity must match its content kind.")
+        expected_schema = (
+            "wilq_content_refresh_preparation_authorization_v1"
+            if self.content_kind == "service"
+            else "wilq_content_refresh_preparation_authorization_v2"
+        )
+        if self.schema_version != expected_schema:
+            raise ValueError("Refresh authorization schema must match its content kind.")
         return self
 
     @property
@@ -264,6 +290,7 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
             current_work_item_id=self.work_item_id,
             canonical_path=self.canonical_path,
             public_url=self.public_url,
+            content_kind=self.content_kind,
             service_card_id=self.service_card_id,
             planning_input_digest=self.planning_input_digest,
         )
@@ -310,11 +337,18 @@ class ContentRefreshPreparationStale(_StrictModel):
 class _ContentRefreshPreparationReadyBase(_StrictModel):
     work_item_id: _NonBlank
     classification: ContentRefreshPreparationClassificationBinding
-    service_candidate: ContentRefreshPreparationServiceCandidate
+    content_kind: Literal["service", "editorial"] = "service"
+    service_candidate: ContentRefreshPreparationServiceCandidate | None = None
     planning_input_digest: str = Field(pattern=_HEX64)
     input_summary: ContentPlanningInputSummary
     blockers: list[ContentRefreshPreparationBlocker] = Field(default_factory=list)
     safe_next_step: _NonBlank
+
+    @model_validator(mode="after")
+    def require_conditional_service_candidate(self) -> _ContentRefreshPreparationReadyBase:
+        if (self.content_kind == "service") != (self.service_candidate is not None):
+            raise ValueError("Ready refresh service candidate must match its content kind.")
+        return self
 
 
 class ContentRefreshPreparationReadyToAuthorize(_ContentRefreshPreparationReadyBase):
@@ -339,7 +373,9 @@ class ContentRefreshPreparationAuthorized(_ContentRefreshPreparationReadyBase):
             or authorization.canonical_path != self.classification.canonical_path
             or authorization.public_url != self.classification.public_url
             or authorization.planning_input_digest != self.planning_input_digest
-            or authorization.service_card_id != self.service_candidate.service_card_id
+            or authorization.content_kind != self.content_kind
+            or authorization.service_card_id
+            != (None if self.service_candidate is None else self.service_candidate.service_card_id)
         ):
             raise ValueError("Refresh preparation authorization does not match the ready context.")
         return self
@@ -409,9 +445,10 @@ def content_refresh_preparation_authorization_digest(
     canonical_path: str,
     public_url: str,
     planning_input_digest: str,
-    service_card_id: str,
+    service_card_id: str | None,
     acknowledged_classification_blocker_codes: list[str],
     authorized_by: str,
+    content_kind: Literal["service", "editorial"] = "service",
 ) -> str:
     payload = {
         "work_item_id": work_item_id,
@@ -428,6 +465,8 @@ def content_refresh_preparation_authorization_digest(
         ),
         "authorized_by": authorized_by,
     }
+    if content_kind == "editorial":
+        payload["content_kind"] = content_kind
     return sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
             "utf-8"
@@ -440,10 +479,11 @@ def build_content_refresh_preparation_authorization(
     work_item_id: str,
     classification: ContentRefreshPreparationClassificationBinding,
     planning_input_digest: str,
-    service_card_id: str,
+    service_card_id: str | None,
     acknowledged_classification_blocker_codes: list[str],
     authorized_by: str,
     authorized_at: datetime,
+    content_kind: Literal["service", "editorial"] = "service",
 ) -> ContentRefreshPreparationAuthorization:
     digest = content_refresh_preparation_authorization_digest(
         work_item_id=work_item_id,
@@ -454,11 +494,17 @@ def build_content_refresh_preparation_authorization(
         canonical_path=classification.canonical_path,
         public_url=classification.public_url,
         planning_input_digest=planning_input_digest,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         acknowledged_classification_blocker_codes=acknowledged_classification_blocker_codes,
         authorized_by=authorized_by,
     )
     return ContentRefreshPreparationAuthorization(
+        schema_version=(
+            "wilq_content_refresh_preparation_authorization_v1"
+            if content_kind == "service"
+            else "wilq_content_refresh_preparation_authorization_v2"
+        ),
         authorization_id=f"content_refresh_preparation_authorization_{digest[:24]}",
         authorization_digest=digest,
         work_item_id=work_item_id,
@@ -469,6 +515,7 @@ def build_content_refresh_preparation_authorization(
         canonical_path=classification.canonical_path,
         public_url=classification.public_url,
         planning_input_digest=planning_input_digest,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         acknowledged_classification_blocker_codes=acknowledged_classification_blocker_codes,
         authorized_by=authorized_by,
@@ -484,11 +531,12 @@ def refresh_preparation_binding_matches_content_identity(
     planning_input_digest: str | None,
     final_canonical_url: str | None,
 ) -> bool:
+    expected_kind = "editorial" if service_card_id is None else "service"
     if (
-        service_card_id is None
-        or planning_input_digest is None
+        planning_input_digest is None
         or final_canonical_url is None
         or binding.current_work_item_id != work_item_id
+        or binding.content_kind != expected_kind
         or binding.service_card_id != service_card_id
         or binding.planning_input_digest != planning_input_digest
         or binding.public_url != final_canonical_url

@@ -132,12 +132,13 @@ def _authorization_for_binding(
             authorization.canonical_path,
             authorization.public_url,
             authorization.planning_input_digest,
+            authorization.content_kind,
             authorization.service_card_id,
             authorization.authorized_by,
             authorization.authorized_at.isoformat(),
         )
         stored_scalars = tuple(
-            str(row[name])
+            row[name]
             for name in (
                 "authorization_id",
                 "authorization_digest",
@@ -149,6 +150,7 @@ def _authorization_for_binding(
                 "canonical_path",
                 "public_url",
                 "planning_input_digest",
+                "content_kind",
                 "service_card_id",
                 "authorized_by",
                 "authorized_at",
