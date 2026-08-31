@@ -298,9 +298,13 @@ def _prepare_inputs(
             blockers=[mismatch],
         )
     service_card_id = proposal.service_card_id
-    if service_card_id is None:
+    if proposal.content_kind == "service" and service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
-    planning_result = _current_planning_input(snapshot, service_card_id)
+    planning_result = _current_planning_input(
+        snapshot,
+        proposal.content_kind,
+        service_card_id,
+    )
     # A durable document requires stricter readiness than a reviewable plan.
     draft_blockers = planning_result.blockers
     if planning_result.planning_input is None or draft_blockers:
@@ -415,9 +419,14 @@ def _no_draftable_sections(
 
 def _current_planning_input(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    service_card_id: str,
+    content_kind: Literal["service", "editorial"],
+    service_card_id: str | None,
 ) -> ContentPlanningInputBuildResult:
-    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    planning_snapshot = (
+        with_explicit_content_service_selection(snapshot, service_card_id)
+        if content_kind == "service" and service_card_id is not None
+        else snapshot
+    )
     return build_content_planning_input(planning_snapshot, service_card_id=service_card_id)
 
 

@@ -57,6 +57,8 @@ CREATE TABLE {table} (
 
 
 def ensure_generated_proposal_schema(connection: sqlite3.Connection) -> None:
+    if _schema_is_current(connection):
+        return
     connection.execute("BEGIN IMMEDIATE")
     try:
         _ensure_table(connection, "content_planning_proposals", _PROPOSALS)
@@ -75,6 +77,31 @@ def ensure_generated_proposal_schema(connection: sqlite3.Connection) -> None:
     except Exception:
         connection.rollback()
         raise
+
+
+def _schema_is_current(connection: sqlite3.Connection) -> bool:
+    if not _table_exists(connection, "codex_runs"):
+        return False
+    for table in (
+        "content_planning_proposals",
+        "content_planning_proposal_repairs",
+        "content_planning_generation_jobs",
+    ):
+        if not _table_exists(connection, table):
+            return False
+        columns = {
+            str(row[1]): (bool(row[3]), int(row[5]))
+            for row in connection.execute(f"PRAGMA table_info({table})")
+        }
+        expected_pk = 3 if table == "content_planning_generation_jobs" else 0
+        if not (
+            "content_kind" in columns
+            and "subject_key" in columns
+            and not columns["service_card_id"][0]
+            and columns["subject_key"][1] == expected_pk
+        ):
+            return False
+    return True
 
 
 def _ensure_table(connection: sqlite3.Connection, table: str, schema: str) -> None:

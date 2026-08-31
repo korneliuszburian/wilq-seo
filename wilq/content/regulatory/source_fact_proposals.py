@@ -31,7 +31,7 @@ from wilq.codex.app_server import (
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
-    regulatory_content_profile,
+    regulatory_candidate_profile,
     regulatory_source_candidates,
 )
 from wilq.content.regulatory.source_reviews import (
@@ -563,7 +563,7 @@ def _extract_html_main_text(html: str) -> str:
 def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_text: str) -> str:
     """Reduce a long official document to deterministic candidate-relevant excerpts."""
 
-    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    profile = regulatory_candidate_profile(candidate)
     requirements = (
         []
         if profile is None
@@ -644,7 +644,7 @@ def _turn_request(
         "minItems": len(candidate.requirement_ids),
         "maxItems": len(candidate.requirement_ids),
     }
-    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    profile = regulatory_candidate_profile(candidate)
     requirements_by_id = {} if profile is None else {item.id: item for item in profile.requirements}
     trusted_requirements = [
         requirements_by_id[requirement_id].model_dump(mode="json")

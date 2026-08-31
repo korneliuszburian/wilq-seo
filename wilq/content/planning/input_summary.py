@@ -42,6 +42,10 @@ class ContentPlanningInputSummary(BaseModel):
     gsc_query_rows: list[ContentSearchDemandRow] = Field(default_factory=list)
     regulatory_profile_id: str | None = None
     regulatory_profile_version: str | None = None
+    regulatory_applicability_status: Literal[
+        "not_required", "required", "review_required"
+    ] = "not_required"
+    regulatory_canonical_path: str | None = None
     regulatory_requirements: list[ContentRegulatoryRequirement] = Field(default_factory=list)
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
     regulatory_source_fact_ids: list[str] = Field(default_factory=list)
@@ -118,19 +122,20 @@ def content_planning_input_summary(planning_input: Any) -> ContentPlanningInputS
         gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
         regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
         regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
+        regulatory_applicability_status=(
+            planning_input.regulatory_coverage.applicability_status
+        ),
+        regulatory_canonical_path=planning_input.regulatory_coverage.canonical_path,
         regulatory_requirements=planning_input.regulatory_coverage.requirements,
         regulatory_requirement_ids=[
             requirement.id for requirement in planning_input.regulatory_coverage.requirements
         ],
         regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
         regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
-        regulatory_review_candidates=(
-            []
-            if planning_input.confirmed_service_card_id is None
-            else regulatory_review_candidates(
-                service_card_id=planning_input.confirmed_service_card_id,
-                coverage=planning_input.regulatory_coverage,
-            )
+        regulatory_review_candidates=regulatory_review_candidates(
+            service_card_id=planning_input.confirmed_service_card_id,
+            canonical_path=planning_input.regulatory_coverage.canonical_path,
+            coverage=planning_input.regulatory_coverage,
         ),
         evidence_id_count=len(planning_input.evidence_ids),
         knowledge_card_count=len(planning_input.knowledge_card_ids),

@@ -83,11 +83,15 @@ def _preflight_input(
     facts: list[ContentSourceFact],
 ) -> tuple[ContentPlanningInput, ContentPlanningProposal]:
     planning_input = ContentPlanningInput.model_construct(
-        regulatory_coverage=ContentRegulatoryCoverage(
-            profile_id="bdo",
-            profile_version="2026-08",
-            requirements=requirements,
-            source_facts=facts,
+        regulatory_coverage=(
+            ContentRegulatoryCoverage()
+            if not requirements
+            else ContentRegulatoryCoverage(
+                profile_id="bdo",
+                profile_version="2026-08",
+                requirements=requirements,
+                source_facts=facts,
+            )
         )
     )
     proposal = ContentPlanningProposal.model_construct(sections=sections)

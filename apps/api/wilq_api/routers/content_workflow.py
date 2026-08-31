@@ -158,6 +158,7 @@ def _build_editor_save_command(
             draft_package_digest=latest_revision.draft_package_digest,
             planning_digest=latest_revision.planning_digest,
             planning_input_digest=latest_revision.planning_input_digest,
+            content_kind=latest_revision.content_kind,
             service_card_id=latest_revision.service_card_id,
             service_digest=latest_revision.service_digest,
             inventory_digest=latest_revision.inventory_digest,
@@ -195,6 +196,7 @@ def _build_editor_save_command(
         draft_package_digest=content_draft_package_digest(draft_package),
         planning_digest=planning.proposal.planning_digest,
         planning_input_digest=save_context.planning_input_digest,
+        content_kind=save_context.content_kind,
         service_card_id=save_context.service_card_id,
         inventory_digest=save_context.inventory_digest,
         final_canonical_url=final_canonical_url,
@@ -301,9 +303,16 @@ def _editor_save_context(
         return None
     proposal = planning.proposal
     service_card_id = proposal.service_card_id
-    if service_card_id is None or proposal.planning_input_digest is None:
+    if proposal.planning_input_digest is None:
         return None
-    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    if proposal.content_kind == "service":
+        if service_card_id is None:
+            return None
+        planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    else:
+        if service_card_id is not None:
+            return None
+        planning_snapshot = snapshot
     planning_result = build_content_planning_input(
         planning_snapshot,
         service_card_id=service_card_id,
@@ -320,6 +329,7 @@ def _editor_save_context(
         draft_package_digest=content_draft_package_digest(draft_package),
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input.planning_input_digest,
+        content_kind=proposal.content_kind,
         service_card_id=service_card_id,
         inventory_digest=content_planning_inventory_digest(planning_input.inventory),
         final_canonical_url=final_canonical_url,

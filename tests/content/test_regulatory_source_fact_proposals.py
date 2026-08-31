@@ -126,6 +126,37 @@ def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(t
     assert restored.proposal == proposal
 
 
+def test_canonical_editorial_candidate_reaches_reviewable_fact_proposal(tmp_path) -> None:
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "integrated_permit_oos_eli_2026_08_30_r1"
+    )
+    proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
+    client = _Client(
+        {
+            **_ready_output(candidate),
+            "source_terms": ["Decyzja", "środowiskowych", "przedsięwzięcia"],
+        }
+    )
+
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=client,
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: _html_source(
+            "Decyzja o środowiskowych uwarunkowaniach określa warunki realizacji "
+            "konkretnego przedsięwzięcia i nie zastępuje pozwolenia zintegrowanego."
+        ),
+    )
+
+    assert result.status == "ready", result.reason
+    assert result.proposal is not None
+    assert result.proposal.profile_id == "integrated_permit_editorial"
+
+
 def test_read_without_persisted_proposal_is_not_generated(tmp_path) -> None:
     proposal_store, _snapshot_store, _review_store, _run_store = _stores(tmp_path)
     result = read_source_fact_proposal(

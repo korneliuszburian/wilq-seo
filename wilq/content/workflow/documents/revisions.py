@@ -383,6 +383,7 @@ class ContentDraftRevision(BaseModel):
     draft_package_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     planning_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    content_kind: Literal["service", "editorial"] = "service"
     service_card_id: str | None = Field(default=None, min_length=1)
     service_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -469,6 +470,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     draft_package_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     planning_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    content_kind: Literal["service", "editorial"] = "service"
     service_card_id: str | None = Field(default=None, min_length=1)
     service_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     inventory_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
@@ -685,13 +687,15 @@ def _validate_full_document(
         )
     required_bindings = (
         document.planning_input_digest,
-        document.service_card_id,
-        document.service_digest,
         document.inventory_digest,
         document.page_assets,
     )
     if any(value is None for value in required_bindings):
         raise ValueError("Full-document revision requires exact planning bindings and page assets.")
+    if (document.content_kind == "service") != (document.service_card_id is not None):
+        raise ValueError("Full-document content kind must match its service identity.")
+    if (document.content_kind == "service") != (document.service_digest is not None):
+        raise ValueError("Full-document content kind must match its service digest.")
     if document.page_assets is None or document.page_assets.wordpress_title != document.title:
         raise ValueError("Full-document WordPress title must match the revision title.")
     section_ids = [section.section_id for section in document.sections]

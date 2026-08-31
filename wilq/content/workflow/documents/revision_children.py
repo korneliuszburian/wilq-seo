@@ -32,6 +32,7 @@ def build_child_draft_revision_command(
         draft_package_digest=base_revision.draft_package_digest,
         planning_digest=base_revision.planning_digest,
         planning_input_digest=base_revision.planning_input_digest,
+        content_kind=base_revision.content_kind,
         service_card_id=base_revision.service_card_id,
         service_digest=base_revision.service_digest,
         inventory_digest=base_revision.inventory_digest,

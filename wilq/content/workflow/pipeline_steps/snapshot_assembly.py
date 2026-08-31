@@ -536,7 +536,15 @@ def _current_planning_proposal(
     generated: ContentPlanningProposal | None,
 ) -> ContentPlanningProposal | None:
     service_card_id = service_profile_context.service_card_id
-    if baseline is None or generated is None or service_card_id is None:
+    if baseline is None or generated is None:
+        return baseline
+    if item.content_kind == "editorial":
+        return (
+            generated
+            if generated.content_kind == "editorial" and generated.service_card_id is None
+            else baseline
+        )
+    if service_card_id is None:
         return baseline
     return generated if generated.service_card_id == service_card_id else baseline
 
