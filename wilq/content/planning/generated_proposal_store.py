@@ -1,20 +1,46 @@
 from __future__ import annotations
 
-import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.generated_proposal_queries import (
+    PROPOSAL_INPUT_SELECTS as _PROPOSAL_INPUT_SELECTS,
+)
+from wilq.content.planning.generated_proposal_queries import (
+    PROPOSAL_LATEST_SELECTS as _PROPOSAL_LATEST_SELECTS,
+)
+from wilq.content.planning.generated_proposal_queries import (
+    PROPOSAL_PLANNING_DIGEST_SELECTS as _PROPOSAL_PLANNING_DIGEST_SELECTS,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    job_is_stale as _job_is_stale,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    proposal_from_row as _proposal_from_row,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    proposal_insert_values as _proposal_insert_values,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    response_from_job_row as _response_from_job_row,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    table_exists as _table_exists,
+)
+from wilq.content.planning.generated_proposal_rows import (
+    validate_generated_proposal as _validate_generated_proposal,
+)
+from wilq.content.planning.generated_proposal_schema import ensure_generated_proposal_schema
 from wilq.content.planning.generation_claim_store import (
     refresh_preparation_binding_columns_present,
 )
-from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
+from wilq.content.planning.subject import ContentPlanningSubject
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.store.refresh_preparation_atomic import (
@@ -34,46 +60,29 @@ PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight", "finished"]
 GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
 PlanningTerminalSaveOutcome = Literal["saved", "claim_stale", "ignored"]
 
-_PROPOSAL_INPUT_SELECTS = {
-    "content_planning_proposals": """
-        SELECT payload_json, proposal_version
-        FROM content_planning_proposals
-        WHERE work_item_id = ?
-          AND service_card_id = ?
-          AND planning_input_digest = ?
-    """,
-    "content_planning_proposal_repairs": """
-        SELECT payload_json, proposal_version
-        FROM content_planning_proposal_repairs
-        WHERE work_item_id = ?
-          AND service_card_id = ?
-          AND planning_input_digest = ?
-    """,
-}
-_PROPOSAL_LATEST_SELECTS = {
-    "content_planning_proposals": (
-        "SELECT payload_json, proposal_version FROM content_planning_proposals WHERE "
-    ),
-    "content_planning_proposal_repairs": (
-        "SELECT payload_json, proposal_version FROM content_planning_proposal_repairs WHERE "
-    ),
-}
-_PROPOSAL_PLANNING_DIGEST_SELECTS = {
-    "content_planning_proposals": """
-        SELECT payload_json, proposal_version FROM content_planning_proposals
-        WHERE work_item_id = ?
-          AND json_extract(payload_json, '$.planning_digest') = ?
-    """,
-    "content_planning_proposal_repairs": """
-        SELECT payload_json, proposal_version FROM content_planning_proposal_repairs
-        WHERE work_item_id = ?
-          AND json_extract(payload_json, '$.planning_digest') = ?
-    """,
-}
-
 
 def content_planning_proposal_store() -> ContentPlanningProposalStore:
     return ContentPlanningProposalStore(state_db_path())
+
+
+def _open_read_connection(path: Path) -> sqlite3.Connection | None:
+    if not path.exists():
+        return None
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    reject_newer_sqlite_schema(connection)
+    if any(
+        _table_exists(connection, table)
+        for table in (
+            "content_planning_proposals",
+            "content_planning_proposal_repairs",
+            "content_planning_generation_jobs",
+        )
+    ):
+        ensure_generated_proposal_schema(connection)
+        ensure_sqlite_schema_version(connection)
+        connection.commit()
+    return connection
 
 
 class _ContentPlanningProposalConvenienceMixin:
@@ -146,11 +155,31 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             with connection:
                 if not _table_exists(connection, "content_planning_proposals"):
                     return None
-                row = _proposal_row_for_input(
+                row = _proposal_row_for_subject_input(
                     connection,
                     work_item_id,
-                    service_card_id,
+                    ContentPlanningSubject(service_card_id=service_card_id),
                     planning_input_digest,
+                )
+        finally:
+            connection.close()
+        return _proposal_from_row(row)
+
+    def for_subject_input(
+        self,
+        work_item_id: str,
+        subject: ContentPlanningSubject,
+        planning_input_digest: str,
+    ) -> ContentPlanningProposal | None:
+        connection = self._read_connection()
+        if connection is None:
+            return None
+        try:
+            with connection:
+                if not _table_exists(connection, "content_planning_proposals"):
+                    return None
+                row = _proposal_row_for_subject_input(
+                    connection, work_item_id, subject, planning_input_digest
                 )
         finally:
             connection.close()
@@ -183,6 +212,21 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         include_stale: bool = False,
     ) -> ContentPlanningProposalResponse | None:
         """Return the durable in-flight/failed response for an exact input."""
+        return self.queued_subject_response(
+            work_item_id,
+            ContentPlanningSubject(service_card_id=service_card_id),
+            planning_input_digest,
+            include_stale=include_stale,
+        )
+
+    def queued_subject_response(
+        self,
+        work_item_id: str,
+        subject: ContentPlanningSubject,
+        planning_input_digest: str,
+        *,
+        include_stale: bool = False,
+    ) -> ContentPlanningProposalResponse | None:
         connection = self._read_connection()
         if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
             return None
@@ -190,26 +234,26 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             with connection:
                 row = connection.execute(
                     """
-                    SELECT payload_json, status, updated_at
+                    SELECT payload_json, status, updated_at, work_item_id,
+                           service_card_id, content_kind, subject_key, planning_input_digest
                     FROM content_planning_generation_jobs
-                    WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+                    WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
+                      AND planning_input_digest = ?
                     LIMIT 1
                     """,
-                    (work_item_id, service_card_id, planning_input_digest),
+                    (
+                        work_item_id,
+                        subject.content_kind,
+                        subject.subject_key,
+                        planning_input_digest,
+                    ),
                 ).fetchone()
         finally:
             connection.close()
         if row is None or row["status"] not in {"queued", "blocked", "failed", "stale"}:
             return None
-        response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
-        if (
-            not include_stale
-            and row["status"] == "queued"
-            and _job_is_stale(row["updated_at"])
-        ):
-            # Let the API rebuild the current planning input. The queued
-            # payload intentionally has no input summary, so projecting it as
-            # a terminal failure would hide the exact digest needed for retry.
+        response = _response_from_job_row(row)
+        if not include_stale and row["status"] == "queued" and _job_is_stale(row["updated_at"]):
             return None
         return response
 
@@ -218,14 +262,14 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         work_item_id: str,
         service_card_id: str | None = None,
     ) -> ContentPlanningProposalResponse | None:
-        """Read the newest queued/failed job without rebuilding a snapshot."""
         connection = self._read_connection()
         if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
             return None
         try:
             with connection:
                 query = """
-                    SELECT payload_json, status, updated_at
+                    SELECT payload_json, status, updated_at, work_item_id,
+                           service_card_id, content_kind, subject_key, planning_input_digest
                     FROM content_planning_generation_jobs
                     WHERE work_item_id = ?
                       AND status IN ('queued', 'blocked', 'failed', 'stale')
@@ -240,11 +284,8 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             connection.close()
         if row is None:
             return None
-        response = ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
+        response = _response_from_job_row(row)
         if row["status"] == "queued" and _job_is_stale(row["updated_at"]):
-            # A stale queue entry is not a terminal model failure. Returning
-            # None lets the read route rebuild the exact current input and
-            # expose a retryable `not_generated`/`stale` response.
             return None
         return response
 
@@ -263,7 +304,8 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             with connection:
                 rows = connection.execute(
                     """
-                    SELECT planning_input_digest, payload_json, updated_at
+                    SELECT planning_input_digest, payload_json, updated_at, work_item_id,
+                           service_card_id, content_kind, subject_key
                     FROM content_planning_generation_jobs
                     WHERE work_item_id = ? AND service_card_id = ? AND status = 'queued'
                     ORDER BY updated_at DESC
@@ -277,7 +319,7 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
                 continue
             if _job_is_stale(row["updated_at"]):
                 continue
-            return ContentPlanningProposalResponse.model_validate(json.loads(row["payload_json"]))
+            return _response_from_job_row(row)
         return None
 
     def enqueue(
@@ -296,10 +338,28 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         allow_finished_reset: bool = False,
     ) -> PlanningEnqueueOutcome:
         """Persist a request before the expensive snapshot is built."""
-        return _enqueue_pending(
+        return _enqueue_subject_pending(
             self,
             work_item_id=work_item_id,
-            service_card_id=service_card_id,
+            subject=ContentPlanningSubject(service_card_id=service_card_id),
+            planning_input_digest=planning_input_digest,
+            response=response,
+            allow_finished_reset=allow_finished_reset,
+        )
+
+    def enqueue_subject_pending(
+        self,
+        *,
+        work_item_id: str,
+        subject: ContentPlanningSubject,
+        planning_input_digest: str,
+        response: ContentPlanningProposalResponse,
+        allow_finished_reset: bool = False,
+    ) -> PlanningEnqueueOutcome:
+        return _enqueue_subject_pending(
+            self,
+            work_item_id=work_item_id,
+            subject=subject,
             planning_input_digest=planning_input_digest,
             response=response,
             allow_finished_reset=allow_finished_reset,
@@ -344,59 +404,9 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         self.path.chmod(0o600)
         connection.row_factory = sqlite3.Row
         reject_newer_sqlite_schema(connection)
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS content_planning_proposals (
-              proposal_id TEXT PRIMARY KEY,
-              work_item_id TEXT NOT NULL,
-              proposal_version INTEGER NOT NULL CHECK (proposal_version >= 1),
-              service_card_id TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              UNIQUE (work_item_id, proposal_version),
-              UNIQUE (work_item_id, service_card_id, planning_input_digest)
-            )
-            """
-        )
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS content_planning_proposal_repairs (
-              proposal_id TEXT PRIMARY KEY,
-              work_item_id TEXT NOT NULL,
-              proposal_version INTEGER NOT NULL CHECK (proposal_version >= 1),
-              service_card_id TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              supersedes_proposal_id TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              UNIQUE (work_item_id, proposal_version)
-            )
-            """
-        )
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS codex_runs (
-              id TEXT PRIMARY KEY,
-              started_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL
-            )
-            """
-        )
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS content_planning_generation_jobs (
-              work_item_id TEXT NOT NULL,
-              service_card_id TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              status TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              PRIMARY KEY (work_item_id, service_card_id, planning_input_digest)
-            )
-            """
-        )
+        ensure_generated_proposal_schema(connection)
         ensure_sqlite_schema_version(connection)
+        connection.commit()
         return connection
 
     @contextmanager
@@ -405,24 +415,23 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             yield connection
 
     def _read_connection(self) -> sqlite3.Connection | None:
-        if not self.path.exists():
-            return None
-        connection = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
-        connection.row_factory = sqlite3.Row
-        reject_newer_sqlite_schema(connection)
-        return connection
+        return _open_read_connection(self.path)
 
 
 def _enqueue(
     store: ContentPlanningProposalStore,
     response: ContentPlanningProposalResponse,
 ) -> PlanningEnqueueOutcome:
-    if response.planning_input_digest is None or response.service_card_id is None:
-        raise ValueError("Queued planning requires an exact service and input digest.")
-    return _enqueue_pending(
+    if response.planning_input_digest is None:
+        raise ValueError("Queued planning requires an exact input digest.")
+    subject = ContentPlanningSubject(
+        content_kind=response.content_kind,
+        service_card_id=response.service_card_id,
+    )
+    return _enqueue_subject_pending(
         store,
         work_item_id=response.work_item_id,
-        service_card_id=response.service_card_id,
+        subject=subject,
         planning_input_digest=response.planning_input_digest,
         response=response,
     )
@@ -437,22 +446,38 @@ def _enqueue_pending(
     response: ContentPlanningProposalResponse,
     allow_finished_reset: bool = False,
 ) -> PlanningEnqueueOutcome:
+    return _enqueue_subject_pending(
+        store,
+        work_item_id=work_item_id,
+        subject=ContentPlanningSubject(service_card_id=service_card_id),
+        planning_input_digest=planning_input_digest,
+        response=response,
+        allow_finished_reset=allow_finished_reset,
+    )
+
+
+def _enqueue_subject_pending(
+    store: ContentPlanningProposalStore,
+    *,
+    work_item_id: str,
+    subject: ContentPlanningSubject,
+    planning_input_digest: str,
+    response: ContentPlanningProposalResponse,
+    allow_finished_reset: bool = False,
+) -> PlanningEnqueueOutcome:
     payload = redact_mapping(response.model_dump(mode="json"))
     with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         row = connection.execute(
             """
                 SELECT status, updated_at FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+                WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
+                  AND planning_input_digest = ?
                 LIMIT 1
                 """,
-            (work_item_id, service_card_id, planning_input_digest),
+            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
         ).fetchone()
-        if (
-            row is not None
-            and row["status"] == "finished"
-            and not allow_finished_reset
-        ):
+        if row is not None and row["status"] == "finished" and not allow_finished_reset:
             return "finished"
         if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
             return "existing"
@@ -460,11 +485,11 @@ def _enqueue_pending(
             """
                 SELECT planning_input_digest, updated_at
                 FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND service_card_id = ?
+                WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
                   AND status = 'queued' AND planning_input_digest != ?
                 ORDER BY updated_at DESC LIMIT 1
                 """,
-            (work_item_id, service_card_id, planning_input_digest),
+            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
         ).fetchone()
         if sibling is not None and not _job_is_stale(sibling["updated_at"]):
             return "in_flight"
@@ -472,18 +497,20 @@ def _enqueue_pending(
             """
             UPDATE content_planning_generation_jobs
             SET status = 'stale'
-            WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+            WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
+              AND planning_input_digest = ?
               AND status IN ('failed', 'blocked')
             """,
-            (work_item_id, service_card_id, planning_input_digest),
+            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
         )
         if allow_finished_reset:
             upsert_status_fence = """
                 INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, planning_input_digest, status,
+                  work_item_id, service_card_id, content_kind, subject_key,
+                  planning_input_digest, status,
                   payload_json, updated_at
-                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
+                ) VALUES (?, ?, ?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(work_item_id, content_kind, subject_key, planning_input_digest)
                 DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
                               updated_at = excluded.updated_at
                 WHERE content_planning_generation_jobs.status IN ('queued', 'stale', 'finished')
@@ -491,10 +518,11 @@ def _enqueue_pending(
         else:
             upsert_status_fence = """
                 INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, planning_input_digest, status,
+                  work_item_id, service_card_id, content_kind, subject_key,
+                  planning_input_digest, status,
                   payload_json, updated_at
-                ) VALUES (?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, service_card_id, planning_input_digest)
+                ) VALUES (?, ?, ?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(work_item_id, content_kind, subject_key, planning_input_digest)
                 DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
                               updated_at = excluded.updated_at
                 WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
@@ -503,7 +531,9 @@ def _enqueue_pending(
             upsert_status_fence,
             (
                 work_item_id,
-                service_card_id,
+                subject.service_card_id,
+                subject.content_kind,
+                subject.subject_key,
                 planning_input_digest,
                 model_json(payload),
             ),
@@ -519,8 +549,10 @@ def _save_terminal_response(
     claim_version: int | None = None,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
 ) -> PlanningTerminalSaveOutcome:
-    if response.service_card_id is None:
-        return "ignored"
+    subject = ContentPlanningSubject(
+        content_kind=response.content_kind,
+        service_card_id=response.service_card_id,
+    )
     payload = redact_mapping(response.model_dump(mode="json"))
     status = response.status if response.status in {"blocked", "failed", "stale"} else "finished"
     exact_job_digest = job_planning_input_digest
@@ -540,7 +572,7 @@ def _save_terminal_response(
                 response=response,
                 expected_binding=expected_binding,
                 work_item_id=response.work_item_id,
-                service_card_id=response.service_card_id,
+                subject=subject,
                 planning_input_digest=exact_job_digest,
             ):
                 return "claim_stale"
@@ -549,13 +581,13 @@ def _save_terminal_response(
                 """
                     UPDATE content_planning_generation_jobs
                     SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE work_item_id = ? AND service_card_id = ?
+                    WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
                       AND planning_input_digest = ?
                       AND EXISTS (
                         SELECT 1
                         FROM content_planning_generation_claims AS claim
                         WHERE claim.work_item_id = ?
-                          AND claim.service_card_id = ?
+                          AND claim.content_kind = ? AND claim.subject_key = ?
                           AND claim.planning_input_digest = ?
                           AND claim.claim_version = ?
                           AND claim.status = 'claimed'
@@ -567,10 +599,12 @@ def _save_terminal_response(
                     status,
                     model_json(payload),
                     response.work_item_id,
-                    response.service_card_id,
+                    subject.content_kind,
+                    subject.subject_key,
                     exact_job_digest,
                     response.work_item_id,
-                    response.service_card_id,
+                    subject.content_kind,
+                    subject.subject_key,
                     exact_job_digest,
                     claim_version,
                     authorization_id,
@@ -582,13 +616,15 @@ def _save_terminal_response(
             """
                 UPDATE content_planning_generation_jobs
                 SET status = ?, payload_json = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+                WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
+                  AND planning_input_digest = ?
                 """,
             (
                 status,
                 model_json(payload),
                 response.work_item_id,
-                response.service_card_id,
+                subject.content_kind,
+                subject.subject_key,
                 exact_job_digest,
             ),
         )
@@ -601,22 +637,24 @@ def _terminal_response_matches_durable_binding(
     response: ContentPlanningProposalResponse,
     expected_binding: ContentRefreshPreparationBinding | None,
     work_item_id: str,
-    service_card_id: str,
+    subject: ContentPlanningSubject,
     planning_input_digest: str,
 ) -> bool:
     row = connection.execute(
         """
-        SELECT payload_json
+        SELECT payload_json, status, updated_at, work_item_id, service_card_id,
+               content_kind, subject_key, planning_input_digest
         FROM content_planning_generation_jobs
-        WHERE work_item_id = ? AND service_card_id = ? AND planning_input_digest = ?
+        WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
+          AND planning_input_digest = ?
         LIMIT 1
         """,
-        (work_item_id, service_card_id, planning_input_digest),
+        (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
     ).fetchone()
     if row is None:
         return False
     try:
-        stored = ContentPlanningProposalResponse.model_validate_json(str(row["payload_json"]))
+        stored = _response_from_job_row(row)
     except ValueError:
         return False
     return (
@@ -652,10 +690,14 @@ def _save_generated(
     with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         assert_refresh_preparation_proposal_current(connection, proposal)
-        existing_row = _proposal_row_for_input(
+        subject = ContentPlanningSubject(
+            content_kind=proposal.content_kind,
+            service_card_id=proposal.service_card_id,
+        )
+        existing_row = _proposal_row_for_subject_input(
             connection,
             proposal.work_item_id,
-            str(proposal.service_card_id),
+            subject,
             str(proposal.planning_input_digest),
         )
         if existing_row is not None:
@@ -707,8 +749,9 @@ def _save_generated(
                 """
                     INSERT INTO content_planning_proposals (
                       proposal_id, work_item_id, proposal_version, service_card_id,
+                      content_kind, subject_key,
                       planning_input_digest, created_at, payload_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                 _proposal_insert_values(safe_proposal, created_at),
             )
@@ -719,27 +762,34 @@ def _save_generated(
                 """
                     INSERT INTO content_planning_proposal_repairs (
                       proposal_id, work_item_id, proposal_version, service_card_id,
+                      content_kind, subject_key,
                       planning_input_digest, supersedes_proposal_id, created_at, payload_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                (*values[:5], existing.proposal_id, *values[5:]),
+                (*values[:7], existing.proposal_id, *values[7:]),
             )
             outcome = "replaced"
     return outcome, safe_proposal
 
 
-def _proposal_row_for_input(
+def _proposal_row_for_subject_input(
     connection: sqlite3.Connection,
     work_item_id: str,
-    service_card_id: str,
+    subject: ContentPlanningSubject,
     planning_input_digest: str,
 ) -> sqlite3.Row | None:
     tables = _proposal_tables(connection)
     query = " UNION ALL ".join(_PROPOSAL_INPUT_SELECTS[table] for table in tables)
     # Table fragments are fixed above; every caller value remains a bound parameter.
     row = connection.execute(
-        "SELECT payload_json FROM (" + query + ") ORDER BY proposal_version DESC LIMIT 1",  # nosec B608
-        (work_item_id, service_card_id, planning_input_digest) * len(tables),
+        "SELECT * FROM (" + query + ") ORDER BY proposal_version DESC LIMIT 1",  # nosec B608
+        (
+            work_item_id,
+            subject.content_kind,
+            subject.subject_key,
+            planning_input_digest,
+        )
+        * len(tables),
     ).fetchone()
     return cast(sqlite3.Row | None, row)
 
@@ -762,7 +812,7 @@ def _latest_proposal_row(
     return cast(
         sqlite3.Row | None,
         connection.execute(
-            "SELECT payload_json FROM ("  # nosec B608
+            "SELECT * FROM ("  # nosec B608
             + query
             + ") ORDER BY proposal_version DESC LIMIT 1",
             params,
@@ -781,7 +831,7 @@ def _proposal_row_for_planning_digest(
     return cast(
         sqlite3.Row | None,
         connection.execute(
-            "SELECT payload_json FROM ("  # nosec B608
+            "SELECT * FROM ("  # nosec B608
             + query
             + ") ORDER BY proposal_version DESC LIMIT 1",
             (work_item_id, planning_digest) * len(tables),
@@ -794,66 +844,6 @@ def _proposal_tables(connection: sqlite3.Connection) -> tuple[str, ...]:
     if _table_exists(connection, "content_planning_proposal_repairs"):
         tables.append("content_planning_proposal_repairs")
     return tuple(tables)
-
-
-def _proposal_insert_values(
-    proposal: ContentPlanningProposal, created_at: datetime
-) -> tuple[str | int, ...]:
-    return (
-        str(proposal.proposal_id),
-        proposal.work_item_id,
-        int(proposal.proposal_version or 0),
-        str(proposal.service_card_id),
-        str(proposal.planning_input_digest),
-        created_at.isoformat(),
-        proposal.model_dump_json(),
-    )
-
-
-def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
-    row = connection.execute(
-        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
-        (name,),
-    ).fetchone()
-    return row is not None
-
-
-def _job_is_stale(updated_at: str) -> bool:
-    try:
-        timestamp = datetime.fromisoformat(updated_at).replace(tzinfo=UTC)
-    except ValueError:
-        return True
-    # A queued row older than this is eligible for retry. The planner's
-    # bounded Codex deadline is configured separately by the API router.
-    return (datetime.now(UTC) - timestamp).total_seconds() > planning_job_stale_after_seconds()
-
-
-def _proposal_from_row(row: sqlite3.Row | None) -> ContentPlanningProposal | None:
-    if row is None:
-        return None
-    return ContentPlanningProposal.model_validate(json.loads(cast(str, row["payload_json"])))
-
-
-def _validate_generated_proposal(
-    proposal: ContentPlanningProposal,
-    completed_run: CodexRun,
-) -> None:
-    if any(
-        value is None
-        for value in (
-            proposal.proposal_id,
-            proposal.codex_run_id,
-            proposal.planning_input_digest,
-            proposal.created_at,
-            proposal.service_card_id,
-            completed_run.completed_at,
-        )
-    ):
-        raise ValueError("Generated planning proposal requires immutable binding fields.")
-    if proposal.generation_status != "codex_generated":
-        raise ValueError("Planning proposal store accepts only Codex-generated proposals.")
-    if proposal.codex_run_id != completed_run.id or completed_run.status != "completed":
-        raise ValueError("Planning proposal requires its exact completed Codex run.")
 
 
 __all__ = [

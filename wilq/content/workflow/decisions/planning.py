@@ -14,6 +14,7 @@ from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
+from wilq.content.planning.subject import PlanningContentKind
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationBinding,
@@ -141,6 +142,7 @@ class ContentPlanningProposal(BaseModel):
         pattern=r"^[0-9a-f]{64}$",
     )
     goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
+    content_kind: PlanningContentKind = "service"
     final_canonical_url: str | None = None
     proposed_ia_location: str | None = None
     new_page_document_identity: ContentNewPageDocumentIdentity | None = None

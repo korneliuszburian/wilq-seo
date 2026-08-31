@@ -281,6 +281,14 @@ describe("classified refresh browser contracts", () => {
     }).success).toBe(false);
     expect(ContentPlanningProposalResponseSchema.safeParse({
       ...parsedResponse,
+      content_kind: "editorial",
+      proposal: {
+        ...parsedResponse.proposal,
+        content_kind: "editorial"
+      }
+    }).success).toBe(false);
+    expect(ContentPlanningProposalResponseSchema.safeParse({
+      ...parsedResponse,
       proposal: {
         ...parsedResponse.proposal,
         refresh_preparation_binding: null

@@ -9,6 +9,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
+from wilq.content.planning.subject import PlanningContentKind
 from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningConditionalHypothesis,
@@ -273,6 +274,7 @@ class ContentPlanningProposalResponse(BaseModel):
 
     status: ContentPlanningProposalStatus
     work_item_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
     service_card_id: str | None = None
     planning_input_digest: str | None = Field(
         default=None,
@@ -326,6 +328,7 @@ class ContentPlanningProposalResponse(BaseModel):
             return
         if (
             self.proposal.work_item_id != self.work_item_id
+            or self.proposal.content_kind != self.content_kind
             or self.proposal.service_card_id != self.service_card_id
             or self.proposal.planning_input_digest != self.planning_input_digest
         ):
@@ -342,6 +345,7 @@ class ContentPlanningProposalResponse(BaseModel):
             return
         if (
             binding.current_work_item_id != self.work_item_id
+            or binding.content_kind != self.content_kind
             or binding.service_card_id != self.service_card_id
             or binding.planning_input_digest != self.planning_input_digest
         ):
