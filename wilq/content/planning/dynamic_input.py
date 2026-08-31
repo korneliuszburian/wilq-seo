@@ -27,6 +27,21 @@ from wilq.content.planning.ahrefs import (
 )
 from wilq.content.planning.generation_readiness import planning_generation_blockers
 from wilq.content.planning.input_payload import refresh_planning_payload
+from wilq.content.planning.input_service_policy import (
+    ContentPlanningInputBlocker,
+)
+from wilq.content.planning.input_service_policy import (
+    ContentPlanningInputBlockerCode as ContentPlanningInputBlockerCode,
+)
+from wilq.content.planning.input_service_policy import (
+    foundation_blocker as _foundation_blocker,
+)
+from wilq.content.planning.input_service_policy import (
+    missing_service_blocker as _missing_service_blocker,
+)
+from wilq.content.planning.input_service_policy import (
+    resolve_service_candidate as _resolve_service_candidate,
+)
 from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningSourceAssessment,
@@ -38,7 +53,12 @@ from wilq.content.planning.input_sources import (
     build_source_facts,
     validate_source_assessment_membership,
 )
-from wilq.content.planning.input_summary import ContentPlanningInputSummary
+from wilq.content.planning.input_summary import (
+    ContentPlanningInputSummary,
+)
+from wilq.content.planning.input_summary import (
+    content_planning_input_summary as content_planning_input_summary,
+)
 from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
     load_content_internal_link_candidates,
@@ -48,7 +68,6 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     regulatory_content_coverage,
     regulatory_coverage_gap,
-    regulatory_review_candidates,
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.demand_evidence import (
@@ -71,38 +90,12 @@ from wilq.schemas import ContentFreshnessAssessment
 if TYPE_CHECKING:
     from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 
-ContentPlanningInputBlockerCode = Literal[
-    "unknown_service_card",
-    "service_selection_not_confirmed",
-    "service_card_not_approved",
-    "missing_approved_service_fact",
-    "service_context_mismatch",
-    "missing_planning_foundation",
-    "missing_wordpress_section_inventory",
-    "missing_wordpress_full_inventory",
-    "wordpress_material_review_required",
-    "stale_planning_sources",
-    "blocked_planning_sources",
-    "new_page_foundation_stale",
-    "missing_new_page_service_fact",
-    "missing_regulatory_source_coverage",
-]
-
 # A refresh plan cannot be grounded without the current page, the approved
 # service boundary and its exact organic-demand evidence. Other assessed
 # sources remain visible in the input and may enrich a plan when exact, but a
 # missing, stale or failed optional integration must not invent demand or
 # prevent a grounded content repair from proceeding.
 _REQUIRED_EXACT_PLANNING_SOURCES = frozenset({"wordpress", "service_profile", "gsc"})
-
-
-class ContentPlanningInputBlocker(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    code: ContentPlanningInputBlockerCode
-    label: str
-    reason: str
-    next_step: str
 
 
 class ContentPlanningInput(BaseModel):
@@ -117,9 +110,10 @@ class ContentPlanningInput(BaseModel):
     final_canonical_url: str | None = None
     proposed_ia_location: str | None = None
     new_page_foundation: ContentNewPagePlanningFoundation | None = None
-    service_candidates: list[ContentWorkItemServiceCandidate] = Field(min_length=1)
-    confirmed_service_card_id: str = Field(min_length=1)
-    service_label: str = Field(min_length=1)
+    content_kind: Literal["service", "editorial"] = "service"
+    service_candidates: list[ContentWorkItemServiceCandidate] = Field(default_factory=list)
+    confirmed_service_card_id: str | None = None
+    service_label: str | None = None
     inventory: ContentPlanningInventory
     internal_link_candidates: list[ContentPlanningInternalLinkCandidate] = Field(
         default_factory=list
@@ -152,6 +146,19 @@ class ContentPlanningInput(BaseModel):
     def require_nonblank_cta_patterns(self) -> ContentPlanningInput:
         if any(not pattern.strip() for pattern in self.required_cta_patterns):
             raise ValueError("Required CTA patterns must be non-blank")
+        return self
+
+    @model_validator(mode="after")
+    def require_conditional_service_identity(self) -> ContentPlanningInput:
+        if self.content_kind == "service":
+            if (
+                not self.service_candidates
+                or not self.confirmed_service_card_id
+                or not self.service_label
+            ):
+                raise ValueError("Service planning requires an exact service identity.")
+        elif self.service_candidates or self.confirmed_service_card_id or self.service_label:
+            raise ValueError("Editorial planning cannot carry a service identity.")
         return self
 
     @model_validator(mode="after")
@@ -287,54 +294,6 @@ def content_planning_input_readiness(
     )
 
 
-def content_planning_input_summary(
-    planning_input: ContentPlanningInput,
-) -> ContentPlanningInputSummary:
-    return ContentPlanningInputSummary(
-        goal=planning_input.goal,
-        final_canonical_url=planning_input.final_canonical_url,
-        proposed_ia_location=planning_input.proposed_ia_location,
-        service_label=planning_input.service_label,
-        inventory_status=planning_input.inventory.status,
-        content_inventory_status=planning_input.inventory.content_status,
-        acf_section_inventory_status=planning_input.inventory.acf_section_status,
-        source_assessments=planning_input.source_assessments,
-        source_fact_count=len(planning_input.source_facts),
-        source_fact_ids=sorted(
-            {
-                source_fact_id
-                for fact in planning_input.source_facts
-                for source_fact_id in fact.source_fact_ids
-            }
-        ),
-        source_material_ids=sorted(
-            {
-                source_material_id
-                for fact in planning_input.source_facts
-                for source_material_id in fact.source_material_ids
-            }
-        ),
-        source_fact_previews=list(planning_input.source_facts),
-        gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
-        regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
-        regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
-        regulatory_requirements=planning_input.regulatory_coverage.requirements,
-        regulatory_requirement_ids=[
-            requirement.id for requirement in planning_input.regulatory_coverage.requirements
-        ],
-        regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
-        regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
-        regulatory_review_candidates=regulatory_review_candidates(
-            service_card_id=planning_input.confirmed_service_card_id,
-            coverage=planning_input.regulatory_coverage,
-        ),
-        evidence_id_count=len(planning_input.evidence_ids),
-        knowledge_card_count=len(planning_input.knowledge_card_ids),
-        measurement_metrics=planning_input.measurement_metrics,
-        metric_comparisons=planning_input.metric_comparisons,
-    )
-
-
 def build_new_page_planning_input(
     *,
     brief: ContentNewPageBrief,
@@ -358,7 +317,7 @@ def build_new_page_planning_input(
 def build_content_planning_input(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     *,
-    service_card_id: str,
+    service_card_id: str | None,
 ) -> ContentPlanningInputBuildResult:
     planning = snapshot.planning_workspace
     brief = snapshot.sales_brief.sales_brief_result.brief
@@ -449,15 +408,20 @@ def build_content_planning_input_from_components(
     baseline_proposal: ContentPlanningProposal | None,
     freshness: ContentFreshnessAssessment,
     claim_ledger: ContentClaimLedger,
-    service_card_id: str,
+    service_card_id: str | None,
     existing_content_material_reviewed: bool = False,
 ) -> ContentPlanningInputBuildResult:
-    candidate, blocker = _resolve_service_candidate(service_profile, service_card_id)
-    if blocker is not None:
-        return ContentPlanningInputBuildResult(blockers=[blocker])
+    editorial = item.content_kind == "editorial"
+    candidate = None
+    if not editorial:
+        if service_card_id is None:
+            return ContentPlanningInputBuildResult(blockers=[_missing_service_blocker()])
+        candidate, blocker = _resolve_service_candidate(service_profile, service_card_id)
+        if blocker is not None:
+            return ContentPlanningInputBuildResult(blockers=[blocker])
     if brief is None or draft is None or baseline_proposal is None:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
-    if candidate is None:
+    if candidate is None and not editorial:
         return ContentPlanningInputBuildResult(blockers=[_foundation_blocker()])
     inventory = build_planning_inventory(item, inventory_resolution)
     ahrefs_matched_evidence_ids = _exact_ahrefs_matched_evidence_ids(item)
@@ -468,16 +432,21 @@ def build_content_planning_input_from_components(
         freshness=freshness,
         brief=brief,
         demand=baseline_proposal.search_demand,
-        service_lifecycle=candidate.lifecycle_status,
+        service_lifecycle=("not_required" if candidate is None else candidate.lifecycle_status),
         ahrefs_matched_evidence_ids=ahrefs_matched_evidence_ids,
     )
-    regulatory_coverage = regulatory_content_coverage(
-        service_card_id=candidate.service_card_id,
-        source_facts=ekologus_source_facts(),
+    regulatory_coverage = (
+        ContentRegulatoryCoverage()
+        if candidate is None
+        else regulatory_content_coverage(
+            service_card_id=candidate.service_card_id,
+            source_facts=ekologus_source_facts(),
+        )
     )
     blockers = _readiness_blockers(
+        content_kind="editorial" if editorial else "service",
         service_profile=service_profile,
-        service_lifecycle=candidate.lifecycle_status,
+        service_lifecycle=("not_required" if candidate is None else candidate.lifecycle_status),
         inventory=inventory,
         freshness=freshness,
         source_assessments=source_assessments,
@@ -514,9 +483,6 @@ def build_content_planning_input_from_components(
         claim_ledger=claim_ledger,
         metric_comparisons=metric_comparisons,
     )
-    # Criteria are part of the fixed point. A quality-gate change must make
-    # older proposals stale instead of allowing same-input idempotency to
-    # preserve a plan produced under weaker rules.
     digest = _digest(
         {
             "schema_name": "wilq_content_planning_input_v7",
@@ -533,49 +499,9 @@ def build_content_planning_input_from_components(
     )
 
 
-def _resolve_service_candidate(
-    service_profile: ContentWorkItemServiceProfileContext,
-    service_card_id: str,
-) -> tuple[ContentWorkItemServiceCandidate | None, ContentPlanningInputBlocker | None]:
-    candidate = next(
-        (
-            item
-            for item in service_profile.service_candidates
-            if item.service_card_id == service_card_id
-        ),
-        None,
-    )
-    if candidate is None:
-        return None, build_blocker(
-            ContentPlanningInputBlocker,
-            code="unknown_service_card",
-            label="Usługa nie należy do tego work itemu",
-            reason="Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",
-            next_step="Wybierz jedną z kandydatur zwróconych przez bieżący snapshot.",
-        )
-    if service_profile.service_card_id != service_card_id:
-        return None, build_blocker(
-            ContentPlanningInputBlocker,
-            code="service_context_mismatch",
-            label="Wybór usługi jest nieaktualny",
-            reason="Bieżący snapshot nie jest jeszcze związany z wybraną kartą usługi.",
-            next_step="Zapisz wybór usługi w review zakresu i odśwież snapshot.",
-        )
-    return candidate, None
-
-
-def _foundation_blocker() -> ContentPlanningInputBlocker:
-    return build_blocker(
-        ContentPlanningInputBlocker,
-        code="missing_planning_foundation",
-        label="Brakuje kompletnego wejścia do planu",
-        reason="Sales Brief, preserve-first package albo plan bazowy jest zablokowany.",
-        next_step="Usuń blokery wiedzy, inventory i briefu przed uruchomieniem Codexa.",
-    )
-
-
 def _readiness_blockers(
     *,
+    content_kind: Literal["service", "editorial"],
     service_profile: ContentWorkItemServiceProfileContext,
     service_lifecycle: str,
     inventory: ContentPlanningInventory,
@@ -584,7 +510,11 @@ def _readiness_blockers(
     existing_content_material_reviewed: bool,
     regulatory_coverage: ContentRegulatoryCoverage,
 ) -> list[ContentPlanningInputBlocker]:
-    service_blockers = _service_readiness_blockers(service_profile, service_lifecycle)
+    service_blockers = (
+        []
+        if content_kind == "editorial"
+        else _service_readiness_blockers(service_profile, service_lifecycle)
+    )
     inventory_blockers = _inventory_readiness_blockers(
         inventory, existing_content_material_reviewed
     )
@@ -595,6 +525,11 @@ def _readiness_blockers(
         *_source_readiness_blockers(
             freshness,
             source_assessments,
+            required_sources=(
+                frozenset({"wordpress", "gsc"})
+                if content_kind == "editorial"
+                else _REQUIRED_EXACT_PLANNING_SOURCES
+            ),
             preceding_blocker_codes={
                 blocker.code for blocker in [*service_blockers, *inventory_blockers]
             },
@@ -710,13 +645,14 @@ def _source_readiness_blockers(
     freshness: ContentFreshnessAssessment,
     source_assessments: list[ContentPlanningSourceAssessment],
     *,
+    required_sources: frozenset[str],
     preceding_blocker_codes: set[ContentPlanningInputBlockerCode],
 ) -> list[ContentPlanningInputBlocker]:
     blockers: list[ContentPlanningInputBlocker] = []
     stale_sources = [
         assessment.source
         for assessment in source_assessments
-        if (assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES and assessment.status == "stale")
+        if assessment.source in required_sources and assessment.status == "stale"
     ]
     if stale_sources:
         blockers.append(
@@ -733,7 +669,7 @@ def _source_readiness_blockers(
         assessment.source
         for assessment in source_assessments
         if (
-            assessment.source in _REQUIRED_EXACT_PLANNING_SOURCES and assessment.status == "blocked"
+            assessment.source in required_sources and assessment.status == "blocked"
         )
     ]
     if blocked_sources and not (
@@ -757,7 +693,7 @@ def _planning_payload(
     *,
     item: ContentWorkItem,
     service_profile: ContentWorkItemServiceProfileContext,
-    candidate: ContentWorkItemServiceCandidate,
+    candidate: ContentWorkItemServiceCandidate | None,
     brief: ContentSalesBrief,
     baseline: ContentPlanningProposal,
     inventory: ContentPlanningInventory,

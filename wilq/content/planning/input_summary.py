@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -14,6 +14,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     ContentRegulatoryRequirementCoverage,
     ContentRegulatoryReviewCandidate,
+    regulatory_review_candidates,
 )
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandRow
 
@@ -28,7 +29,8 @@ class ContentPlanningInputSummary(BaseModel):
     goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
     final_canonical_url: str | None = None
     proposed_ia_location: str | None = None
-    service_label: str = Field(min_length=1)
+    content_kind: Literal["service", "editorial"] = "service"
+    service_label: str | None = None
     inventory_status: Literal["available", "missing", "not_applicable"]
     content_inventory_status: Literal["available", "missing", "not_applicable"]
     acf_section_inventory_status: Literal["available", "missing", "not_applicable"]
@@ -57,6 +59,10 @@ class ContentPlanningInputSummary(BaseModel):
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
         validate_source_assessment_membership(self.source_assessments)
+        if self.content_kind == "service" and not self.service_label:
+            raise ValueError("Service planning summary requires a service label.")
+        if self.content_kind == "editorial" and self.service_label is not None:
+            raise ValueError("Editorial planning summary cannot carry a service label.")
         if self.goal == "new_page":
             if self.final_canonical_url is not None:
                 raise ValueError("New-page planning cannot claim a public canonical URL.")
@@ -84,6 +90,56 @@ class ContentPlanningInputSummary(BaseModel):
             raise ValueError("Refresh planning requires existing-page inventory.")
         _validate_regulatory_summary(self)
         return self
+
+
+def content_planning_input_summary(planning_input: Any) -> ContentPlanningInputSummary:
+    return ContentPlanningInputSummary(
+        goal=planning_input.goal,
+        final_canonical_url=planning_input.final_canonical_url,
+        proposed_ia_location=planning_input.proposed_ia_location,
+        content_kind=planning_input.content_kind,
+        service_label=planning_input.service_label,
+        inventory_status=planning_input.inventory.status,
+        content_inventory_status=planning_input.inventory.content_status,
+        acf_section_inventory_status=planning_input.inventory.acf_section_status,
+        source_assessments=planning_input.source_assessments,
+        source_fact_count=len(planning_input.source_facts),
+        source_fact_ids=sorted(
+            source_fact_id
+            for fact in planning_input.source_facts
+            for source_fact_id in fact.source_fact_ids
+        ),
+        source_material_ids=sorted(
+            source_material_id
+            for fact in planning_input.source_facts
+            for source_material_id in fact.source_material_ids
+        ),
+        source_fact_previews=list(planning_input.source_facts),
+        gsc_query_rows=list(planning_input.query_portfolio.gsc_query_rows),
+        regulatory_profile_id=planning_input.regulatory_coverage.profile_id,
+        regulatory_profile_version=planning_input.regulatory_coverage.profile_version,
+        regulatory_requirements=planning_input.regulatory_coverage.requirements,
+        regulatory_requirement_ids=[
+            requirement.id for requirement in planning_input.regulatory_coverage.requirements
+        ],
+        regulatory_source_fact_ids=planning_input.regulatory_coverage.source_fact_ids,
+        regulatory_requirement_coverage=planning_input.regulatory_coverage.requirement_coverage,
+        regulatory_review_candidates=(
+            []
+            if planning_input.confirmed_service_card_id is None
+            else regulatory_review_candidates(
+                service_card_id=planning_input.confirmed_service_card_id,
+                coverage=planning_input.regulatory_coverage,
+            )
+        ),
+        evidence_id_count=len(planning_input.evidence_ids),
+        knowledge_card_count=len(planning_input.knowledge_card_ids),
+        measurement_metrics=planning_input.measurement_metrics,
+        metric_comparisons=planning_input.metric_comparisons,
+    )
+
+
+__all__ = ["ContentPlanningInputSummary", "content_planning_input_summary"]
 
 
 def _validate_regulatory_summary(summary: ContentPlanningInputSummary) -> None:

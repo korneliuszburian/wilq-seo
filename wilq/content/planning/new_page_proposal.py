@@ -243,19 +243,27 @@ def terminalize_new_page_planning_claim(
     )
 
 
+def _required_service_card_id(planning_input: ContentPlanningInput) -> str:
+    service_card_id = planning_input.confirmed_service_card_id
+    if service_card_id is None:
+        raise ValueError("New-page planning requires an exact service card.")
+    return service_card_id
+
+
 def _read_proposal(
     *, planning_input: ContentPlanningInput, store: ContentPlanningProposalStore
 ) -> ContentPlanningProposalResponse:
+    service_card_id = _required_service_card_id(planning_input)
     queued = store.queued_response(
         planning_input.work_item_id,
-        planning_input.confirmed_service_card_id,
+        service_card_id,
         planning_input.planning_input_digest,
     )
     if queued is not None:
         return queued
     proposal = store.for_input(
         planning_input.work_item_id,
-        planning_input.confirmed_service_card_id,
+        service_card_id,
         planning_input.planning_input_digest,
     )
     if proposal is None:
@@ -284,12 +292,13 @@ def _queue_proposal(
     request: ContentNewPagePlanningProposalRequest,
     store: ContentPlanningProposalStore,
 ) -> tuple[ContentPlanningProposalResponse, str]:
+    service_card_id = _required_service_card_id(planning_input)
     summary = content_planning_input_summary(planning_input)
     if request.expected_planning_input_digest != planning_input.planning_input_digest:
         return _stale_response(planning_input), "stale"
     existing = store.for_input(
         planning_input.work_item_id,
-        planning_input.confirmed_service_card_id,
+        service_card_id,
         planning_input.planning_input_digest,
     )
     if existing is not None:
@@ -326,11 +335,12 @@ def _generate_proposal(
     run_store: LocalStateStore,
     endpoint_path: str,
 ) -> ContentPlanningProposalResponse:
+    service_card_id = _required_service_card_id(planning_input)
     if request.expected_planning_input_digest != planning_input.planning_input_digest:
         return _stale_response(planning_input)
     existing = store.for_input(
         planning_input.work_item_id,
-        planning_input.confirmed_service_card_id,
+        service_card_id,
         planning_input.planning_input_digest,
     )
     if existing is not None:
