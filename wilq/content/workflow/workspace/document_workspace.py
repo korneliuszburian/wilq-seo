@@ -4,6 +4,7 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.regulatory import (
     ContentRegulatoryReviewCandidate,
@@ -227,7 +228,8 @@ def build_content_document_workspace(
             revision_context_current=revision_context_current,
         ),
         regulatory_review_candidates=_regulatory_review_candidates(
-            revision
+            revision,
+            item=item,
         ),
         secondary_disclosures=[
             (
@@ -302,16 +304,29 @@ def _revision_with_claim_ledger(
 
 def _regulatory_review_candidates(
     revision: ContentDraftRevision | None,
+    *,
+    item: ContentWorkItem | None = None,
 ) -> list[ContentRegulatoryReviewCandidate]:
     service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
-    if service_card_id is None:
+    canonical_path = (
+        content_normalized_path(
+            None
+            if item is None
+            else item.final_canonical_url or item.intended_final_url or item.source_public_url
+        )
+        if service_card_id is None and item is not None and item.content_kind == "editorial"
+        else None
+    )
+    if service_card_id is None and not canonical_path:
         return []
     coverage = regulatory_content_coverage(
         service_card_id=service_card_id,
+        canonical_path=canonical_path,
         source_facts=ekologus_source_facts(),
     )
     return regulatory_review_candidates(
         service_card_id=service_card_id,
+        canonical_path=canonical_path,
         coverage=coverage,
     )
 

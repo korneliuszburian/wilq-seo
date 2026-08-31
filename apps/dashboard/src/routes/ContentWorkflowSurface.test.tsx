@@ -178,6 +178,16 @@ describe("ContentWorkflowSurface", () => {
       label: "Przygotuj nową wersję",
       reason: "Przygotowanie dokumentu jest kolejnym krokiem."
     };
+    noDocument.regulatory_review_candidates = [{
+      candidate_id: "integrated_permit_candidate",
+      source_url: "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
+      source_title: "Ustawa ooś — aktualny tekst",
+      observed_on: "2026-08-31",
+      requirement_ids: ["integrated_permit_distinct_roles"],
+      requirement_labels: ["Odrębne role decyzji"],
+      review_status: "review_required",
+      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
+    }];
     const readyPlan = {
       status: "ready",
       work_item_id: "content_work_item_bdo",
@@ -252,6 +262,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Szczegóły i dev")).toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-regulatory-source-review")).toHaveTextContent(
+      "Ustawa ooś — aktualny tekst"
+    );
+    expect(screen.getByRole("button", { name: "Przygotuj propozycję do review" })).toBeEnabled();
     await waitFor(() => expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1));
     const prepare = screen.getByRole("button", { name: "Przygotuj nową wersję" });
     await waitFor(() => expect(prepare).toBeEnabled());

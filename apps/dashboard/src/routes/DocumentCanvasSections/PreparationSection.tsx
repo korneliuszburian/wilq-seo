@@ -10,6 +10,7 @@ import {
   postContentWorkItemPlanningProposal
 } from "../../lib/api";
 import { useContentPlanningProposal } from "../contentWorkflowQueries";
+import { RegulatorySourceReviewCandidates } from "../PlanningEvidenceDetails";
 import { planningRequestFromResponse } from "./planningRequest";
 import type { ContentDocumentWorkspace } from "./shared";
 
@@ -114,6 +115,11 @@ export function ContentDocumentPreparationAction({
         {label}
       </button>
       {message ? <p className="mt-3 text-sm leading-5 text-wait">{message}</p> : null}
+      <RegulatorySourceReviewCandidates
+        candidates={workspace.regulatory_review_candidates}
+        onRecorded={() => void queryClient.invalidateQueries({ queryKey: ["content-workflow"] })}
+        title="Źródła urzędowe do sprawdzenia przed przygotowaniem dokumentu"
+      />
     </>
   );
 }
