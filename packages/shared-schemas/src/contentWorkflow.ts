@@ -2647,7 +2647,8 @@ export const ContentRefreshPreparationBindingSchema = z
     current_work_item_id: z.string().trim().min(1),
     canonical_path: z.string().trim().min(1),
     public_url: z.string().trim().min(1),
-    service_card_id: z.string().trim().min(1),
+    content_kind: ContentPlanningKindSchema.optional(),
+    service_card_id: z.string().trim().min(1).nullable(),
     planning_input_digest: ContentRefreshPreparationDigestSchema
   })
   .strict()
@@ -2661,22 +2662,32 @@ export const ContentRefreshPreparationBindingSchema = z
         message: "refresh preparation authorization ID must match its exact digest"
       });
     }
+    const kind = binding.content_kind ?? "service";
+    if ((kind === "service") !== Boolean(binding.service_card_id)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["service_card_id"],
+        message: "refresh binding content kind must match its service identity"
+      });
+    }
   });
 
 const refreshPreparationBindingMatchesIdentity = (
   binding: z.output<typeof ContentRefreshPreparationBindingSchema>,
   identity: {
     workItemId: string;
+    contentKind?: "service" | "editorial";
     serviceCardId: string | null | undefined;
     planningInputDigest: string | null | undefined;
     finalCanonicalUrl: string | null | undefined;
   }
 ): boolean => {
   if (
-    !identity.serviceCardId ||
     !identity.planningInputDigest ||
     !identity.finalCanonicalUrl ||
     binding.current_work_item_id !== identity.workItemId ||
+    (binding.content_kind ?? "service") !==
+      (identity.contentKind ?? (identity.serviceCardId ? "service" : "editorial")) ||
     binding.service_card_id !== identity.serviceCardId ||
     binding.planning_input_digest !== identity.planningInputDigest ||
     binding.public_url !== identity.finalCanonicalUrl
@@ -3990,6 +4001,7 @@ export const ContentPlanningProposalSchema = z.object({
     proposal.refresh_preparation_binding,
     {
       workItemId: proposal.work_item_id,
+      contentKind: proposal.content_kind,
       serviceCardId: proposal.service_card_id,
       planningInputDigest: proposal.planning_input_digest,
       finalCanonicalUrl: proposal.final_canonical_url
@@ -4506,6 +4518,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   const proposalBinding = response.proposal?.refresh_preparation_binding;
   if (responseBinding && (
     responseBinding.current_work_item_id !== response.work_item_id ||
+    (responseBinding.content_kind ?? "service") !== (response.content_kind ?? "service") ||
     responseBinding.service_card_id !== response.service_card_id ||
     responseBinding.planning_input_digest !== response.planning_input_digest
   )) {
