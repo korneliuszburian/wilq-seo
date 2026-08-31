@@ -147,18 +147,12 @@ _CONTENT_WORKFLOW_SCHEMA = (
       canonical_path TEXT NOT NULL,
       public_url TEXT NOT NULL,
       planning_input_digest TEXT NOT NULL,
-      service_card_id TEXT NOT NULL,
+      content_kind TEXT NOT NULL DEFAULT 'service'
+        CHECK (content_kind IN ('service', 'editorial')),
+      service_card_id TEXT,
       authorized_by TEXT NOT NULL,
       authorized_at TEXT NOT NULL,
-      payload_json TEXT NOT NULL,
-      UNIQUE (
-        work_item_id,
-        classification_run_digest,
-        decision_set_digest,
-        source_packet_row_digest,
-        planning_input_digest,
-        service_card_id
-      )
+      payload_json TEXT NOT NULL
     )
     """,
     """
@@ -319,6 +313,16 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
     _ensure_content_human_review_updated_at(connection)
     _ensure_content_new_page_apply_result_json(connection)
     _ensure_refresh_preparation_authorization_columns(connection)
+    connection.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_refresh_preparation_authorization_context
+        ON content_refresh_preparation_authorizations (
+          work_item_id, classification_run_digest, decision_set_digest,
+          source_packet_row_digest, planning_input_digest, content_kind,
+          COALESCE(service_card_id, '')
+        )
+        """
+    )
     ensure_sqlite_schema_version(connection)
 
 
@@ -367,11 +371,12 @@ def _ensure_refresh_preparation_authorization_columns(connection: sqlite3.Connec
     ).fetchone()
     if table is None:
         return
+    column_rows = list(
+        connection.execute("PRAGMA table_info(content_refresh_preparation_authorizations)")
+    )
     columns = {
         str(row[1])
-        for row in connection.execute(
-            "PRAGMA table_info(content_refresh_preparation_authorizations)"
-        )
+        for row in column_rows
     }
     for name in ("canonical_path", "public_url"):
         if name in columns:
@@ -380,4 +385,60 @@ def _ensure_refresh_preparation_authorization_columns(connection: sqlite3.Connec
             "ALTER TABLE content_refresh_preparation_authorizations "
             f"ADD COLUMN {name} TEXT NOT NULL DEFAULT ''"  # nosec B608 -- fixed names.
         )
+    service_not_null = next(
+        (bool(row[3]) for row in column_rows if str(row[1]) == "service_card_id"),
+        False,
+    )
+    if "content_kind" not in columns or service_not_null:
+        _migrate_refresh_preparation_authorizations_v2(connection)
+        return
     connection.commit()
+
+
+def _migrate_refresh_preparation_authorizations_v2(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        BEGIN IMMEDIATE;
+        ALTER TABLE content_refresh_preparation_authorizations
+          RENAME TO content_refresh_preparation_authorizations_v1;
+        CREATE TABLE content_refresh_preparation_authorizations (
+          authorization_id TEXT PRIMARY KEY,
+          authorization_digest TEXT NOT NULL UNIQUE,
+          work_item_id TEXT NOT NULL,
+          classification_run_id TEXT NOT NULL,
+          classification_run_digest TEXT NOT NULL,
+          decision_set_digest TEXT NOT NULL,
+          source_packet_row_digest TEXT NOT NULL,
+          canonical_path TEXT NOT NULL,
+          public_url TEXT NOT NULL,
+          planning_input_digest TEXT NOT NULL,
+          content_kind TEXT NOT NULL DEFAULT 'service'
+            CHECK (content_kind IN ('service', 'editorial')),
+          service_card_id TEXT,
+          authorized_by TEXT NOT NULL,
+          authorized_at TEXT NOT NULL,
+          payload_json TEXT NOT NULL
+        );
+        INSERT INTO content_refresh_preparation_authorizations (
+          authorization_id, authorization_digest, work_item_id,
+          classification_run_id, classification_run_digest, decision_set_digest,
+          source_packet_row_digest, canonical_path, public_url,
+          planning_input_digest, content_kind, service_card_id,
+          authorized_by, authorized_at, payload_json
+        )
+        SELECT authorization_id, authorization_digest, work_item_id,
+          classification_run_id, classification_run_digest, decision_set_digest,
+          source_packet_row_digest, canonical_path, public_url,
+          planning_input_digest, 'service', service_card_id,
+          authorized_by, authorized_at, payload_json
+        FROM content_refresh_preparation_authorizations_v1;
+        DROP TABLE content_refresh_preparation_authorizations_v1;
+        CREATE UNIQUE INDEX uq_refresh_preparation_authorization_context
+        ON content_refresh_preparation_authorizations (
+          work_item_id, classification_run_digest, decision_set_digest,
+          source_packet_row_digest, planning_input_digest, content_kind,
+          COALESCE(service_card_id, '')
+        );
+        COMMIT;
+        """
+    )

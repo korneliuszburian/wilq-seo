@@ -28,6 +28,10 @@ class RefreshPreparationAuthorizationStoreMixin:
             authorization.model_dump_json(),
             strict=True,
         )
+        if accepted.content_kind == "editorial":
+            raise ValueError(
+                "Editorial refresh authorization requires a persisted content-kind receipt."
+            )
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             _assert_current_refresh_authorization(connection, accepted)
@@ -42,7 +46,8 @@ class RefreshPreparationAuthorizationStoreMixin:
                   AND canonical_path = ?
                   AND public_url = ?
                   AND planning_input_digest = ?
-                  AND service_card_id = ?
+                  AND content_kind = ?
+                  AND service_card_id IS ?
                 LIMIT 1
                 """,
                 (
@@ -53,6 +58,7 @@ class RefreshPreparationAuthorizationStoreMixin:
                     accepted.canonical_path,
                     accepted.public_url,
                     accepted.planning_input_digest,
+                    accepted.content_kind,
                     accepted.service_card_id,
                 ),
             ).fetchone()
@@ -72,9 +78,9 @@ class RefreshPreparationAuthorizationStoreMixin:
                   authorization_id, authorization_digest, work_item_id,
                   classification_run_id, classification_run_digest, decision_set_digest,
                   source_packet_row_digest, canonical_path, public_url,
-                  planning_input_digest, service_card_id,
+                  planning_input_digest, content_kind, service_card_id,
                   authorized_by, authorized_at, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     accepted.authorization_id,
@@ -87,6 +93,7 @@ class RefreshPreparationAuthorizationStoreMixin:
                     accepted.canonical_path,
                     accepted.public_url,
                     accepted.planning_input_digest,
+                    accepted.content_kind,
                     accepted.service_card_id,
                     accepted.authorized_by,
                     accepted.authorized_at.isoformat(),
@@ -124,7 +131,8 @@ class RefreshPreparationAuthorizationStoreMixin:
         canonical_path: str,
         public_url: str,
         planning_input_digest: str,
-        service_card_id: str,
+        service_card_id: str | None,
+        content_kind: str = "service",
     ) -> ContentRefreshPreparationAuthorization | None:
         with self._connect() as connection:
             row = connection.execute(
@@ -138,7 +146,8 @@ class RefreshPreparationAuthorizationStoreMixin:
                   AND canonical_path = ?
                   AND public_url = ?
                   AND planning_input_digest = ?
-                  AND service_card_id = ?
+                  AND content_kind = ?
+                  AND service_card_id IS ?
                 LIMIT 1
                 """,
                 (
@@ -149,6 +158,7 @@ class RefreshPreparationAuthorizationStoreMixin:
                     canonical_path,
                     public_url,
                     planning_input_digest,
+                    content_kind,
                     service_card_id,
                 ),
             ).fetchone()
@@ -170,12 +180,13 @@ def _authorization_from_row(row: sqlite3.Row) -> ContentRefreshPreparationAuthor
         authorization.canonical_path,
         authorization.public_url,
         authorization.planning_input_digest,
+        authorization.content_kind,
         authorization.service_card_id,
         authorization.authorized_by,
         authorization.authorized_at.isoformat(),
     )
     stored_scalars = tuple(
-        cast(str, row[name])
+        row[name]
         for name in (
             "authorization_id",
             "authorization_digest",
@@ -187,6 +198,7 @@ def _authorization_from_row(row: sqlite3.Row) -> ContentRefreshPreparationAuthor
             "canonical_path",
             "public_url",
             "planning_input_digest",
+            "content_kind",
             "service_card_id",
             "authorized_by",
             "authorized_at",

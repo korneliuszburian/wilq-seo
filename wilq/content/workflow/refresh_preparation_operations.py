@@ -255,7 +255,12 @@ def record_authorization(
         work_item_id=work_item_id,
         classification=current.classification,
         planning_input_digest=current.planning_input_digest,
-        service_card_id=current.service_candidate.service_card_id,
+        content_kind=current.content_kind,
+        service_card_id=(
+            None
+            if current.service_candidate is None
+            else current.service_candidate.service_card_id
+        ),
         acknowledged_classification_blocker_codes=request.acknowledged_classification_blocker_codes,
         authorized_by=request.authorized_by,
         authorized_at=utc_now(),

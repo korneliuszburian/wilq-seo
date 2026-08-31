@@ -370,7 +370,10 @@ def authorization_request_mismatch(
                 "Żądanie nie odpowiada bieżącemu exact receipt przygotowania refresh.",
                 "Odśwież przygotowanie i użyj wszystkich aktualnych digestów.",
             )
-    if request.service_card_id != preview.service_candidate.service_card_id:
+    preview_service_card_id = (
+        None if preview.service_candidate is None else preview.service_candidate.service_card_id
+    )
+    if request.service_card_id != preview_service_card_id:
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Usługa zmieniła się przed autoryzacją",

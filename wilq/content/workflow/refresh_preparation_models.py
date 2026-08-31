@@ -51,7 +51,8 @@ class RefreshPreparationStore(Protocol):
         canonical_path: str,
         public_url: str,
         planning_input_digest: str,
-        service_card_id: str,
+        service_card_id: str | None,
+        content_kind: str = "service",
     ) -> ContentRefreshPreparationAuthorization | None: ...
 
 
