@@ -353,6 +353,28 @@ def test_dry_run_is_default_shape_and_does_not_mutate(tmp_path: Path) -> None:
     assert _mutation_snapshot(state_path) == before
 
 
+def test_dry_run_keeps_current_schema_v8_compatible(tmp_path: Path) -> None:
+    state_path = tmp_path / "dry-run-v8.sqlite3"
+    backup_path = tmp_path / "dry-run-v8-backup.sqlite3"
+    store = _seed_runs(state_path)
+    with sqlite3.connect(state_path) as connection:
+        connection.execute("PRAGMA user_version = 8")
+    _backup(state_path, backup_path)
+    manifest = _manifest(state_path)
+
+    receipt = plan_stop_reconciliation(
+        store,
+        manifest=manifest,
+        batch_id=BATCH_ID,
+        backup_path=backup_path,
+        expected_count=20,
+        expected_manifest_sha256=manifest.manifest_sha256,
+    )
+
+    assert receipt.status == "dry_run_ready"
+    assert receipt.dry_run is True
+
+
 def test_dry_run_rejects_unsupported_schema_before_classification(tmp_path: Path) -> None:
     state_path = tmp_path / "dry-run-v5.sqlite3"
     backup_path = tmp_path / "dry-run-v5-backup.sqlite3"
@@ -364,7 +386,7 @@ def test_dry_run_rejects_unsupported_schema_before_classification(tmp_path: Path
     manifest = _manifest(state_path)
     before = state_path.read_bytes()
 
-    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7 or 8"):
+    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7, 8"):
         plan_stop_reconciliation(
             LocalStateStore(state_path),
             manifest=manifest,
@@ -390,7 +412,7 @@ def test_apply_rejects_unsupported_schema_before_transaction(tmp_path: Path) -> 
 
     with pytest.raises(
         StopReconciliationManifestError,
-        match="schema version 6, 7 or 8",
+        match="schema version 6, 7, 8",
     ) as failure:
         _apply(store=LocalStateStore(state_path), manifest=manifest, backup_path=backup_path)
 

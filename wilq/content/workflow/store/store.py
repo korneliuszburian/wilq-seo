@@ -40,6 +40,9 @@ from wilq.content.workflow.documents.store_revision_review import record_draft_r
 from wilq.content.workflow.store.refresh_preparation_atomic import (
     assert_refresh_preparation_revision_current,
 )
+from wilq.content.workflow.store.store_content_kind_receipt import (
+    ContentKindReceiptStoreMixin,
+)
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
@@ -596,6 +599,7 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,
+    ContentKindReceiptStoreMixin,
     RefreshPreparationAuthorizationStoreMixin,
     _TargetMappingConfirmationStoreMixin,
     _WordPressApplyStoreMixin,

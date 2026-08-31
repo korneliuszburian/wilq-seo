@@ -26,6 +26,7 @@ from pydantic import (
 
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.planning.input_summary import ContentPlanningInputSummary
+from wilq.content.workflow.content_kind_receipt import ContentKindReceipt
 
 _HEX64 = r"^[0-9a-f]{64}$"
 _NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, strict=True)]
@@ -343,11 +344,14 @@ class _ContentRefreshPreparationReadyBase(_StrictModel):
     input_summary: ContentPlanningInputSummary
     blockers: list[ContentRefreshPreparationBlocker] = Field(default_factory=list)
     safe_next_step: _NonBlank
+    content_kind_receipt: ContentKindReceipt | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def require_conditional_service_candidate(self) -> _ContentRefreshPreparationReadyBase:
         if (self.content_kind == "service") != (self.service_candidate is not None):
             raise ValueError("Ready refresh service candidate must match its content kind.")
+        if (self.content_kind == "editorial") != (self.content_kind_receipt is not None):
+            raise ValueError("Ready refresh content-kind receipt must match its content kind.")
         return self
 
 

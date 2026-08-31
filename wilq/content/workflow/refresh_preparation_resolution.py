@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlsplit
+from typing import Literal
 
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftRequest
 from wilq.content.knowledge.work_item_service_profile import ContentWorkItemServiceCandidate
 from wilq.content.planning.dynamic_input import (
@@ -13,7 +14,12 @@ from wilq.content.planning.dynamic_input import (
     content_planning_input_summary,
 )
 from wilq.content.planning.generation_readiness import planning_generation_blockers
+from wilq.content.workflow.content_kind_receipt import (
+    ContentKindReceipt,
+    build_editorial_content_kind_receipt,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
@@ -30,6 +36,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
 )
 from wilq.content.workflow.refresh_preparation_models import (
     RefreshClassificationContext,
+    RefreshPreparationRebuilt,
     RefreshPreparationSnapshotLoader,
     RefreshPreparationStore,
 )
@@ -105,16 +112,43 @@ def rebuild_preparation(
     snapshot_loader: RefreshPreparationSnapshotLoader,
     work_item_id: str,
     classification: RefreshClassificationContext,
+    service_card_id: str | None,
+    inventory_binding: ContentKindInventoryBinding | None = None,
+) -> RefreshPreparationRebuilt | ContentRefreshPreparationBlocked:
+    if inventory_binding is not None:
+        return rebuild_editorial_preparation(
+            snapshot_loader=snapshot_loader,
+            work_item_id=work_item_id,
+            classification=classification,
+            inventory_binding=inventory_binding,
+        )
+    if service_card_id is None:
+        return blocked_preparation(
+            work_item_id,
+            classification.binding,
+            blocker(
+                "refresh_preparation_service_required",
+                "Brakuje dokładnej karty usługi",
+                "Ten refresh nie ma potwierdzonej klasyfikacji editorial, więc nie może "
+                "pominąć identity usługi.",
+                "Wybierz aktualną kartę usługi albo odśwież dokładną klasyfikację inventory.",
+            ),
+        )
+    return _rebuild_service_preparation(
+        snapshot_loader=snapshot_loader,
+        work_item_id=work_item_id,
+        classification=classification,
+        service_card_id=service_card_id,
+    )
+
+
+def _rebuild_service_preparation(
+    *,
+    snapshot_loader: RefreshPreparationSnapshotLoader,
+    work_item_id: str,
+    classification: RefreshClassificationContext,
     service_card_id: str,
-) -> (
-    tuple[
-        ContentWorkItemWorkflowSnapshotResponse,
-        ContentPlanningInput,
-        ContentRefreshPreparationServiceCandidate,
-        list[ContentRefreshPreparationBlocker],
-    ]
-    | ContentRefreshPreparationBlocked
-):
+) -> RefreshPreparationRebuilt | ContentRefreshPreparationBlocked:
     snapshot = snapshot_loader(work_item_id, service_card_id)
     selected = selected_service_candidate(snapshot, service_card_id)
     if selected is None:
@@ -163,6 +197,88 @@ def rebuild_preparation(
         classification=classification.binding,
         candidate=service_candidate,
         work_item_id=work_item_id,
+        content_kind="service",
+        content_kind_receipt=None,
+    )
+
+
+def rebuild_editorial_preparation(
+    *,
+    snapshot_loader: RefreshPreparationSnapshotLoader,
+    work_item_id: str,
+    classification: RefreshClassificationContext,
+    inventory_binding: ContentKindInventoryBinding,
+) -> RefreshPreparationRebuilt | ContentRefreshPreparationBlocked:
+    if (
+        inventory_binding.content_kind != "editorial"
+        or not inventory_binding.trusted
+        or inventory_binding.work_item_id != work_item_id
+        or inventory_binding.canonical_path != classification.binding.canonical_path
+        or inventory_binding.public_url != classification.binding.public_url
+    ):
+        return blocked_preparation(
+            work_item_id,
+            classification.binding,
+            blocker(
+                "refresh_preparation_authorization_stale",
+                "Klasyfikacja editorial nie ma bieżącego inventory",
+                "Refresh editorial wymaga jednego current work itemu, exact URL/path oraz "
+                "evidence z najnowszego odczytu WordPress.",
+                "Odśwież inventory WordPress i przygotuj autoryzację dla bieżącego receipt.",
+            ),
+        )
+    snapshot = snapshot_loader(work_item_id, None)
+    result = build_content_planning_input(snapshot, service_card_id=None)
+    identity_blocker = preparation_identity_blocker(
+        work_item_id=work_item_id,
+        classification=classification.binding,
+        candidate=None,
+        planning_input=result.planning_input,
+    )
+    if identity_blocker is not None:
+        return blocked_preparation(work_item_id, classification.binding, identity_blocker)
+    if result.planning_input is None:
+        return _rebuild_result(
+            result=result,
+            snapshot=snapshot,
+            classification=classification.binding,
+            candidate=None,
+            work_item_id=work_item_id,
+            content_kind="editorial",
+            content_kind_receipt=None,
+        )
+    try:
+        receipt = build_editorial_content_kind_receipt(
+            work_item_id=work_item_id,
+            classification_run_id=classification.binding.classification_run_id,
+            classification_run_digest=classification.binding.classification_run_digest,
+            decision_set_digest=classification.binding.decision_set_digest,
+            source_packet_row_digest=classification.binding.source_packet_row_digest,
+            canonical_path=classification.binding.canonical_path,
+            public_url=classification.binding.public_url,
+            planning_input_digest=result.planning_input.planning_input_digest,
+            inventory_binding=inventory_binding,
+        )
+    except ValueError:
+        return blocked_preparation(
+            work_item_id,
+            classification.binding,
+            blocker(
+                "refresh_preparation_authorization_stale",
+                "Receipt editorial nie pasuje do bieżącego kontekstu",
+                "Bieżący inventory, klasyfikacja i planning input nie tworzą jednego "
+                "trwałego receiptu editorial.",
+                "Odśwież inventory i klasyfikację, potem ponów przygotowanie refresh.",
+            ),
+        )
+    return _rebuild_result(
+        result=result,
+        snapshot=snapshot,
+        classification=classification.binding,
+        candidate=None,
+        work_item_id=work_item_id,
+        content_kind="editorial",
+        content_kind_receipt=receipt,
     )
 
 
@@ -171,22 +287,23 @@ def _rebuild_result(
     result: ContentPlanningInputBuildResult,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     classification: ContentRefreshPreparationClassificationBinding,
-    candidate: ContentRefreshPreparationServiceCandidate,
+    candidate: ContentRefreshPreparationServiceCandidate | None,
     work_item_id: str,
-) -> (
-    tuple[
-        ContentWorkItemWorkflowSnapshotResponse,
-        ContentPlanningInput,
-        ContentRefreshPreparationServiceCandidate,
-        list[ContentRefreshPreparationBlocker],
-    ]
-    | ContentRefreshPreparationBlocked
-):
+    content_kind: Literal["service", "editorial"],
+    content_kind_receipt: ContentKindReceipt | None,
+) -> RefreshPreparationRebuilt | ContentRefreshPreparationBlocked:
     planning_input = result.planning_input
     generation_blockers = planning_generation_blockers(result.blockers)
     informational = planning_input_blockers(result, include_generation=False)
     if planning_input is not None and not generation_blockers:
-        return snapshot, planning_input, candidate, informational
+        return RefreshPreparationRebuilt(
+            snapshot=snapshot,
+            planning_input=planning_input,
+            content_kind=content_kind,
+            service_candidate=candidate,
+            content_kind_receipt=content_kind_receipt,
+            informational_blockers=informational,
+        )
     blockers = planning_input_blockers(result, include_generation=True)
     if not blockers:
         blockers = [
@@ -228,7 +345,7 @@ def preparation_identity_blocker(
     *,
     work_item_id: str,
     classification: ContentRefreshPreparationClassificationBinding,
-    candidate: ContentRefreshPreparationServiceCandidate,
+    candidate: ContentRefreshPreparationServiceCandidate | None,
     planning_input: ContentPlanningInput | None,
 ) -> ContentRefreshPreparationBlocker | None:
     if planning_input is None:
@@ -243,7 +360,20 @@ def preparation_identity_blocker(
             "Pełny planning input nie zachował bieżącego work item ID klasyfikacji.",
             "Odśwież przygotowanie refresh dla bieżącej strony przed autoryzacją.",
         )
-    if planning_input.confirmed_service_card_id != candidate.service_card_id:
+    if candidate is None and (
+        planning_input.content_kind != "editorial"
+        or planning_input.confirmed_service_card_id is not None
+    ):
+        return blocker(
+            "refresh_preparation_authorization_stale",
+            "Odbudowany input nie jest editorial",
+            "Refresh editorial nie może odziedziczyć karty usługi ani innej tożsamości planu.",
+            "Odśwież przygotowanie dla bieżącego artykułu bez karty usługi.",
+        )
+    if (
+        candidate is not None
+        and planning_input.confirmed_service_card_id != candidate.service_card_id
+    ):
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Odbudowany input ma inną usługę",
@@ -257,7 +387,7 @@ def preparation_identity_blocker(
             "Finalny adres planning input nie odpowiada bieżącemu public URL klasyfikacji.",
             "Odśwież klasyfikację i przygotowanie dla jednego bieżącego adresu.",
         )
-    canonical_path = urlsplit(planning_input.final_canonical_url).path.rstrip("/") or "/"
+    canonical_path = content_normalized_path(planning_input.final_canonical_url)
     if canonical_path != classification.canonical_path:
         return blocker(
             "refresh_preparation_authorization_stale",
@@ -373,7 +503,10 @@ def authorization_request_mismatch(
     preview_service_card_id = (
         None if preview.service_candidate is None else preview.service_candidate.service_card_id
     )
-    if request.service_card_id != preview_service_card_id:
+    if (
+        request.content_kind != preview.content_kind
+        or request.service_card_id != preview_service_card_id
+    ):
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Usługa zmieniła się przed autoryzacją",

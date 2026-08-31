@@ -20,7 +20,10 @@ from wilq.content.canonical.landing_identity import (
     landing_page_metric_lookup_path,
     landing_page_metric_lookup_urls,
 )
-from wilq.content.canonical.urls import content_is_safe_public_url
+from wilq.content.canonical.urls import (
+    content_is_safe_authoring_url,
+    content_is_safe_public_url,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -69,6 +72,16 @@ class ContentInventoryCatalogItem(BaseModel):
     metrics_impressions: int = 0
 
 
+class ContentInventoryRestObject(BaseModel):
+    """One safe, evidence-scoped dev REST object used only for typed fallback."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(min_length=1)
+    content_type: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+
+
 class ContentInventoryCoverage(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -95,6 +108,10 @@ class ContentInventoryCatalogResponse(BaseModel):
     items: list[ContentInventoryCatalogItem] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    rest_content_objects: list[ContentInventoryRestObject] = Field(
+        default_factory=list,
+        exclude=True,
+    )
     coverage: ContentInventoryCoverage = Field(default_factory=ContentInventoryCoverage)
 
 
@@ -148,7 +165,8 @@ class ContentInventoryBindingResponse(BaseModel):
 def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     rows: dict[str, ContentInventoryCatalogItem] = {}
     metric_by_path = _catalog_metric_facts_by_path()
-    for fact in _latest_wordpress_inventory_facts():
+    inventory_facts = _latest_wordpress_inventory_facts()
+    for fact in inventory_facts:
         if fact.name != "content_object_seen":
             continue
         dimensions: dict[str, Any] = fact.dimensions
@@ -236,6 +254,7 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         items=items,
         source_connectors=sorted({item.source_connector for item in items}),
         evidence_ids=sorted({item.evidence_id for item in items}),
+        rest_content_objects=_authoring_rest_content_objects(),
         coverage=_inventory_coverage(),
     )
 
@@ -245,20 +264,67 @@ def _latest_wordpress_inventory_facts() -> list[Any]:
     return _latest_connector_refresh_facts("wordpress_ekologus")
 
 
-def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
-    """Read one connector batch so catalog metrics never sum refresh history."""
-    store = metric_store()
-    runs = local_state_store().list_connector_refresh_runs(
-        connector_id=connector_id
+def latest_wordpress_vendor_read_evidence_ids() -> tuple[str, ...]:
+    """Return only the latest completed WordPress vendor-read evidence IDs."""
+
+    latest = _latest_completed_vendor_read("wordpress_ekologus")
+    if latest is None:
+        return ()
+    return tuple(
+        sorted({str(value).strip() for value in latest.evidence_ids if str(value).strip()})
     )
-    latest = next(
+
+
+def _authoring_rest_content_objects() -> list[ContentInventoryRestObject]:
+    """Expose dev REST types only from one completed, evidence-scoped refresh.
+
+    The ordinary inventory reader retains its compatibility fallback for older
+    local stores.  Dev-authoring classification does not: without a latest
+    completed vendor read and its exact evidence IDs there is no fallback.
+    """
+
+    evidence_ids = latest_wordpress_vendor_read_evidence_ids()
+    if not evidence_ids:
+        return []
+    by_evidence = getattr(metric_store(), "list_metric_facts_by_evidence_ids", None)
+    if not callable(by_evidence):
+        return []
+    allowed = set(evidence_ids)
+    objects = {
+        (
+            str(fact.dimensions.get("content_url") or "").strip(),
+            str(fact.dimensions.get("content_type") or "").strip(),
+            str(getattr(fact, "evidence_id", "")).strip(),
+        )
+        for fact in cast(list[Any], by_evidence(list(evidence_ids)))
+        if getattr(fact, "name", None) == "content_object_seen"
+        and getattr(fact, "source_connector", None) == "wordpress_ekologus"
+        and fact.dimensions.get("inventory_source") == "wordpress_rest"
+        and str(getattr(fact, "evidence_id", "")).strip() in allowed
+        and content_is_safe_authoring_url(str(fact.dimensions.get("content_url") or ""))
+    }
+    return [
+        ContentInventoryRestObject(url=url, content_type=content_type, evidence_id=evidence_id)
+        for url, content_type, evidence_id in sorted(objects)
+        if url and content_type and evidence_id
+    ]
+
+
+def _latest_completed_vendor_read(connector_id: str) -> Any | None:
+    return next(
         (
             run
-            for run in runs
+            for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id)
             if run.mode.value == "vendor_read" and run.status.value == "completed"
         ),
         None,
     )
+
+
+def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
+    """Read one connector batch so catalog metrics never sum refresh history."""
+    store = metric_store()
+    latest = _latest_completed_vendor_read(connector_id)
     evidence_ids = [] if latest is None else list(latest.evidence_ids)
     by_evidence = getattr(store, "list_metric_facts_by_evidence_ids", None)
     if evidence_ids and callable(by_evidence):
@@ -739,6 +805,7 @@ def _material_status(
 
 
 __all__ = [
+    "ContentInventoryRestObject",
     "ContentInventoryCatalogResponse",
     "ContentInventoryMaterialResponse",
     "ContentInventoryBindingRequest",
@@ -748,4 +815,5 @@ __all__ = [
     "read_content_inventory_material",
     "inventory_work_item_id",
     "inventory_metric_facts",
+    "latest_wordpress_vendor_read_evidence_ids",
 ]

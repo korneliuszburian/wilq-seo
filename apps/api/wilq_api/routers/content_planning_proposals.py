@@ -288,9 +288,8 @@ def _authorized_refresh_planning_status(
     authority: ContentRefreshPreparationAuthority,
     store: ContentPlanningProposalStore,
 ) -> ContentPlanningProposalResponse | None:
-    if binding.service_card_id is None:
-        return _bound_refresh_status_block(work_item_id, binding)
     request = ContentPlanningProposalRequest(
+        content_kind=binding.content_kind,
         service_card_id=binding.service_card_id,
         expected_planning_input_digest=binding.planning_input_digest,
         requested_by="status_read",

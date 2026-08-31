@@ -19,6 +19,8 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.workflow.content_kind_receipt import content_kind_receipt_matches_context
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     build_content_planning_workspace,
@@ -39,8 +41,11 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationStale,
     build_content_refresh_preparation_authorization,
 )
+from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
 from wilq.content.workflow.refresh_preparation_models import (
+    ContentKindInventoryLoader,
     RefreshClassificationContext,
+    RefreshPreparationRebuilt,
     RefreshPreparationRuntimeAuthorized,
     RefreshPreparationRuntimeBlocked,
     RefreshPreparationRuntimeResolution,
@@ -66,6 +71,7 @@ def preview(
     snapshot_loader: RefreshPreparationSnapshotLoader,
     work_item_id: str,
     service_card_id: str | None,
+    content_kind_inventory_loader: ContentKindInventoryLoader,
 ) -> ContentRefreshPreparationPreview:
     classified = classified_refresh_context(store, work_item_id)
     if isinstance(classified, ContentRefreshPreparationBlocker):
@@ -84,6 +90,27 @@ def preview(
     stale = stale_preview(work_item_id, classified)
     if stale is not None:
         return stale
+    inventory_binding = content_kind_inventory_loader(work_item_id)
+    if inventory_binding is not None and inventory_binding.content_kind == "editorial":
+        if service_card_id is not None:
+            return blocked_preview(
+                work_item_id,
+                blocker(
+                    "refresh_preparation_authorization_service_mismatch",
+                    "Artykuł editorial nie przyjmuje karty usługi",
+                    "Bieżący typed inventory klasyfikuje tę stronę jako editorial; "
+                    "nie można podstawić karty usługi, aby ominąć receipt.",
+                    "Otwórz przygotowanie bez service_card_id dla bieżącego artykułu.",
+                ),
+                classification=classified,
+            )
+        return editorial_preview(
+            store=store,
+            snapshot_loader=snapshot_loader,
+            work_item_id=work_item_id,
+            classified=classified,
+            inventory_binding=inventory_binding,
+        )
     if service_card_id is None:
         return selection_preview(snapshot_loader, work_item_id, classified)
     return selected_preview(store, snapshot_loader, work_item_id, classified, service_card_id)
@@ -157,7 +184,14 @@ def selected_preview(
     )
     if isinstance(prepared, ContentRefreshPreparationBlocked):
         return prepared
-    _snapshot, planning_input, candidate, informational = prepared
+    planning_input = prepared.planning_input
+    candidate = prepared.service_candidate
+    if candidate is None:
+        return blocked_preview(
+            work_item_id,
+            corrupt_authorization_blocker(),
+            classification=classified,
+        )
     try:
         authorization = store.find_refresh_preparation_authorization(
             work_item_id=work_item_id,
@@ -184,7 +218,7 @@ def selected_preview(
             service_candidate=candidate,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
-            blockers=informational,
+            blockers=prepared.informational_blockers,
             safe_next_step=(
                 "Potwierdź dokładne blockery klasyfikacji, aby zapisać jedną lokalną "
                 "autoryzację tylko dla tego refresh i inputu."
@@ -197,7 +231,7 @@ def selected_preview(
         service_candidate=candidate,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=input_summary,
-        blockers=informational,
+        blockers=prepared.informational_blockers,
         authorization=authorization,
         safe_next_step=(
             "Autoryzacja jest aktualna dla tego dokładnego inputu; można przygotować "
@@ -212,12 +246,14 @@ def authorize(
     snapshot_loader: RefreshPreparationSnapshotLoader,
     work_item_id: str,
     request: ContentRefreshPreparationAuthorizationRequest,
+    content_kind_inventory_loader: ContentKindInventoryLoader,
 ) -> ContentRefreshPreparationAuthorizationResponse:
     current = preview(
         store=store,
         snapshot_loader=snapshot_loader,
         work_item_id=work_item_id,
         service_card_id=request.service_card_id,
+        content_kind_inventory_loader=content_kind_inventory_loader,
     )
     if not isinstance(
         current,
@@ -251,6 +287,32 @@ def record_authorization(
     current: ContentRefreshPreparationReadyToAuthorize | ContentRefreshPreparationAuthorized,
     request: ContentRefreshPreparationAuthorizationRequest,
 ) -> ContentRefreshPreparationAuthorizationResponse:
+    if current.content_kind == "editorial":
+        receipt = current.content_kind_receipt
+        if receipt is None:
+            return conflict_response(corrupt_authorization_blocker())
+        try:
+            receipt_result = store.record_content_kind_receipt(receipt)
+        except ValueError:
+            return conflict_response(
+                blocker(
+                    "refresh_preparation_authorization_stale",
+                    "Receipt editorial zmienił się przed zapisem",
+                    "Bieżący inventory albo klasyfikacja nie odpowiada już trwałemu receiptowi "
+                    "editorial.",
+                    "Odśwież inventory i przygotowanie refresh przed autoryzacją.",
+                )
+            )
+        if receipt_result.status == "conflict":
+            return conflict_response(
+                blocker(
+                    "refresh_preparation_authorization_stale",
+                    "Istniejący receipt editorial ma inny kontekst",
+                    "Ten sam kontekst autoryzacji ma już inny durable receipt inventory; "
+                    "WILQ nie zastępuje go automatycznie.",
+                    "Odśwież inventory i planning input przed kolejną autoryzacją.",
+                )
+            )
     authorization = build_content_refresh_preparation_authorization(
         work_item_id=work_item_id,
         classification=current.classification,
@@ -312,6 +374,7 @@ def resolve_planning(
     snapshot_loader: RefreshPreparationSnapshotLoader,
     work_item_id: str,
     request: ContentPlanningProposalRequest,
+    content_kind_inventory_loader: ContentKindInventoryLoader,
 ) -> RefreshPreparationRuntimeResolution:
     if (
         request.refresh_preparation_authorization_id is not None
@@ -323,25 +386,16 @@ def resolve_planning(
         )
     if request.refresh_preparation_authorization_id is None:
         return unclassified_or_refresh_block(store, work_item_id)
-    if request.service_card_id is None:
-        return RefreshPreparationRuntimeBlocked(
-            work_item_id,
-            blocker(
-                "refresh_preparation_authorization_foreign",
-                "Autoryzacja editorial nie została jeszcze aktywowana",
-                "Publiczny planning obsługuje editorial, ale sklasyfikowany refresh wymaga "
-                "jeszcze persisted content-kind receipt.",
-                "Użyj zwykłego workflow editorial albo dokończ migrację authority receipt.",
-            ),
-        )
     return resolve_authorized_context(
         store=store,
         snapshot_loader=snapshot_loader,
         work_item_id=work_item_id,
         service_card_id=request.service_card_id,
+        content_kind=request.content_kind,
         planning_input_digest=request.expected_planning_input_digest,
         authorization_id=request.refresh_preparation_authorization_id,
         authorization_digest=request.expected_refresh_preparation_authorization_digest,
+        content_kind_inventory_loader=content_kind_inventory_loader,
     )
 
 
@@ -352,6 +406,7 @@ def resolve_initial_draft(
     proposal_store: ContentPlanningProposalStore,
     work_item_id: str,
     request: ContentInitialDraftRequest,
+    content_kind_inventory_loader: ContentKindInventoryLoader,
 ) -> RefreshPreparationRuntimeResolution:
     classified = classified_refresh_context(store, work_item_id)
     if classified is None:
@@ -368,16 +423,25 @@ def resolve_initial_draft(
     proposal = proposal_store.latest(work_item_id)
     if proposal is None or not proposal_matches_initial_request(proposal, request):
         return RefreshPreparationRuntimeBlocked(work_item_id, proposal_binding_blocker())
-    if proposal.service_card_id is None or proposal.planning_input_digest is None:
+    if proposal.planning_input_digest is None:
+        return RefreshPreparationRuntimeBlocked(work_item_id, proposal_binding_blocker())
+    content_kind = getattr(
+        proposal,
+        "content_kind",
+        "editorial" if proposal.service_card_id is None else "service",
+    )
+    if content_kind not in {"service", "editorial"}:
         return RefreshPreparationRuntimeBlocked(work_item_id, proposal_binding_blocker())
     resolved = resolve_authorized_context(
         store=store,
         snapshot_loader=snapshot_loader,
         work_item_id=work_item_id,
         service_card_id=proposal.service_card_id,
+        content_kind=content_kind,
         planning_input_digest=proposal.planning_input_digest,
         authorization_id=request.refresh_preparation_authorization_id,
         authorization_digest=request.expected_refresh_preparation_authorization_digest,
+        content_kind_inventory_loader=content_kind_inventory_loader,
     )
     return bind_initial_proposal(resolved, proposal, request)
 
@@ -418,10 +482,12 @@ def resolve_authorized_context(
     store: RefreshPreparationStore,
     snapshot_loader: RefreshPreparationSnapshotLoader,
     work_item_id: str,
-    service_card_id: str,
+    service_card_id: str | None,
+    content_kind: str,
     planning_input_digest: str,
     authorization_id: str,
     authorization_digest: str | None,
+    content_kind_inventory_loader: ContentKindInventoryLoader,
 ) -> RefreshPreparationRuntimeResolution:
     classified = classified_refresh_context(store, work_item_id)
     if classified is None:
@@ -431,15 +497,22 @@ def resolve_authorized_context(
     stale = stale_preview(work_item_id, classified)
     if stale is not None:
         return RefreshPreparationRuntimeBlocked(work_item_id, stale.blockers[0])
-    prepared = rebuild_preparation(
+    inventory_binding = content_kind_inventory_loader(work_item_id)
+    prepared = _rebuild_authorized_preparation(
         snapshot_loader=snapshot_loader,
         work_item_id=work_item_id,
-        classification=classified,
+        classified=classified,
+        content_kind=content_kind,
         service_card_id=service_card_id,
+        inventory_binding=inventory_binding,
     )
+    if isinstance(prepared, RefreshPreparationRuntimeBlocked):
+        return prepared
     if isinstance(prepared, ContentRefreshPreparationBlocked):
         return RefreshPreparationRuntimeBlocked(work_item_id, prepared.blockers[0])
-    snapshot, planning_input, candidate, _ = prepared
+    snapshot = prepared.snapshot
+    planning_input = prepared.planning_input
+    candidate = prepared.service_candidate
     if planning_input.planning_input_digest != planning_input_digest:
         return RefreshPreparationRuntimeBlocked(work_item_id, input_mismatch_blocker())
     try:
@@ -454,18 +527,47 @@ def resolve_authorized_context(
         authorization_digest=authorization_digest,
         work_item_id=work_item_id,
         service_card_id=service_card_id,
+        content_kind=content_kind,
         classification=classified,
         planning_input=planning_input,
     )
     if invalid is not None:
         return RefreshPreparationRuntimeBlocked(work_item_id, invalid)
-    # Keep the runtime boundary explicit even though validation above rejects it:
-    # persisted state is untrusted and this path must never rely on assertions.
     if authorization is None:
         return RefreshPreparationRuntimeBlocked(
             work_item_id,
             missing_authorization_blocker(),
         )
+    if content_kind == "editorial":
+        receipt = prepared.content_kind_receipt
+        if receipt is None or inventory_binding is None:
+            return RefreshPreparationRuntimeBlocked(work_item_id, corrupt_authorization_blocker())
+        try:
+            stored_receipt = store.load_content_kind_receipt(receipt.receipt_id)
+        except ValueError:
+            return RefreshPreparationRuntimeBlocked(work_item_id, corrupt_authorization_blocker())
+        if stored_receipt is None or not content_kind_receipt_matches_context(
+            stored_receipt,
+            work_item_id=work_item_id,
+            classification_run_id=classified.binding.classification_run_id,
+            classification_run_digest=classified.binding.classification_run_digest,
+            decision_set_digest=classified.binding.decision_set_digest,
+            source_packet_row_digest=classified.binding.source_packet_row_digest,
+            canonical_path=classified.binding.canonical_path,
+            public_url=classified.binding.public_url,
+            planning_input_digest=planning_input.planning_input_digest,
+            inventory_binding=inventory_binding,
+        ):
+            return RefreshPreparationRuntimeBlocked(
+                work_item_id,
+                blocker(
+                    "refresh_preparation_authorization_stale",
+                    "Receipt editorial nie jest już aktualny",
+                    "Trwały receipt editorial nie odpowiada bieżącej klasyfikacji, inventory "
+                    "albo planning inputowi.",
+                    "Odśwież inventory i zapisz nową autoryzację dla bieżącego kontekstu.",
+                ),
+            )
     return RefreshPreparationRuntimeAuthorized(
         work_item_id=work_item_id,
         snapshot=snapshot,
@@ -476,12 +578,63 @@ def resolve_authorized_context(
     )
 
 
+def _rebuild_authorized_preparation(
+    *,
+    snapshot_loader: RefreshPreparationSnapshotLoader,
+    work_item_id: str,
+    classified: RefreshClassificationContext,
+    content_kind: str,
+    service_card_id: str | None,
+    inventory_binding: ContentKindInventoryBinding | None,
+) -> (
+    RefreshPreparationRebuilt
+    | ContentRefreshPreparationBlocked
+    | RefreshPreparationRuntimeBlocked
+):
+    if content_kind == "editorial":
+        if service_card_id is not None or inventory_binding is None:
+            return RefreshPreparationRuntimeBlocked(
+                work_item_id,
+                blocker(
+                    "refresh_preparation_authorization_stale",
+                    "Autoryzacja editorial nie ma bieżącego inventory",
+                    "Editorial refresh wymaga dokładnego inventory z bieżącym work itemem "
+                    "i bez service_card_id.",
+                    "Odśwież inventory i przygotowanie editorial dla tej strony.",
+                ),
+            )
+        return rebuild_preparation(
+            snapshot_loader=snapshot_loader,
+            work_item_id=work_item_id,
+            classification=classified,
+            service_card_id=None,
+            inventory_binding=inventory_binding,
+        )
+    if service_card_id is None:
+        return RefreshPreparationRuntimeBlocked(
+            work_item_id,
+            blocker(
+                "refresh_preparation_authorization_service_mismatch",
+                "Autoryzacja usługi nie pasuje do klasyfikacji strony",
+                "Ścieżka service wymaga jawnej, dokładnej karty usługi.",
+                "Użyj bieżącego typu treści i jego exact receiptu refresh.",
+            ),
+        )
+    return rebuild_preparation(
+        snapshot_loader=snapshot_loader,
+        work_item_id=work_item_id,
+        classification=classified,
+        service_card_id=service_card_id,
+    )
+
+
 def authorization_validation_blocker(
     *,
     authorization: ContentRefreshPreparationAuthorization | None,
     authorization_digest: str | None,
     work_item_id: str,
-    service_card_id: str,
+    service_card_id: str | None,
+    content_kind: str,
     classification: RefreshClassificationContext,
     planning_input: ContentPlanningInput,
 ) -> ContentRefreshPreparationBlocker | None:
@@ -506,7 +659,10 @@ def authorization_validation_blocker(
             "Autoryzacja refresh może dotyczyć wyłącznie jej bieżącego work itemu.",
             "Otwórz autoryzację przygotowaną dla tej dokładnej strony.",
         )
-    if authorization.service_card_id != service_card_id:
+    if (
+        authorization.content_kind != content_kind
+        or authorization.service_card_id != service_card_id
+    ):
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Usługa nie pasuje do autoryzacji",

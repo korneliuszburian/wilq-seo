@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from typing import Literal
-from urllib.parse import urlsplit
+
+from wilq.content.canonical.urls import content_authoring_path_matches_public_url
 
 ContentKind = Literal[
     "service",
@@ -16,11 +17,11 @@ def classify_content_kind(wordpress_content_type: str | None) -> ContentKind:
     """Classify from typed WordPress inventory, never from URL keywords."""
 
     normalized = (wordpress_content_type or "").strip().casefold()
-    if normalized == "post":
+    if normalized in {"post", "posts"}:
         return "editorial"
     if normalized == "uslugi":
         return "service"
-    if normalized == "page":
+    if normalized in {"page", "pages"}:
         return "landing_or_hub"
     if normalized in {
         "author",
@@ -54,22 +55,15 @@ def classify_content_kind_from_inventory(
     direct = classify_content_kind(wordpress_content_type)
     if direct != "ambiguous":
         return wordpress_content_type, direct
-    public_path = _normalized_path(public_url)
     observed_types = {
         content_type
         for url, content_type in dev_objects
-        if _normalized_path(url) == public_path and content_type.strip()
+        if content_authoring_path_matches_public_url(public_url, url) and content_type.strip()
     }
     if len(observed_types) != 1:
         return wordpress_content_type, "ambiguous"
     observed_type = observed_types.pop()
     return observed_type, classify_content_kind(observed_type)
-
-
-def _normalized_path(url: str) -> str:
-    return (urlsplit(url).path.rstrip("/") or "/").casefold()
-
-
 __all__ = [
     "ContentKind",
     "classify_content_kind",

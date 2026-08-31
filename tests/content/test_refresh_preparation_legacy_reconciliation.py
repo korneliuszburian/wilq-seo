@@ -21,28 +21,31 @@ def test_legacy_unbound_same_input_refresh_plan_requires_reconciliation_not_retr
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
-    main_client, runtime = configure_planning_harness(monkeypatch, tmp_path)
-    initial_status = main_client.get(
+    _unused, runtime = configure_planning_harness(monkeypatch, tmp_path)
+    store = content_workflow_store()
+    client = _app_client(_authority(store))
+    initial_status = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     )
     assert initial_status.status_code == 200
     initial = cast(dict[str, Any], initial_status.json())
-    legacy_response = main_client.post(
+    legacy_response = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
         json={
-            "service_card_id": BDO_SERVICE_CARD_ID,
+            "content_kind": initial["content_kind"],
+            "service_card_id": initial.get("service_card_id"),
             "expected_planning_input_digest": initial["planning_input_digest"],
             "requested_by": "wilku",
         },
     )
-    legacy = _wait_for_plan(main_client, legacy_response)
+    legacy = _wait_for_plan(client, legacy_response)
     assert legacy.status_code == 200, legacy.text
-    assert legacy.json()["status"] in {"created", "ready", "idempotent"}
+    assert legacy.json()["status"] in {"created", "ready", "idempotent"}, legacy.json().get(
+        "blockers", legacy.json()
+    )
     assert runtime.calls == 1
 
-    store = content_workflow_store()
     store.record_production_classification(_refresh_run())
-    client = _app_client(_authority(store))
     get_response = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
     ready = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/refresh-preparation",
