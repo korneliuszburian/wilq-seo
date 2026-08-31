@@ -71,6 +71,7 @@ from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
 )
+from wilq.content.planning.subject import ContentPlanningSubject
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
@@ -208,6 +209,7 @@ def queue_content_planning_proposal(
     response = ContentPlanningProposalResponse(
         status="generating",
         work_item_id=planning_input.work_item_id,
+        content_kind=planning_input.content_kind,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
@@ -220,18 +222,47 @@ def queue_content_planning_proposal(
     return response
 
 
+def _content_kind_mismatch_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentPlanningProposalRequest,
+) -> ContentPlanningProposalResponse | None:
+    if (
+        snapshot.preflight.item.content_kind not in {"service", "editorial"}
+        or snapshot.preflight.item.content_kind == request.content_kind
+    ):
+        return None
+    return _blocked_response(
+        snapshot.preflight.item.id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        planning_input_digest=None,
+        blockers=[
+            build_blocker(
+                ContentPlanningProposalBlocker,
+                code="content_kind_mismatch",
+                label="Typ treści zmienił się przed planowaniem",
+                reason="Żądanie nie odpowiada bieżącej klasyfikacji strony.",
+                next_step="Odśwież workspace i użyj aktualnego typu treści.",
+            )
+        ],
+    )
+
+
 def _prepare_generation(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentPlanningProposalRequest,
     store: ContentPlanningProposalStore,
 ) -> tuple[ContentPlanningInput | None, ContentPlanningProposalResponse | None]:
-    if request.service_card_id not in {
+    if mismatch := _content_kind_mismatch_response(snapshot, request):
+        return None, mismatch
+    if request.content_kind == "service" and request.service_card_id not in {
         candidate.service_card_id
         for candidate in snapshot.service_profile_context.service_candidates
     }:
         return None, _blocked_response(
             snapshot.preflight.item.id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=None,
             blockers=[
@@ -244,9 +275,10 @@ def _prepare_generation(
                 )
             ],
         )
-    planning_snapshot = with_explicit_content_service_selection(
-        snapshot,
-        request.service_card_id,
+    planning_snapshot = (
+        with_explicit_content_service_selection(snapshot, request.service_card_id)
+        if request.content_kind == "service" and request.service_card_id is not None
+        else snapshot
     )
     result = build_content_planning_input(
         planning_snapshot,
@@ -257,6 +289,7 @@ def _prepare_generation(
             snapshot.preflight.item.id,
             request.service_card_id,
             result.blockers,
+            content_kind=request.content_kind,
         )
     planning_input = result.planning_input
     input_summary = content_planning_input_summary(planning_input)
@@ -268,20 +301,25 @@ def _prepare_generation(
             generation_blockers,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
+            content_kind=request.content_kind,
         )
     if request.expected_planning_input_digest != planning_input.planning_input_digest:
         return None, ContentPlanningProposalResponse(
             status="stale",
             work_item_id=planning_input.work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
             blockers=[_stale_input_blocker()],
             safe_next_step="Odśwież wejście i świadomie uruchom nową wersję planu.",
         )
-    existing = store.for_input(
+    existing = store.for_subject_input(
         planning_input.work_item_id,
-        request.service_card_id,
+        ContentPlanningSubject(
+            content_kind=request.content_kind,
+            service_card_id=request.service_card_id,
+        ),
         planning_input.planning_input_digest,
     )
     if existing is not None and not request.regenerate_stale_mapping:
@@ -297,6 +335,7 @@ def _prepare_generation(
         return None, ContentPlanningProposalResponse(
             status="idempotent",
             work_item_id=planning_input.work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
@@ -349,13 +388,14 @@ def _run_planning_turn(
                 operator_hint=operator_hint,
             )
         )
-    except Exception:
+    except Exception as error:
         blocker = build_blocker(
             ContentPlanningProposalBlocker,
             code="runtime_failed",
             label="Codex nie zakończył planowania",
             reason="Lokalny app-server zakończył się błędem bez wyniku.",
             next_step="Sprawdź status Codexa i uruchom nową próbę; plan nie został zapisany.",
+            source_codes=[type(error).__name__],
         )
         return None, None, blocker, "failed"
     trace = runtime_trace(runtime_result)
@@ -406,6 +446,18 @@ def _validated_planning_output(
     planning_input: ContentPlanningInput,
     output: ContentPlanningModelOutput,
 ) -> tuple[ContentPlanningModelOutput, ContentPlanningProposalBlocker | None]:
+    if (
+        output.content_kind != planning_input.content_kind
+        or output.service_card_id != planning_input.confirmed_service_card_id
+    ):
+        return output, build_blocker(
+            ContentPlanningProposalBlocker,
+            code="lineage_mismatch",
+            label="Plan ma inną tożsamość treści",
+            reason="Wynik nie odpowiada typowi i subjectowi exact planning input.",
+            next_step="Odrzuć wynik i uruchom ponownie planowanie z bieżącego wejścia.",
+            source_codes=["planning_subject_mismatch"],
+        )
     output = canonicalize_model_inventory_headings(planning_input, output)
     output = canonicalize_regulatory_section_evidence(planning_input, output)
     output = canonicalize_regulatory_section_assertions(planning_input, output)

@@ -26,6 +26,7 @@ def unexpected_planning_input_response(
 ) -> ContentPlanningProposalResponse:
     return blocked_response(
         snapshot.preflight.item.id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         planning_input_digest=None,
         blockers=[unexpected_runtime_blocker()],
@@ -53,6 +54,7 @@ def runtime_failure_response(
     return ContentPlanningProposalResponse(
         status=status,
         work_item_id=planning_input.work_item_id,
+        content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
@@ -68,14 +70,16 @@ def runtime_failure_response(
 
 def blocked_from_input(
     work_item_id: str,
-    service_card_id: str,
+    service_card_id: str | None,
     blockers: list[ContentPlanningInputBlocker],
     *,
     planning_input_digest: str | None = None,
     input_summary: ContentPlanningInputSummary | None = None,
+    content_kind: Literal["service", "editorial"] = "service",
 ) -> ContentPlanningProposalResponse:
     return blocked_response(
         work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
         input_summary=input_summary,
@@ -99,10 +103,12 @@ def blocked_response(
     planning_input_digest: str | None,
     blockers: list[ContentPlanningProposalBlocker],
     input_summary: ContentPlanningInputSummary | None = None,
+    content_kind: Literal["service", "editorial"] = "service",
 ) -> ContentPlanningProposalResponse:
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
         input_summary=input_summary,
