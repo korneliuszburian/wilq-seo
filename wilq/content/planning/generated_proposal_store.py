@@ -397,10 +397,7 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
     def _read_connection(self) -> sqlite3.Connection | None:
         if not self.path.exists():
             return None
-        connection = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
-        connection.row_factory = sqlite3.Row
-        reject_newer_sqlite_schema(connection)
-        return connection
+        return self._connect()
 
 
 def _enqueue(

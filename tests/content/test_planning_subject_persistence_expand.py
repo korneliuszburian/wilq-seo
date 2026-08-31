@@ -89,8 +89,8 @@ def test_legacy_planning_rows_gain_exact_service_subject_without_payload_changes
             ),
         )
 
-    with ContentPlanningProposalStore(path).run_transaction():
-        pass
+    proposal_store = ContentPlanningProposalStore(path)
+    assert proposal_store.latest_generation_response("missing") is None
     claim_store = ContentPlanningGenerationClaimStore(path)
     assert claim_store.finish(
         work_item_id=work_item_id,
