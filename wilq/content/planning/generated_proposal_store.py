@@ -65,6 +65,26 @@ def content_planning_proposal_store() -> ContentPlanningProposalStore:
     return ContentPlanningProposalStore(state_db_path())
 
 
+def _open_read_connection(path: Path) -> sqlite3.Connection | None:
+    if not path.exists():
+        return None
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    reject_newer_sqlite_schema(connection)
+    if any(
+        _table_exists(connection, table)
+        for table in (
+            "content_planning_proposals",
+            "content_planning_proposal_repairs",
+            "content_planning_generation_jobs",
+        )
+    ):
+        ensure_generated_proposal_schema(connection)
+        ensure_sqlite_schema_version(connection)
+        connection.commit()
+    return connection
+
+
 class _ContentPlanningProposalConvenienceMixin:
     def for_input(
         self,
@@ -395,9 +415,7 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
             yield connection
 
     def _read_connection(self) -> sqlite3.Connection | None:
-        if not self.path.exists():
-            return None
-        return self._connect()
+        return _open_read_connection(self.path)
 
 
 def _enqueue(
