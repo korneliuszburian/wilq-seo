@@ -474,7 +474,7 @@ def test_document_workspace_uses_revision_service_binding_for_official_review_ca
     }
 
 
-def test_document_workspace_exposes_editorial_candidates_before_a_revision(
+def test_document_workspace_prefers_editorial_path_over_legacy_revision_service(
     monkeypatch,
 ) -> None:
     candidate = SimpleNamespace(candidate_id="integrated_permit_candidate")
@@ -506,7 +506,8 @@ def test_document_workspace_exposes_editorial_candidates_before_a_revision(
         else [],
     )
 
-    candidates = workspace_module._regulatory_review_candidates(None, item=item)
+    legacy_revision = SimpleNamespace(service_card_id="ekologus_service_operat_wodnoprawny")
+    candidates = workspace_module._regulatory_review_candidates(legacy_revision, item=item)
 
     assert candidates == [candidate]
     assert seen == {

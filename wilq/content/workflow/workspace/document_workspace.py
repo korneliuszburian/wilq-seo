@@ -307,14 +307,19 @@ def _regulatory_review_candidates(
     *,
     item: ContentWorkItem | None = None,
 ) -> list[ContentRegulatoryReviewCandidate]:
-    service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
+    editorial_item = item is not None and item.content_kind == "editorial"
+    service_card_id = (
+        None
+        if editorial_item or revision is None
+        else getattr(revision, "service_card_id", None)
+    )
     canonical_path = (
         content_normalized_path(
             None
             if item is None
             else item.final_canonical_url or item.intended_final_url or item.source_public_url
         )
-        if service_card_id is None and item is not None and item.content_kind == "editorial"
+        if editorial_item
         else None
     )
     if service_card_id is None and not canonical_path:
