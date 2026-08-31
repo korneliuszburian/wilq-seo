@@ -1,13 +1,14 @@
 import json
 import time
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.inventory_binding as inventory_binding
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
+from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
 from tests.content.dynamic_planning_test_support import PlanningClient, configure_planning_harness
 from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
@@ -21,6 +22,10 @@ from wilq.content.workflow.documents.revision_children import (
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionSection,
+    ContentDraftRevisionState,
+)
+from wilq.content.workflow.pipeline_steps.snapshot_assembly import (
+    _revision_context_is_current,
 )
 from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 
@@ -157,6 +162,49 @@ def _assert_editorial_child_save(
     assert saved.json()["workspace"]["can_review"] is True
 
 
+def _assert_v1_subject_compatibility(revision_payload: dict[str, Any]) -> None:
+    snapshot = snapshot_for_work_item_or_404(WORK_ITEM_ID)
+    package = snapshot.draft_package.draft_package_result.draft_package
+    assert package is not None
+    revision = ContentDraftRevision.model_validate(revision_payload)
+
+    def is_current(
+        candidate: ContentDraftRevision,
+        *,
+        item_kind: Literal["service", "editorial", "ambiguous"],
+        service_id: str | None,
+    ) -> bool:
+        return _revision_context_is_current(
+            item=snapshot.preflight.item.model_copy(update={"content_kind": item_kind}),
+            draft_package=package,
+            state=ContentDraftRevisionState(
+                status="unreviewed",
+                revision_count=1,
+                latest_revision=candidate,
+            ),
+            planning_digest=revision.planning_digest,
+            planning_input_digest=revision.planning_input_digest,
+            service_card_id=service_id,
+        )
+
+    v1_without_service = revision.model_copy(
+        update={
+            "schema_version": "wilq_content_draft_revision_v1",
+            "content_kind": "service",
+            "service_card_id": None,
+            "service_digest": None,
+        }
+    )
+    assert is_current(v1_without_service, item_kind="editorial", service_id=None) is False
+    assert is_current(v1_without_service, item_kind="service", service_id=None) is False
+    assert is_current(v1_without_service, item_kind="ambiguous", service_id=None) is False
+
+    service_id = "ekologus_service_legacy"
+    v1_service = v1_without_service.model_copy(update={"service_card_id": service_id})
+    assert is_current(v1_service, item_kind="service", service_id=service_id) is True
+    assert is_current(v1_service, item_kind="ambiguous", service_id=service_id) is True
+
+
 def test_editorial_request_generates_persists_and_reads_without_service(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
@@ -236,6 +284,7 @@ def test_editorial_request_generates_persists_and_reads_without_service(
         "source_codes"
     ]
     assert draft.json()["revision"] is not None
+    _assert_v1_subject_compatibility(draft.json()["revision"])
     _assert_editorial_child_save(client, monkeypatch, draft.json()["revision"])
 
 
