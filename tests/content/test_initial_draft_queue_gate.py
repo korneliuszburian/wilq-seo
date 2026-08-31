@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from threading import Event
 from types import SimpleNamespace
@@ -14,6 +15,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -378,6 +380,7 @@ def test_different_initial_draft_contexts_do_not_share_claim(tmp_path) -> None:
         "evidence_ids": ["ev"],
         "timeout_seconds": 900,
     }
+
     def context(digest: str) -> InitialDraftClaimContext:
         return InitialDraftClaimContext(
             proposal_id="proposal-1",
@@ -515,6 +518,63 @@ def test_queue_rejects_a_snapshot_that_changes_before_its_durable_claim(
     persisted = store.list_codex_runs()
     assert [run.id for run in persisted] == [current.run.id]
     assert persisted[0].initial_draft_context_digest == current_context.context_digest
+
+
+def test_queue_prewarms_legacy_workflow_schema_before_locked_context_recheck(
+    tmp_path, monkeypatch
+) -> None:
+    path = tmp_path / "state.sqlite3"
+    store = LocalStateStore(path)
+    store.status()
+    with sqlite3.connect(path) as connection:
+        connection.execute("DROP TABLE IF EXISTS content_human_reviews")
+        connection.execute(
+            """
+            CREATE TABLE content_human_reviews (
+              id TEXT PRIMARY KEY,
+              work_item_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
+    workflow_store = ContentWorkflowStore(path)
+    current_snapshot = _snapshot(latest_revision=None)
+    current_snapshot.context_digest = "1" * 64
+    stale_snapshot = _snapshot(latest_revision=None)
+    stale_snapshot.context_digest = "0" * 64
+    calls = 0
+
+    def snapshot_loader(_work_item_id: str) -> SimpleNamespace:
+        nonlocal calls
+        calls += 1
+        store.list_connector_refresh_runs()
+        with workflow_store._connect():
+            pass
+        return current_snapshot if calls == 1 else stale_snapshot
+
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
+    monkeypatch.setattr(
+        initial_draft_queue,
+        "snapshot_initial_draft_context_digest",
+        lambda snapshot, _proposal: snapshot.context_digest,
+    )
+
+    response = content_initial_draft._queue_initial_draft(
+        "work",
+        _request(),
+        StdioCodexAppServerClient(),
+        snapshot_loader,
+        current_snapshot,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "stale_initial_draft_context"
+    assert calls == 2
+    with sqlite3.connect(path) as connection:
+        columns = {
+            str(row[1]) for row in connection.execute("PRAGMA table_info(content_human_reviews)")
+        }
+    assert "updated_at" in columns
 
 
 def test_queue_persists_proposal_evidence_ids(tmp_path, monkeypatch) -> None:

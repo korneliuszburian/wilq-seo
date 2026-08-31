@@ -2912,6 +2912,7 @@ export const ContentDraftRevisionSchema = z.object({
   draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  content_kind: ContentPlanningKindSchema.optional(),
   service_card_id: z.string().min(1).nullable().optional(),
   service_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   inventory_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
@@ -2941,6 +2942,7 @@ export const ContentDraftRevisionSchema = z.object({
   if (refreshBinding) {
     if (!refreshPreparationBindingMatchesIdentity(refreshBinding, {
       workItemId: revision.work_item_id,
+      contentKind: revision.content_kind,
       serviceCardId: revision.service_card_id,
       planningInputDigest: revision.planning_input_digest,
       finalCanonicalUrl: revision.final_canonical_url
@@ -3008,8 +3010,6 @@ export const ContentDraftRevisionSchema = z.object({
   }
   const requiredBindings = [
     revision.planning_input_digest,
-    revision.service_card_id,
-    revision.service_digest,
     revision.inventory_digest,
     revision.page_assets
   ];
@@ -3018,6 +3018,15 @@ export const ContentDraftRevisionSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["schema_version"],
       message: "full-document revision requires exact bindings and page assets"
+    });
+  }
+  const contentKind = revision.content_kind ?? "service";
+  if ((contentKind === "service") !== Boolean(revision.service_card_id) ||
+      (contentKind === "service") !== Boolean(revision.service_digest)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["content_kind"],
+      message: "Full-document content kind must match its service bindings."
     });
   }
   if (revision.page_assets?.wordpress_title !== revision.title) {
@@ -4184,7 +4193,8 @@ export const ContentRegulatorySourceReviewCommandSchema = z.object({
 export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReviewCommandSchema.extend({
   review_id: z.string().min(1),
   profile_id: z.string().trim().min(1),
-  service_card_ids: z.array(z.string().trim().min(1)).min(1),
+  service_card_ids: z.array(z.string().trim().min(1)).default([]),
+  canonical_paths: z.array(z.string().trim().min(1)).default([]),
   source_url: z.string().url(),
   source_title: z.string().trim().min(1),
   observed_on: z.string().min(1),
@@ -4196,6 +4206,13 @@ export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReview
   expected_profile_version: true,
   expected_source_snapshot_id: true,
   expected_source_snapshot_digest: true
+}).superRefine((review, context) => {
+  if (review.service_card_ids.length === 0 && review.canonical_paths.length === 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Regulatory review requires an exact content subject."
+    });
+  }
 });
 
 export const ContentRegulatorySourceReviewListSchema = z.object({
@@ -4303,6 +4320,10 @@ export const ContentPlanningInputSummarySchema = z.object({
   gsc_query_rows: z.array(ContentSearchDemandRowSchema).default([]),
   regulatory_profile_id: z.string().min(1).nullable().optional(),
   regulatory_profile_version: z.string().min(1).nullable().optional(),
+  regulatory_applicability_status: z.enum([
+    "not_required", "required", "review_required"
+  ]).optional(),
+  regulatory_canonical_path: z.string().min(1).nullable().optional(),
   // Present on current regulated planning inputs. Optional only so historical
   // persisted proposal summaries remain readable.
   regulatory_requirements: z.array(z.object({
@@ -4336,6 +4357,39 @@ export const ContentPlanningInputSummarySchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["service_label"],
       message: "Planning summary content kind must match its service label."
+    });
+  }
+  const applicability = summary.regulatory_applicability_status ?? (
+    summary.regulatory_profile_id && summary.regulatory_profile_version
+      ? "required"
+      : (summary.regulatory_requirements?.length ?? 0) > 0
+        ? "review_required"
+        : "not_required"
+  );
+  const hasProfile = Boolean(
+    summary.regulatory_profile_id || summary.regulatory_profile_version
+  );
+  const hasRequirements = (summary.regulatory_requirements?.length ?? 0) > 0;
+  if (applicability === "not_required" && (hasProfile || hasRequirements)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["regulatory_applicability_status"],
+      message: "Not-required summary cannot carry regulatory profile or requirements."
+    });
+  }
+  if (applicability === "required" && (!summary.regulatory_profile_id ||
+    !summary.regulatory_profile_version || !hasRequirements)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["regulatory_applicability_status"],
+      message: "Required summary needs exact profile identity and requirements."
+    });
+  }
+  if (applicability === "review_required" && hasProfile) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["regulatory_applicability_status"],
+      message: "Review-required summary cannot claim a regulatory profile."
     });
   }
   const sources = summary.source_assessments.map((assessment) => assessment.source);

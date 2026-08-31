@@ -239,6 +239,56 @@
           ]
         }
       ]
+    },
+    {
+      "id": "integrated_permit_editorial",
+      "version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "official_source_hosts": ["eli.gov.pl", "www.ekoportal.gov.pl"],
+      "max_source_age_days": 730,
+      "requirements": [
+        {
+          "id": "integrated_permit_distinct_decisions",
+          "label": "odrębne role decyzji środowiskowej i pozwolenia zintegrowanego",
+          "reason": "Treść musi rozróżniać funkcję decyzji środowiskowej i pozwolenia zintegrowanego bez twierdzenia, że zawsze dotyczą albo nigdy nie dotyczą tego samego przedsięwzięcia.",
+          "document_assertions": [
+            {
+              "id": "distinct_decision_roles",
+              "label": "odrębność dokumentów",
+              "required_any_of": ["odrębne decyzje", "odrębne role", "nie są tym samym"]
+            }
+          ]
+        },
+        {
+          "id": "integrated_permit_initial_report",
+          "label": "warunkowy raport początkowy",
+          "reason": "Raport początkowy nie jest automatycznym wymaganiem każdej instalacji i nie może być mylony z raportem ooś.",
+          "document_assertions": [
+            {
+              "id": "initial_report_conditional",
+              "label": "warunkowy charakter raportu początkowego",
+              "required_any_of": [
+                "raport początkowy może być wymagany",
+                "raport początkowy jest wymagany, jeżeli",
+                "obowiązek raportu początkowego zależy"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "integrated_permit_case_scope",
+          "label": "zakres konkretnej instalacji i przedsięwzięcia",
+          "reason": "Treść nie może przesądzać obowiązku bez analizy konkretnej instalacji, przedsięwzięcia i dokumentacji.",
+          "document_assertions": [
+            {
+              "id": "case_specific_scope",
+              "label": "indywidualny zakres analizy",
+              "required_any_of": ["konkretnej instalacji", "konkretnego przedsięwzięcia", "analizy dokumentacji"]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

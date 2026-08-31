@@ -536,7 +536,15 @@ def _current_planning_proposal(
     generated: ContentPlanningProposal | None,
 ) -> ContentPlanningProposal | None:
     service_card_id = service_profile_context.service_card_id
-    if baseline is None or generated is None or service_card_id is None:
+    if baseline is None or generated is None:
+        return baseline
+    if item.content_kind == "editorial":
+        return (
+            generated
+            if generated.content_kind == "editorial" and generated.service_card_id is None
+            else baseline
+        )
+    if service_card_id is None:
         return baseline
     return generated if generated.service_card_id == service_card_id else baseline
 
@@ -672,11 +680,23 @@ def _revision_context_is_current(
         and revision.planning_digest == planning_digest
         and revision.final_canonical_url == canonical_url
     )
-    if not baseline_current or revision.schema_version == "wilq_content_draft_revision_v1":
-        return baseline_current
+    if not baseline_current:
+        return False
+    planning_current = bool(
+        revision.schema_version == "wilq_content_draft_revision_v1"
+        or (
+            revision.planning_input_digest is not None
+            and revision.planning_input_digest == planning_input_digest
+        )
+    )
+    if item.content_kind == "editorial":
+        planning_current = planning_current and revision.content_kind == "editorial"
+        return planning_current and revision.service_card_id is None and service_card_id is None
+    if item.content_kind not in {"service", "ambiguous"}:
+        return False
+    planning_current = planning_current and revision.content_kind == "service"
     return bool(
-        revision.planning_input_digest is not None
-        and revision.planning_input_digest == planning_input_digest
+        planning_current
         and revision.service_card_id is not None
         and revision.service_card_id == service_card_id
     )

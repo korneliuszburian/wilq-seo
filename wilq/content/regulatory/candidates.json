@@ -167,6 +167,45 @@
       "requirement_ids": ["environmental_post_implementation_analysis"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź art. 83: porównanie odnosi ustalenia raportu i decyzji do rzeczywistego oddziaływania, bez deklarowania automatycznego obowiązku analizy."
+    },
+    {
+      "candidate_id": "integrated_permit_oos_eli_2026_08_30_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
+      "source_title": "ELI: aktualny tekst jednolity ustawy o udostępnianiu informacji o środowisku",
+      "observed_on": "2026-08-31",
+      "requirement_ids": ["integrated_permit_distinct_decisions", "integrated_permit_case_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębny cel decyzji środowiskowej i zakres oceny dla konkretnego przedsięwzięcia."
+    },
+    {
+      "candidate_id": "integrated_permit_pos_eli_2026_08_31_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text.pdf",
+      "source_title": "ELI: aktualny tekst jednolity Prawa ochrony środowiska",
+      "observed_on": "2026-08-31",
+      "requirement_ids": ["integrated_permit_initial_report", "integrated_permit_case_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź warunki raportu początkowego i nie przedstawiaj go jako automatycznego wymogu każdej instalacji."
+    },
+    {
+      "candidate_id": "integrated_permit_ekoportal_2026_08_30_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/poradniki_branzowe/opracowania/Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf",
+      "source_title": "Ekoportal: wytyczne do sporządzania wniosku o pozwolenie zintegrowane",
+      "observed_on": "2026-08-30",
+      "requirement_ids": ["integrated_permit_initial_report", "integrated_permit_case_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź zakres dokumentacji wniosku i relację wytycznych do aktualnych przepisów."
     }
   ]
 }

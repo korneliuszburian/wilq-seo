@@ -60,7 +60,8 @@ class ContentRegulatorySourceReview(BaseModel):
     candidate_id: str = Field(min_length=1)
     profile_id: str = Field(min_length=1)
     profile_version: str = Field(min_length=1)
-    service_card_ids: list[str] = Field(min_length=1)
+    service_card_ids: list[str] = Field(default_factory=list)
+    canonical_paths: list[str] = Field(default_factory=list)
     source_url: str = Field(min_length=1)
     source_title: str = Field(min_length=1)
     observed_on: str = Field(min_length=1)
@@ -71,6 +72,12 @@ class ContentRegulatorySourceReview(BaseModel):
     decision: Literal["accepted", "rejected"]
     reviewer: str = Field(min_length=1)
     reviewed_at: datetime
+
+    @model_validator(mode="after")
+    def require_content_subject(self) -> ContentRegulatorySourceReview:
+        if not self.service_card_ids and not self.canonical_paths:
+            raise ValueError("Regulatory review requires an exact content subject.")
+        return self
 
     def approved_source_fact(self) -> ContentSourceFact | None:
         if self.decision != "accepted":
@@ -111,6 +118,7 @@ class ContentRegulatorySourceReview(BaseModel):
             regulatory_profile_version=self.profile_version,
             regulatory_requirement_ids=sorted(set(self.covered_requirement_ids)),
             applicable_service_card_ids=sorted(set(self.service_card_ids)),
+            applicable_canonical_paths=sorted(set(self.canonical_paths)),
         )
 
 
@@ -342,6 +350,7 @@ def _review_from_command(
         profile_id=candidate.profile_id,
         profile_version=candidate.profile_version,
         service_card_ids=candidate.service_card_ids,
+        canonical_paths=candidate.canonical_paths,
         source_url=candidate.source_url,
         source_title=candidate.source_title,
         observed_on=snapshot.observed_on,

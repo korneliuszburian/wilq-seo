@@ -410,6 +410,16 @@ def claim_initial_draft_run(
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
     run_store.status()
+    preflight_context = _current_context_matches_claim(
+        current_context,
+        proposal_id=proposal_id,
+        planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        context_digest=context_digest,
+        base_revision_id=expected_base_revision_id,
+    )
+    if preflight_context is None:
+        return InitialDraftClaim(run=None, newly_claimed=False)
     with run_store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         observed_context = _current_context_matches_claim(

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.briefs.sales import ContentSalesBrief
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.inventory.records import ContentInventoryResolution
@@ -435,13 +436,14 @@ def build_content_planning_input_from_components(
         service_lifecycle=("not_required" if candidate is None else candidate.lifecycle_status),
         ahrefs_matched_evidence_ids=ahrefs_matched_evidence_ids,
     )
-    regulatory_coverage = (
-        ContentRegulatoryCoverage()
-        if candidate is None
-        else regulatory_content_coverage(
-            service_card_id=candidate.service_card_id,
-            source_facts=ekologus_source_facts(),
-        )
+    regulatory_coverage = regulatory_content_coverage(
+        service_card_id=None if candidate is None else candidate.service_card_id,
+        canonical_path=(
+            content_normalized_path(brief.final_canonical_url)
+            if candidate is None
+            else None
+        ),
+        source_facts=ekologus_source_facts(),
     )
     blockers = _readiness_blockers(
         content_kind="editorial" if editorial else "service",

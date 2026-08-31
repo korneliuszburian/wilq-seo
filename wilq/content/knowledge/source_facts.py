@@ -99,6 +99,7 @@ class ContentSourceFact(BaseModel):
     regulatory_profile_version: str | None = None
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
     applicable_service_card_ids: list[str] = Field(default_factory=list)
+    applicable_canonical_paths: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_review_state(self) -> ContentSourceFact:
@@ -135,6 +136,7 @@ class ContentSourceFact(BaseModel):
             "usage_notes": self.usage_notes,
             "regulatory_requirement_ids": self.regulatory_requirement_ids,
             "applicable_service_card_ids": self.applicable_service_card_ids,
+            "applicable_canonical_paths": self.applicable_canonical_paths,
         }
         blank_list_fields = sorted(
             field_name
@@ -164,6 +166,7 @@ class ContentSourceFact(BaseModel):
                 self.regulatory_profile_version is not None,
                 self.regulatory_requirement_ids,
                 self.applicable_service_card_ids,
+                self.applicable_canonical_paths,
             )
         )
         if regulatory_fields_present and not (
@@ -171,11 +174,11 @@ class ContentSourceFact(BaseModel):
             and self.regulatory_profile_id
             and self.regulatory_profile_version
             and self.regulatory_requirement_ids
-            and self.applicable_service_card_ids
+            and (self.applicable_service_card_ids or self.applicable_canonical_paths)
         ):
             raise ValueError(
                 "regulatory source facts require exact official profile, version, "
-                "requirement and service bindings"
+                "requirement and content-subject bindings"
             )
         if "ekologus_ai_private_source_catalog" in self.source_connectors:
             if self.source_type not in {"private_candidate", "reviewed_internal"}:

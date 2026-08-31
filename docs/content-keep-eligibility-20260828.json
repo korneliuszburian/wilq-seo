@@ -6368,7 +6368,7 @@
     "source_sha256": {
       "authoring_inventory": "9737b6a309d13e40c662f943892849ee6c14419e1c04f3c416ad4032db01b245",
       "canonical_ledger": "d57cbdd989c9970a597563c16fc100869ce93f5bd0dc56234d50e7875facbab2",
-      "context": "410556ac65a69c6977af80f889e535acfe15640c3a454fe1e5d188d4a0aab46b",
+      "context": "6a2492de17d940cdb1d66fd3f6a0f17b39dd6e45dea34cea652bc363986783a6",
       "state_journal": "53700d90d3cb78f89fd6e214664781303ecb53756f856dc259559a1c1fdaa0d6",
       "target_mapping_snapshot": "a5acb59da9895c78dc5b944d0952608b698288e4eafec2933c0addefaa06a63b"
     },

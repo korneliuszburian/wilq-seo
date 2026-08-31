@@ -16,7 +16,11 @@ from wilq.content.drafts import (
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
-from wilq.content.regulatory.policy import ContentRegulatoryCoverage
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryRequirementCoverage,
+    regulatory_content_profile,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningSection
 from wilq.content.workflow.documents.revisions import (
@@ -96,6 +100,14 @@ def _source_facts() -> list[ContentSourceFact]:
 
 
 def _planning_input(source_facts: list[ContentSourceFact]) -> ContentPlanningInput:
+    official_fact = next(fact for fact in source_facts if fact.official_source)
+    profile = regulatory_content_profile(service_card_id=_SERVICE_CARD_ID)
+    assert profile is not None
+    requirements = [
+        requirement
+        for requirement in profile.requirements
+        if requirement.id in official_fact.regulatory_requirement_ids
+    ]
     return ContentPlanningInput.model_construct(
         work_item_id="content_work_item_bdo",
         planning_input_digest="a" * 64,
@@ -111,7 +123,21 @@ def _planning_input(source_facts: list[ContentSourceFact]) -> ContentPlanningInp
             for fact in source_facts
         ],
         regulatory_coverage=ContentRegulatoryCoverage(
-            source_facts=[next(fact for fact in source_facts if fact.official_source)]
+            applicability_status="required",
+            profile_id=profile.id,
+            profile_version=profile.version,
+            requirements=requirements,
+            requirement_coverage=[
+                ContentRegulatoryRequirementCoverage(
+                    requirement_id=requirement.id,
+                    source_fact_ids=[official_fact.source_id],
+                    evidence_ids=official_fact.evidence_ids,
+                )
+                for requirement in requirements
+            ],
+            source_fact_ids=[official_fact.source_id],
+            evidence_ids=official_fact.evidence_ids,
+            source_facts=[official_fact],
         ),
     )
 
@@ -138,7 +164,7 @@ def _planning_sections() -> list[ContentPlanningSection]:
             purpose="Wyjaśnia termin wynikający z wymogu.",
             reader_question="Jaki termin obowiązuje?",
             query_terms=["termin sprawozdania"],
-            regulatory_requirement_ids=["reporting"],
+            regulatory_requirement_ids=["bdo_reporting"],
         ),
     ]
 
@@ -425,7 +451,7 @@ def _approved_fact(
         buyer_problem_terms=buyer_problem_terms or [],
         official_source=official_source,
         regulatory_profile_id="bdo" if official_source else None,
-        regulatory_profile_version="2026-08" if official_source else None,
-        regulatory_requirement_ids=["reporting"] if official_source else [],
+        regulatory_profile_version="2026-07-31-r2" if official_source else None,
+        regulatory_requirement_ids=["bdo_reporting"] if official_source else [],
         applicable_service_card_ids=[_SERVICE_CARD_ID] if official_source else [],
     )

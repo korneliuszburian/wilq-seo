@@ -17,6 +17,7 @@ from wilq.storage.local_state_stop_reconciliation import (
 from wilq.storage.local_state_stop_telemetry import _StopTelemetryStoreMixin
 from wilq.storage.private_paths import prepare_private_store_path
 from wilq.storage.schema_versions import (
+    SQLITE_SCHEMA_VERSION,
     ensure_sqlite_schema_version,
     reject_newer_sqlite_schema,
 )
@@ -97,6 +98,8 @@ class LocalStateStore(
 
     def _ensure_schema(self, connection: sqlite3.Connection) -> None:
         reject_newer_sqlite_schema(connection)
+        if _local_state_schema_is_current(connection):
+            return
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS codex_runs (
@@ -161,55 +164,91 @@ class LocalStateStore(
               updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
-
-            CREATE TABLE IF NOT EXISTS ads_target_guardrail_confirmations (
-              id TEXT PRIMARY KEY,
-              connector_id TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS ads_strategy_reviews (
-              id TEXT PRIMARY KEY,
-              connector_id TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS content_section_focus (
-              work_item_id TEXT PRIMARY KEY,
-              section_id TEXT NOT NULL,
-              planning_digest TEXT,
-              updated_by TEXT,
-              updated_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS content_refresh_preparation_authorizations (
-              authorization_id TEXT PRIMARY KEY,
-              authorization_digest TEXT NOT NULL UNIQUE,
-              work_item_id TEXT NOT NULL,
-              classification_run_id TEXT NOT NULL,
-              classification_run_digest TEXT NOT NULL,
-              decision_set_digest TEXT NOT NULL,
-              source_packet_row_digest TEXT NOT NULL,
-              canonical_path TEXT NOT NULL,
-              public_url TEXT NOT NULL,
-              planning_input_digest TEXT NOT NULL,
-              service_card_id TEXT NOT NULL,
-              authorized_by TEXT NOT NULL,
-              authorized_at TEXT NOT NULL,
-              payload_json TEXT NOT NULL,
-              UNIQUE (
-                work_item_id,
-                classification_run_digest,
-                decision_set_digest,
-                source_packet_row_digest,
-                planning_input_digest,
-                service_card_id
-              )
-            );
             """
         )
+        _ensure_local_state_marketing_objects(connection)
         ensure_stop_reconciliation_schema(connection)
         ensure_sqlite_schema_version(connection)
+
+
+def _local_state_schema_is_current(connection: sqlite3.Connection) -> bool:
+    if int(connection.execute("PRAGMA user_version").fetchone()[0]) != SQLITE_SCHEMA_VERSION:
+        return False
+    required_objects = {
+        ("table", "codex_runs"),
+        ("table", "codex_stop_events"),
+        ("index", "idx_codex_stop_events_received_at_id"),
+        ("table", "workflow_runs"),
+        ("table", "audit_events"),
+        ("table", "action_mutation_audits"),
+        ("table", "action_validation_states"),
+        ("table", "connector_refresh_runs"),
+        ("table", "job_runs"),
+        ("table", "ads_target_guardrail_confirmations"),
+        ("table", "ads_strategy_reviews"),
+        ("table", "content_section_focus"),
+        ("table", "content_refresh_preparation_authorizations"),
+        ("table", "codex_stop_reconciliation_batches"),
+        ("table", "codex_stop_events_legacy"),
+    }
+    existing_objects = {
+        (str(row[0]), str(row[1]))
+        for row in connection.execute(
+            "SELECT type, name FROM sqlite_master WHERE type IN ('table', 'index')"
+        )
+    }
+    return required_objects.issubset(existing_objects)
+
+
+def _ensure_local_state_marketing_objects(connection: sqlite3.Connection) -> None:
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS ads_target_guardrail_confirmations (
+          id TEXT PRIMARY KEY,
+          connector_id TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          payload_json TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ads_strategy_reviews (
+          id TEXT PRIMARY KEY,
+          connector_id TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          payload_json TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS content_section_focus (
+          work_item_id TEXT PRIMARY KEY,
+          section_id TEXT NOT NULL,
+          planning_digest TEXT,
+          updated_by TEXT,
+          updated_at TEXT NOT NULL,
+          payload_json TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS content_refresh_preparation_authorizations (
+          authorization_id TEXT PRIMARY KEY,
+          authorization_digest TEXT NOT NULL UNIQUE,
+          work_item_id TEXT NOT NULL,
+          classification_run_id TEXT NOT NULL,
+          classification_run_digest TEXT NOT NULL,
+          decision_set_digest TEXT NOT NULL,
+          source_packet_row_digest TEXT NOT NULL,
+          canonical_path TEXT NOT NULL,
+          public_url TEXT NOT NULL,
+          planning_input_digest TEXT NOT NULL,
+          service_card_id TEXT NOT NULL,
+          authorized_by TEXT NOT NULL,
+          authorized_at TEXT NOT NULL,
+          payload_json TEXT NOT NULL,
+          UNIQUE (
+            work_item_id,
+            classification_run_digest,
+            decision_set_digest,
+            source_packet_row_digest,
+            planning_input_digest,
+            service_card_id
+          )
+        );
+        """
+    )

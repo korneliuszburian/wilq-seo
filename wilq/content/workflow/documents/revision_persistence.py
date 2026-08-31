@@ -56,7 +56,7 @@ def build_stored_draft_revision(
 def _full_document_digest_payload(
     command: ContentDraftRevisionAppendCommand,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "schema_version": command.schema_version,
         "document_kind": command.document_kind,
         "new_page_document_identity": (
@@ -86,6 +86,9 @@ def _full_document_digest_payload(
             else command.refresh_preparation_binding.model_dump(mode="json")
         ),
     }
+    if command.content_kind == "editorial":
+        payload["content_kind"] = command.content_kind
+    return payload
 
 
 def _section_digest_payload(

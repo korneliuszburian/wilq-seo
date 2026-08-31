@@ -35,7 +35,8 @@ class ContentDraftRevisionContext:
     draft_package_digest: str
     planning_digest: str
     planning_input_digest: str
-    service_card_id: str
+    content_kind: Literal["service", "editorial"]
+    service_card_id: str | None
     inventory_digest: str
     final_canonical_url: str
 
@@ -46,7 +47,6 @@ class ContentDraftRevisionContext:
     ) -> ContentDraftRevisionContext | None:
         required = (
             command.planning_input_digest,
-            command.service_card_id,
             command.inventory_digest,
             command.final_canonical_url,
         )
@@ -58,7 +58,8 @@ class ContentDraftRevisionContext:
             draft_package_digest=command.draft_package_digest,
             planning_digest=command.planning_digest,
             planning_input_digest=cast(str, command.planning_input_digest),
-            service_card_id=cast(str, command.service_card_id),
+            content_kind=command.content_kind,
+            service_card_id=command.service_card_id,
             inventory_digest=cast(str, command.inventory_digest),
             final_canonical_url=cast(str, command.final_canonical_url),
         )

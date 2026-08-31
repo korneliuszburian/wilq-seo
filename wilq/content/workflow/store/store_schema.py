@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import sqlite3
 
-from wilq.storage.schema_versions import ensure_sqlite_schema_version, reject_newer_sqlite_schema
+from wilq.storage.schema_versions import (
+    SQLITE_SCHEMA_VERSION,
+    ensure_sqlite_schema_version,
+    reject_newer_sqlite_schema,
+)
 
 _CONTENT_WORKFLOW_SCHEMA = (
     """
@@ -308,6 +312,8 @@ _CONTENT_WORKFLOW_SCHEMA = (
 
 def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
     reject_newer_sqlite_schema(connection)
+    if _content_workflow_schema_is_current(connection):
+        return
     for statement in _CONTENT_WORKFLOW_SCHEMA:
         connection.execute(statement)
     _ensure_content_human_review_updated_at(connection)
@@ -324,6 +330,46 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
         """
     )
     ensure_sqlite_schema_version(connection)
+
+
+def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
+    if int(connection.execute("PRAGMA user_version").fetchone()[0]) != SQLITE_SCHEMA_VERSION:
+        return False
+    objects = {
+        (str(row[0]), str(row[1]))
+        for row in connection.execute(
+            "SELECT type, name FROM sqlite_master WHERE type IN ('table', 'index')"
+        )
+    }
+    for statement in _CONTENT_WORKFLOW_SCHEMA:
+        normalized = " ".join(statement.split())
+        object_type = "table" if normalized.startswith("CREATE TABLE") else "index"
+        marker = f"CREATE {object_type.upper()} IF NOT EXISTS "
+        name = normalized.removeprefix(marker).split(" ", 1)[0]
+        if (object_type, name) not in objects:
+            return False
+    if ("index", "uq_refresh_preparation_authorization_context") not in objects:
+        return False
+    required_columns = {
+        "content_human_reviews": {"updated_at"},
+        "content_new_page_revision_apply_claims": {"result_json"},
+        "content_refresh_preparation_authorizations": {
+            "canonical_path",
+            "public_url",
+            "content_kind",
+            "service_card_id",
+        },
+    }
+    for table, expected in required_columns.items():
+        rows = list(connection.execute(f"PRAGMA table_info({table})"))
+        columns = {str(row[1]) for row in rows}
+        if not expected.issubset(columns):
+            return False
+        if table == "content_refresh_preparation_authorizations":
+            service_row = next(row for row in rows if str(row[1]) == "service_card_id")
+            if bool(service_row[3]):
+                return False
+    return True
 
 
 def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> None:

@@ -144,7 +144,8 @@ class ContentRegulatoryProfile(BaseModel):
 
     id: str = Field(min_length=1)
     version: str = Field(min_length=1)
-    service_card_ids: list[str] = Field(min_length=1)
+    service_card_ids: list[str] = Field(default_factory=list)
+    canonical_paths: list[str] = Field(default_factory=list)
     official_source_hosts: list[str] = Field(min_length=1)
     max_source_age_days: int = Field(ge=1, le=3650)
     requirements: list[ContentRegulatoryRequirement] = Field(min_length=1)
@@ -154,6 +155,8 @@ class ContentRegulatoryProfile(BaseModel):
 
     @model_validator(mode="after")
     def require_constraint_requirement_bindings(self) -> ContentRegulatoryProfile:
+        if not self.service_card_ids and not self.canonical_paths:
+            raise ValueError("Regulatory profile requires a service or canonical-path subject.")
         requirement_ids = [requirement.id for requirement in self.requirements]
         if len(requirement_ids) != len(set(requirement_ids)):
             raise ValueError("Regulatory profiles must have unique requirement IDs.")
@@ -235,8 +238,12 @@ class ContentRegulatoryCoverage(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    applicability_status: Literal["not_required", "required", "review_required"] = (
+        "not_required"
+    )
     profile_id: str | None = None
     profile_version: str | None = None
+    canonical_path: str | None = None
     requirements: list[ContentRegulatoryRequirement] = Field(default_factory=list)
     requirement_coverage: list[ContentRegulatoryRequirementCoverage] = Field(
         default_factory=list
@@ -244,6 +251,61 @@ class ContentRegulatoryCoverage(BaseModel):
     source_fact_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_facts: list[ContentSourceFact] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def infer_legacy_applicability(cls, value: object) -> object:
+        if not isinstance(value, dict) or "applicability_status" in value:
+            return value
+        payload = dict(value)
+        facts = payload.get("source_facts") or []
+        if facts and not payload.get("profile_id") and not payload.get("profile_version"):
+            profile_ids = {
+                fact.get("regulatory_profile_id")
+                if isinstance(fact, dict)
+                else getattr(fact, "regulatory_profile_id", None)
+                for fact in facts
+            }
+            profile_versions = {
+                fact.get("regulatory_profile_version")
+                if isinstance(fact, dict)
+                else getattr(fact, "regulatory_profile_version", None)
+                for fact in facts
+            }
+            if len(profile_ids) == 1 and None not in profile_ids:
+                payload["profile_id"] = next(iter(profile_ids))
+            if len(profile_versions) == 1 and None not in profile_versions:
+                payload["profile_version"] = next(iter(profile_versions))
+        if payload.get("profile_id") and payload.get("profile_version"):
+            payload["applicability_status"] = "required"
+        elif payload.get("requirements") or payload.get("requirement_coverage"):
+            payload["applicability_status"] = "review_required"
+        else:
+            payload["applicability_status"] = "not_required"
+        return payload
+
+    @model_validator(mode="after")
+    def require_consistent_applicability(self) -> ContentRegulatoryCoverage:
+        regulatory_payload = bool(
+            self.profile_id
+            or self.profile_version
+            or self.requirements
+            or self.requirement_coverage
+            or self.source_fact_ids
+            or self.evidence_ids
+            or self.source_facts
+        )
+        if self.applicability_status == "not_required" and regulatory_payload:
+            raise ValueError("Not-required coverage cannot carry regulatory payload.")
+        if self.applicability_status == "required" and not (
+            self.profile_id and self.profile_version and self.requirements
+        ):
+            raise ValueError("Required coverage needs an exact profile and requirements.")
+        if self.applicability_status == "review_required" and (
+            self.profile_id or self.profile_version or self.source_facts
+        ):
+            raise ValueError("Review-required coverage cannot claim profile or approved facts.")
+        return self
 
     @property
     def covered_requirement_ids(self) -> list[str]:
@@ -256,7 +318,9 @@ class ContentRegulatoryCoverage(BaseModel):
 
     @property
     def complete(self) -> bool:
-        return not self.missing_requirements
+        return self.applicability_status == "not_required" or (
+            self.applicability_status == "required" and not self.missing_requirements
+        )
 
 
 class ContentRegulatoryCoverageGap(BaseModel):
@@ -275,7 +339,8 @@ class ContentRegulatorySourceCandidate(BaseModel):
     candidate_id: str = Field(min_length=1)
     profile_id: str = Field(min_length=1)
     profile_version: str = Field(min_length=1)
-    service_card_ids: list[str] = Field(min_length=1)
+    service_card_ids: list[str] = Field(default_factory=list)
+    canonical_paths: list[str] = Field(default_factory=list)
     source_url: str = Field(min_length=1)
     source_title: str = Field(min_length=1)
     observed_on: str = Field(min_length=1)
@@ -300,6 +365,7 @@ class ContentRegulatorySourceCandidate(BaseModel):
         list_fields = {
             "service_card_ids": self.service_card_ids,
             "requirement_ids": self.requirement_ids,
+            "canonical_paths": self.canonical_paths,
         }
         blank_lists = sorted(
             name
@@ -309,6 +375,8 @@ class ContentRegulatorySourceCandidate(BaseModel):
         if blank_fields or blank_lists:
             fields = ", ".join([*blank_fields, *blank_lists])
             raise ValueError(f"Regulatory source candidates require non-empty fields: {fields}")
+        if not self.service_card_ids and not self.canonical_paths:
+            raise ValueError("Regulatory source candidate requires an exact content subject.")
         try:
             date.fromisoformat(self.observed_on)
         except ValueError as exc:
@@ -340,6 +408,9 @@ def regulatory_content_profiles() -> tuple[ContentRegulatoryProfile, ...]:
     ]
     if len(service_card_ids) != len(set(service_card_ids)):
         raise ValueError("Regulatory profiles must not share service_card_ids.")
+    canonical_paths = [path for profile in profiles for path in profile.canonical_paths]
+    if len(canonical_paths) != len(set(canonical_paths)):
+        raise ValueError("Regulatory profiles must not share canonical paths.")
     return profiles
 
 
@@ -355,36 +426,80 @@ def regulatory_source_candidates() -> tuple[ContentRegulatorySourceCandidate, ..
     candidate_ids = [candidate.candidate_id for candidate in candidates]
     if len(candidate_ids) != len(set(candidate_ids)):
         raise ValueError("Regulatory source candidates must have unique candidate_id values.")
+    profiles = {profile.id: profile for profile in regulatory_content_profiles()}
+    for candidate in candidates:
+        profile = profiles.get(candidate.profile_id)
+        if (
+            profile is None
+            or profile.version != candidate.profile_version
+            or not set(candidate.service_card_ids).issubset(profile.service_card_ids)
+            or not set(candidate.canonical_paths).issubset(profile.canonical_paths)
+        ):
+            raise ValueError("Regulatory source candidate has a foreign content subject.")
     return candidates
+
+
+def regulatory_candidate_profile(
+    candidate: ContentRegulatorySourceCandidate,
+) -> ContentRegulatoryProfile | None:
+    profile = next(
+        (
+            item
+            for item in regulatory_content_profiles()
+            if item.id == candidate.profile_id and item.version == candidate.profile_version
+        ),
+        None,
+    )
+    if profile is None:
+        return None
+    if not set(candidate.service_card_ids).issubset(profile.service_card_ids):
+        return None
+    if not set(candidate.canonical_paths).issubset(profile.canonical_paths):
+        return None
+    return profile
 
 
 def regulatory_content_profile(
     *,
-    service_card_id: str,
+    service_card_id: str | None = None,
+    canonical_path: str | None = None,
     profiles: tuple[ContentRegulatoryProfile, ...] | None = None,
 ) -> ContentRegulatoryProfile | None:
     """Resolve the one profile explicitly assigned to the selected service."""
 
-    return next(
-        (
-            profile
-            for profile in (profiles if profiles is not None else regulatory_content_profiles())
-            if service_card_id in profile.service_card_ids
-        ),
+    available = profiles if profiles is not None else regulatory_content_profiles()
+    service_profile = next(
+        (profile for profile in available if service_card_id in profile.service_card_ids),
         None,
-    )
+    ) if service_card_id is not None else None
+    path_profile = next(
+        (profile for profile in available if canonical_path in profile.canonical_paths),
+        None,
+    ) if canonical_path is not None else None
+    if service_card_id is not None and canonical_path is not None and (
+        service_profile is None
+        or path_profile is None
+        or service_profile.id != path_profile.id
+    ):
+        raise ValueError("Regulatory service and canonical path resolve different profiles.")
+    return service_profile or path_profile
 
 
 def regulatory_content_coverage(
     *,
-    service_card_id: str,
+    service_card_id: str | None,
+    canonical_path: str | None = None,
     source_facts: tuple[ContentSourceFact, ...],
     profiles: tuple[ContentRegulatoryProfile, ...] | None = None,
     as_of: date | None = None,
 ) -> ContentRegulatoryCoverage:
     """Resolve profile/version/service-bound official source coverage."""
 
-    profile = regulatory_content_profile(service_card_id=service_card_id, profiles=profiles)
+    profile = regulatory_content_profile(
+        service_card_id=service_card_id,
+        canonical_path=canonical_path,
+        profiles=profiles,
+    )
     if profile is None:
         return ContentRegulatoryCoverage()
     today = as_of or date.today()
@@ -393,16 +508,19 @@ def regulatory_content_coverage(
         fact
         for fact in source_facts
         if _fact_covers_profile(
-            fact,
-            profile=profile,
-            service_card_id=service_card_id,
-            required_ids=required_ids,
+                fact,
+                profile=profile,
+                service_card_id=service_card_id,
+                canonical_path=canonical_path,
+                required_ids=required_ids,
             as_of=today,
         )
     ]
     return ContentRegulatoryCoverage(
+        applicability_status="required",
         profile_id=profile.id,
         profile_version=profile.version,
+        canonical_path=canonical_path,
         requirements=profile.requirements,
         requirement_coverage=[
             ContentRegulatoryRequirementCoverage(
@@ -433,7 +551,8 @@ def regulatory_content_coverage(
 
 def regulatory_review_candidates(
     *,
-    service_card_id: str,
+    service_card_id: str | None,
+    canonical_path: str | None = None,
     coverage: ContentRegulatoryCoverage,
     candidates: tuple[ContentRegulatorySourceCandidate, ...] | None = None,
     profiles: tuple[ContentRegulatoryProfile, ...] | None = None,
@@ -441,7 +560,11 @@ def regulatory_review_candidates(
 ) -> list[ContentRegulatoryReviewCandidate]:
     """Expose only current official candidates for requirements still blocked."""
 
-    profile = regulatory_content_profile(service_card_id=service_card_id, profiles=profiles)
+    profile = regulatory_content_profile(
+        service_card_id=service_card_id,
+        canonical_path=canonical_path or coverage.canonical_path,
+        profiles=profiles,
+    )
     if profile is None or coverage.complete:
         return []
     today = as_of or date.today()
@@ -466,6 +589,7 @@ def regulatory_review_candidates(
             candidate,
             profile=profile,
             service_card_id=service_card_id,
+            canonical_path=canonical_path or coverage.canonical_path,
             missing_ids=missing_ids,
             as_of=today,
         )
@@ -476,7 +600,8 @@ def _fact_covers_profile(
     fact: ContentSourceFact,
     *,
     profile: ContentRegulatoryProfile,
-    service_card_id: str,
+    service_card_id: str | None,
+    canonical_path: str | None,
     required_ids: set[str],
     as_of: date,
 ) -> bool:
@@ -499,7 +624,9 @@ def _fact_covers_profile(
         and fact.official_source
         and fact.regulatory_profile_id == profile.id
         and fact.regulatory_profile_version == profile.version
-        and service_card_id in fact.applicable_service_card_ids
+        and (service_card_id is None or service_card_id in fact.applicable_service_card_ids)
+        and (canonical_path is None or canonical_path in fact.applicable_canonical_paths)
+        and (service_card_id is not None or canonical_path is not None)
         and bool(required_ids.intersection(fact.regulatory_requirement_ids))
         and urlsplit(fact.source_url_or_path).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
@@ -511,7 +638,8 @@ def _candidate_matches_profile(
     candidate: ContentRegulatorySourceCandidate,
     *,
     profile: ContentRegulatoryProfile,
-    service_card_id: str,
+    service_card_id: str | None,
+    canonical_path: str | None,
     missing_ids: set[str],
     as_of: date,
 ) -> bool:
@@ -522,7 +650,9 @@ def _candidate_matches_profile(
     return (
         candidate.profile_id == profile.id
         and candidate.profile_version == profile.version
-        and service_card_id in candidate.service_card_ids
+        and (service_card_id is None or service_card_id in candidate.service_card_ids)
+        and (canonical_path is None or canonical_path in candidate.canonical_paths)
+        and (service_card_id is not None or canonical_path is not None)
         and bool(missing_ids.intersection(candidate.requirement_ids))
         and urlsplit(candidate.source_url).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
@@ -534,6 +664,18 @@ def regulatory_coverage_gap(
 ) -> ContentRegulatoryCoverageGap | None:
     if coverage.complete:
         return None
+    if coverage.applicability_status == "review_required":
+        return ContentRegulatoryCoverageGap(
+            label="Zakres regulacyjny artykułu wymaga oceny",
+            reason=(
+                "Artykuł editorial nie ma jeszcze jawnego profilu regulacyjnego ani "
+                "zatwierdzenia, że źródła urzędowe nie są wymagane."
+            ),
+            next_step=(
+                "Przypisz exact profil regulacyjny albo zapisz review not_required; "
+                "nie generuj tez prawnych z pustego coverage."
+            ),
+        )
     missing = ", ".join(requirement.label for requirement in coverage.missing_requirements)
     return ContentRegulatoryCoverageGap(
         label="Brakuje zatwierdzonych źródeł urzędowych",
