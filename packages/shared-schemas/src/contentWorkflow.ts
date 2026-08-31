@@ -4095,7 +4095,8 @@ export const ContentPlanningWorkspaceSchema = z
   });
 
 export const ContentPlanningProposalRequestSchema = z.strictObject({
-  service_card_id: z.string().min(1),
+  content_kind: ContentPlanningKindSchema.default("service"),
+  service_card_id: z.string().min(1).nullable().optional(),
   expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
   operator_hint: z.string().max(500).default(""),
   requested_by: z.string().min(1),
@@ -4104,6 +4105,13 @@ export const ContentPlanningProposalRequestSchema = z.strictObject({
   refresh_preparation_authorization_id: z.string().trim().min(1).nullable().optional(),
   expected_refresh_preparation_authorization_digest: ContentRefreshPreparationDigestSchema.nullable().optional()
 }).superRefine((request, context) => {
+  if ((request.content_kind === "service") !== Boolean(request.service_card_id)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["service_card_id"],
+      message: "Planning content kind must match its service identity."
+    });
+  }
   const hasAuthorizationId = request.refresh_preparation_authorization_id != null;
   const hasAuthorizationDigest = request.expected_refresh_preparation_authorization_digest != null;
   if (hasAuthorizationId !== hasAuthorizationDigest) {
@@ -4282,7 +4290,8 @@ export const ContentPlanningInputSummarySchema = z.object({
   goal: z.enum(["refresh_existing", "new_page"]).optional(),
   final_canonical_url: z.string().min(1).nullable().optional(),
   proposed_ia_location: z.string().min(3).nullable().optional(),
-  service_label: z.string().min(1),
+  content_kind: ContentPlanningKindSchema.optional(),
+  service_label: z.string().min(1).nullable().optional(),
   inventory_status: z.enum(["available", "missing", "not_applicable"]),
   content_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
   acf_section_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
@@ -4321,6 +4330,14 @@ export const ContentPlanningInputSummarySchema = z.object({
   // exact page-scoped comparisons were exposed; new API responses populate it.
   metric_comparisons: z.array(ContentPlanningMetricComparisonSchema).optional()
 }).superRefine((summary, context) => {
+  const contentKind = summary.content_kind ?? "service";
+  if ((contentKind === "service") !== Boolean(summary.service_label)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["service_label"],
+      message: "Planning summary content kind must match its service label."
+    });
+  }
   const sources = summary.source_assessments.map((assessment) => assessment.source);
   if (
     sources.length !== contentPlanningSourceNames.length ||

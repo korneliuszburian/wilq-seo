@@ -34,6 +34,7 @@ from wilq.content.planning.generation_claim_store import (
     content_planning_generation_claim_store,
 )
 from wilq.content.planning.runtime_contract import planning_codex_timeout_seconds
+from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.storage.local_state import local_state_store
@@ -46,6 +47,13 @@ _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-content-plan",
 )
+
+
+def _request_subject(request: ContentPlanningProposalRequest) -> ContentPlanningSubject:
+    return ContentPlanningSubject(
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+    )
 
 
 def planning_codex_client(client_factory: PlanningClientFactory) -> StdioCodexAppServerClient:
@@ -85,6 +93,7 @@ def prepare_planning_generation(
                 request,
                 planning_generation_failure_response(
                     work_item_id=work_item_id,
+                    content_kind=request.content_kind,
                     service_card_id=request.service_card_id,
                     planning_input_digest=request.expected_planning_input_digest,
                     input_summary=None,
@@ -104,6 +113,7 @@ def prepare_planning_generation(
             request,
             planning_generation_failure_response(
                 work_item_id=work_item_id,
+                content_kind=request.content_kind,
                 service_card_id=request.service_card_id,
                 planning_input_digest=request.expected_planning_input_digest,
                 input_summary=None,
@@ -136,8 +146,18 @@ def existing_planning_generation_state(
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse | None,
 ]:
-    existing = store.for_input(
-        work_item_id, request.service_card_id, request.expected_planning_input_digest
+    existing = (
+        store.for_input(
+            work_item_id,
+            request.service_card_id or "",
+            request.expected_planning_input_digest,
+        )
+        if request.content_kind == "service"
+        else store.for_subject_input(
+            work_item_id,
+            _request_subject(request),
+            request.expected_planning_input_digest,
+        )
     )
     if existing is None:
         return None, request, None
@@ -146,6 +166,7 @@ def existing_planning_generation_state(
     current_is_exact_input = (
         current.work_item_id == work_item_id
         and current.service_card_id == request.service_card_id
+        and current.content_kind == request.content_kind
         and current.planning_input_digest == request.expected_planning_input_digest
     )
     current_has_existing_proposal = (
@@ -210,16 +231,16 @@ def enqueue_planning_generation(
         request=request,
         refresh_preparation_binding=refresh_preparation_binding,
     )
-    outcome = store.enqueue_pending(
+    outcome = store.enqueue_subject_pending(
         work_item_id=work_item_id,
-        service_card_id=request.service_card_id,
+        subject=_request_subject(request),
         planning_input_digest=request.expected_planning_input_digest,
         response=result,
         allow_finished_reset=request.regenerate_stale_mapping,
     )
     if outcome == "existing":
-        queued = store.queued_response(
-            work_item_id, request.service_card_id, request.expected_planning_input_digest
+        queued = store.queued_subject_response(
+            work_item_id, _request_subject(request), request.expected_planning_input_digest
         )
         if queued is not None:
             if queued.refresh_preparation_binding != refresh_preparation_binding:
@@ -230,9 +251,9 @@ def enqueue_planning_generation(
                 )
             result = queued
     if outcome == "in_flight":
-        active = store.active_generation_response(
+        active = store.active_subject_generation_response(
             work_item_id,
-            request.service_card_id,
+            _request_subject(request),
             excluding_digest=request.expected_planning_input_digest,
         )
         result = planning_generation_in_flight_response(
@@ -259,6 +280,7 @@ def planning_generation_generating_response(
     return ContentPlanningProposalResponse(
         status="generating",
         work_item_id=planning_input.work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=content_planning_input_summary(planning_input),
@@ -280,6 +302,7 @@ def planning_generation_in_flight_response(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         runtime=active.runtime if active is not None else result.runtime,
         retry_after_seconds=5,
@@ -321,6 +344,7 @@ def planning_generation_binding_conflict_response(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         runtime=existing.runtime,
         blockers=[blocker],
@@ -350,6 +374,7 @@ def schedule_queued_planning_generation(
     claim = claim_store.claim(
         work_item_id=work_item_id,
         service_card_id=request.service_card_id,
+        content_kind=request.content_kind,
         planning_input_digest=request.expected_planning_input_digest,
         claim_owner=claim_owner,
         refresh_preparation_binding=refresh_preparation_binding,
@@ -373,12 +398,14 @@ def schedule_queued_planning_generation(
     except Exception as error:
         result = planning_generation_failure_response(
             work_item_id=work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
             input_summary=queued_input_summary(
                 store=store,
                 work_item_id=work_item_id,
                 service_card_id=request.service_card_id,
+                content_kind=request.content_kind,
                 planning_input_digest=request.expected_planning_input_digest,
             ),
             error=error,
@@ -400,6 +427,7 @@ def schedule_queued_planning_generation(
         claim_store.finish(
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
+            content_kind=request.content_kind,
             planning_input_digest=request.expected_planning_input_digest,
             claim_owner=claim_owner,
             claim_version=claim.claim_version,
@@ -438,12 +466,14 @@ def run_queued_planning_generation(
     except Exception as error:
         result = planning_generation_failure_response(
             work_item_id=work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
             input_summary=queued_input_summary(
                 store=store,
                 work_item_id=work_item_id,
                 service_card_id=request.service_card_id,
+                content_kind=request.content_kind,
                 planning_input_digest=request.expected_planning_input_digest,
             ),
             error=error,
@@ -469,6 +499,7 @@ def run_queued_planning_generation(
         claim_store.finish(
             work_item_id=work_item_id,
             service_card_id=request.service_card_id,
+            content_kind=request.content_kind,
             planning_input_digest=request.expected_planning_input_digest,
             claim_owner=claim_owner,
             claim_version=claim_version,
@@ -519,6 +550,7 @@ def terminal_response_with_refresh_context(
     input_summary = queued_input_summary(
         store=store,
         work_item_id=work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         planning_input_digest=request.expected_planning_input_digest,
     )
@@ -528,6 +560,7 @@ def terminal_response_with_refresh_context(
         {
             **response.model_dump(mode="python"),
             "work_item_id": work_item_id,
+            "content_kind": request.content_kind,
             "service_card_id": request.service_card_id,
             "planning_input_digest": request.expected_planning_input_digest,
             "input_summary": input_summary,
@@ -551,6 +584,7 @@ def planning_generation_claim_binding_conflict_response(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=response.work_item_id,
+        content_kind=response.content_kind,
         service_card_id=response.service_card_id,
         planning_input_digest=response.planning_input_digest,
         input_summary=response.input_summary,
@@ -573,6 +607,7 @@ def planning_generation_claim_stale_response(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=response.work_item_id,
+        content_kind=response.content_kind,
         service_card_id=response.service_card_id,
         planning_input_digest=response.planning_input_digest,
         input_summary=response.input_summary,
@@ -586,7 +621,8 @@ def planning_generation_claim_stale_response(
 def planning_generation_failure_response(
     *,
     work_item_id: str,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
     planning_input_digest: str,
     input_summary: ContentPlanningInputSummary | None,
     error: Exception,
@@ -594,6 +630,7 @@ def planning_generation_failure_response(
     return ContentPlanningProposalResponse(
         status="failed",
         work_item_id=work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest if input_summary is not None else None,
         input_summary=input_summary,
@@ -617,12 +654,16 @@ def queued_input_summary(
     *,
     store: ContentPlanningProposalStore,
     work_item_id: str,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
     planning_input_digest: str,
 ) -> ContentPlanningInputSummary | None:
-    queued = store.queued_response(
+    queued = store.queued_subject_response(
         work_item_id,
-        service_card_id,
+        ContentPlanningSubject(
+            content_kind=content_kind,
+            service_card_id=service_card_id,
+        ),
         planning_input_digest,
         include_stale=True,
     )

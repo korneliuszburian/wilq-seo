@@ -9,7 +9,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
-from wilq.content.planning.subject import PlanningContentKind
+from wilq.content.planning.subject import PlanningContentKind, planning_subject_key
 from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningConditionalHypothesis,
@@ -51,6 +51,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "lineage_mismatch",
     "persistence_failed",
     "scope_not_current",
+    "content_kind_mismatch",
 ]
 
 
@@ -110,7 +111,8 @@ def regulatory_response_lineage_errors(
 class ContentPlanningProposalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    service_card_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
+    service_card_id: str | None = Field(default=None, min_length=1)
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     operator_hint: str = Field(default="", max_length=500)
     requested_by: str = Field(min_length=1)
@@ -124,6 +126,7 @@ class ContentPlanningProposalRequest(BaseModel):
 
     @model_validator(mode="after")
     def strip_visible_text(self) -> ContentPlanningProposalRequest:
+        planning_subject_key(self.content_kind, self.service_card_id)
         self.operator_hint = self.operator_hint.strip()
         self.requested_by = self.requested_by.strip()
         if not self.requested_by:
@@ -202,7 +205,8 @@ class ContentPlanningModelOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     language: Literal["pl-PL"] = "pl-PL"
-    service_card_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
+    service_card_id: str | None = Field(default=None, min_length=1)
     target_reader: str = Field(min_length=1)
     buyer_problem: str = Field(min_length=1)
     buyer_trigger: str = Field(min_length=1)
@@ -229,6 +233,7 @@ class ContentPlanningModelOutput(BaseModel):
 
     @model_validator(mode="after")
     def require_unique_section_headings(self) -> ContentPlanningModelOutput:
+        planning_subject_key(self.content_kind, self.service_card_id)
         headings = [section.heading.strip() for section in self.sections]
         if len(headings) != len(set(headings)):
             raise ValueError("Planning output section headings must be unique.")

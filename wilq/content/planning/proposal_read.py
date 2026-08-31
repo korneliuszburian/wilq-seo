@@ -29,6 +29,7 @@ from wilq.content.planning.proposal_quality import (
     proposal_quality_errors,
     remapped_proposal_projection,
 )
+from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 
@@ -42,10 +43,14 @@ def read_content_planning_proposal(
 
     from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 
+    content_kind: PlanningContentKind = (
+        "editorial" if snapshot.preflight.item.content_kind == "editorial" else "service"
+    )
     service_card_id = snapshot.service_profile_context.service_card_id
-    if service_card_id is None:
+    if content_kind == "service" and service_card_id is None:
         return _blocked_response(
             snapshot.preflight.item.id,
+            content_kind=content_kind,
             service_card_id=None,
             planning_input_digest=None,
             blockers=[
@@ -58,10 +63,19 @@ def read_content_planning_proposal(
                 )
             ],
         )
-    planning_snapshot = with_explicit_content_service_selection(snapshot, service_card_id)
+    planning_snapshot = (
+        with_explicit_content_service_selection(snapshot, service_card_id)
+        if content_kind == "service" and service_card_id is not None
+        else snapshot
+    )
     result = build_content_planning_input(planning_snapshot, service_card_id=service_card_id)
     if result.planning_input is None:
-        return _blocked_from_input(snapshot.preflight.item.id, service_card_id, result.blockers)
+        return _blocked_from_input(
+            snapshot.preflight.item.id,
+            service_card_id,
+            result.blockers,
+            content_kind=content_kind,
+        )
     planning_input = result.planning_input
     input_summary = content_planning_input_summary(planning_input)
     generation_blockers = planning_generation_blockers(result.blockers)
@@ -72,10 +86,15 @@ def read_content_planning_proposal(
             generation_blockers,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
+            content_kind=content_kind,
         )
-    queued = store.queued_response(
+    subject = ContentPlanningSubject(
+        content_kind=content_kind,
+        service_card_id=service_card_id,
+    )
+    queued = store.queued_subject_response(
         planning_input.work_item_id,
-        service_card_id,
+        subject,
         planning_input.planning_input_digest,
     )
     if queued is not None:
@@ -85,14 +104,15 @@ def read_content_planning_proposal(
                 "input_summary": input_summary,
             }
         )
-    current = store.read_latest_or_none_for_input(
+    current = store.for_subject_input(
         planning_input.work_item_id,
-        service_card_id,
+        subject,
         planning_input.planning_input_digest,
     )
     latest = current or store.latest(planning_input.work_item_id)
     return _response_for_current_proposal(
         planning_input=planning_input,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         input_summary=input_summary,
         latest=latest,
@@ -100,10 +120,40 @@ def read_content_planning_proposal(
     )
 
 
+def _quality_blocked_response(
+    planning_input: ContentPlanningInput,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
+    input_summary: ContentPlanningInputSummary,
+    proposal: ContentPlanningProposal,
+) -> ContentPlanningProposalResponse | None:
+    errors = proposal_quality_errors(proposal)
+    if not errors:
+        return None
+    return _blocked_response(
+        planning_input.work_item_id,
+        content_kind=content_kind,
+        service_card_id=service_card_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        input_summary=input_summary,
+        blockers=[
+            build_blocker(
+                ContentPlanningProposalBlocker,
+                code="quality_gate_failed",
+                label="Zapisany plan wymaga ponownego wygenerowania",
+                reason="Ostatnia wersja nie jest użyteczną strukturą odpowiedzi dla czytelnika.",
+                next_step="Uruchom plan ponownie; poprzednia wersja nie jest gotowa do review.",
+                source_codes=errors,
+            )
+        ],
+    )
+
+
 def _response_for_current_proposal(
     *,
     planning_input: ContentPlanningInput,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
     input_summary: ContentPlanningInputSummary,
     latest: ContentPlanningProposal | None,
     latest_is_current: bool,
@@ -114,6 +164,7 @@ def _response_for_current_proposal(
         return ContentPlanningProposalResponse(
             status="not_generated",
             work_item_id=planning_input.work_item_id,
+            content_kind=content_kind,
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
@@ -123,35 +174,20 @@ def _response_for_current_proposal(
         return ContentPlanningProposalResponse(
             status="stale",
             work_item_id=planning_input.work_item_id,
+            content_kind=content_kind,
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
             blockers=[_stale_input_blocker()],
             safe_next_step="Wygeneruj nową wersję planu z aktualnego wejścia.",
         )
-    quality_errors = proposal_quality_errors(latest)
-    if quality_errors:
-        return _blocked_response(
-            planning_input.work_item_id,
-            service_card_id=service_card_id,
-            planning_input_digest=planning_input.planning_input_digest,
-            input_summary=input_summary,
-            blockers=[
-                build_blocker(
-                    ContentPlanningProposalBlocker,
-                    code="quality_gate_failed",
-                    label="Zapisany plan wymaga ponownego wygenerowania",
-                    reason=(
-                        "Ostatnia wersja nie jest użyteczną strukturą odpowiedzi "
-                        "dla czytelnika."
-                    ),
-                    next_step="Uruchom plan ponownie; poprzednia wersja nie jest gotowa do review.",
-                    source_codes=quality_errors,
-                )
-            ],
-        )
+    if quality_blocked := _quality_blocked_response(
+        planning_input, content_kind, service_card_id, input_summary, latest
+    ):
+        return quality_blocked
     regulatory_blocked = _regulatory_lineage_blocked_response(
         planning_input,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         input_summary=input_summary,
         proposal=latest,
@@ -164,6 +200,7 @@ def _response_for_current_proposal(
         return ContentPlanningProposalResponse(
             status="stale",
             work_item_id=planning_input.work_item_id,
+            content_kind=content_kind,
             service_card_id=service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
             input_summary=input_summary,
@@ -189,6 +226,7 @@ def _response_for_current_proposal(
     return ContentPlanningProposalResponse(
         status="ready",
         work_item_id=planning_input.work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=input_summary,
@@ -202,7 +240,8 @@ def _response_for_current_proposal(
 def _regulatory_lineage_blocked_response(
     planning_input: ContentPlanningInput,
     *,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
     input_summary: ContentPlanningInputSummary,
     proposal: ContentPlanningProposal,
 ) -> ContentPlanningProposalResponse | None:
@@ -211,6 +250,7 @@ def _regulatory_lineage_blocked_response(
         return None
     return _blocked_response(
         planning_input.work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
         input_summary=input_summary,

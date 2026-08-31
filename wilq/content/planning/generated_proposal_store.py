@@ -37,6 +37,7 @@ from wilq.content.planning.generated_proposal_rows import (
     validate_generated_proposal as _validate_generated_proposal,
 )
 from wilq.content.planning.generated_proposal_schema import ensure_generated_proposal_schema
+from wilq.content.planning.generated_proposal_subject_read import PlanningSubjectReadMixin
 from wilq.content.planning.generation_claim_store import (
     refresh_preparation_binding_columns_present,
 )
@@ -121,7 +122,10 @@ class _ContentPlanningProposalConvenienceMixin:
         return self.latest(work_item_id, service_card_id)
 
 
-class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
+class ContentPlanningProposalStore(
+    _ContentPlanningProposalConvenienceMixin,
+    PlanningSubjectReadMixin,
+):
     def __init__(self, path: Path) -> None:
         self.path = path
 
@@ -297,30 +301,11 @@ class ContentPlanningProposalStore(_ContentPlanningProposalConvenienceMixin):
         excluding_digest: str | None = None,
     ) -> ContentPlanningProposalResponse | None:
         """Read the current sibling job without accepting a stale worker."""
-        connection = self._read_connection()
-        if connection is None or not _table_exists(connection, "content_planning_generation_jobs"):
-            return None
-        try:
-            with connection:
-                rows = connection.execute(
-                    """
-                    SELECT planning_input_digest, payload_json, updated_at, work_item_id,
-                           service_card_id, content_kind, subject_key
-                    FROM content_planning_generation_jobs
-                    WHERE work_item_id = ? AND service_card_id = ? AND status = 'queued'
-                    ORDER BY updated_at DESC
-                    """,
-                    (work_item_id, service_card_id),
-                ).fetchall()
-        finally:
-            connection.close()
-        for row in rows:
-            if excluding_digest and row["planning_input_digest"] == excluding_digest:
-                continue
-            if _job_is_stale(row["updated_at"]):
-                continue
-            return _response_from_job_row(row)
-        return None
+        return self.active_subject_generation_response(
+            work_item_id,
+            ContentPlanningSubject(service_card_id=service_card_id),
+            excluding_digest=excluding_digest,
+        )
 
     def enqueue(
         self,

@@ -323,6 +323,17 @@ def resolve_planning(
         )
     if request.refresh_preparation_authorization_id is None:
         return unclassified_or_refresh_block(store, work_item_id)
+    if request.service_card_id is None:
+        return RefreshPreparationRuntimeBlocked(
+            work_item_id,
+            blocker(
+                "refresh_preparation_authorization_foreign",
+                "Autoryzacja editorial nie została jeszcze aktywowana",
+                "Publiczny planning obsługuje editorial, ale sklasyfikowany refresh wymaga "
+                "jeszcze persisted content-kind receipt.",
+                "Użyj zwykłego workflow editorial albo dokończ migrację authority receipt.",
+            ),
+        )
     return resolve_authorized_context(
         store=store,
         snapshot_loader=snapshot_loader,
@@ -587,6 +598,7 @@ def planning_block_response(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=resolution.work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         blockers=[
             ContentPlanningProposalBlocker(

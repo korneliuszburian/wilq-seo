@@ -24,6 +24,7 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.refresh_preparation import (
     ContentRefreshPreparationAuthority,
@@ -162,6 +163,7 @@ def _legacy_unbound_refresh_reconciliation_status(
         return None
     return _legacy_unbound_refresh_reconciliation_block(
         work_item_id=work_item_id,
+        content_kind="service",
         service_card_id=context.service_card_id,
     )
 
@@ -221,7 +223,8 @@ def _latest_unbound_refresh_planning_context(
 def _legacy_unbound_refresh_reconciliation_block(
     *,
     work_item_id: str,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
 ) -> ContentPlanningProposalResponse:
     blocker = ContentPlanningProposalBlocker(
         code="refresh_preparation_proposal_binding_mismatch",
@@ -238,6 +241,7 @@ def _legacy_unbound_refresh_reconciliation_block(
     )
     return ContentPlanningProposalResponse(
         status="blocked",
+        content_kind=content_kind,
         work_item_id=work_item_id,
         service_card_id=service_card_id,
         blockers=[blocker],
@@ -250,17 +254,21 @@ def _has_exact_unbound_refresh_legacy_plan(
     request: ContentPlanningProposalRequest,
     work_item_id: str,
 ) -> bool:
-    proposal = store.for_input(
+    subject = ContentPlanningSubject(
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+    )
+    proposal = store.for_subject_input(
         work_item_id,
-        request.service_card_id,
+        subject,
         request.expected_planning_input_digest,
     )
     if proposal is not None and proposal.refresh_preparation_binding is None:
         return True
     try:
-        queued = store.queued_response(
+        queued = store.queued_subject_response(
             work_item_id,
-            request.service_card_id,
+            subject,
             request.expected_planning_input_digest,
         )
     except ValueError:
@@ -315,6 +323,7 @@ def _bound_refresh_status_block(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=binding.content_kind,
         service_card_id=binding.service_card_id,
         blockers=[blocker],
         safe_next_step=blocker.next_step,
@@ -373,12 +382,11 @@ def _generate_authorized_refresh_planning_proposal(
     authority: ContentRefreshPreparationAuthority,
     initial_resolution: RefreshPreparationRuntimeAuthorized,
 ) -> ContentPlanningProposalResponse | JSONResponse:
-    """Queue a classified refresh only after its exact authority has been rebuilt."""
-
     store = content_planning_proposal_store()
     if _has_exact_unbound_refresh_legacy_plan(store, request, work_item_id):
         response = _legacy_unbound_refresh_reconciliation_block(
             work_item_id=work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
         )
         return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
@@ -396,6 +404,7 @@ def _generate_authorized_refresh_planning_proposal(
         if _is_stale_mapping_response(existing_response):
             response = _authorized_stale_mapping_reconciliation_block(
                 work_item_id=work_item_id,
+                content_kind=request.content_kind,
                 service_card_id=request.service_card_id,
             )
             return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
@@ -420,6 +429,7 @@ def _generate_authorized_refresh_planning_proposal(
         response = ContentPlanningProposalResponse(
             status="blocked",
             work_item_id=work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             blockers=[blocker],
             safe_next_step=blocker.next_step,
@@ -438,6 +448,7 @@ def _generate_authorized_refresh_planning_proposal(
     if planning_input is None:
         return planning_generation_queue.planning_generation_failure_response(
             work_item_id=work_item_id,
+            content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=request.expected_planning_input_digest,
             input_summary=None,
@@ -479,7 +490,8 @@ def _is_stale_mapping_response(response: ContentPlanningProposalResponse) -> boo
 def _authorized_stale_mapping_reconciliation_block(
     *,
     work_item_id: str,
-    service_card_id: str,
+    content_kind: PlanningContentKind,
+    service_card_id: str | None,
 ) -> ContentPlanningProposalResponse:
     blocker = ContentPlanningProposalBlocker(
         code="refresh_preparation_proposal_binding_mismatch",
@@ -496,6 +508,7 @@ def _authorized_stale_mapping_reconciliation_block(
     return ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=content_kind,
         service_card_id=service_card_id,
         blockers=[blocker],
         safe_next_step=blocker.next_step,
@@ -509,6 +522,8 @@ def _canonical_refresh_preparation_authority() -> ContentRefreshPreparationAutho
 def _unknown_service_card_response(
     *, work_item_id: str, request: ContentPlanningProposalRequest
 ) -> JSONResponse | None:
+    if request.content_kind == "editorial":
+        return None
     if any(
         card.id == request.service_card_id and card.card_type == "service"
         for card in ekologus_content_knowledge_cards()
@@ -517,6 +532,7 @@ def _unknown_service_card_response(
     unknown = ContentPlanningProposalResponse(
         status="blocked",
         work_item_id=work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         blockers=[
             ContentPlanningProposalBlocker(
@@ -539,6 +555,7 @@ def _zero_digest_response(
     stale = ContentPlanningProposalResponse(
         status="stale",
         work_item_id=work_item_id,
+        content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         blockers=[
             ContentPlanningProposalBlocker(
