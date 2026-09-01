@@ -478,6 +478,65 @@ def test_editor_child_rejects_foreign_component_lineage() -> None:
             approved_source_urls={source.source_fact_id: source.source_url},
         )
 
+    inline_link = request.model_copy(
+        update={
+            "faq": [
+                request.faq[0].model_copy(
+                    update={"answer_markdown": "Sprawdź [źródło](https://example.test)."}
+                )
+            ]
+        }
+    )
+    with pytest.raises(ValueError, match="inline links"):
+        validate_full_document_child(
+            inline_link,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_editor_child_rejects_removing_still_used_official_source() -> None:
+    revision, source, request, _page_assets = _full_document_child_fixture()
+    second_source = source.model_copy(
+        update={
+            "source_fact_id": "regulatory_source_fact_second",
+            "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text.pdf",
+            "evidence_ids": ["ev_second"],
+        }
+    )
+    revision = revision.model_copy(
+        update={
+            "official_source_references": [source, second_source],
+            "sections": [
+                revision.sections[0].model_copy(
+                    update={"evidence_ids": [*revision.sections[0].evidence_ids, "ev_second"]}
+                ),
+                revision.sections[1],
+            ],
+        }
+    )
+    request = request.model_copy(
+        update={
+            "sections": [
+                request.sections[0].model_copy(
+                    update={"evidence_ids": [*request.sections[0].evidence_ids, "ev_second"]}
+                )
+            ]
+        }
+    )
+
+    with pytest.raises(ValueError, match="pełnego pokrycia regulacyjnego"):
+        validate_full_document_child(
+            request,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={
+                source.source_fact_id: source.source_url,
+                second_source.source_fact_id: second_source.source_url,
+            },
+        )
+
 
 def test_editor_child_rejects_stale_full_document_context() -> None:
     revision, source, request, _page_assets = _full_document_child_fixture()

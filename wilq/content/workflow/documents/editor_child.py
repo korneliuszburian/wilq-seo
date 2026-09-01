@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
-from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    validate_no_inline_link,
+)
 from wilq.security.redaction import redact_mapping
 
 
@@ -89,6 +92,9 @@ def _validate_faq(
         for item in faq
     ):
         raise ValueError("FAQ potomnej wersji zawiera obcą lineage.")
+    for item in faq:
+        validate_no_inline_link(item.question)
+        validate_no_inline_link(item.answer_markdown)
 
 
 def _validate_official_sources(
@@ -105,6 +111,28 @@ def _validate_official_sources(
         parent_by_id
     ):
         raise ValueError("Źródła oficjalne potomnej wersji muszą pochodzić z wersji bazowej.")
+    removed_references = [
+        item for source_fact_id, item in parent_by_id.items() if source_fact_id not in submitted_ids
+    ]
+    removed_evidence = {
+        evidence_id for item in removed_references for evidence_id in item.evidence_ids
+    }
+    used_evidence = revision_evidence_ids_from_request(request, latest_revision)
+    parent_requirements = {
+        requirement_id
+        for item in latest_revision.official_source_references
+        for requirement_id in item.regulatory_requirement_ids
+    }
+    retained_requirements = {
+        requirement_id for item in references for requirement_id in item.regulatory_requirement_ids
+    }
+    if removed_evidence.intersection(used_evidence) or not parent_requirements.issubset(
+        retained_requirements
+    ):
+        raise ValueError(
+            "Usunięcie źródła oficjalnego wymaga usunięcia jego evidence i zachowania "
+            "pełnego pokrycia regulacyjnego."
+        )
     for reference in references:
         parent = parent_by_id[reference.source_fact_id]
         if (
@@ -127,6 +155,22 @@ def revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
             *(faq.evidence_ids for faq in revision.faq),
             *(cta.evidence_ids for cta in revision.cta_blocks),
             *(link.evidence_ids for link in revision.internal_links),
+        )
+        for evidence_id in evidence_ids
+    }
+
+
+def revision_evidence_ids_from_request(
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision,
+) -> set[str]:
+    return {
+        evidence_id
+        for evidence_ids in (
+            *(section.evidence_ids for section in request.sections),
+            *(faq.evidence_ids for faq in request.faq or latest_revision.faq),
+            *(cta.evidence_ids for cta in latest_revision.cta_blocks),
+            *(link.evidence_ids for link in latest_revision.internal_links),
         )
         for evidence_id in evidence_ids
     }
