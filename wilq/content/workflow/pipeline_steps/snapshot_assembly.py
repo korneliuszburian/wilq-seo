@@ -361,7 +361,11 @@ def _gate_revision_workspace(
     *,
     material_confidence: str | None = None,
 ) -> ContentDraftRevisionWorkspace:
-    if material_confidence == "review_required" and workspace.latest_revision is not None:
+    if (
+        material_confidence == "review_required"
+        and workspace.latest_revision is not None
+        and not workspace.latest_revision.official_source_references
+    ):
         return workspace.model_copy(
             update={
                 "can_review": False,
