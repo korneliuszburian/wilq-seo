@@ -51,9 +51,7 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
         ),
     )
 
-    result = content_workflow_router.semantic_review_snapshot_for_work_item_or_404(
-        work_item_id
-    )
+    result = content_workflow_router.semantic_review_snapshot_for_work_item_or_404(work_item_id)
 
     assert result is expected_snapshot
     assert len(canonical_calls) == 1
@@ -90,3 +88,35 @@ def test_legacy_semantic_review_snapshot_keeps_default_loader(
         content_workflow_router.semantic_review_snapshot_for_work_item_or_404(work_item_id)
         is expected_snapshot
     )
+
+
+def test_refresh_bound_editorial_snapshot_prefers_revision_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    work_item_id = "content_work_item_editorial"
+    revision_state = SimpleNamespace(
+        latest_revision=SimpleNamespace(
+            refresh_preparation_binding=SimpleNamespace(service_card_id=None)
+        )
+    )
+    expected_snapshot = object()
+    observed_kwargs: dict[str, object] = {}
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_workflow_store",
+        lambda: SimpleNamespace(load_draft_revision_state=lambda _work_item_id: revision_state),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_snapshot_for_work_item_or_404",
+        lambda _work_item_id, **kwargs: observed_kwargs.update(kwargs) or expected_snapshot,
+    )
+
+    result = content_workflow_router.semantic_review_snapshot_for_work_item_or_404(work_item_id)
+
+    assert result is expected_snapshot
+    assert observed_kwargs == {
+        "revision_state_override": revision_state,
+        "service_card_id_override": None,
+        "prefer_revision_bound_proposal": True,
+    }
