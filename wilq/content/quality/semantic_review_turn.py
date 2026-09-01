@@ -129,7 +129,13 @@ def semantic_review_turn_request(
         for section in raw_proposal_sections
         if isinstance(section, dict) and section.get("section_id") in revision_ids
     ]
+    merged_away_sections = [
+        {**section, "review_target": "whole_document"}
+        for section in raw_proposal_sections
+        if isinstance(section, dict) and section.get("section_id") not in revision_ids
+    ]
     proposal_context["sections"] = proposal_sections
+    proposal_context["merged_away_sections"] = merged_away_sections
     proposal_ids = [
         section.get("section_id") for section in proposal_sections if isinstance(section, dict)
     ]

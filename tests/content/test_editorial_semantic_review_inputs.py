@@ -109,6 +109,11 @@ def test_semantic_turn_filters_sections_merged_by_editor_child() -> None:
 
     sections = json.loads(request.untrusted_context)["approved_planning_proposal"]["sections"]
     assert [section["section_id"] for section in sections] == ["retained"]
+    merged = json.loads(request.untrusted_context)["approved_planning_proposal"][
+        "merged_away_sections"
+    ]
+    assert merged[0]["section_id"] == "merged_away"
+    assert merged[0]["review_target"] == "whole_document"
 
 
 def test_semantic_turn_rejects_nonempty_plan_compacted_to_no_sections() -> None:
@@ -163,6 +168,7 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
                 purpose="Odpowiedz na pytanie.",
                 inventory_disposition="rewrite",
                 evidence_ids=["ev_source"],
+                regulatory_requirement_ids=["monitoring_requirement"],
             ),
         ]
     )
@@ -177,14 +183,27 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
         ]
     )
     planning_input = ContentPlanningInput.model_construct(
-        regulatory_coverage=SimpleNamespace(source_facts=[], requirement_coverage=[])
+        regulatory_coverage=SimpleNamespace(
+            source_facts=[
+                SimpleNamespace(
+                    source_id="fact_monitoring",
+                    extracted_fact="wymagany monitoring gleby wód gruntowych instalacji",
+                )
+            ],
+            requirement_coverage=[
+                SimpleNamespace(
+                    requirement_id="monitoring_requirement",
+                    source_fact_ids=["fact_monitoring"],
+                )
+            ],
+        )
     )
 
-    assert (
-        regulatory_quality_issues(
-            revision=revision,
-            planning_input=planning_input,
-            proposal=proposal,
-        )
-        == []
+    issues = regulatory_quality_issues(
+        revision=revision,
+        planning_input=planning_input,
+        proposal=proposal,
     )
+    assert ("credibility", "whole_document") in [
+        (dimension, target) for dimension, target, _reason in issues
+    ]
