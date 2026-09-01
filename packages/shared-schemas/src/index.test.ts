@@ -4619,6 +4619,15 @@ describe("Content work item workflow schemas", () => {
       }).success
     ).toBe(true);
     expect(
+      ContentDraftRevisionConflictSchema.safeParse({
+        status: "conflict",
+        code: "stale_context",
+        current_revision_id: "content_revision_bdo_2",
+        current_digest: "a".repeat(64),
+        safe_next_step: "Odśwież bieżący kontekst."
+      }).success
+    ).toBe(true);
+    expect(
       ContentNewPageRevisionReviewConflictSchema.safeParse({
         status: "conflict",
         code: "stale_revision",

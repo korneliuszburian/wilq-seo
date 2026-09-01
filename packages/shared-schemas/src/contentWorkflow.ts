@@ -3505,6 +3505,7 @@ export const ContentDraftRevisionConflictSchema = z.object({
     "revision_not_reviewable",
     "apply_in_progress",
     "stale_base",
+    "stale_context",
     "revision_not_found",
     "stale_revision",
     "stale_review",
