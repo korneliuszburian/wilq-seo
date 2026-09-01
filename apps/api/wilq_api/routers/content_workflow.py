@@ -119,12 +119,7 @@ def semantic_review_snapshot_for_work_item_or_404(
     )
     if not isinstance(resolved, RefreshPreparationRuntimeAuthorized):
         return canonical
-    return resolved.snapshot.model_copy(
-        update={
-            "planning_workspace": canonical.planning_workspace,
-            "revision_workspace": canonical.revision_workspace,
-        }
-    )
+    return resolved.snapshot
 
 
 @router.get(

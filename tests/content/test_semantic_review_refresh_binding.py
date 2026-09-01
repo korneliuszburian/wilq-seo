@@ -132,3 +132,48 @@ def test_refresh_bound_editorial_snapshot_prefers_revision_plan(
         "service_card_id_override": None,
         "prefer_revision_bound_proposal": True,
     }
+
+
+def test_authorized_refresh_snapshot_keeps_its_binding_aware_workspace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    work_item_id = "content_work_item_editorial"
+    binding = SimpleNamespace(
+        content_kind="editorial",
+        service_card_id=None,
+        planning_input_digest="a" * 64,
+        authorization_id="content_refresh_preparation_authorization_editorial",
+        authorization_digest="b" * 64,
+    )
+    revision_state = SimpleNamespace(
+        latest_revision=SimpleNamespace(refresh_preparation_binding=binding)
+    )
+
+    class Authorized:
+        def __init__(self, snapshot: object) -> None:
+            self.snapshot = snapshot
+
+    binding_aware_snapshot = object()
+    canonical_snapshot = object()
+    resolved = Authorized(binding_aware_snapshot)
+    monkeypatch.setattr(content_workflow_router, "RefreshPreparationRuntimeAuthorized", Authorized)
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_workflow_store",
+        lambda: SimpleNamespace(load_draft_revision_state=lambda _work_item_id: revision_state),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_refresh_preparation_authority",
+        lambda: SimpleNamespace(resolve_planning=lambda *_args: resolved),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "_snapshot_for_work_item_or_404",
+        lambda *_args, **_kwargs: canonical_snapshot,
+    )
+
+    assert (
+        content_workflow_router.semantic_review_snapshot_for_work_item_or_404(work_item_id)
+        is binding_aware_snapshot
+    )
