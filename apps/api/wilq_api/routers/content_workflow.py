@@ -226,7 +226,7 @@ def content_work_item_draft_revision_save(
     work_item_id: str,
     request: ContentDraftRevisionSaveRequest,
 ) -> ContentDraftRevisionSaveResponse | JSONResponse:
-    snapshot = _snapshot_for_work_item_or_404(work_item_id)
+    snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
     draft_package = snapshot.draft_package.draft_package_result.draft_package
     item = snapshot.preflight.item
     final_canonical_url = item.final_canonical_url or item.intended_final_url
@@ -297,7 +297,9 @@ def content_work_item_draft_revision_save(
     )
     try:
         with current_editor_draft_context_guard(
-            lambda: _editor_save_context(_snapshot_for_work_item_or_404(work_item_id))
+            lambda: _editor_save_context(
+                semantic_review_snapshot_for_work_item_or_404(work_item_id)
+            )
         ):
             result = content_workflow_store().append_draft_revision(command)
     except RefreshPreparationAtomicityError:
@@ -313,7 +315,7 @@ def content_work_item_draft_revision_save(
     if result.revision is None:
         raise RuntimeError("Successful revision append is missing the saved revision.")
 
-    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    refreshed = semantic_review_snapshot_for_work_item_or_404(work_item_id)
     return ContentDraftRevisionSaveResponse(
         status=result.status,
         revision=result.revision,
