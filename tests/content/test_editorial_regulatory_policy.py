@@ -147,6 +147,37 @@ def test_reach_clp_profile_rejects_partial_regulatory_phrases(
     )
 
 
+def test_reach_clp_profile_accepts_exact_reviewed_fact_variants() -> None:
+    profile = regulatory_content_profile(
+        service_card_id=None,
+        canonical_path=REACH_CLP_PATH,
+    )
+    assert profile is not None
+    reviewed_facts = {
+        "reach_registration_scope": (
+            "Producent lub importer substancji w ilości co najmniej 1 tony rocznie "
+            "sprawdza obowiązek rejestracji oraz wyłączenia i zwolnienia."
+        ),
+        "reach_sds_scope": (
+            "Karta charakterystyki przekazuje informacje o zagrożeniach i bezpiecznym "
+            "stosowaniu; sprawdź aktualną wersję karty i informacje o jej aktualizacji."
+        ),
+        "clp_classification_labelling": (
+            "Klasyfikacja dotyczy właściwości stwarzających zagrożenie; producent "
+            "odpowiada za oznakowanie i opakowanie. Jest odrębna od oceny narażenia."
+        ),
+    }
+
+    for requirement_id, text in reviewed_facts.items():
+        requirement = next(
+            item for item in profile.requirements if item.id == requirement_id
+        )
+        assert regulatory_requirement_assertion_errors(
+            requirement=requirement,
+            text=text,
+        ) == []
+
+
 def test_unprofiled_editorial_scope_does_not_invent_a_regulatory_gate() -> None:
     coverage = regulatory_content_coverage(
         service_card_id=None,
