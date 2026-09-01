@@ -48,6 +48,12 @@ from wilq.content.quality.semantic_review_guards import (
     regulatory_quality_issues,
     repetition_quality_issues,
 )
+from wilq.content.quality.semantic_review_runtime import (
+    finish_semantic_run as _finish_run,
+)
+from wilq.content.quality.semantic_review_runtime import (
+    semantic_runtime_trace as _trace,
+)
 from wilq.content.quality.semantic_review_store import (
     ContentSemanticReviewStore,
     SemanticReviewConflict,
@@ -58,7 +64,6 @@ from wilq.content.quality.semantic_review_turn import semantic_review_turn_reque
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.content.workflow.runtime.codex_run_lifecycle import (
-    finish_codex_run,
     runtime_error,
 )
 from wilq.schemas import CodexRun
@@ -472,13 +477,14 @@ def _apply_deterministic_quality_guards(
     inputs: _SemanticInputs,
     output: ContentSemanticReviewModelOutput,
 ) -> ContentSemanticReviewModelOutput:
-    issues: list[tuple[ContentSemanticDimension, str, str]] = []
+    issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
     if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
         issues.append(
             (
                 "conversion_clarity",
                 "cta_blocks",
                 "Brakuje wymaganych bloków CTA z zatwierdzonego planu.",
+                [],
             )
         )
     section_bodies = {
@@ -492,19 +498,23 @@ def _apply_deterministic_quality_guards(
             proposal=inputs.proposal,
         )
     )
-    issues.extend(repetition_quality_issues(section_bodies))
-    issues.extend(readability_quality_issues(revision=inputs.revision))
-    grouped: dict[ContentSemanticDimension, tuple[list[str], str]] = {}
-    for dimension, target, reason in issues:
-        targets, previous_reason = grouped.get(dimension, ([], reason))
+    issues.extend((*issue, []) for issue in repetition_quality_issues(section_bodies))
+    issues.extend((*issue, []) for issue in readability_quality_issues(revision=inputs.revision))
+    grouped: dict[ContentSemanticDimension, tuple[list[str], list[str], list[str]]] = {}
+    for dimension, target, reason, evidence_ids in issues:
+        targets, reasons, grouped_evidence_ids = grouped.get(dimension, ([], [], []))
         if target not in targets:
             targets.append(target)
-        grouped[dimension] = (targets, previous_reason)
+        if reason not in reasons:
+            reasons.append(reason)
+        grouped_evidence_ids = list(dict.fromkeys([*grouped_evidence_ids, *evidence_ids]))
+        grouped[dimension] = (targets, reasons, grouped_evidence_ids)
     existing = {finding.dimension for finding in output.findings}
     dimensions = list(output.dimensions)
     findings = list(output.findings)
     changed = False
-    for dimension, (targets, reason) in grouped.items():
+    for dimension, (targets, reasons, evidence_ids) in grouped.items():
+        reason = " ".join(reasons)
         if dimension in existing:
             for index, finding in enumerate(findings):
                 if finding.dimension == dimension:
@@ -513,6 +523,9 @@ def _apply_deterministic_quality_guards(
                             "affected_targets": targets,
                             "reason": reason,
                             "instruction": "Popraw wskazany problem i uruchom review ponownie.",
+                            "evidence_ids": list(
+                                dict.fromkeys([*finding.evidence_ids, *evidence_ids])
+                            ),
                         }
                     )
                     break
@@ -550,7 +563,7 @@ def _apply_deterministic_quality_guards(
                 reason=reason,
                 instruction="Popraw wskazany problem i uruchom review ponownie.",
                 affected_targets=targets,
-                evidence_ids=[],
+                evidence_ids=evidence_ids,
             )
         )
     if not issues or not changed:
@@ -769,27 +782,6 @@ def _finish_with_blocker(
         blockers=[blocker],
         run=run,
         runtime=trace,
-    )
-
-
-def _finish_run(
-    store: LocalStateStore,
-    run: CodexRun,
-    *,
-    status: Literal["blocked", "failed"],
-    error: str,
-) -> CodexRun:
-    return finish_codex_run(store, run, status=status, error=error)
-
-
-def _trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
     )
 
 
