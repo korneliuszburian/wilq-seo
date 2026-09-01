@@ -15,6 +15,7 @@ from wilq.content.workflow.decisions.planning import (
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionFaqItem,
     ContentDraftRevisionSection,
 )
 
@@ -233,3 +234,35 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
     assert "monitoring_requirement" in credibility[2]
     assert "second_missing_requirement" in credibility[2]
     assert credibility[3] == ["ev_source", "ev_second"]
+    _assert_faq_covers_merged_requirements(revision, planning_input, proposal)
+
+
+def _assert_faq_covers_merged_requirements(
+    revision: ContentDraftRevision,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> None:
+    covered_in_faq = revision.model_copy(
+        update={
+            "faq": [
+                ContentDraftRevisionFaqItem(
+                    faq_id="faq_monitoring",
+                    question="Jakie wymagania zachować?",
+                    answer_markdown=(
+                        "Wymagany monitoring gleby i wód gruntowych instalacji oraz "
+                        "obowiązkowa analiza emisji hałasu przemysłowego."
+                    ),
+                    evidence_ids=["ev_source", "ev_second"],
+                )
+            ]
+        }
+    )
+    covered_issues = regulatory_quality_issues(
+        revision=covered_in_faq,
+        planning_input=planning_input,
+        proposal=proposal,
+    )
+    assert not any(
+        dimension == "credibility" and target == "whole_document"
+        for dimension, target, _reason, _evidence_ids in covered_issues
+    )

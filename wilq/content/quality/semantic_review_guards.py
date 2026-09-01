@@ -115,7 +115,7 @@ def _merged_section_regulatory_issues(
 ) -> list[tuple[ContentSemanticDimension, str, str, list[str]]]:
     revision_ids = {section.section_id for section in revision.sections}
     revision_evidence_ids = _revision_evidence_ids(revision)
-    document_tokens = _semantic_tokens("\n".join(x.body_markdown for x in revision.sections))
+    document_tokens = _whole_document_tokens(revision)
     issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
     for proposal_section in draftable_planning_sections(proposal.sections):
         if proposal_section.section_id in revision_ids:
@@ -170,6 +170,28 @@ def _merged_section_regulatory_issues(
                 )
             )
     return issues
+
+
+def _whole_document_tokens(revision: ContentDraftRevision) -> set[str]:
+    page_assets = revision.page_assets
+    values = [
+        *(section.heading for section in revision.sections),
+        *(section.body_markdown for section in revision.sections),
+        *(item.question for item in revision.faq),
+        *(item.answer_markdown for item in revision.faq),
+        *(item.body_markdown for item in revision.cta_blocks),
+    ]
+    if page_assets is not None:
+        values.extend(
+            [
+                page_assets.wordpress_title,
+                page_assets.meta_title,
+                page_assets.meta_description,
+                page_assets.h1,
+                page_assets.lead,
+            ]
+        )
+    return _semantic_tokens("\n".join(values))
 
 
 def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
