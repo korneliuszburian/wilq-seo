@@ -90,25 +90,34 @@ def test_generation_requests_accept_explicit_null_refresh_authorization_pair(mod
     assert parsed.expected_refresh_preparation_authorization_digest is None
 
 
-@pytest.mark.parametrize(
-    "regeneration",
-    [
-        {"regenerate_stale_mapping": True},
-        {"regenerate_after_review": True, "operator_hint": "Popraw wskazane mapowanie."},
-    ],
-)
-def test_refresh_authorization_cannot_authorize_another_planning_turn(
-    regeneration: dict[str, object],
-) -> None:
-    with pytest.raises(ValidationError, match="cannot authorize plan regeneration"):
+def test_refresh_authorization_cannot_authorize_stale_mapping_regeneration() -> None:
+    with pytest.raises(ValidationError, match="cannot authorize stale mapping regeneration"):
         ContentPlanningProposalRequest(
             service_card_id=SERVICE_CARD_ID,
             expected_planning_input_digest=INPUT_DIGEST,
             requested_by="wilku",
             refresh_preparation_authorization_id="content_refresh_preparation_authorization_test",
             expected_refresh_preparation_authorization_digest="e" * 64,
-            **regeneration,
+            regenerate_stale_mapping=True,
         )
+
+
+def test_refresh_authorization_can_bind_an_exact_review_repair_turn() -> None:
+    request = ContentPlanningProposalRequest(
+        content_kind="editorial",
+        service_card_id=None,
+        expected_planning_input_digest=INPUT_DIGEST,
+        requested_by="wilku",
+        operator_hint="Usuń meta-sekcje wskazane w review.",
+        regenerate_after_review=True,
+        refresh_preparation_authorization_id="content_refresh_preparation_authorization_test",
+        expected_refresh_preparation_authorization_digest="e" * 64,
+    )
+
+    assert request.regenerate_after_review is True
+    assert request.refresh_preparation_authorization_id == (
+        "content_refresh_preparation_authorization_test"
+    )
 
 
 @pytest.mark.parametrize(

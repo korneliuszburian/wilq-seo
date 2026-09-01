@@ -67,7 +67,9 @@ def persist_generated_proposal(
         store_status, stored = store.save_generated(
             proposal,
             completed_run,
-            replace_existing_exact_input=request.regenerate_stale_mapping,
+            replace_existing_exact_input=(
+                request.regenerate_stale_mapping or request.regenerate_after_review
+            ),
         )
     except RefreshPreparationAtomicityError as error:
         blocker = build_blocker(

@@ -584,7 +584,7 @@ def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruct
     )
     snapshot = SimpleNamespace(work_item_id="work-item")
     app = FastAPI()
-    replacement_flags: list[bool] = []
+    replacement_flags: list[tuple[bool, bool]] = []
     generating = ContentPlanningProposalResponse(
         status="generating",
         work_item_id="work-item",
@@ -610,7 +610,12 @@ def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruct
     )
 
     def prepare(**kwargs):
-        replacement_flags.append(kwargs["request"].regenerate_after_review)
+        replacement_flags.append(
+            (
+                kwargs["request"].regenerate_after_review,
+                kwargs["request"].regenerate_stale_mapping,
+            )
+        )
         return None, generating
 
     monkeypatch.setattr(planning_generation_queue, "_prepare_generation", prepare)
@@ -631,7 +636,60 @@ def test_planning_post_regenerates_exact_plan_after_review_with_visible_instruct
 
     assert response.status_code == 200
     assert response.json()["status"] == "generating"
-    assert replacement_flags == [True]
+    assert replacement_flags == [(True, False)]
+
+
+def test_authorized_review_repair_does_not_gain_stale_mapping_regeneration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    existing = _proposal(digest="a" * 64, service_card_id="service-a")
+    current = ContentPlanningProposalResponse(
+        status="stale",
+        work_item_id="work-item",
+        service_card_id="service-a",
+        planning_input_digest="a" * 64,
+        input_summary=_planning_summary(),
+        proposal=existing,
+        blockers=[
+            ContentPlanningProposalBlocker(
+                code="stale_input",
+                label="Mapa istniejącej strony wymaga odświeżenia",
+                reason="Mapa inventory przestała być bieżąca.",
+                next_step="Wygeneruj nową mapę.",
+            )
+        ],
+        safe_next_step="Wygeneruj nową mapę.",
+    )
+    request = ContentPlanningProposalRequest(
+        service_card_id="service-a",
+        expected_planning_input_digest="a" * 64,
+        operator_hint="Usuń meta-sekcje wskazane w review.",
+        requested_by="Wilku",
+        regenerate_after_review=True,
+        refresh_preparation_authorization_id=(
+            "content_refresh_preparation_authorization_test"
+        ),
+        expected_refresh_preparation_authorization_digest="e" * 64,
+    )
+    monkeypatch.setattr(
+        planning_generation_queue,
+        "read_content_planning_proposal",
+        lambda **_kwargs: current,
+    )
+
+    _snapshot, effective, response = (
+        planning_generation_queue.existing_planning_generation_state(
+            work_item_id="work-item",
+            request=request,
+            snapshot_loader=lambda _work_item_id: SimpleNamespace(work_item_id="work-item"),
+            store=SimpleNamespace(for_input=lambda *_args: existing),
+            allow_automatic_stale_mapping_regeneration=False,
+        )
+    )
+
+    assert response is None
+    assert effective.regenerate_after_review is True
+    assert effective.regenerate_stale_mapping is False
 
 
 def test_planning_review_regeneration_requires_visible_instruction() -> None:
