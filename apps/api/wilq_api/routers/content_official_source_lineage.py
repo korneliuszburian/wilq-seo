@@ -5,7 +5,10 @@ from collections.abc import Callable
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInputBuildResult,
+    build_content_planning_input,
+)
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -20,6 +23,7 @@ from wilq.content.workflow.documents.official_source_lineage import (
 from wilq.content.workflow.documents.official_source_lineage_store import (
     content_official_source_lineage_store,
 )
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 ContentOfficialSourceLineageSnapshotLoader = Callable[
     [str], ContentWorkItemWorkflowSnapshotResponse
@@ -58,9 +62,7 @@ def register_content_official_source_lineage_route(
             )
         if (
             base_revision.schema_version != "wilq_content_draft_revision_v2"
-            or base_revision.official_source_references
             or workspace.status not in {"unreviewed", "deferred"}
-            or not workspace.context_current
         ):
             return _conflict(
                 snapshot,
@@ -69,16 +71,13 @@ def register_content_official_source_lineage_route(
                 "rewizji bez zapisanej lineage.",
             )
         planning = snapshot.planning_workspace
-        if planning is None or base_revision.service_card_id is None:
+        if planning is None:
             return _conflict(
                 snapshot,
                 "official_source_lineage_unavailable",
                 "Odśwież bieżący plan i wybór usługi przed uzupełnieniem źródeł urzędowych.",
             )
-        planning_input_result = build_content_planning_input(
-            with_explicit_content_service_selection(snapshot, base_revision.service_card_id),
-            service_card_id=base_revision.service_card_id,
-        )
+        planning_input_result = _planning_input_for_lineage_rebase(snapshot, base_revision)
         if planning_input_result.planning_input is None or planning_input_result.blockers:
             return _conflict(
                 snapshot,
@@ -102,7 +101,9 @@ def register_content_official_source_lineage_route(
         expected_review_decision_id = (
             None
             if workspace.status == "unreviewed"
-            else None if workspace.latest_review is None else workspace.latest_review.decision_id
+            else None
+            if workspace.latest_review is None
+            else workspace.latest_review.decision_id
         )
         result = content_official_source_lineage_store().append_rebase(
             command,
@@ -126,6 +127,21 @@ def register_content_official_source_lineage_route(
             revision=result.revision,
             workspace=refreshed_workspace,
         )
+
+
+def _planning_input_for_lineage_rebase(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    base_revision: ContentDraftRevision,
+) -> ContentPlanningInputBuildResult:
+    planning_snapshot = (
+        with_explicit_content_service_selection(snapshot, base_revision.service_card_id)
+        if base_revision.content_kind == "service" and base_revision.service_card_id is not None
+        else snapshot
+    )
+    return build_content_planning_input(
+        planning_snapshot,
+        service_card_id=base_revision.service_card_id,
+    )
 
 
 def _conflict(
