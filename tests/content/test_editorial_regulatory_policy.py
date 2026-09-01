@@ -67,6 +67,12 @@ def test_integrated_permit_article_exposes_current_official_review_candidates() 
         "integrated_permit_pos_eli_2026_08_31_r1",
         "integrated_permit_ekoportal_2026_08_30_r1",
     }
+    ekoportal = next(
+        item
+        for item in candidates
+        if item.candidate_id == "integrated_permit_ekoportal_2026_08_30_r1"
+    )
+    assert ekoportal.requirement_ids == ["integrated_permit_initial_report"]
 
 
 def test_unprofiled_editorial_scope_does_not_invent_a_regulatory_gate() -> None:
