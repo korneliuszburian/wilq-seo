@@ -418,6 +418,52 @@
           ]
         }
       ]
+    },
+    {
+      "id": "integrated_permit_ippc_editorial",
+      "version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "official_source_hosts": ["eli.gov.pl", "www.gov.pl", "eur-lex.europa.eu"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "ippc_current_legal_context",
+          "label": "aktualny kontekst pozwolenia zintegrowanego",
+          "reason": "IPPC jest nazwą historyczną; treść musi wskazać aktualne pozwolenie zintegrowane i reżim IED bez przenoszenia unijnych zmian wprost na polską procedurę.",
+          "document_assertions": [
+            {"id": "integrated_permit_present", "label": "pozwolenie zintegrowane", "required_any_of": ["pozwolenie zintegrowane"]},
+            {"id": "ippc_historical_term", "label": "historyczny termin IPPC", "required_any_of": ["historycznym terminem IPPC", "IPPC jest nazwą historyczną", "dawnej dyrektywy IPPC"]},
+            {"id": "ied_current_regime", "label": "aktualny reżim IED", "required_any_of": ["reżim IED", "dyrektywy IED", "dyrektywą 2010/75/UE", "dyrektywa 2010/75/UE"]}
+          ]
+        },
+        {
+          "id": "ippc_installation_qualification",
+          "label": "warunkowa kwalifikacja instalacji",
+          "reason": "Obowiązek zależy od rodzaju i skali instalacji oraz progów, a nie od samej nazwy branży.",
+          "document_assertions": [
+            {"id": "installation_case_scope", "label": "indywidualna kwalifikacja", "required_any_of": ["rodzaju i skali instalacji", "konkretnej instalacji", "prog"]}
+          ]
+        },
+        {
+          "id": "ippc_initial_report_conditional",
+          "label": "warunkowy raport początkowy",
+          "reason": "Raport początkowy nie jest uniwersalnym załącznikiem wniosku.",
+          "document_assertions": [
+            {"id": "initial_report_condition", "label": "warunek raportu początkowego", "required_any_of": ["raport początkowy może być wymagany", "raport początkowy jest wymagany, jeżeli", "obowiązek raportu początkowego zależy"]}
+          ]
+        },
+        {
+          "id": "ippc_bat_conclusions",
+          "label": "konkluzje BAT",
+          "reason": "Treść ma odróżniać BREF od konkluzji BAT stosowanych przy ustalaniu warunków pozwolenia.",
+          "document_assertions": [
+            {"id": "bref_present", "label": "dokumenty BREF", "required_any_of": ["BREF"]},
+            {"id": "bat_conclusions_present", "label": "konkluzje BAT", "required_any_of": ["konkluzje BAT"]},
+            {"id": "bref_bat_distinction", "label": "rozróżnienie BREF i konkluzji BAT", "required_any_of": ["BREF nie są konkluzjami BAT", "odróżnić BREF od konkluzji BAT", "BREF od konkluzji BAT"]}
+          ]
+        }
+      ]
     }
   ]
 }

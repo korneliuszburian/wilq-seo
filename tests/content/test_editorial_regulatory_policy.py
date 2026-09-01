@@ -26,6 +26,7 @@ REACH_CLP_PATH = (
     "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-"
     "ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
 )
+IPPC_PATH = "/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"
 
 
 def test_integrated_permit_article_has_exact_required_profile() -> None:
@@ -117,6 +118,93 @@ def test_reach_clp_article_has_exact_editorial_profile_and_official_candidates()
         "reach_sds_gov_pl_2026_09_01_r1",
         "clp_gov_pl_2026_09_01_r1",
     }
+
+
+def test_ippc_article_requires_current_official_regulatory_coverage() -> None:
+    profile = regulatory_content_profile(
+        service_card_id=None,
+        canonical_path=IPPC_PATH,
+    )
+    coverage = regulatory_content_coverage(
+        service_card_id=None,
+        canonical_path=IPPC_PATH,
+        source_facts=(),
+        as_of=date(2026, 9, 1),
+    )
+    candidates = regulatory_review_candidates(
+        service_card_id=None,
+        canonical_path=IPPC_PATH,
+        coverage=coverage,
+        as_of=date(2026, 9, 1),
+    )
+
+    assert profile is not None
+    assert profile.id == "integrated_permit_ippc_editorial"
+    assert {item.id for item in coverage.missing_requirements} == {
+        "ippc_current_legal_context",
+        "ippc_installation_qualification",
+        "ippc_initial_report_conditional",
+        "ippc_bat_conclusions",
+    }
+    assert {item.candidate_id for item in candidates} == {
+        "ippc_pos_eli_2026_09_01_r1",
+        "ippc_installations_gios_2026_09_01_r1",
+        "ippc_bat_pos_eli_2026_09_01_r1",
+        "ippc_ied_context_gios_2026_09_01_r1",
+        "ippc_ied_eurlex_2026_09_01_r1",
+        "ippc_ied_amendment_eurlex_2026_09_01_r1",
+    }
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "IPPC jest określeniem używanym w materiałach branżowych.",
+        "Pozwolenie zintegrowane jest objęte dyrektywą IED.",
+    ],
+)
+def test_ippc_profile_rejects_missing_historical_or_current_context(text: str) -> None:
+    profile = regulatory_content_profile(service_card_id=None, canonical_path=IPPC_PATH)
+    assert profile is not None
+    requirement = next(
+        item for item in profile.requirements if item.id == "ippc_current_legal_context"
+    )
+
+    assert regulatory_requirement_assertion_errors(requirement=requirement, text=text)
+
+
+def test_ippc_profile_requires_historical_ipcc_and_current_ied_context() -> None:
+    profile = regulatory_content_profile(service_card_id=None, canonical_path=IPPC_PATH)
+    assert profile is not None
+    requirement = next(
+        item for item in profile.requirements if item.id == "ippc_current_legal_context"
+    )
+
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Pozwolenie zintegrowane: IPPC jest nazwą historyczną; obecny reżim IED "
+            "wynika z dyrektywy 2010/75/UE."
+        ),
+    ) == []
+
+
+def test_ippc_profile_rejects_bat_text_without_bref_distinction() -> None:
+    profile = regulatory_content_profile(service_card_id=None, canonical_path=IPPC_PATH)
+    assert profile is not None
+    requirement = next(item for item in profile.requirements if item.id == "ippc_bat_conclusions")
+
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text="Konkluzje BAT wyznaczają warunki pozwolenia.",
+    )
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Dokumenty BREF nie są konkluzjami BAT; przy ustalaniu warunków "
+            "pozwolenia analizuje się konkluzje BAT."
+        ),
+    ) == []
 
 
 @pytest.mark.parametrize(

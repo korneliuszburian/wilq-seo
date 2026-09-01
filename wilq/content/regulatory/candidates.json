@@ -296,6 +296,84 @@
       "requirement_ids": ["reach_clp_distinct_scope", "clp_classification_labelling"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź role, podstawę klasyfikacji zagrożeń oraz zasady oznakowania i pakowania bez mieszania ich z oceną narażenia."
+    },
+    {
+      "candidate_id": "ippc_pos_eli_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text/U/D20250647Lj.pdf",
+      "source_title": "ELI: Prawo ochrony środowiska — pozwolenia zintegrowane",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_initial_report_conditional"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź kwalifikację instalacji, warunkowy raport początkowy i rolę konkluzji BAT bez tworzenia uniwersalnej listy wymogów."
+    },
+    {
+      "candidate_id": "ippc_installations_gios_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://www.gov.pl/web/gios/instalacje-wymagajace-uzyskania-pozwolenia-zintegrowanego",
+      "source_title": "GIOŚ: Instalacje wymagające uzyskania pozwolenia zintegrowanego",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_installation_qualification"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że kwalifikacja zależy od konkretnej instalacji, jej rodzaju i skali."
+    },
+    {
+      "candidate_id": "ippc_bat_pos_eli_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text/U/D20250647Lj.pdf",
+      "source_title": "ELI: Prawo ochrony środowiska — BREF i konkluzje BAT",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_bat_conclusions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębne definicje dokumentu referencyjnego BAT i konkluzji BAT oraz ich rolę w pozwoleniu."
+    },
+    {
+      "candidate_id": "ippc_ied_context_gios_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://www.gov.pl/web/gios/instalacje-wymagajace-uzyskania-pozwolenia-zintegrowanego",
+      "source_title": "GIOŚ: IED i historyczne określenie IPPC",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź relację historycznego terminu IPPC do obowiązującego reżimu IED, bez opisywania polskiego wdrożenia zmian UE bez odrębnej podstawy."
+    },
+    {
+      "candidate_id": "ippc_ied_eurlex_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eur-lex.europa.eu/legal-content/PL/TXT/?uri=CELEX:32010L0075",
+      "source_title": "EUR-Lex: dyrektywa 2010/75/UE w sprawie emisji przemysłowych",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context", "ippc_bat_conclusions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź relację historycznego terminu IPPC do aktualnego reżimu IED i nie przenoś automatycznie prawa UE na polską procedurę."
+    },
+    {
+      "candidate_id": "ippc_ied_amendment_eurlex_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eur-lex.europa.eu/legal-content/PL/TXT/?uri=CELEX:32024L1785",
+      "source_title": "EUR-Lex: dyrektywa (UE) 2024/1785 zmieniająca IED",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context"],
+      "review_status": "review_required",
+      "safe_next_step": "Zweryfikuj krajowe wdrożenie przed opisaniem skutków zmian IED dla polskiej procedury."
     }
   ]
 }
