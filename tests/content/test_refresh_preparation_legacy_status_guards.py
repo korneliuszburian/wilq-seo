@@ -59,6 +59,9 @@ def test_legacy_unbound_planning_get_never_falls_through_for_classified_states(
         work_item_id=_WORK_ITEM_ID,
         snapshot_loader=lambda work_item_id: snapshot_calls.append(work_item_id),
         refresh_authority=cast(Any, Authority()),
+        inventory_binding_loader=lambda _work_item_id: SimpleNamespace(
+            content_kind="service"
+        ),
     )
 
     assert response.status == "blocked"
