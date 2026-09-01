@@ -280,6 +280,7 @@ def test_official_source_lineage_rebase_appends_an_exact_bdo_like_child(
     proposal = SimpleNamespace(
         planning_digest=base.planning_digest,
         planning_input_digest=base.planning_input_digest,
+        content_kind=base.content_kind,
         service_card_id=base.service_card_id,
     )
 
@@ -324,9 +325,9 @@ def test_store_rejects_lineage_rebase_when_review_arrives_before_atomic_append(
         )
     ).review
     assert review is not None
-    child = _full_document_command(
-        _draft_package(), base_revision_id=base.revision_id
-    ).model_copy(update={"correction_reason": "official_source_lineage_rebase"})
+    child = _full_document_command(_draft_package(), base_revision_id=base.revision_id).model_copy(
+        update={"correction_reason": "official_source_lineage_rebase"}
+    )
 
     result = ContentOfficialSourceLineageStore(tmp_path / "wilq.sqlite3").append_rebase(
         child,
@@ -486,8 +487,7 @@ def test_renderer_escapes_an_unsafe_historical_internal_link_anchor(
                     update={
                         "anchor_text": "Kontakt](https://example.com/phish)[dalej",
                         "target_url": (
-                            "https://www.ekologus.pl/kontakt) "
-                            "[phish](https://example.com"
+                            "https://www.ekologus.pl/kontakt) [phish](https://example.com"
                         ),
                     }
                 )
@@ -810,9 +810,7 @@ def _legacy_digest(command: ContentDraftRevisionAppendCommand) -> str:
         "planning_digest": command.planning_digest,
         "final_canonical_url": command.final_canonical_url,
         "title": command.title,
-        "source_provenance": [
-            item.model_dump(mode="json") for item in command.source_provenance
-        ],
+        "source_provenance": [item.model_dump(mode="json") for item in command.source_provenance],
         "sections": [
             {
                 "heading": section.heading,

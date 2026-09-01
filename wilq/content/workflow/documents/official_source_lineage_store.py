@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from wilq.content.workflow.documents.codex_revision_commit import prepare_codex_completion
+from wilq.content.workflow.documents.codex_revision_commit import (
+    editor_draft_context_is_current,
+    prepare_codex_completion,
+)
 from wilq.content.workflow.documents.revision_persistence import (
     build_stored_draft_revision,
     draft_revision_content_digest,
@@ -45,6 +48,11 @@ class ContentOfficialSourceLineageStore:
         with ContentWorkflowStore(self.path).run_transaction() as connection:
             connection.execute("BEGIN IMMEDIATE")
             latest = latest_draft_revision(connection, redacted_command.work_item_id)
+            if not editor_draft_context_is_current(redacted_command):
+                return ContentDraftRevisionWriteResult(
+                    status="conflict",
+                    conflict=draft_revision_conflict("stale_context", latest),
+                )
             latest_review = (
                 None
                 if latest is None

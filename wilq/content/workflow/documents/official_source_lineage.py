@@ -21,29 +21,30 @@ def build_official_source_lineage_rebase_command(
 ) -> ContentDraftRevisionAppendCommand:
     """Append the same document with current, server-derived official lineage.
 
-    This narrow workflow is for an unreviewed v2 document created before the
-    official-source projection existed. It never accepts source links from the
-    caller and it does not rewrite the immutable base revision.
+    This narrow workflow is for an unreviewed v2 document whose persisted
+    official-source projection is missing or no longer equals the current
+    approved source facts. It never accepts source links from the caller and it
+    does not rewrite the immutable base revision.
     """
 
     if base_revision.schema_version != "wilq_content_draft_revision_v2":
         raise ValueError("Official-source lineage rebase requires a v2 revision.")
-    if base_revision.official_source_references:
-        raise ValueError("Revision already records official-source lineage.")
     if (
         base_revision.planning_input_digest is None
-        or base_revision.service_card_id is None
         or base_revision.planning_digest is None
         or planning_input.planning_input_digest != base_revision.planning_input_digest
         or planning_input.confirmed_service_card_id != base_revision.service_card_id
         or proposal.planning_digest != base_revision.planning_digest
         or proposal.planning_input_digest != base_revision.planning_input_digest
+        or proposal.content_kind != base_revision.content_kind
         or proposal.service_card_id != base_revision.service_card_id
     ):
         raise ValueError("Current planning identity does not match the base revision.")
     references = official_source_references_for_planning_input(planning_input)
     if not references:
         raise ValueError("Current planning input does not require official-source lineage.")
+    if references == base_revision.official_source_references:
+        raise ValueError("Revision already records current official-source lineage.")
     return build_child_draft_revision_command(
         base_revision,
         sections=base_revision.sections,
