@@ -26,6 +26,9 @@ from wilq.content.planning.generated_proposal_store import (
 )
 from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.inventory_binding import (
+    content_kind_inventory_binding_for_work_item,
+)
 from wilq.content.workflow.refresh_preparation import (
     ContentRefreshPreparationAuthority,
     RefreshPreparationRuntimeAuthorized,
@@ -98,6 +101,9 @@ def _get_content_work_item_planning_proposal_status(
     work_item_id: str,
     snapshot_loader: ContentPlanningSnapshotLoader,
     refresh_authority: ContentRefreshPreparationAuthority | None = None,
+    inventory_binding_loader: Callable[[str], object | None] = (
+        content_kind_inventory_binding_for_work_item
+    ),
 ) -> ContentPlanningProposalResponse:
     store = content_planning_proposal_store()
     authority = refresh_authority or _canonical_refresh_preparation_authority()
@@ -105,6 +111,7 @@ def _get_content_work_item_planning_proposal_status(
         store=store,
         work_item_id=work_item_id,
         authority=authority,
+        inventory_binding_loader=inventory_binding_loader,
     )
     if reconciliation is not None:
         return reconciliation
@@ -154,9 +161,15 @@ def _legacy_unbound_refresh_reconciliation_status(
     store: ContentPlanningProposalStore,
     work_item_id: str,
     authority: ContentRefreshPreparationAuthority,
+    inventory_binding_loader: Callable[[str], object | None] = (
+        content_kind_inventory_binding_for_work_item
+    ),
 ) -> ContentPlanningProposalResponse | None:
     context = _latest_unbound_refresh_planning_context(store, work_item_id)
     if context is None:
+        return None
+    inventory_binding = inventory_binding_loader(work_item_id)
+    if getattr(inventory_binding, "content_kind", None) == "editorial":
         return None
     preview = authority.preview(work_item_id, service_card_id=context.service_card_id)
     if _is_unclassified_refresh_preview(preview):
