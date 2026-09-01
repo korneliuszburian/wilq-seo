@@ -219,7 +219,7 @@ def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
 
 def _has_required_fact_overlap(document_tokens: set[str], fact_tokens: set[str]) -> bool:
     if not fact_tokens:
-        return True
+        return False
     return len(document_tokens & fact_tokens) >= min(3, len(fact_tokens))
 
 

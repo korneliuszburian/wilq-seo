@@ -11,7 +11,10 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewModelOutput,
     ContentSemanticReviewRequest,
 )
-from wilq.content.quality.semantic_review_guards import regulatory_quality_issues
+from wilq.content.quality.semantic_review_guards import (
+    _has_required_fact_overlap,
+    regulatory_quality_issues,
+)
 from wilq.content.quality.semantic_review_service import (
     _apply_deterministic_quality_guards,
     _SemanticInputs,
@@ -73,6 +76,10 @@ def test_semantic_inputs_allow_editorial_without_service_card(
     assert isinstance(result, _SemanticInputs)
     assert result.proposal.content_kind == "editorial"
     assert result.proposal.service_card_id is None
+
+
+def test_zero_token_regulatory_fact_fails_closed() -> None:
+    assert not _has_required_fact_overlap({"termin"}, set())
 
 
 def test_semantic_turn_filters_sections_merged_by_editor_child() -> None:
