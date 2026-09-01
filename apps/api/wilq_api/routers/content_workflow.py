@@ -43,6 +43,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionReviewResponse,
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionSaveResponse,
+    ContentDraftRevisionWorkspace,
     ContentWorkItemLearningProposalRequest,
     ContentWorkItemLearningProposalResponse,
     ContentWorkItemMeasurementCommand,
@@ -69,11 +70,16 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionSection,
+    ContentDraftRevisionState,
     content_draft_package_digest,
 )
 from wilq.content.workflow.pipeline_steps.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
+)
+from wilq.content.workflow.pipeline_steps.snapshot_assembly import (
+    _gate_revision_workspace,
+    build_content_draft_revision_workspace,
 )
 from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_learning_proposal_response,
@@ -119,11 +125,53 @@ def semantic_review_snapshot_for_work_item_or_404(
     )
     if not isinstance(resolved, RefreshPreparationRuntimeAuthorized):
         return canonical
+    bound_revision_workspace = _binding_aware_revision_workspace(
+        resolved_snapshot=resolved.snapshot,
+        canonical_snapshot=canonical,
+        revision_state=revision_state,
+    )
     return resolved.snapshot.model_copy(
         update={
             "planning_workspace": canonical.planning_workspace,
-            "revision_workspace": canonical.revision_workspace,
+            "revision_workspace": bound_revision_workspace,
         }
+    )
+
+
+def _binding_aware_revision_workspace(
+    *,
+    resolved_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    canonical_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision_state: ContentDraftRevisionState,
+) -> ContentDraftRevisionWorkspace:
+    """Compose exact refresh plan with the draft package bound at draft creation.
+
+    The authority snapshot validates the immutable refresh binding and retains
+    the package used by the initial draft.  The canonical snapshot supplies the
+    persisted revision-bound planning proposal.  Mixing both avoids a later
+    baseline rebuild from marking the exact revision stale.
+    """
+
+    planning = canonical_snapshot.planning_workspace
+    package = resolved_snapshot.draft_package.draft_package_result.draft_package
+    if planning is None or package is None:
+        return canonical_snapshot.revision_workspace
+    workspace = build_content_draft_revision_workspace(
+        item=canonical_snapshot.preflight.item,
+        draft_package=package,
+        state=revision_state,
+        structured_contract_present=(
+            canonical_snapshot.structured_generation.structured_generation_result.contract
+            is not None
+        ),
+        planning_digest=planning.proposal.planning_digest,
+        planning_input_digest=planning.proposal.planning_input_digest,
+        service_card_id=planning.proposal.service_card_id,
+    )
+    return _gate_revision_workspace(
+        workspace,
+        planning,
+        material_confidence=canonical_snapshot.preflight.item.wordpress_content_material_confidence,
     )
 
 

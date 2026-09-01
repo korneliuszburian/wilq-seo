@@ -361,7 +361,11 @@ def _gate_revision_workspace(
     *,
     material_confidence: str | None = None,
 ) -> ContentDraftRevisionWorkspace:
-    if material_confidence == "review_required" and workspace.latest_revision is not None:
+    if (
+        material_confidence == "review_required"
+        and workspace.latest_revision is not None
+        and not _has_independently_grounded_editorial_lineage(workspace.latest_revision)
+    ):
         return workspace.model_copy(
             update={
                 "can_review": False,
@@ -379,9 +383,23 @@ def _gate_revision_workspace(
         update={
             "can_save": False,
             "safe_next_step": (
-            "Wygeneruj aktualny plan związany z bieżącymi źródłami i usługą."
+                "Wygeneruj aktualny plan związany z bieżącymi źródłami i usługą."
             ),
         }
+    )
+
+
+def _has_independently_grounded_editorial_lineage(
+    revision: ContentDraftRevision,
+) -> bool:
+    return bool(
+        revision.document_kind == "refresh_existing"
+        and revision.content_kind == "editorial"
+        and revision.service_card_id is None
+        and revision.refresh_preparation_binding is not None
+        and revision.official_source_references
+        and not revision.source_material_ids
+        and not any(section.source_material_ids for section in revision.sections)
     )
 
 
