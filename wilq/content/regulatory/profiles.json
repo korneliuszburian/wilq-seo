@@ -340,7 +340,7 @@
             {
               "id": "reach_registration_exemptions",
               "label": "warunkowe wyłączenia z rejestracji",
-              "required_any_of": ["mogą być częściowo lub całkowicie wyłączone", "wyłączenia z obowiązku rejestracji", "nie każda substancja podlega rejestracji"]
+              "required_any_of": ["mogą być częściowo lub całkowicie wyłączone", "wyłączenia z obowiązku rejestracji", "wyłączenia i zwolnienia", "nie każda substancja podlega rejestracji"]
             }
           ]
         },
@@ -386,7 +386,7 @@
             {
               "id": "reach_sds_update",
               "label": "aktualizacja karty charakterystyki",
-              "required_any_of": ["aktualna karta charakterystyki", "aktualizacji karty charakterystyki", "wersję karty charakterystyki"]
+              "required_any_of": ["aktualna karta charakterystyki", "aktualną wersję karty", "aktualizacji karty charakterystyki", "wersję karty charakterystyki"]
             }
           ]
         },
@@ -413,7 +413,7 @@
             {
               "id": "clp_exposure_distinction",
               "label": "odrębność zagrożenia od narażenia i ryzyka",
-              "required_any_of": ["nie na prawdopodobieństwie narażenia", "nie jest oceną narażenia", "odrębnie od oceny ryzyka"]
+              "required_any_of": ["nie na prawdopodobieństwie narażenia", "nie jest oceną narażenia", "odrębna od oceny narażenia", "odrębnie od oceny ryzyka"]
             }
           ]
         }
