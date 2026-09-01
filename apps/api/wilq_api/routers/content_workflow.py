@@ -103,7 +103,12 @@ def semantic_review_snapshot_for_work_item_or_404(
     if binding is None:
         return _snapshot_for_work_item_or_404(work_item_id)
     if binding.service_card_id is None:
-        return _snapshot_for_work_item_or_404(work_item_id)
+        return _snapshot_for_work_item_or_404(
+            work_item_id,
+            revision_state_override=revision_state,
+            service_card_id_override=None,
+            prefer_revision_bound_proposal=True,
+        )
     request = ContentPlanningProposalRequest(
         service_card_id=binding.service_card_id,
         expected_planning_input_digest=binding.planning_input_digest,

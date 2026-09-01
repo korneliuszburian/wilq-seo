@@ -68,7 +68,14 @@ def register_content_model_routes(
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
-    register_content_official_source_lineage_route(router, snapshot_loader=snapshot_loader)
+    register_content_official_source_lineage_route(
+        router,
+        snapshot_loader=(
+            snapshot_loader
+            if semantic_review_snapshot_loader is None
+            else semantic_review_snapshot_loader
+        ),
+    )
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
