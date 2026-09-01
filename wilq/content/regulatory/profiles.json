@@ -289,6 +289,135 @@
           ]
         }
       ]
+    },
+    {
+      "id": "reach_clp_editorial",
+      "version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "official_source_hosts": ["www.gov.pl"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "reach_clp_distinct_scope",
+          "label": "odrębny zakres REACH i CLP",
+          "reason": "Treść musi odróżniać procedury REACH od klasyfikacji, oznakowania i pakowania według CLP.",
+          "document_assertions": [
+            {
+              "id": "reach_scope_present",
+              "label": "zakres REACH",
+              "required_any_of": ["REACH"]
+            },
+            {
+              "id": "clp_scope_present",
+              "label": "zakres CLP",
+              "required_any_of": ["CLP"]
+            },
+            {
+              "id": "reach_clp_distinction",
+              "label": "odrębność zakresów REACH i CLP",
+              "required_any_of": ["odrębne", "różnią się", "REACH dotyczy", "CLP dotyczy"]
+            }
+          ]
+        },
+        {
+          "id": "reach_registration_scope",
+          "label": "zakres rejestracji REACH",
+          "reason": "Treść o rejestracji musi zachować rolę producenta lub importera, próg tonażowy i możliwość wyłączeń.",
+          "document_assertions": [
+            {
+              "id": "reach_registration_roles",
+              "label": "producent lub importer",
+              "required_any_of": ["producent", "importer"]
+            },
+            {
+              "id": "reach_registration_threshold",
+              "label": "próg jednej tony rocznie",
+              "required_any_of": ["jednej tony rocznie", "1 tony rocznie", "1 tona rocznie"]
+            },
+            {
+              "id": "reach_registration_exemptions",
+              "label": "warunkowe wyłączenia z rejestracji",
+              "required_any_of": ["mogą być częściowo lub całkowicie wyłączone", "wyłączenia z obowiązku rejestracji", "nie każda substancja podlega rejestracji"]
+            }
+          ]
+        },
+        {
+          "id": "reach_authorisation_scope",
+          "label": "zezwolenia REACH",
+          "reason": "Treść musi wiązać zezwolenie z substancjami z wykazu udzielania zezwoleń i konkretnym zastosowaniem.",
+          "document_assertions": [
+            {
+              "id": "reach_authorisation_list",
+              "label": "wykaz udzielania zezwoleń",
+              "required_any_of": ["wykazie udzielania zezwoleń", "załączniku XIV", "Annex XIV"]
+            },
+            {
+              "id": "reach_authorisation_use",
+              "label": "konkretne zastosowanie substancji",
+              "required_any_of": ["konkretnego zastosowania", "określonego zastosowania", "stosowania substancji"]
+            }
+          ]
+        },
+        {
+          "id": "reach_restriction_scope",
+          "label": "ograniczenia REACH",
+          "reason": "Treść nie może sprowadzać ograniczenia do samej obecności substancji; znaczenie mają warunki produkcji, wprowadzania do obrotu lub użycia.",
+          "document_assertions": [
+            {
+              "id": "reach_restriction_conditions",
+              "label": "warunki ograniczenia",
+              "required_any_of": ["produkcji, wprowadzania do obrotu lub użycia", "wprowadzania do obrotu lub stosowania", "produkcję, obrót lub stosowanie"]
+            }
+          ]
+        },
+        {
+          "id": "reach_sds_scope",
+          "label": "karty charakterystyki i aktualizacje",
+          "reason": "Treść musi wyjaśniać funkcję karty charakterystyki, warunki jej dostarczenia i potrzebę sprawdzenia aktualnej wersji.",
+          "document_assertions": [
+            {
+              "id": "reach_sds_function",
+              "label": "funkcja karty charakterystyki",
+              "required_any_of": ["informacje o właściwościach", "informacje o zagrożeniach", "bezpiecznego stosowania", "kontroli narażenia"]
+            },
+            {
+              "id": "reach_sds_update",
+              "label": "aktualizacja karty charakterystyki",
+              "required_any_of": ["aktualna karta charakterystyki", "aktualizacji karty charakterystyki", "wersję karty charakterystyki"]
+            }
+          ]
+        },
+        {
+          "id": "clp_classification_labelling",
+          "label": "klasyfikacja, oznakowanie i pakowanie CLP",
+          "reason": "Treść o CLP musi zachować odpowiedzialność dostawcy oraz odróżnić klasyfikację zagrożeń od oceny narażenia.",
+          "document_assertions": [
+            {
+              "id": "clp_supplier_classification",
+              "label": "klasyfikacja przez dostawcę",
+              "required_any_of": ["dostawc", "producent", "importer", "dalszy użytkownik", "dystrybutor"]
+            },
+            {
+              "id": "clp_hazard_classification",
+              "label": "klasyfikacja właściwości stwarzających zagrożenie",
+              "required_any_of": ["klasyfikacji zagrożeń", "właściwości stwarzających zagrożenie", "samoklasyfikacji", "samodzielnej klasyfikacji"]
+            },
+            {
+              "id": "clp_label_packaging",
+              "label": "oznakowanie i opakowanie",
+              "required_any_of": ["oznakowan", "etykiet", "opakowan"]
+            },
+            {
+              "id": "clp_exposure_distinction",
+              "label": "odrębność zagrożenia od narażenia i ryzyka",
+              "required_any_of": ["nie na prawdopodobieństwie narażenia", "nie jest oceną narażenia", "odrębnie od oceny ryzyka"]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

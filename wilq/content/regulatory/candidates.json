@@ -206,6 +206,96 @@
       "requirement_ids": ["integrated_permit_initial_report"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź warunkowy charakter raportu początkowego i nie rozszerzaj źródła na zakres całej sprawy."
+    },
+    {
+      "candidate_id": "reach_scope_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/krajowe-centrum-informacyjne-do-spraw-reach-i-clp",
+      "source_title": "Biuro do spraw Substancji Chemicznych: Helpdesk REACH i CLP",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_clp_distinct_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębne podstawy i zakresy REACH oraz CLP bez rozszerzania obowiązków na każdą firmę używającą chemikaliów."
+    },
+    {
+      "candidate_id": "reach_registration_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/attachment/a52f83e0-0289-44ec-b04c-3ab168ea7c1d",
+      "source_title": "Gov.pl: Poradnik dotyczący rejestracji REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_registration_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź role, próg tonażowy i wyłączenia bez rozszerzania obowiązku rejestracji."
+    },
+    {
+      "candidate_id": "reach_authorisation_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/ankieta-dotyczaca-praktycznego-wdrazania-wnioskow-o-udzielenie-zezwolenia-rozporzadzenie-reach",
+      "source_title": "Biuro do spraw Substancji Chemicznych: udzielanie zezwoleń REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_authorisation_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź związek obowiązku z załącznikiem XIV i konkretnym zastosowaniem substancji."
+    },
+    {
+      "candidate_id": "reach_restrictions_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/ograniczenia-zalacznika-xvii-rozporzadzenia-reach-dla-niklu",
+      "source_title": "Biuro do spraw Substancji Chemicznych: warunki ograniczenia REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_restriction_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że ograniczenie zależy od dokładnej pozycji załącznika XVII i warunków użycia lub obrotu."
+    },
+    {
+      "candidate_id": "reach_sds_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/wsse-gdansk/substancje-i-mieszaniny-chemiczne",
+      "source_title": "Gov.pl: substancje, mieszaniny i karty charakterystyki",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_sds_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź funkcję, przypadki przekazania i aktualność karty charakterystyki bez dopowiadania nieudokumentowanych triggerów."
+    },
+    {
+      "candidate_id": "clp_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/clp",
+      "source_title": "Biuro do spraw Substancji Chemicznych: CLP",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_clp_distinct_scope", "clp_classification_labelling"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź role, podstawę klasyfikacji zagrożeń oraz zasady oznakowania i pakowania bez mieszania ich z oceną narażenia."
     }
   ]
 }
