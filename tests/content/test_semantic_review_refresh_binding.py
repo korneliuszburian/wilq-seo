@@ -12,6 +12,7 @@ def test_refresh_bound_semantic_review_snapshot_uses_persisted_service_card(
 ) -> None:
     work_item_id = "content_work_item_refresh"
     binding = SimpleNamespace(
+        content_kind="service",
         service_card_id="ekologus_service_operat_wodnoprawny",
         planning_input_digest="a" * 64,
         authorization_id="content_refresh_preparation_authorization_test",
@@ -96,7 +97,13 @@ def test_refresh_bound_editorial_snapshot_prefers_revision_plan(
     work_item_id = "content_work_item_editorial"
     revision_state = SimpleNamespace(
         latest_revision=SimpleNamespace(
-            refresh_preparation_binding=SimpleNamespace(service_card_id=None)
+            refresh_preparation_binding=SimpleNamespace(
+                content_kind="editorial",
+                service_card_id=None,
+                planning_input_digest="a" * 64,
+                authorization_id="content_refresh_preparation_authorization_editorial",
+                authorization_digest="b" * 64,
+            )
         )
     )
     expected_snapshot = object()
@@ -105,6 +112,11 @@ def test_refresh_bound_editorial_snapshot_prefers_revision_plan(
         content_workflow_router,
         "content_workflow_store",
         lambda: SimpleNamespace(load_draft_revision_state=lambda _work_item_id: revision_state),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_refresh_preparation_authority",
+        lambda: SimpleNamespace(resolve_planning=lambda *_args: object()),
     )
     monkeypatch.setattr(
         content_workflow_router,
