@@ -61,7 +61,9 @@ from wilq.content.workflow.decisions.planning import ContentPlanningWorkspace
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionDecision,
+    ContentDraftRevisionFaqItem,
     ContentDraftRevisionOfficialSourceReference,
+    ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
     ContentDraftRevisionStateStatus,
@@ -412,9 +414,7 @@ class ContentPublicDeploymentConfirmationResponse(BaseModel):
 
 class ContentPublicDeploymentReadResponse(BaseModel):
     deployment: ContentPublicDeployment | None = None
-    publication_observations: list[ContentPublicDeploymentObservation] = Field(
-        default_factory=list
-    )
+    publication_observations: list[ContentPublicDeploymentObservation] = Field(default_factory=list)
     measurement_window: ContentMeasurementWindow | None = None
     measurement_outcome: ContentMeasurementOutcomeInterpretation | None = None
     learning_proposal: ContentLearningProposal | None = None
@@ -507,6 +507,12 @@ class ContentDraftRevisionSaveRequest(BaseModel):
     base_revision_id: str | None = None
     title: str = Field(min_length=1)
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    page_assets: ContentDraftRevisionPageAssets | None = None
+    faq: list[ContentDraftRevisionFaqItem] | None = None
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] | None = Field(
+        default=None,
+        min_length=1,
+    )
     correction_reason: ContentDraftRevisionSaveCorrectionReason | None = None
     created_by: str = Field(min_length=1)
 
@@ -518,6 +524,8 @@ class ContentDraftRevisionSaveRequest(BaseModel):
             raise ValueError("Draft revision requires a visible creator identifier.")
         if any(section.content_html is None for section in self.sections):
             raise ValueError("Workshop saves require canonical content_html for every section.")
+        if self.page_assets is not None and self.page_assets.wordpress_title != self.title:
+            raise ValueError("Draft title must match the WordPress title in page assets.")
         return self
 
 

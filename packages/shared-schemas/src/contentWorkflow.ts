@@ -3319,13 +3319,35 @@ export const ContentDraftRevisionWorkspaceSchema = z
     }
   });
 
-export const ContentDraftRevisionSaveRequestSchema = z.object({
-  base_revision_id: z.string().nullable(),
-  title: z.string().refine((value) => value.trim().length > 0),
-  sections: z.array(ContentDraftRevisionSectionSchema).min(1),
-  correction_reason: z.enum(["canonical_html_alignment"]).nullable().optional(),
-  created_by: z.string().refine((value) => value.trim().length > 0)
-});
+export const ContentDraftRevisionSaveRequestSchema = z
+  .object({
+    base_revision_id: z.string().nullable(),
+    title: z.string().refine((value) => value.trim().length > 0),
+    sections: z.array(ContentDraftRevisionSectionSchema).min(1),
+    page_assets: ContentDraftRevisionPageAssetsSchema.nullable().optional(),
+    faq: z.array(ContentDraftRevisionFaqItemSchema).nullable().optional(),
+    official_source_references: z
+      .array(ContentDraftRevisionOfficialSourceReferenceSchema)
+      .min(1)
+      .nullable()
+      .optional(),
+    correction_reason: z.enum(["canonical_html_alignment"]).nullable().optional(),
+    created_by: z.string().refine((value) => value.trim().length > 0)
+  })
+  .superRefine((request, context) => {
+    if (
+      request.correction_reason === "canonical_html_alignment" &&
+      (request.page_assets != null ||
+        request.faq != null ||
+        request.official_source_references != null)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["correction_reason"],
+        message: "canonical HTML alignment cannot change full-document fields"
+      });
+    }
+  });
 
 export const ContentDraftRevisionSaveResponseSchema = z.object({
   status: z.enum(["created", "idempotent"]),

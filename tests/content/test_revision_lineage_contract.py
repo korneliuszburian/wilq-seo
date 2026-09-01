@@ -19,6 +19,7 @@ from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_outpu
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.documents.editor_child import validate_full_document_child
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.documents.revision_persistence import (
     build_stored_draft_revision,
@@ -27,6 +28,8 @@ from wilq.content.workflow.documents.revision_persistence import (
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionFaqItem,
+    ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionPageAssets,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
@@ -44,9 +47,7 @@ def test_draft_revision_page_assets_accepts_byline() -> None:
 
 
 def test_draft_revision_page_assets_rejects_inline_link_byline() -> None:
-    payload = _page_assets_payload() | {
-        "byline": "[Ekspert Ekologus](https://www.ekologus.pl/)"
-    }
+    payload = _page_assets_payload() | {"byline": "[Ekspert Ekologus](https://www.ekologus.pl/)"}
 
     with pytest.raises(ValidationError, match="cannot contain inline links"):
         ContentDraftRevisionPageAssets.model_validate(payload)
@@ -72,8 +73,7 @@ def test_draft_revision_page_assets_accepts_none_and_missing_byline() -> None:
 def test_initial_draft_generation_leaves_byline_unset() -> None:
     output = ContentInitialDraftModelOutput.model_validate(
         {
-            "page_assets": _page_assets_payload()
-            | {"byline": "Niezweryfikowany autor"},
+            "page_assets": _page_assets_payload() | {"byline": "Niezweryfikowany autor"},
             "sections": [
                 {
                     "section_id": "section_scope",
@@ -269,9 +269,7 @@ def test_child_revision_preserves_full_document_lineage() -> None:
     metadata = ContentDraftRevisionProposalMetadata(
         codex_run_id="codex_lineage_child",
         selected_section_headings=[revision.sections[0].heading],
-        section_lineage=[
-            {"heading": revision.sections[0].heading, "evidence_ids": ["ev_lineage"]}
-        ],
+        section_lineage=[{"heading": revision.sections[0].heading, "evidence_ids": ["ev_lineage"]}],
         quality_verdict="reviewable",
     )
 
@@ -337,6 +335,189 @@ def test_editor_save_v2_carries_page_assets_and_lineage() -> None:
     assert saved.knowledge_card_ids == revision.knowledge_card_ids
 
 
+def _full_document_child_fixture():
+    command = _command(schema_version="wilq_content_draft_revision_v2")
+    second_section = command.sections[0].model_copy(
+        update={"section_id": "section_monitoring", "heading": "Monitoring"}
+    )
+    source = ContentDraftRevisionOfficialSourceReference(
+        source_fact_id="regulatory_source_fact_ekoportal",
+        source_url=(
+            "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/"
+            "poradniki_branzowe/opracowania/"
+            "Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf"
+        ),
+        source_title="Wytyczne Ekoportal",
+        verified_on="2026-09-01",
+        evidence_ids=["ev_official"],
+        regulatory_requirement_ids=["initial_report"],
+    )
+    command = command.model_copy(
+        update={
+            "sections": [
+                command.sections[0].model_copy(
+                    update={"evidence_ids": ["ev_lineage", "ev_official"]}
+                ),
+                second_section,
+            ],
+            "faq": [
+                ContentDraftRevisionFaqItem(
+                    faq_id="faq_initial_report",
+                    question="Kiedy raport może być wymagany?",
+                    answer_markdown="Odpowiedź bazowa.",
+                    evidence_ids=["ev_lineage"],
+                )
+            ],
+            "official_source_references": [source],
+        }
+    )
+    revision = build_stored_draft_revision(
+        command,
+        revision_number=2,
+        content_digest=draft_revision_content_digest(command),
+    )
+    merged_section = revision.sections[0].model_copy(
+        update={
+            "heading": "Dokumentacja i monitoring",
+            "body_markdown": "Połączona treść bez powtórzeń.",
+            "content_html": content_html_from_markdown("Połączona treść bez powtórzeń."),
+        }
+    )
+    page_assets = revision.page_assets.model_copy(
+        update={
+            "meta_description": "Opis uwzględniający raport początkowy.",
+        }
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=revision.revision_id,
+        title=revision.title,
+        page_assets=page_assets,
+        sections=[merged_section],
+        faq=[
+            revision.faq[0].model_copy(
+                update={
+                    "answer_markdown": "Obowiązek zależy od dwóch łącznych warunków.",
+                    "evidence_ids": ["ev_official"],
+                }
+            )
+        ],
+        official_source_references=[source],
+        created_by="wilku",
+    )
+    return revision, source, request, page_assets
+
+
+def test_editor_child_can_merge_sections_and_repair_faq_with_existing_lineage() -> None:
+    revision, source, request, page_assets = _full_document_child_fixture()
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=SimpleNamespace(sections=[]))
+        )
+    )
+
+    _validate_revision_sections(
+        request,
+        snapshot,
+        latest_revision=revision,
+        revision_context_current=True,
+    )
+    validate_full_document_child(
+        request,
+        revision,
+        revision_context_current=True,
+        approved_source_urls={source.source_fact_id: source.source_url},
+    )
+    saved = _build_editor_save_command(
+        work_item_id=revision.work_item_id,
+        request=request,
+        latest_revision=revision,
+        draft_package=None,
+        planning=None,
+        final_canonical_url=revision.final_canonical_url,
+        revision_context_current=True,
+    )
+
+    assert [section.section_id for section in saved.sections] == ["section_lineage"]
+    assert saved.faq[0].evidence_ids == ["ev_official"]
+    assert saved.page_assets.meta_description == page_assets.meta_description
+    assert saved.official_source_references == [source]
+
+
+def test_editor_child_rejects_official_url_not_bound_to_approved_source_fact() -> None:
+    revision, source, request, _page_assets = _full_document_child_fixture()
+    wrong_url = request.model_copy(
+        update={
+            "official_source_references": [
+                source.model_copy(update={"source_url": "https://eli.gov.pl/inny-dokument"})
+            ]
+        }
+    )
+    with pytest.raises(ValueError, match="bezpiecznej lineage"):
+        validate_full_document_child(
+            wrong_url,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_editor_child_rejects_foreign_component_lineage() -> None:
+    revision, source, request, _page_assets = _full_document_child_fixture()
+    foreign = request.model_copy(
+        update={
+            "sections": [request.sections[0].model_copy(update={"claim_ids": ["foreign_claim"]})]
+        }
+    )
+
+    with pytest.raises(ValueError, match="obcą lineage"):
+        validate_full_document_child(
+            foreign,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_editor_child_rejects_stale_full_document_context() -> None:
+    revision, source, request, _page_assets = _full_document_child_fixture()
+
+    with pytest.raises(ValueError, match="potomną wersję bieżącej rewizji"):
+        validate_full_document_child(
+            request,
+            revision,
+            revision_context_current=False,
+            approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_full_document_fields_reject_legacy_revision_parent() -> None:
+    command = _command(schema_version="wilq_content_draft_revision_v1")
+    revision = build_stored_draft_revision(
+        command,
+        revision_number=1,
+        content_digest=draft_revision_content_digest(command),
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=revision.revision_id,
+        title=revision.title,
+        sections=[
+            revision.sections[0].model_copy(
+                update={"content_html": "<p>Treść oparta na dowodzie.</p>"}
+            )
+        ],
+        faq=[],
+        created_by="wilku",
+    )
+
+    with pytest.raises(ValueError, match="potomną wersję bieżącej rewizji"):
+        validate_full_document_child(
+            request,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={},
+        )
+
+
 def test_canonical_html_alignment_can_change_only_derived_html() -> None:
     current_section = ContentDraftRevisionSection(
         section_id="section_lineage",
@@ -364,11 +545,12 @@ def test_canonical_html_alignment_can_change_only_derived_html() -> None:
 
     _validate_canonical_html_alignment(request, latest)
 
+    with pytest.raises(HTTPException, match="pozostałych pól"):
+        _validate_canonical_html_alignment(request.model_copy(update={"faq": []}), latest)
+
     changed_body = request.model_copy(
         update={
-            "sections": [
-                request.sections[0].model_copy(update={"body_markdown": "Inny tekst."})
-            ]
+            "sections": [request.sections[0].model_copy(update={"body_markdown": "Inny tekst."})]
         }
     )
     with pytest.raises(HTTPException, match="wyłącznie kanoniczne HTML"):
@@ -396,9 +578,7 @@ def test_current_v2_child_validates_against_its_exact_parent_sections() -> None:
             parent_section.model_copy(
                 update={
                     "body_markdown": "Treść poprawiona bez powielenia.",
-                    "content_html": content_html_from_markdown(
-                        "Treść poprawiona bez powielenia."
-                    ),
+                    "content_html": content_html_from_markdown("Treść poprawiona bez powielenia."),
                 }
             )
         ],
@@ -426,9 +606,7 @@ def test_canonical_html_alignment_is_not_a_second_codex_proposal() -> None:
     proposal_metadata = ContentDraftRevisionProposalMetadata(
         codex_run_id="codex_historical_proposal",
         selected_section_headings=[command.sections[0].heading],
-        section_lineage=[
-            {"heading": command.sections[0].heading, "evidence_ids": ["ev_lineage"]}
-        ],
+        section_lineage=[{"heading": command.sections[0].heading, "evidence_ids": ["ev_lineage"]}],
         quality_verdict="needs_changes",
     )
     revision = build_stored_draft_revision(
@@ -449,9 +627,7 @@ def test_canonical_html_alignment_is_not_a_second_codex_proposal() -> None:
         sections=[
             revision.sections[0].model_copy(
                 update={
-                    "content_html": content_html_from_markdown(
-                        revision.sections[0].body_markdown
-                    )
+                    "content_html": content_html_from_markdown(revision.sections[0].body_markdown)
                 }
             )
         ],
