@@ -119,17 +119,23 @@ def semantic_review_turn_request(
         separators=(",", ":"),
     )
     proposal_context = compact_proposal(proposal, draftable_sections_only=True)
+    proposal_declared_sections = bool(getattr(proposal, "sections", []))
     revision_ids = [section.section_id for section in revision.sections]
-    proposal_sections = proposal_context.get("sections", [])
-    if not isinstance(proposal_sections, list):
+    raw_proposal_sections = proposal_context.get("sections", [])
+    if not isinstance(raw_proposal_sections, list):
         raise RuntimeError("Semantic review proposal context sections must be a list.")
-    proposal_ids = [
-        section.get("section_id")
-        for section in proposal_sections
-        if isinstance(section, dict)
+    proposal_sections = [
+        section
+        for section in raw_proposal_sections
+        if isinstance(section, dict) and section.get("section_id") in revision_ids
     ]
-    if len(proposal_ids) != len(set(proposal_ids)) or any(
-        section_id not in revision_ids for section_id in proposal_ids
+    proposal_context["sections"] = proposal_sections
+    proposal_ids = [
+        section.get("section_id") for section in proposal_sections if isinstance(section, dict)
+    ]
+    if len(proposal_ids) != len(set(proposal_ids)) or (
+        proposal_declared_sections
+        and any(section_id not in proposal_ids for section_id in revision_ids)
     ):
         raise ValueError(
             "Semantic review proposal sections do not bind exactly to revision sections."
