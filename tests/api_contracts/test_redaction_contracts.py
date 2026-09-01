@@ -38,6 +38,49 @@ def test_redaction_preserves_content_around_secrets_and_scans_credential_urls() 
     )
 
 
+def test_redaction_preserves_allowlisted_official_source_url_with_long_pdf_name() -> None:
+    source_url = (
+        "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/"
+        "poradniki_branzowe/opracowania/"
+        "Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf"
+    )
+
+    redacted = redact_mapping(
+        {
+            "official_source_references": [
+                {
+                    "source_url": source_url,
+                    "source_title": "Wytyczne do sporządzania wniosku",
+                }
+            ]
+        }
+    )
+
+    assert redacted["official_source_references"][0]["source_url"] == source_url
+
+
+def test_redaction_does_not_allow_credentials_in_official_source_urls() -> None:
+    redacted = redact_mapping(
+        {
+            "source_url": (
+                "https://www.ekoportal.gov.pl/file.pdf?access_token=short"
+            ),
+            "path_secret": (
+                "https://www.ekoportal.gov.pl/sk-"
+                + "x" * 40
+                + "/file.pdf"
+            ),
+            "opaque_path_secret": (
+                "https://eli.gov.pl/download/" + "A" * 40 + "/file.pdf"
+            ),
+        }
+    )
+
+    assert redacted["source_url"] == "[REDACTED]"
+    assert redacted["path_secret"] == "[REDACTED]"
+    assert redacted["opaque_path_secret"] == "[REDACTED]"
+
+
 def test_redaction_rejects_noncanonical_normalized_page_paths() -> None:
     unsafe_values = [
         "/../admin",

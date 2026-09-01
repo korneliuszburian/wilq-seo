@@ -224,6 +224,13 @@ SAFE_NORMALIZED_PAGE_PATH_ATOM_RE = re.compile(r"^[A-Za-z0-9._~]{1,24}$")
 KNOWN_SECRET_PATH_RE = re.compile(
     r"(?:^|/)(?:gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+)"
 )
+EXACT_PUBLIC_SOURCE_URL_ALLOWLIST = {
+    (
+        "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/"
+        "poradniki_branzowe/opracowania/"
+        "Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf"
+    )
+}
 
 
 def is_secret_key(key: str) -> bool:
@@ -304,6 +311,8 @@ def _redact_safe_identifier_value(key: str, value: Any) -> Any:
         and isinstance(value, str)
         and SAFE_HEX_DIGEST_RE.fullmatch(value)
     ):
+        return value
+    if key == "source_url" and value in EXACT_PUBLIC_SOURCE_URL_ALLOWLIST:
         return value
     return redact_value(value)
 
