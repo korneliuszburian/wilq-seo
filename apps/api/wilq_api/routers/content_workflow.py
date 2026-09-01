@@ -35,6 +35,7 @@ from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
 from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalRequest
+from wilq.content.regulatory.source_reviews import regulatory_source_review_store
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
@@ -57,6 +58,11 @@ from wilq.content.workflow.documents.codex_revision_commit import (
     current_editor_draft_context_guard,
 )
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.documents.editor_child import (
+    request_has_full_document_fields,
+    revision_evidence_ids,
+    validate_full_document_child,
+)
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
@@ -167,17 +173,23 @@ def _build_editor_save_command(
             final_canonical_url=latest_revision.final_canonical_url,
             title=request.title,
             page_assets=(
-                None
+                request.page_assets
+                if request.page_assets is not None
+                else None
                 if latest_revision.page_assets is None
                 else latest_revision.page_assets.model_copy(
                     update={"wordpress_title": request.title}
                 )
             ),
             sections=request.sections,
-            faq=latest_revision.faq,
+            faq=latest_revision.faq if request.faq is None else request.faq,
             cta_blocks=latest_revision.cta_blocks,
             internal_links=latest_revision.internal_links,
-            official_source_references=latest_revision.official_source_references,
+            official_source_references=(
+                latest_revision.official_source_references
+                if request.official_source_references is None
+                else request.official_source_references
+            ),
             # An editor save is a human-authored child revision, not a replay
             # of the parent Codex completion. The immutable base revision
             # retains the original proposal/run lineage; carrying that run ID
@@ -225,6 +237,23 @@ def content_work_item_draft_revision_save(
     request_would_create_child = (
         latest_revision is not None and request.base_revision_id == latest_revision.revision_id
     )
+    full_document_fields = request_has_full_document_fields(request)
+    if (
+        latest_revision is not None
+        and full_document_fields
+        and request.base_revision_id != latest_revision.revision_id
+    ):
+        return _workspace_conflict_response(
+            code="stale_base",
+            snapshot=snapshot,
+            safe_next_step=revision_conflict_next_step("stale_base"),
+        )
+    if request_would_create_child and full_document_fields and not workspace.context_current:
+        return _workspace_conflict_response(
+            code="stale_context",
+            snapshot=snapshot,
+            safe_next_step=revision_conflict_next_step("stale_context"),
+        )
     if (
         draft_package is None
         or not final_canonical_url
@@ -247,6 +276,7 @@ def content_work_item_draft_revision_save(
             latest_revision=latest_revision,
             revision_context_current=workspace.context_current,
         )
+        _validate_full_document_request(request, latest_revision, workspace.context_current)
 
     save_context = _editor_save_context(snapshot)
     if save_context is None:
@@ -290,6 +320,25 @@ def content_work_item_draft_revision_save(
         revision=result.revision,
         workspace=refreshed.revision_workspace,
     )
+
+
+def _validate_full_document_request(
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision | None,
+    revision_context_current: bool,
+) -> None:
+    try:
+        validate_full_document_child(
+            request,
+            latest_revision,
+            revision_context_current=revision_context_current,
+            approved_source_urls={
+                fact.source_id: fact.source_url_or_path
+                for fact in regulatory_source_review_store().approved_source_facts()
+            },
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 def _editor_save_context(
@@ -505,9 +554,7 @@ def _measurement_item_for_revision(
 
     public_url = getattr(deployment, "public_url", None)
     publication_evidence_id = getattr(deployment, "publication_evidence_id", None)
-    publication_source_connector = getattr(
-        deployment, "publication_source_connector", None
-    )
+    publication_source_connector = getattr(deployment, "publication_source_connector", None)
     return ContentWorkItem(
         id=revision.work_item_id,
         topic=getattr(revision, "title", "Zmierzony dokument"),
@@ -575,6 +622,44 @@ def _validate_revision_sections(
         )
         else draft_package.sections
     )
+    current_revision = latest_revision
+    if (
+        current_revision is not None
+        and current_revision.schema_version == "wilq_content_draft_revision_v2"
+        and request.base_revision_id == current_revision.revision_id
+        and revision_context_current
+    ):
+        parent_ids = [section.section_id for section in current_revision.sections]
+        request_ids = [section.section_id for section in request.sections]
+        headings = [section.heading.strip() for section in request.sections]
+        if (
+            any(section_id is None for section_id in request_ids)
+            or len(request_ids) != len(set(request_ids))
+            or request_ids != [section_id for section_id in parent_ids if section_id in request_ids]
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="Potomna wersja może zachować albo scalić sekcje bazowe w ich kolejności.",
+            )
+        if len(headings) != len(set(headings)):
+            raise HTTPException(
+                status_code=422,
+                detail="Nagłówki sekcji potomnej wersji muszą być unikalne.",
+            )
+        if any(not section.evidence_ids for section in request.sections):
+            raise HTTPException(
+                status_code=422,
+                detail="Każda sekcja potomnej wersji wymaga dowodów.",
+            )
+        allowed_evidence = revision_evidence_ids(current_revision)
+        if any(
+            set(section.evidence_ids).difference(allowed_evidence) for section in request.sections
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="Sekcje potomnej wersji mogą używać tylko dowodów wersji bazowej.",
+            )
+        return
     expected_headings = [section.heading for section in expected_sections]
     if request_headings != expected_headings:
         raise HTTPException(
@@ -603,6 +688,15 @@ def _validate_canonical_html_alignment(
     request: ContentDraftRevisionSaveRequest,
     latest_revision: ContentDraftRevision | None,
 ) -> None:
+    if (
+        request.page_assets is not None
+        or request.faq is not None
+        or request.official_source_references is not None
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Korekta HTML nie może zmieniać pozostałych pól dokumentu.",
+        )
     if latest_revision is None or request.base_revision_id != latest_revision.revision_id:
         raise HTTPException(
             status_code=409,
@@ -655,7 +749,7 @@ def _validate_review_evidence(
             status_code=422,
             detail="Brakuje zapisanej wersji, której dowody można sprawdzić.",
         )
-    allowed_evidence = _revision_evidence_ids(latest_revision)
+    allowed_evidence = revision_evidence_ids(latest_revision)
     unknown_evidence = sorted(set(request.evidence_ids).difference(allowed_evidence))
     if unknown_evidence:
         raise HTTPException(
@@ -665,21 +759,6 @@ def _validate_review_evidence(
                 + ", ".join(unknown_evidence)
             ),
         )
-
-
-def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
-    """Return every evidence lineage attached to the persisted document."""
-
-    return {
-        evidence_id
-        for evidence_ids in (
-            *(section.evidence_ids for section in revision.sections),
-            *(faq.evidence_ids for faq in revision.faq),
-            *(cta.evidence_ids for cta in revision.cta_blocks),
-            *(link.evidence_ids for link in revision.internal_links),
-        )
-        for evidence_id in evidence_ids
-    }
 
 
 def _review_request_matches_latest(

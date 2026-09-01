@@ -61,6 +61,70 @@ def test_needs_changes_editor_child_preserves_refresh_binding_without_codex_comp
     assert child.refresh_preparation_binding == parent.refresh_preparation_binding
 
 
+def test_full_document_editor_child_route_persists_page_assets(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store, parent = _bound_parent(tmp_path)
+    _mark_parent_needs_changes(store, parent)
+    client = _editor_client(monkeypatch, store, parent)
+    payload = _editor_request(parent)
+    payload["page_assets"] = parent.page_assets.model_copy(
+        update={"wordpress_title": payload["title"]}
+    ).model_dump(mode="json")
+
+    response = client.post(
+        f"/api/content/work-items/{parent.work_item_id}/draft-revisions",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["revision"]["page_assets"] == payload["page_assets"]
+
+
+def test_stale_full_document_editor_child_returns_typed_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store, parent = _bound_parent(tmp_path)
+    _mark_parent_needs_changes(store, parent)
+    client = _editor_client(monkeypatch, store, parent, context_current=False)
+    payload = _editor_request(parent)
+    payload["page_assets"] = parent.page_assets.model_copy(
+        update={"wordpress_title": payload["title"]}
+    ).model_dump(mode="json")
+
+    response = client.post(
+        f"/api/content/work-items/{parent.work_item_id}/draft-revisions",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "stale_context"
+
+
+def test_old_base_full_document_editor_child_returns_typed_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store, parent = _bound_parent(tmp_path)
+    _mark_parent_needs_changes(store, parent)
+    client = _editor_client(monkeypatch, store, parent)
+    payload = _editor_request(parent)
+    payload["base_revision_id"] = "content_revision_older"
+    payload["page_assets"] = parent.page_assets.model_copy(
+        update={"wordpress_title": payload["title"]}
+    ).model_dump(mode="json")
+
+    response = client.post(
+        f"/api/content/work-items/{parent.work_item_id}/draft-revisions",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "stale_base"
+
+
 def test_stale_refresh_receipt_in_editor_child_returns_typed_conflict(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
@@ -188,28 +252,33 @@ def _editor_client(
     monkeypatch: pytest.MonkeyPatch,
     store: ContentWorkflowStore,
     parent: object,
+    *,
+    context_current: bool = True,
 ) -> TestClient:
     revision = parent
-    command = workflow_router._build_editor_save_command(  # noqa: SLF001
-        work_item_id=revision.work_item_id,
-        request=ContentDraftRevisionSaveRequest.model_validate(_editor_request(revision)),
-        latest_revision=revision,
-        draft_package=SimpleNamespace(),
-        planning=SimpleNamespace(),
-        final_canonical_url=revision.final_canonical_url,
-        revision_context_current=True,
-    )
-    assert command.refresh_preparation_binding == revision.refresh_preparation_binding
-    assert command.proposal_metadata is None
-    context = ContentDraftRevisionContext.from_command(command)
-    assert context is not None
+    if context_current:
+        command = workflow_router._build_editor_save_command(  # noqa: SLF001
+            work_item_id=revision.work_item_id,
+            request=ContentDraftRevisionSaveRequest.model_validate(_editor_request(revision)),
+            latest_revision=revision,
+            draft_package=SimpleNamespace(),
+            planning=SimpleNamespace(),
+            final_canonical_url=revision.final_canonical_url,
+            revision_context_current=True,
+        )
+        assert command.refresh_preparation_binding == revision.refresh_preparation_binding
+        assert command.proposal_metadata is None
+        context = ContentDraftRevisionContext.from_command(command)
+        assert context is not None
+    else:
+        context = None
     state = store.load_draft_revision_state(revision.work_item_id)
     workspace = ContentDraftRevisionWorkspace(
         status="needs_changes",
         latest_revision=revision,
         latest_review=state.latest_review,
         revision_count=state.revision_count,
-        context_current=True,
+        context_current=context_current,
         editor_title=revision.title,
         editor_sections=revision.sections,
         can_save=True,

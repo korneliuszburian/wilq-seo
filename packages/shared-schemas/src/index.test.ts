@@ -251,6 +251,21 @@ describe("ContentRegulatorySourceReview schemas", () => {
       }).success
     ).toBe(true);
     expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        faq: [],
+        correction_reason: "canonical_html_alignment",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(false);
+    expect(
       ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
         status: "captured",
         snapshot: {
@@ -268,6 +283,27 @@ describe("ContentRegulatorySourceReview schemas", () => {
         safe_next_step: "Sprawdź źródło."
       }).success
     ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "Tytuł dokumentu",
+        page_assets: {
+          wordpress_title: "Inny tytuł",
+          meta_title: "Meta title",
+          meta_description: "Meta description",
+          h1: "Nagłówek",
+          lead: "Lead dokumentu",
+          byline: null
+        },
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        created_by: "wilku"
+      }).success
+    ).toBe(false);
     expect(
       ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
         status: "captured",
@@ -4487,6 +4523,42 @@ describe("Content work item workflow schemas", () => {
         }],
         correction_reason: "canonical_html_alignment",
         created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "Analiza pozwolenia zintegrowanego",
+        page_assets: {
+          wordpress_title: "Analiza pozwolenia zintegrowanego",
+          meta_title: "Analiza pozwolenia zintegrowanego – zakres",
+          meta_description: "Sprawdź zakres analizy i raport początkowy.",
+          h1: "Analiza pozwolenia zintegrowanego",
+          lead: "Praktyczne omówienie dokumentacji instalacji.",
+          byline: null
+        },
+        sections: [{
+          section_id: "section_scope",
+          heading: "Zakres analizy",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_official"]
+        }],
+        faq: [{
+          faq_id: "faq_initial_report",
+          question: "Kiedy raport może być wymagany?",
+          answer_markdown: "Obowiązek zależy od dwóch łącznych warunków.",
+          evidence_ids: ["ev_official"]
+        }],
+        official_source_references: [{
+          source_fact_id: "regulatory_source_fact_ekoportal",
+          source_url: "https://www.ekoportal.gov.pl/source.pdf",
+          source_title: "Wytyczne Ekoportal",
+          verified_on: "2026-09-01",
+          evidence_ids: ["ev_official"],
+          regulatory_requirement_ids: ["initial_report"]
+        }],
+        created_by: "wilku"
       }).success
     ).toBe(true);
     expect(
