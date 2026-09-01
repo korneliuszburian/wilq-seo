@@ -63,15 +63,17 @@ def regulatory_quality_issues(
             continue
         body_tokens = _semantic_tokens(revision_section.body_markdown)
         fact_tokens: set[str] = set()
+        requirement_evidence_ids: list[str] = []
         for requirement_id in requirement_ids:
             binding = coverage_by_requirement.get(requirement_id)
             if binding is None:
                 continue
+            requirement_evidence_ids.extend(binding.evidence_ids)
             for fact_id in binding.source_fact_ids:
                 fact = fact_by_id.get(fact_id)
                 if fact is not None:
                     fact_tokens.update(_semantic_tokens(fact.extracted_fact))
-        if fact_tokens and len(body_tokens & fact_tokens) < 3:
+        if not _has_required_fact_overlap(body_tokens, fact_tokens):
             issues.append(
                 (
                     "credibility",
@@ -80,7 +82,11 @@ def regulatory_quality_issues(
                         "Sekcja regulacyjna nie zachowuje wystarczającego "
                         "pokrycia zatwierdzonych source facts."
                     ),
-                    list(revision_section.evidence_ids),
+                    [
+                        evidence_id
+                        for evidence_id in dict.fromkeys(requirement_evidence_ids)
+                        if evidence_id in _revision_evidence_ids(revision)
+                    ],
                 )
             )
         query_tokens = {
@@ -131,7 +137,10 @@ def _merged_section_regulatory_issues(
                 fact = fact_by_id.get(fact_id)
                 if fact is not None:
                     requirement_fact_tokens.update(_semantic_tokens(fact.extracted_fact))
-            if requirement_fact_tokens and len(document_tokens & requirement_fact_tokens) < 3:
+            if not _has_required_fact_overlap(
+                document_tokens,
+                requirement_fact_tokens,
+            ):
                 missing_requirements.append(requirement_id)
                 missing_evidence_ids.extend(
                     evidence_id
@@ -202,9 +211,16 @@ def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
             *(item.evidence_ids for item in revision.faq),
             *(item.evidence_ids for item in revision.cta_blocks),
             *(item.evidence_ids for item in revision.internal_links),
+            *(item.evidence_ids for item in revision.official_source_references),
         )
         for evidence_id in values
     }
+
+
+def _has_required_fact_overlap(document_tokens: set[str], fact_tokens: set[str]) -> bool:
+    if not fact_tokens:
+        return True
+    return len(document_tokens & fact_tokens) >= min(3, len(fact_tokens))
 
 
 def _semantic_tokens(value: str) -> set[str]:

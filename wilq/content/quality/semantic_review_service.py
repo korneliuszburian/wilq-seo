@@ -48,6 +48,12 @@ from wilq.content.quality.semantic_review_guards import (
     regulatory_quality_issues,
     repetition_quality_issues,
 )
+from wilq.content.quality.semantic_review_runtime import (
+    finish_semantic_run as _finish_run,
+)
+from wilq.content.quality.semantic_review_runtime import (
+    semantic_runtime_trace as _trace,
+)
 from wilq.content.quality.semantic_review_store import (
     ContentSemanticReviewStore,
     SemanticReviewConflict,
@@ -58,7 +64,6 @@ from wilq.content.quality.semantic_review_turn import semantic_review_turn_reque
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.content.workflow.runtime.codex_run_lifecycle import (
-    finish_codex_run,
     runtime_error,
 )
 from wilq.schemas import CodexRun
@@ -518,7 +523,9 @@ def _apply_deterministic_quality_guards(
                             "affected_targets": targets,
                             "reason": reason,
                             "instruction": "Popraw wskazany problem i uruchom review ponownie.",
-                            "evidence_ids": evidence_ids,
+                            "evidence_ids": list(
+                                dict.fromkeys([*finding.evidence_ids, *evidence_ids])
+                            ),
                         }
                     )
                     break
@@ -775,27 +782,6 @@ def _finish_with_blocker(
         blockers=[blocker],
         run=run,
         runtime=trace,
-    )
-
-
-def _finish_run(
-    store: LocalStateStore,
-    run: CodexRun,
-    *,
-    status: Literal["blocked", "failed"],
-    error: str,
-) -> CodexRun:
-    return finish_codex_run(store, run, status=status, error=error)
-
-
-def _trace(result: CodexAppServerTurnResult) -> ContentCodexRuntimeTrace:
-    return ContentCodexRuntimeTrace(
-        status=result.status,
-        thread_id=result.thread_id,
-        turn_id=result.turn_id,
-        event_methods=list(result.event_methods),
-        item_types=list(result.item_types),
-        external_call_attempted=result.external_call_attempted,
     )
 
 

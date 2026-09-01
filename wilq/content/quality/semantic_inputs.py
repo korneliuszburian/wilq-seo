@@ -23,6 +23,7 @@ def revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
                 *(item.evidence_ids for item in revision.faq),
                 *(item.evidence_ids for item in revision.cta_blocks),
                 *(item.evidence_ids for item in revision.internal_links),
+                *(item.evidence_ids for item in revision.official_source_references),
             )
             for evidence_id in values
         )
