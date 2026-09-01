@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 
 from wilq.content.drafts.initial_full_draft_scope import (
     bind_draftable_planning_sections,
     draftable_planning_sections,
 )
+from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.section_heading_index import build_section_heading_index
 from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
 from wilq.content.quality.working_note import contains_working_note
+from wilq.content.regulatory.policy import ContentRegulatoryRequirementCoverage
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -38,7 +41,7 @@ def regulatory_quality_issues(
     revision: ContentDraftRevision,
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
-) -> list[tuple[ContentSemanticDimension, str, str]]:
+) -> list[tuple[ContentSemanticDimension, str, str, list[str]]]:
     coverage = planning_input.regulatory_coverage
     if coverage is None:
         return []
@@ -49,7 +52,7 @@ def regulatory_quality_issues(
         revision.sections,
         allow_revision_subset=True,
     )
-    issues: list[tuple[ContentSemanticDimension, str, str]] = []
+    issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
     for revision_section in revision.sections:
         section_id = revision_section.section_id
         if section_id is None:
@@ -77,6 +80,7 @@ def regulatory_quality_issues(
                         "Sekcja regulacyjna nie zachowuje wystarczającego "
                         "pokrycia zatwierdzonych source facts."
                     ),
+                    list(revision_section.evidence_ids),
                 )
             )
         query_tokens = {
@@ -88,15 +92,36 @@ def regulatory_quality_issues(
                     "search_intent_fit",
                     str(revision_section.section_id),
                     "Sekcja nie odpowiada zatwierdzonej mapie zapytań.",
+                    list(revision_section.evidence_ids),
                 )
             )
-    revision_ids = {section.section_id for section in revision.sections}
-    document_tokens = _semantic_tokens(
-        "\n".join(section.body_markdown for section in revision.sections)
+    issues.extend(
+        _merged_section_regulatory_issues(
+            revision=revision,
+            proposal=proposal,
+            fact_by_id=fact_by_id,
+            coverage_by_requirement=coverage_by_requirement,
+        )
     )
+    return issues
+
+
+def _merged_section_regulatory_issues(
+    *,
+    revision: ContentDraftRevision,
+    proposal: ContentPlanningProposal,
+    fact_by_id: Mapping[str, ContentSourceFact],
+    coverage_by_requirement: Mapping[str, ContentRegulatoryRequirementCoverage],
+) -> list[tuple[ContentSemanticDimension, str, str, list[str]]]:
+    revision_ids = {section.section_id for section in revision.sections}
+    revision_evidence_ids = _revision_evidence_ids(revision)
+    document_tokens = _semantic_tokens("\n".join(x.body_markdown for x in revision.sections))
+    issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
     for proposal_section in draftable_planning_sections(proposal.sections):
         if proposal_section.section_id in revision_ids:
             continue
+        missing_requirements: list[str] = []
+        missing_evidence_ids: list[str] = []
         for requirement_id in proposal_section.regulatory_requirement_ids:
             binding = coverage_by_requirement.get(requirement_id)
             if binding is None:
@@ -107,14 +132,23 @@ def regulatory_quality_issues(
                 if fact is not None:
                     requirement_fact_tokens.update(_semantic_tokens(fact.extracted_fact))
             if requirement_fact_tokens and len(document_tokens & requirement_fact_tokens) < 3:
-                issues.append(
-                    (
-                        "credibility",
-                        "whole_document",
-                        "Scalony dokument nie zachowuje pokrycia wymagania "
-                        f"{requirement_id} z usuniętej sekcji planu.",
-                    )
+                missing_requirements.append(requirement_id)
+                missing_evidence_ids.extend(
+                    evidence_id
+                    for evidence_id in binding.evidence_ids
+                    if evidence_id in revision_evidence_ids
                 )
+        if missing_requirements:
+            issues.append(
+                (
+                    "credibility",
+                    "whole_document",
+                    "Scalony dokument nie zachowuje wymagań: "
+                    + ", ".join(missing_requirements)
+                    + ".",
+                    list(dict.fromkeys(missing_evidence_ids)),
+                )
+            )
         merged_query_tokens = {
             token for term in proposal_section.query_terms for token in _semantic_tokens(str(term))
         }
@@ -128,9 +162,27 @@ def regulatory_quality_issues(
                     "search_intent_fit",
                     "whole_document",
                     "Scalony dokument nie odpowiada mapie zapytań usuniętej sekcji planu.",
+                    [
+                        evidence_id
+                        for evidence_id in proposal_section.evidence_ids
+                        if evidence_id in revision_evidence_ids
+                    ],
                 )
             )
     return issues
+
+
+def _revision_evidence_ids(revision: ContentDraftRevision) -> set[str]:
+    return {
+        evidence_id
+        for values in (
+            *(section.evidence_ids for section in revision.sections),
+            *(item.evidence_ids for item in revision.faq),
+            *(item.evidence_ids for item in revision.cta_blocks),
+            *(item.evidence_ids for item in revision.internal_links),
+        )
+        for evidence_id in values
+    }
 
 
 def _semantic_tokens(value: str) -> set[str]:

@@ -167,11 +167,12 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
                 heading="Monitoring",
                 purpose="Odpowiedz na pytanie.",
                 inventory_disposition="rewrite",
-                evidence_ids=["ev_source"],
                 regulatory_requirement_ids=[
                     "covered_requirement",
                     "monitoring_requirement",
+                    "second_missing_requirement",
                 ],
+                evidence_ids=["ev_source", "ev_second"],
             ),
         ]
     )
@@ -181,7 +182,7 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
                 section_id="retained",
                 heading="Zakres i monitoring",
                 body_markdown="Połączona treść dokumentacji instalacji.",
-                evidence_ids=["ev_source"],
+                evidence_ids=["ev_source", "ev_second"],
             )
         ]
     )
@@ -196,15 +197,26 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
                     source_id="fact_monitoring",
                     extracted_fact="wymagany monitoring gleby wód gruntowych instalacji",
                 ),
+                SimpleNamespace(
+                    source_id="fact_second_missing",
+                    extracted_fact="obowiązkowa analiza emisji hałasu przemysłowego",
+                ),
             ],
             requirement_coverage=[
                 SimpleNamespace(
                     requirement_id="covered_requirement",
                     source_fact_ids=["fact_covered"],
+                    evidence_ids=["ev_source"],
                 ),
                 SimpleNamespace(
                     requirement_id="monitoring_requirement",
                     source_fact_ids=["fact_monitoring"],
+                    evidence_ids=["ev_source"],
+                ),
+                SimpleNamespace(
+                    requirement_id="second_missing_requirement",
+                    source_fact_ids=["fact_second_missing"],
+                    evidence_ids=["ev_second"],
                 ),
             ],
         )
@@ -215,6 +227,9 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
         planning_input=planning_input,
         proposal=proposal,
     )
-    assert ("credibility", "whole_document") in [
-        (dimension, target) for dimension, target, _reason in issues
-    ]
+    credibility = next(
+        issue for issue in issues if issue[0] == "credibility" and issue[1] == "whole_document"
+    )
+    assert "monitoring_requirement" in credibility[2]
+    assert "second_missing_requirement" in credibility[2]
+    assert credibility[3] == ["ev_source", "ev_second"]
