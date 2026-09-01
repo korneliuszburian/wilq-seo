@@ -301,7 +301,7 @@ def _editor_client(
     monkeypatch.setattr(
         workflow_router,
         "_snapshot_for_work_item_or_404",
-        lambda _work_item_id: snapshot,
+        lambda _work_item_id, **_kwargs: snapshot,
     )
     monkeypatch.setattr(workflow_router, "_editor_save_context", lambda _snapshot: context)
     monkeypatch.setattr(workflow_router, "content_workflow_store", lambda: store)
