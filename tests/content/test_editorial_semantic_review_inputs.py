@@ -168,7 +168,10 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
                 purpose="Odpowiedz na pytanie.",
                 inventory_disposition="rewrite",
                 evidence_ids=["ev_source"],
-                regulatory_requirement_ids=["monitoring_requirement"],
+                regulatory_requirement_ids=[
+                    "covered_requirement",
+                    "monitoring_requirement",
+                ],
             ),
         ]
     )
@@ -186,15 +189,23 @@ def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
         regulatory_coverage=SimpleNamespace(
             source_facts=[
                 SimpleNamespace(
+                    source_id="fact_covered",
+                    extracted_fact="połączona treść dokumentacji instalacji",
+                ),
+                SimpleNamespace(
                     source_id="fact_monitoring",
                     extracted_fact="wymagany monitoring gleby wód gruntowych instalacji",
-                )
+                ),
             ],
             requirement_coverage=[
                 SimpleNamespace(
+                    requirement_id="covered_requirement",
+                    source_fact_ids=["fact_covered"],
+                ),
+                SimpleNamespace(
                     requirement_id="monitoring_requirement",
                     source_fact_ids=["fact_monitoring"],
-                )
+                ),
             ],
         )
     )

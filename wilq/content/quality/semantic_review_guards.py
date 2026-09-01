@@ -97,23 +97,24 @@ def regulatory_quality_issues(
     for proposal_section in draftable_planning_sections(proposal.sections):
         if proposal_section.section_id in revision_ids:
             continue
-        merged_fact_tokens: set[str] = set()
         for requirement_id in proposal_section.regulatory_requirement_ids:
             binding = coverage_by_requirement.get(requirement_id)
             if binding is None:
                 continue
+            requirement_fact_tokens: set[str] = set()
             for fact_id in binding.source_fact_ids:
                 fact = fact_by_id.get(fact_id)
                 if fact is not None:
-                    merged_fact_tokens.update(_semantic_tokens(fact.extracted_fact))
-        if merged_fact_tokens and len(document_tokens & merged_fact_tokens) < 3:
-            issues.append(
-                (
-                    "credibility",
-                    "whole_document",
-                    "Scalony dokument nie zachowuje pokrycia wymagań usuniętej sekcji planu.",
+                    requirement_fact_tokens.update(_semantic_tokens(fact.extracted_fact))
+            if requirement_fact_tokens and len(document_tokens & requirement_fact_tokens) < 3:
+                issues.append(
+                    (
+                        "credibility",
+                        "whole_document",
+                        "Scalony dokument nie zachowuje pokrycia wymagania "
+                        f"{requirement_id} z usuniętej sekcji planu.",
+                    )
                 )
-            )
         merged_query_tokens = {
             token for term in proposal_section.query_terms for token in _semantic_tokens(str(term))
         }
