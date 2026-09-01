@@ -44,6 +44,17 @@ def validate_full_document_child(
     allowed_knowledge_cards = {
         item for section in latest_revision.sections for item in section.knowledge_card_ids
     }
+    retained_section_ids = {section.section_id for section in request.sections}
+    removed_section_ids = {section.section_id for section in latest_revision.sections}.difference(
+        retained_section_ids
+    )
+    preserved_placements = {item.placement for item in latest_revision.cta_blocks} | {
+        item.placement for item in latest_revision.internal_links
+    }
+    if removed_section_ids.intersection(preserved_placements):
+        raise ValueError(
+            "Nie można scalić sekcji, do której nadal przypisano CTA albo link wewnętrzny."
+        )
     for section in request.sections:
         if (
             set(section.claim_ids).difference(allowed_claims)

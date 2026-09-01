@@ -237,11 +237,18 @@ def content_work_item_draft_revision_save(
     request_would_create_child = (
         latest_revision is not None and request.base_revision_id == latest_revision.revision_id
     )
+    full_document_fields = request_has_full_document_fields(request)
     if (
-        request_would_create_child
-        and request_has_full_document_fields(request)
-        and not workspace.context_current
+        latest_revision is not None
+        and full_document_fields
+        and request.base_revision_id != latest_revision.revision_id
     ):
+        return _workspace_conflict_response(
+            code="stale_base",
+            snapshot=snapshot,
+            safe_next_step=revision_conflict_next_step("stale_base"),
+        )
+    if request_would_create_child and full_document_fields and not workspace.context_current:
         return _workspace_conflict_response(
             code="stale_context",
             snapshot=snapshot,
@@ -624,6 +631,7 @@ def _validate_revision_sections(
     ):
         parent_ids = [section.section_id for section in current_revision.sections]
         request_ids = [section.section_id for section in request.sections]
+        headings = [section.heading.strip() for section in request.sections]
         if (
             any(section_id is None for section_id in request_ids)
             or len(request_ids) != len(set(request_ids))
@@ -632,6 +640,11 @@ def _validate_revision_sections(
             raise HTTPException(
                 status_code=422,
                 detail="Potomna wersja może zachować albo scalić sekcje bazowe w ich kolejności.",
+            )
+        if len(headings) != len(set(headings)):
+            raise HTTPException(
+                status_code=422,
+                detail="Nagłówki sekcji potomnej wersji muszą być unikalne.",
             )
         allowed_evidence = revision_evidence_ids(current_revision)
         if any(

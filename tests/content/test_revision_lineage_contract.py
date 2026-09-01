@@ -28,6 +28,7 @@ from wilq.content.workflow.documents.revision_persistence import (
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionCtaBlock,
     ContentDraftRevisionFaqItem,
     ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionPageAssets,
@@ -487,6 +488,51 @@ def test_editor_child_rejects_stale_full_document_context() -> None:
             revision,
             revision_context_current=False,
             approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_editor_child_rejects_merge_with_component_on_removed_section() -> None:
+    revision, source, request, _page_assets = _full_document_child_fixture()
+    revision = revision.model_copy(
+        update={
+            "cta_blocks": [
+                ContentDraftRevisionCtaBlock(
+                    cta_id="cta_monitoring",
+                    placement="section_monitoring",
+                    body_markdown="Omów dokumentację.",
+                    evidence_ids=["ev_lineage"],
+                )
+            ]
+        }
+    )
+
+    with pytest.raises(ValueError, match="przypisano CTA"):
+        validate_full_document_child(
+            request,
+            revision,
+            revision_context_current=True,
+            approved_source_urls={source.source_fact_id: source.source_url},
+        )
+
+
+def test_editor_child_rejects_duplicate_edited_headings() -> None:
+    revision, _source, request, _page_assets = _full_document_child_fixture()
+    duplicate_sections = [
+        section.model_copy(update={"heading": "Ten sam nagłówek"}) for section in revision.sections
+    ]
+    duplicate_request = request.model_copy(update={"sections": duplicate_sections})
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(draft_package=SimpleNamespace(sections=[]))
+        )
+    )
+
+    with pytest.raises(HTTPException, match="muszą być unikalne"):
+        _validate_revision_sections(
+            duplicate_request,
+            snapshot,
+            latest_revision=revision,
+            revision_context_current=True,
         )
 
 
