@@ -6,9 +6,13 @@ import pytest
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality import semantic_review_service
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewRequest
+from wilq.content.quality.semantic_review_guards import regulatory_quality_issues
 from wilq.content.quality.semantic_review_service import _SemanticInputs
 from wilq.content.quality.semantic_review_turn import semantic_review_turn_request
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionSection,
@@ -141,3 +145,46 @@ def test_semantic_turn_rejects_nonempty_plan_compacted_to_no_sections() -> None:
             planning_input=ContentPlanningInput.model_construct(),
             proposal=proposal,
         )
+
+
+def test_regulatory_guard_accepts_editor_child_section_subset() -> None:
+    proposal = ContentPlanningProposal.model_construct(
+        sections=[
+            ContentPlanningSection(
+                section_id="retained",
+                heading="Zakres",
+                purpose="Odpowiedz na pytanie.",
+                inventory_disposition="rewrite",
+                evidence_ids=["ev_source"],
+            ),
+            ContentPlanningSection(
+                section_id="merged_away",
+                heading="Monitoring",
+                purpose="Odpowiedz na pytanie.",
+                inventory_disposition="rewrite",
+                evidence_ids=["ev_source"],
+            ),
+        ]
+    )
+    revision = ContentDraftRevision.model_construct(
+        sections=[
+            ContentDraftRevisionSection(
+                section_id="retained",
+                heading="Zakres i monitoring",
+                body_markdown="Połączona treść dokumentacji instalacji.",
+                evidence_ids=["ev_source"],
+            )
+        ]
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        regulatory_coverage=SimpleNamespace(source_facts=[], requirement_coverage=[])
+    )
+
+    assert (
+        regulatory_quality_issues(
+            revision=revision,
+            planning_input=planning_input,
+            proposal=proposal,
+        )
+        == []
+    )

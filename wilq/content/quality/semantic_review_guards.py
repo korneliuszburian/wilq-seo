@@ -42,12 +42,11 @@ def regulatory_quality_issues(
     if coverage is None:
         return []
     fact_by_id = {fact.source_id: fact for fact in coverage.source_facts}
-    coverage_by_requirement = {
-        item.requirement_id: item for item in coverage.requirement_coverage
-    }
+    coverage_by_requirement = {item.requirement_id: item for item in coverage.requirement_coverage}
     proposal_by_id = bind_draftable_planning_sections(
         proposal.sections,
         revision.sections,
+        allow_revision_subset=True,
     )
     issues: list[tuple[ContentSemanticDimension, str, str]] = []
     for revision_section in revision.sections:
@@ -80,9 +79,7 @@ def regulatory_quality_issues(
                 )
             )
         query_tokens = {
-            token
-            for term in proposal_section.query_terms
-            for token in _semantic_tokens(str(term))
+            token for term in proposal_section.query_terms for token in _semantic_tokens(str(term))
         }
         if query_tokens and len(body_tokens) < 15 and not body_tokens.intersection(query_tokens):
             issues.append(
@@ -157,9 +154,7 @@ def repetition_quality_issues(
     issues: list[tuple[ContentSemanticDimension, str, str]] = []
     normalized_bodies = [body for body in section_bodies.values() if body]
     if len(normalized_bodies) != len(set(normalized_bodies)):
-        issues.append(
-            ("repetition", "whole_document", "Dokument zawiera powtórzone całe sekcje.")
-        )
+        issues.append(("repetition", "whole_document", "Dokument zawiera powtórzone całe sekcje."))
     for section_id, body in section_bodies.items():
         paragraphs = [part.strip() for part in re.split(r"\n+", body) if part.strip()]
         if len(paragraphs) > 1 and len(paragraphs) != len(set(paragraphs)):
