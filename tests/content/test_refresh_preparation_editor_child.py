@@ -59,6 +59,8 @@ def test_needs_changes_editor_child_preserves_refresh_binding_without_codex_comp
     assert child.base_revision_id == parent.revision_id
     assert child.proposal_metadata is None
     assert child.refresh_preparation_binding == parent.refresh_preparation_binding
+    assert body["workspace"]["context_current"] is True
+    assert body["workspace"]["can_review"] is True
 
 
 def test_full_document_editor_child_route_persists_page_assets(
@@ -298,10 +300,30 @@ def _editor_client(
         revision_workspace=workspace,
         planning_workspace=SimpleNamespace(section_map_current=True),
     )
+
+    def snapshot_loader(_work_item_id: str, **_kwargs: object) -> SimpleNamespace:
+        current = store.load_draft_revision_state(revision.work_item_id)
+        latest = current.latest_revision
+        if latest is None or latest.revision_id == revision.revision_id:
+            return snapshot
+        refreshed_workspace = ContentDraftRevisionWorkspace(
+            status="unreviewed",
+            latest_revision=latest,
+            latest_review=current.latest_review,
+            revision_count=current.revision_count,
+            context_current=context_current,
+            editor_title=latest.title,
+            editor_sections=latest.sections,
+            can_save=False,
+            can_review=context_current,
+            safe_next_step="Sprawdź poprawioną wersję.",
+        )
+        return SimpleNamespace(**(snapshot.__dict__ | {"revision_workspace": refreshed_workspace}))
+
     monkeypatch.setattr(
         workflow_router,
         "_snapshot_for_work_item_or_404",
-        lambda _work_item_id, **_kwargs: snapshot,
+        snapshot_loader,
     )
     monkeypatch.setattr(workflow_router, "_editor_save_context", lambda _snapshot: context)
     monkeypatch.setattr(workflow_router, "content_workflow_store", lambda: store)

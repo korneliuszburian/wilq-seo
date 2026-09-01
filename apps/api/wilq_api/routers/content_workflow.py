@@ -315,7 +315,7 @@ def content_work_item_draft_revision_save(
     if result.revision is None:
         raise RuntimeError("Successful revision append is missing the saved revision.")
 
-    refreshed = _snapshot_for_work_item_or_404(work_item_id)
+    refreshed = semantic_review_snapshot_for_work_item_or_404(work_item_id)
     return ContentDraftRevisionSaveResponse(
         status=result.status,
         revision=result.revision,
