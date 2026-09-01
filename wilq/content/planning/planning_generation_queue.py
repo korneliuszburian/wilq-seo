@@ -185,15 +185,16 @@ def existing_planning_generation_state(
         )
     )
     if (
-        (
-            stale_mapping
-            and allow_automatic_stale_mapping_regeneration
-            and request.refresh_preparation_authorization_id is None
-        )
-        or request.regenerate_after_review
+        stale_mapping
+        and allow_automatic_stale_mapping_regeneration
+        and request.refresh_preparation_authorization_id is None
     ):
         request = request.model_copy(update={"regenerate_stale_mapping": True})
-    elif current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
+    if request.regenerate_after_review:
+        return snapshot, request, None
+    if request.regenerate_stale_mapping:
+        return snapshot, request, None
+    if current_is_exact_existing and current.status in {"created", "idempotent", "ready"}:
         return (
             snapshot,
             request,
@@ -207,9 +208,7 @@ def existing_planning_generation_state(
                 }
             ),
         )
-    elif not current_is_exact_existing or not request.regenerate_after_review:
-        return snapshot, request, current
-    return snapshot, request, None
+    return snapshot, request, current
 
 
 def enqueue_planning_generation(
@@ -236,7 +235,9 @@ def enqueue_planning_generation(
         subject=_request_subject(request),
         planning_input_digest=request.expected_planning_input_digest,
         response=result,
-        allow_finished_reset=request.regenerate_stale_mapping,
+        allow_finished_reset=(
+            request.regenerate_stale_mapping or request.regenerate_after_review
+        ),
     )
     if outcome == "existing":
         queued = store.queued_subject_response(

@@ -147,9 +147,10 @@ class ContentPlanningProposalRequest(BaseModel):
             )
             if not self.refresh_preparation_authorization_id:
                 raise ValueError("Refresh preparation authorization ID cannot be blank.")
-            if self.regenerate_stale_mapping or self.regenerate_after_review:
+            if self.regenerate_stale_mapping:
                 raise ValueError(
-                    "A refresh preparation authorization cannot authorize plan regeneration."
+                    "A refresh preparation authorization cannot authorize "
+                    "stale mapping regeneration."
                 )
         return self
 

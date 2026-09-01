@@ -322,7 +322,9 @@ def _prepare_generation(
         ),
         planning_input.planning_input_digest,
     )
-    if existing is not None and not request.regenerate_stale_mapping:
+    if existing is not None and not (
+        request.regenerate_stale_mapping or request.regenerate_after_review
+    ):
         if (
             proposal_quality_errors(existing)
             or any(
