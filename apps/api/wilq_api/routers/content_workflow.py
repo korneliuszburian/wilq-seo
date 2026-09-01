@@ -646,6 +646,11 @@ def _validate_revision_sections(
                 status_code=422,
                 detail="Nagłówki sekcji potomnej wersji muszą być unikalne.",
             )
+        if any(not section.evidence_ids for section in request.sections):
+            raise HTTPException(
+                status_code=422,
+                detail="Każda sekcja potomnej wersji wymaga dowodów.",
+            )
         allowed_evidence = revision_evidence_ids(current_revision)
         if any(
             set(section.evidence_ids).difference(allowed_evidence) for section in request.sections

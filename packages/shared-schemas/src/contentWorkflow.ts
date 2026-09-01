@@ -3336,6 +3336,16 @@ export const ContentDraftRevisionSaveRequestSchema = z
   })
   .superRefine((request, context) => {
     if (
+      request.page_assets != null &&
+      request.page_assets.wordpress_title !== request.title
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["page_assets", "wordpress_title"],
+        message: "page assets WordPress title must match the draft title"
+      });
+    }
+    if (
       request.correction_reason === "canonical_html_alignment" &&
       (request.page_assets != null ||
         request.faq != null ||

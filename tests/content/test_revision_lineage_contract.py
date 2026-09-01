@@ -535,6 +535,17 @@ def test_editor_child_rejects_duplicate_edited_headings() -> None:
             revision_context_current=True,
         )
 
+    without_evidence = duplicate_request.model_copy(
+        update={"sections": [request.sections[0].model_copy(update={"evidence_ids": []})]}
+    )
+    with pytest.raises(HTTPException, match="wymaga dowodów"):
+        _validate_revision_sections(
+            without_evidence,
+            snapshot,
+            latest_revision=revision,
+            revision_context_current=True,
+        )
+
 
 def test_full_document_fields_reject_legacy_revision_parent() -> None:
     command = _command(schema_version="wilq_content_draft_revision_v1")

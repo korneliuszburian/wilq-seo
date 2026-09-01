@@ -284,6 +284,27 @@ describe("ContentRegulatorySourceReview schemas", () => {
       }).success
     ).toBe(true);
     expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "Tytuł dokumentu",
+        page_assets: {
+          wordpress_title: "Inny tytuł",
+          meta_title: "Meta title",
+          meta_description: "Meta description",
+          h1: "Nagłówek",
+          lead: "Lead dokumentu",
+          byline: null
+        },
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        created_by: "wilku"
+      }).success
+    ).toBe(false);
+    expect(
       ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
         status: "captured",
         snapshot: {
