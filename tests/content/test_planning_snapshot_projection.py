@@ -25,7 +25,7 @@ def planning_harness(
     return configure_planning_harness(monkeypatch, tmp_path)
 
 
-def test_selected_workspace_does_not_shadow_cold_live_planning(
+def test_selected_workspace_reads_current_source_without_starting_planning(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -42,6 +42,14 @@ def test_selected_workspace_does_not_shadow_cold_live_planning(
         "read_content_inventory_material",
         record_live_material,
     )
+    monkeypatch.setattr(
+        "wilq.content.workflow.workspace.document_workspace.read_content_inventory_material",
+        record_live_material,
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.pipeline_steps.decision_context.read_content_inventory_material",
+        record_live_material,
+    )
 
     selected = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/selected-workspace"
@@ -49,10 +57,9 @@ def test_selected_workspace_does_not_shadow_cold_live_planning(
 
     assert selected.status_code == 200
     selected_source = selected.json()["workspace"]["source_snapshot"]
-    assert selected_source["status_label"].startswith("materiał zapisany")
-    assert "zapisan" in selected_source["reason"]
-    assert any("Aktualność materiału" in caveat for caveat in selected_source["caveats"])
-    assert live_material_reads == []
+    assert selected_source["status"] == "available"
+    assert selected_source["lead"]
+    assert any("bdo-co-musi-wiedziec-przedsiebiorca" in url for url in live_material_reads)
 
     planning = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
