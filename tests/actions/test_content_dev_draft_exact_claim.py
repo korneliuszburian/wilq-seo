@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from threading import Event
 from types import SimpleNamespace
+
+import pytest
 
 from wilq.actions.apply_lifecycle import ApplyDependencies, apply_action
 from wilq.content.handoff.wordpress_execution import (
@@ -270,3 +273,73 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
         "act_content_dev_draft_first",
         "act_content_dev_draft_child",
     ]
+
+
+@pytest.mark.parametrize(
+    ("fault", "expected_code"),
+    [
+        ("unbound", "wordpress_action_chain_binding_mismatch"),
+        ("mismatched", "wordpress_action_chain_binding_mismatch"),
+        ("wrong_actor", "wordpress_action_actor_mismatch"),
+        ("reordered", "wordpress_action_chain_order_invalid"),
+    ],
+)
+def test_invalid_dev_draft_action_chain_stops_before_claim_and_adapter(
+    monkeypatch,
+    tmp_path,
+    fault: str,
+    expected_code: str,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "invalid_chain.sqlite3"))
+    binding = _approved_binding()
+    action = _action("act_content_dev_draft_invalid_chain", binding)
+    if fault == "unbound":
+        action.audit_events[0].details = {}
+    elif fault == "mismatched":
+        mismatched = binding.model_copy(update={"content_digest": "d" * 64})
+        action.audit_events[0].details = {
+            "wordpress_draft_binding": mismatched.model_dump(mode="json")
+        }
+    elif fault == "wrong_actor":
+        action.audit_events[2].actor = "inny_operator"
+    else:
+        action.audit_events[1].created_at = action.audit_events[0].created_at - timedelta(
+            seconds=1
+        )
+
+    claim_calls: list[str] = []
+    adapter_calls: list[str] = []
+    store = content_workflow_store()
+
+    def claim(*args, **kwargs):
+        claim_calls.append("claim")
+        return store.claim_wordpress_revision_apply(*args, **kwargs)
+
+    dependencies = ApplyDependencies(
+        review_gate=lambda current: current.review_gate,
+        wordpress_apply_capability=lambda *_args: (None, []),
+        mutation_adapter=lambda _action: "content_dev_draft_execution_boundary",
+        execute_mutation_adapter=lambda *_args: (adapter_calls.append("adapter"), [])[1],
+        connector_status=lambda _connector: SimpleNamespace(configured=True),
+        impact_status=lambda _event: "checked",
+        wordpress_apply_claim=claim,
+        finish_wordpress_apply_claim=store.finish_wordpress_revision_apply_claim,
+        status_label=lambda status: status,
+        audit_event_label=lambda event: event,
+    )
+    result = apply_action(
+        action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=binding,
+        ),
+        dependencies=dependencies,
+    )
+
+    assert result.applied is False
+    assert [blocker.code for blocker in result.wordpress_revision_blockers] == [
+        expected_code
+    ]
+    assert claim_calls == []
+    assert adapter_calls == []
