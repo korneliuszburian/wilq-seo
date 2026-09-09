@@ -1374,10 +1374,10 @@ def _verified_created_draft_post_id(
             code="wordpress_draft_status_mismatch",
             expected_digest=expected_digest,
         )
-    observed_title = _wordpress_payload_title(payload)
+    observed_titles = _wordpress_payload_titles(payload)
     expected_title_digest = _wordpress_draft_value_digest(expected_title)
-    observed_title_digest = _wordpress_draft_value_digest(observed_title)
-    if observed_title_digest != expected_title_digest:
+    observed_title_digest = _wordpress_draft_value_digest(list(observed_titles))
+    if not observed_titles or any(title != expected_title for title in observed_titles):
         raise WordPressDraftVerificationError(
             "Utworzono szkic WordPress, ale odczyt nie potwierdził tytułu.",
             post_id=post_id,
@@ -1446,13 +1446,21 @@ def _draft_post_readback(
 
 
 def _wordpress_payload_title(payload: dict[str, Any]) -> str:
+    titles = _wordpress_payload_titles(payload)
+    return titles[0] if titles else ""
+
+
+def _wordpress_payload_titles(payload: dict[str, Any]) -> tuple[str, ...]:
     raw_title = payload.get("title")
-    title = wordpress_title(raw_title)
-    if not title and isinstance(raw_title, dict):
+    values: list[str] = []
+    if isinstance(raw_title, dict):
         raw_value = raw_title.get("raw")
         if isinstance(raw_value, str):
-            return clean_metadata_text(raw_value)
-    return title
+            values.append(clean_metadata_text(raw_value))
+    rendered = wordpress_title(raw_title)
+    if rendered and rendered not in values:
+        values.append(rendered)
+    return tuple(value for value in values if value)
 
 
 def wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:
