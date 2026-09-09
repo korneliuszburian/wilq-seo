@@ -21,6 +21,10 @@ from wilq.actions.payload_readiness import (
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
 from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
+from wilq.content.workflow.target.dev_draft_action import (
+    CONTENT_DEV_DRAFT_ACTION_TYPE,
+    content_dev_draft_apply_binding,
+)
 from wilq.content.workflow.target.new_page_apply_capability import new_page_apply_binding
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -212,6 +216,9 @@ def _resolve_apply_capability(
     request: ActionApplyRequest | None,
     wordpress_apply_capability: WordPressApplyCapability,
 ) -> _ApplyCapability:
+    if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
+        binding, blockers = content_dev_draft_apply_binding(action, request)
+        return _ApplyCapability(binding, blockers, is_new_page=False)
     if action.payload.get("action_type") == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE:
         capability, blockers = new_page_apply_binding(action, request)
         return _ApplyCapability(capability, blockers, is_new_page=True)

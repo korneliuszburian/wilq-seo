@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.actions.metric_utils import unique_values
 from wilq.connectors.wordpress.acf_source_snapshot import read_wordpress_acf_flexible_snapshot
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
@@ -25,10 +26,12 @@ from wilq.content.workflow.target.target_mapping_persistence import (
     confirmation_for_live_target_mapping,
 )
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionMode,
     ActionObject,
     ActionRisk,
     ActionStatus,
+    ActionWordPressDraftApplyBlocker,
     AuditEvent,
     OpportunityDomain,
 )
@@ -37,6 +40,45 @@ from wilq.storage.local_state import local_state_store
 CONTENT_DEV_DRAFT_ACTION_TYPE = "content_dev_draft_create"
 CONTENT_DEV_DRAFT_ACTION_CONTRACT = "content_dev_draft_action_v1"
 CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT = "content_dev_draft_action_created"
+
+
+def content_dev_draft_apply_binding(
+    action: ActionObject,
+    request: ActionApplyRequest | None,
+) -> tuple[
+    ContentDraftRevisionBinding | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
+    """Bind a dev-draft action to the exact approved revision claimed at apply."""
+
+    binding = request.wordpress_draft if request is not None else None
+    action_binding = action.payload.get("content_target_draft_binding")
+    if binding is None:
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_revision_binding_required",
+                label="Brakuje dokładnej wersji treści",
+                reason="Utworzenie szkicu dev wymaga bindingu zatwierdzonej rewizji.",
+                next_step="Odśwież akcję dla aktualnej wersji i ponów apply.",
+            )
+        ]
+    if not isinstance(action_binding, dict) or any(
+        action_binding.get(action_key) != getattr(binding, binding_key)
+        for action_key, binding_key in (
+            ("work_item_id", "work_item_id"),
+            ("revision_id", "revision_id"),
+            ("revision_digest", "content_digest"),
+        )
+    ):
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_revision_binding_mismatch",
+                label="Wersja apply nie pasuje do akcji szkicu dev",
+                reason="Żądanie wskazuje inną rewizję niż zatwierdzony payload akcji.",
+                next_step="Użyj bindingu dokładnej rewizji zapisanej w tej akcji.",
+            )
+        ]
+    return binding, []
 
 
 class ContentTargetDraftActionCommand(BaseModel):

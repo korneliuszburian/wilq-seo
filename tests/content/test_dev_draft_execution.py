@@ -14,6 +14,7 @@ from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftPayload,
 )
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 
 
@@ -44,6 +45,20 @@ def _post_payload() -> SimpleNamespace:
         title="Testowy szkic",
         content_html="<p>Oczekiwana treść.</p>",
         acf=None,
+    )
+
+
+def _binding() -> ContentDraftRevisionBinding:
+    return ContentDraftRevisionBinding(
+        work_item_id="content_work_item_test",
+        handoff_id="wordpress_draft_handoff_content_work_item_test_revision_test",
+        revision_id="revision_test",
+        content_digest="a" * 64,
+        draft_package_id="draft_package_test",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        approval_decision_id="decision_test",
+        final_canonical_url="https://ekologus.pl/test/",
     )
 
 
@@ -85,12 +100,16 @@ def test_dev_draft_execution_marks_matching_content_readback_as_verified(
         ),
     )
 
-    result, errors = dev_draft_execution.execute_content_target_draft_action(_action())
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
 
     assert errors == []
     assert result is not None
     assert result["created_draft_id"] == "417"
     assert result["verification_status"] == "verified"
+    assert result["execution_result"]["wordpress_post_id"] == "417"
+    assert result["execution_result"]["revision_binding"]["revision_id"] == "revision_test"
     assert [request.method for request in requests] == ["POST", "GET"]
 
 
@@ -132,12 +151,15 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
         ),
     )
 
-    result, errors = dev_draft_execution.execute_content_target_draft_action(_action())
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
 
     assert result is not None
     assert result["created_draft_id"] == "417"
     assert result["external_write_attempted"] is True
     assert result["verification_status"] == "blocked"
+    assert result["execution_result"]["external_write_attempted"] is True
     assert result["verification_blocker_code"] == "wordpress_draft_content_mismatch"
     assert errors == [
         "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści."
