@@ -1374,15 +1374,10 @@ def _verified_created_draft_post_id(
             code="wordpress_draft_status_mismatch",
             expected_digest=expected_digest,
         )
-    observed_titles = _wordpress_payload_titles(payload)
     observed_raw_title = _wordpress_payload_raw_title(payload)
     expected_title_digest = _wordpress_draft_value_digest(expected_title)
-    observed_title_digest = _wordpress_draft_value_digest(list(observed_titles))
-    if (
-        not observed_raw_title.strip()
-        or not observed_titles
-        or any(title != expected_title for title in observed_titles)
-    ):
+    observed_title_digest = _wordpress_draft_value_digest(observed_raw_title)
+    if not observed_raw_title.strip() or observed_raw_title != expected_title:
         raise WordPressDraftVerificationError(
             "Utworzono szkic WordPress, ale odczyt nie potwierdził tytułu.",
             post_id=post_id,
