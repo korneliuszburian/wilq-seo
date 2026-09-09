@@ -87,6 +87,9 @@ ContentDraftRevisionPublicConflictCode = Literal[
     "stale_review",
     "digest_mismatch",
     "official_source_lineage_unavailable",
+    "lineage_cleanup_unavailable",
+    "source_fact_not_found",
+    "source_fact_ambiguous",
 ]
 
 
@@ -545,9 +548,21 @@ class ContentOfficialSourceLineageRebaseRequest(BaseModel):
 
 
 class ContentRevisionLineageCleanupRequest(BaseModel):
+    """Narrow command for removing one obsolete source fact's lineage."""
+
+    model_config = ConfigDict(extra="forbid")
+
     expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_fact_id: str = Field(min_length=1)
     requested_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_identifiers(self) -> ContentRevisionLineageCleanupRequest:
+        self.source_fact_id = self.source_fact_id.strip()
+        self.requested_by = self.requested_by.strip()
+        if not self.source_fact_id or not self.requested_by:
+            raise ValueError("Lineage cleanup requires visible source fact and requester IDs.")
+        return self
 
 
 class ContentDraftRevisionReviewRequest(BaseModel):

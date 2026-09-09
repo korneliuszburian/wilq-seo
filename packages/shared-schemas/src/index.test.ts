@@ -645,6 +645,12 @@ describe("ContentDraftRevisionSchema", () => {
       }]
     };
     expect(ContentDraftRevisionSchema.safeParse(regulated).success).toBe(true);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...regulated,
+        correction_reason: "lineage_cleanup"
+      }).success
+    ).toBe(true);
     expect(ContentDraftRevisionSchema.safeParse({
       ...regulated,
       official_source_references: [{ ...regulated.official_source_references[0], evidence_ids: ["   "] }]

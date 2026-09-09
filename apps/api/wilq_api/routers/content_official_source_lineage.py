@@ -15,6 +15,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionSaveResponse,
+    ContentDraftRevisionWorkspace,
     ContentOfficialSourceLineageRebaseRequest,
     ContentRevisionLineageCleanupRequest,
     ContentWorkItemWorkflowSnapshotResponse,
@@ -23,10 +24,13 @@ from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
 )
+from wilq.content.workflow.documents.lineage_cleanup import (
+    LineageCleanupBuildError,
+    build_lineage_cleanup_command,
+)
 from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
-from wilq.content.workflow.documents.lineage_cleanup import build_lineage_cleanup_command
 from wilq.content.workflow.documents.official_source_lineage_store import (
     content_official_source_lineage_store,
 )
@@ -34,7 +38,6 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     content_draft_package_digest,
 )
-from wilq.content.workflow.store.store import content_workflow_store
 
 ContentOfficialSourceLineageSnapshotLoader = Callable[
     [str], ContentWorkItemWorkflowSnapshotResponse
@@ -46,23 +49,8 @@ def register_content_official_source_lineage_route(
     *,
     snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
 ) -> None:
-    @router.post(
-        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
-        response_model=ContentDraftRevisionSaveResponse,
-    )
-    def content_revision_lineage_cleanup(work_item_id: str, revision_id: str, request: ContentRevisionLineageCleanupRequest):
-        snapshot = snapshot_loader(work_item_id)
-        revision = snapshot.revision_workspace.latest_revision
-        if revision is None or revision.revision_id != revision_id or revision.content_digest != request.expected_revision_digest:
-            return _conflict(snapshot, "stale_revision", "Odśwież bieżącą rewizję przed cleanupem lineage.")
-        try:
-            command = build_lineage_cleanup_command(base_revision=revision, source_fact_id=request.source_fact_id, requested_by=request.requested_by)
-        except ValueError:
-            return _conflict(snapshot, "stale_revision", "Wskazany fact nie występuje dokładnie w bieżącej lineage.")
-        result = content_workflow_store().append_draft_revision(command)
-        if result.status == "conflict" or result.revision is None:
-            return _conflict(snapshot_loader(work_item_id), "stale_revision", "Stan rewizji zmienił się w trakcie cleanupu.")
-        return ContentDraftRevisionSaveResponse(status=result.status, revision=result.revision, workspace=snapshot_loader(work_item_id).revision_workspace)
+    _register_content_lineage_cleanup_route(router, snapshot_loader=snapshot_loader)
+
     @router.post(
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/official-source-lineage-rebase",
         response_model=ContentDraftRevisionSaveResponse,
@@ -123,13 +111,7 @@ def register_content_official_source_lineage_route(
                 "Bieżący plan nie odpowiada dokładnie rewizji lub nie ma kompletnej "
                 "lineage źródeł urzędowych.",
             )
-        expected_review_decision_id = (
-            None
-            if workspace.status == "unreviewed"
-            else None
-            if workspace.latest_review is None
-            else workspace.latest_review.decision_id
-        )
+        expected_review_decision_id = _latest_review_decision_id(workspace)
         with current_editor_draft_context_guard(
             lambda: _current_lineage_rebase_context(
                 snapshot_loader(work_item_id),
@@ -158,6 +140,114 @@ def register_content_official_source_lineage_route(
             revision=result.revision,
             workspace=refreshed_workspace,
         )
+
+
+def _register_content_lineage_cleanup_route(
+    router: APIRouter,
+    *,
+    snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
+) -> None:
+    @router.post(
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
+        response_model=ContentDraftRevisionSaveResponse,
+        responses={409: {"model": ContentDraftRevisionConflictResponse}},
+    )
+    def content_revision_lineage_cleanup(
+        work_item_id: str,
+        revision_id: str,
+        request: ContentRevisionLineageCleanupRequest,
+    ) -> ContentDraftRevisionSaveResponse | JSONResponse:
+        snapshot = _lineage_cleanup_snapshot(snapshot_loader, work_item_id)
+        workspace = snapshot.revision_workspace
+        base_revision = workspace.latest_revision
+        if base_revision is None or base_revision.revision_id != revision_id:
+            return _conflict(
+                snapshot,
+                "stale_revision",
+                "Odśwież dokument i wybierz jego bieżącą rewizję.",
+            )
+        if base_revision.content_digest != request.expected_revision_digest:
+            return _conflict(
+                snapshot,
+                "digest_mismatch",
+                "Odśwież dokument przed usunięciem nieaktualnej lineage.",
+            )
+        if not _lineage_cleanup_available(snapshot, base_revision):
+            return _conflict(
+                snapshot,
+                "lineage_cleanup_unavailable",
+                "Cleanup jest dostępny tylko dla bieżącej, edytowalnej rewizji v2 "
+                "z aktualnym kontekstem.",
+            )
+        try:
+            command = build_lineage_cleanup_command(
+                base_revision=base_revision,
+                source_fact_id=request.source_fact_id,
+                requested_by=request.requested_by,
+            )
+        except LineageCleanupBuildError as error:
+            return _conflict(
+                snapshot,
+                error.code,
+                "Sprawdź bieżącą lineage źródła przed ponowną próbą.",
+            )
+        except ValueError:
+            return _conflict(
+                snapshot,
+                "lineage_cleanup_unavailable",
+                "Bieżąca lineage nie pozwala na bezpieczny cleanup.",
+            )
+        expected_review_decision_id = _latest_review_decision_id(workspace)
+        with current_editor_draft_context_guard(
+            lambda: _current_lineage_cleanup_context(
+                _lineage_cleanup_snapshot(snapshot_loader, work_item_id),
+                source_fact_id=request.source_fact_id,
+                requested_by=request.requested_by,
+            )
+        ):
+            result = content_official_source_lineage_store().append_cleanup(
+                command,
+                expected_latest_review_decision_id=expected_review_decision_id,
+            )
+        if result.status == "conflict":
+            return _conflict(
+                _lineage_cleanup_snapshot(snapshot_loader, work_item_id),
+                result.conflict.code if result.conflict is not None else "stale_revision",
+                "Stan review lub rewizji zmienił się w trakcie operacji. "
+                "Odśwież dokument przed kolejną próbą.",
+            )
+        if result.revision is None:
+            return _conflict(
+                _lineage_cleanup_snapshot(snapshot_loader, work_item_id),
+                "stale_revision",
+                "Nie zapisano rewizji cleanupu. Odśwież dokument przed kolejną próbą.",
+            )
+        refreshed_workspace = _lineage_cleanup_snapshot(
+            snapshot_loader,
+            work_item_id,
+        ).revision_workspace
+        return ContentDraftRevisionSaveResponse(
+            status=result.status,
+            revision=result.revision,
+            workspace=refreshed_workspace,
+        )
+
+
+def _lineage_cleanup_snapshot(
+    snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
+    work_item_id: str,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    """Resolve refresh-bound cleanup against its persisted planning binding."""
+
+    snapshot = snapshot_loader(work_item_id)
+    latest_revision = snapshot.revision_workspace.latest_revision
+    if latest_revision is None or latest_revision.refresh_preparation_binding is None:
+        return snapshot
+    from apps.api.wilq_api.routers.content_workflow import (
+        semantic_review_snapshot_for_work_item_or_404,
+    )
+
+    return semantic_review_snapshot_for_work_item_or_404(work_item_id)
 
 
 def _planning_input_for_lineage_rebase(
@@ -203,6 +293,30 @@ def _lineage_rebase_available(
     )
 
 
+def _lineage_cleanup_available(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    base_revision: ContentDraftRevision,
+) -> bool:
+    workspace = snapshot.revision_workspace
+    return (
+        base_revision.schema_version == "wilq_content_draft_revision_v2"
+        and workspace.status in {"unreviewed", "needs_changes", "deferred"}
+        and workspace.context_current
+        and (
+            workspace.status == "unreviewed"
+            or workspace.latest_review is not None
+        )
+    )
+
+
+def _latest_review_decision_id(workspace: ContentDraftRevisionWorkspace) -> str | None:
+    if workspace.status == "unreviewed":
+        return None
+    if workspace.latest_review is None:
+        raise ValueError("Reviewed lineage cleanup requires an exact latest review.")
+    return workspace.latest_review.decision_id
+
+
 def _current_lineage_rebase_context(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     *,
@@ -224,6 +338,26 @@ def _current_lineage_rebase_context(
             base_revision=base_revision,
             planning_input=planning_input_result.planning_input,
             proposal=planning.proposal,
+            requested_by=requested_by,
+        )
+    except ValueError:
+        return None
+    return ContentDraftRevisionContext.from_command(command)
+
+
+def _current_lineage_cleanup_context(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    source_fact_id: str,
+    requested_by: str,
+) -> ContentDraftRevisionContext | None:
+    base_revision = snapshot.revision_workspace.latest_revision
+    if base_revision is None or not _lineage_cleanup_available(snapshot, base_revision):
+        return None
+    try:
+        command = build_lineage_cleanup_command(
+            base_revision=base_revision,
+            source_fact_id=source_fact_id,
             requested_by=requested_by,
         )
     except ValueError:

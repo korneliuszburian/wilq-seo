@@ -2933,7 +2933,14 @@ export const ContentDraftRevisionSchema = z.object({
   claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
   refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
-  correction_reason: z.enum(["canonical_html_alignment", "official_source_lineage_rebase"]).nullable().optional(),
+  correction_reason: z
+    .enum([
+      "canonical_html_alignment",
+      "lineage_cleanup",
+      "official_source_lineage_rebase"
+    ])
+    .nullable()
+    .optional(),
   publish_ready: z.literal(false),
   created_by: z.string().refine((value) => value.trim().length > 0),
   created_at: z.string()
@@ -3511,7 +3518,10 @@ export const ContentDraftRevisionConflictSchema = z.object({
     "stale_revision",
     "stale_review",
     "digest_mismatch",
-    "official_source_lineage_unavailable"
+    "official_source_lineage_unavailable",
+    "lineage_cleanup_unavailable",
+    "source_fact_not_found",
+    "source_fact_ambiguous"
   ]),
   current_revision_id: z.string().nullable(),
   current_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
