@@ -639,6 +639,7 @@ def create_wordpress_draft_post(
             connector_id=connector_id,
             endpoint=normalized_endpoint,
             http_client=client,
+            expected_title=str(getattr(payload, "title", "")),
             expected_content=content,
         )
     finally:
@@ -763,6 +764,7 @@ def create_wordpress_acf_draft(
             connector_id=connector_id,
             endpoint=endpoint,
             http_client=client,
+            expected_title=title,
             expected_acf=normalized_acf,
         )
     finally:
@@ -862,11 +864,7 @@ def read_wordpress_draft_discard_readback(
         http_client=http_client,
     )
     content, acf = _wordpress_draft_values(payload)
-    raw_title = payload.get("title")
-    title = wordpress_title(payload)
-    if not title and isinstance(raw_title, dict):
-        raw_title_value = raw_title.get("raw")
-        title = clean_metadata_text(raw_title_value) if isinstance(raw_title_value, str) else ""
+    title = _wordpress_payload_title(payload)
     return WordPressDraftDiscardReadback(
         post_id=str(payload.get("id") or post_id),
         endpoint=endpoint.strip().strip("/"),
@@ -1347,6 +1345,7 @@ def _verified_created_draft_post_id(
     connector_id: str,
     endpoint: str,
     http_client: httpx.Client,
+    expected_title: str,
     expected_content: object | None = None,
     expected_acf: object | None = None,
 ) -> str:
@@ -1374,6 +1373,17 @@ def _verified_created_draft_post_id(
             post_id=post_id,
             code="wordpress_draft_status_mismatch",
             expected_digest=expected_digest,
+        )
+    observed_title = _wordpress_payload_title(payload)
+    expected_title_digest = _wordpress_draft_value_digest(expected_title)
+    observed_title_digest = _wordpress_draft_value_digest(observed_title)
+    if observed_title_digest != expected_title_digest:
+        raise WordPressDraftVerificationError(
+            "Utworzono szkic WordPress, ale odczyt nie potwierdził tytułu.",
+            post_id=post_id,
+            code="wordpress_draft_title_mismatch",
+            expected_digest=expected_title_digest,
+            observed_digest=observed_title_digest,
         )
     observed_content, observed_acf = _wordpress_draft_values(payload)
     observed_value = observed_content if expected_content is not None else observed_acf
@@ -1419,7 +1429,7 @@ def _draft_post_readback(
         post_id=str(post_id) if post_id is not None else requested_post_id,
         endpoint=endpoint,
         status=str(body.get("status") or ""),
-        title=wordpress_title(body.get("title")),
+        title=_wordpress_payload_title(body),
         link=str(body.get("link") or ""),
         edit_link=wordpress_edit_link(
             credentials_base_url,
@@ -1433,6 +1443,16 @@ def _draft_post_readback(
         content_digest=_wordpress_draft_value_digest(content),
         acf_digest=_wordpress_draft_value_digest(acf),
     )
+
+
+def _wordpress_payload_title(payload: dict[str, Any]) -> str:
+    raw_title = payload.get("title")
+    title = wordpress_title(raw_title)
+    if not title and isinstance(raw_title, dict):
+        raw_value = raw_title.get("raw")
+        if isinstance(raw_value, str):
+            return clean_metadata_text(raw_value)
+    return title
 
 
 def wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:

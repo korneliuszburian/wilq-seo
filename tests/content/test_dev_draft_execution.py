@@ -96,9 +96,10 @@ def test_dev_draft_execution_marks_matching_content_readback_as_verified(
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda payload, *, connector_id: wordpress_client.create_wordpress_draft_post(
+        lambda payload, *, connector_id, endpoint: wordpress_client.create_wordpress_draft_post(
             payload,
             connector_id=connector_id,
+            endpoint=endpoint,
             http_client=http_client,
         ),
     )
@@ -114,6 +115,7 @@ def test_dev_draft_execution_marks_matching_content_readback_as_verified(
     assert result["execution_result"]["wordpress_post_id"] == "417"
     assert result["execution_result"]["revision_binding"]["revision_id"] == "revision_test"
     assert [request.method for request in requests] == ["POST", "GET"]
+    assert all("/posts" in request.url.path for request in requests)
 
 
 def test_dev_draft_execution_blocks_mismatched_content_after_create(
@@ -147,9 +149,10 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda payload, *, connector_id: wordpress_client.create_wordpress_draft_post(
+        lambda payload, *, connector_id, endpoint: wordpress_client.create_wordpress_draft_post(
             payload,
             connector_id=connector_id,
+            endpoint=endpoint,
             http_client=http_client,
         ),
     )
@@ -168,6 +171,105 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
         "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści."
     ]
     assert [request.method for request in requests] == ["POST", "GET"]
+
+
+def test_dev_draft_execution_uses_confirmed_pages_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+    payload = _post_payload()
+    payload.endpoint = "pages"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "POST":
+            return httpx.Response(201, json={"id": 417, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 417,
+                "status": "draft",
+                "title": {"raw": "Testowy szkic"},
+                "content": {"raw": "<p>Oczekiwana treść.</p>"},
+                "acf": {},
+            },
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: payload,
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda value, *, connector_id, endpoint: wordpress_client.create_wordpress_draft_post(
+            value,
+            connector_id=connector_id,
+            endpoint=endpoint,
+            http_client=http_client,
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == []
+    assert result is not None
+    assert result["endpoint"] == "pages"
+    assert all("/pages" in request.url.path for request in requests)
+
+
+def test_dev_draft_execution_blocks_mismatched_title_after_create(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            return httpx.Response(201, json={"id": 417, "status": "draft"})
+        return httpx.Response(
+            200,
+            json={
+                "id": 417,
+                "status": "draft",
+                "title": {"raw": "Inny tytuł"},
+                "content": {"raw": "<p>Oczekiwana treść.</p>"},
+                "acf": {},
+            },
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: _post_payload(),
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda payload, *, connector_id, endpoint: wordpress_client.create_wordpress_draft_post(
+            payload,
+            connector_id=connector_id,
+            endpoint=endpoint,
+            http_client=http_client,
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert result is not None
+    assert result["verification_status"] == "blocked"
+    assert result["verification_blocker_code"] == "wordpress_draft_title_mismatch"
+    assert result["external_write_attempted"] is True
+    assert errors == ["Utworzono szkic WordPress, ale odczyt nie potwierdził tytułu."]
 
 
 def test_dev_draft_execution_consumes_claim_after_undecodable_post_response(
@@ -194,9 +296,10 @@ def test_dev_draft_execution_consumes_claim_after_undecodable_post_response(
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda payload, *, connector_id: wordpress_client.create_wordpress_draft_post(
+        lambda payload, *, connector_id, endpoint: wordpress_client.create_wordpress_draft_post(
             payload,
             connector_id=connector_id,
+            endpoint=endpoint,
             http_client=http_client,
         ),
     )

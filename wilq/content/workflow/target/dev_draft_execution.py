@@ -16,6 +16,7 @@ from wilq.content.workflow.documents.revision_binding import ContentDraftRevisio
 from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.target.dev_draft_action import (
     CONTENT_DEV_DRAFT_ACTION_TYPE,
+    ContentDevDraftWritePayload,
     build_content_dev_draft_write_payload,
 )
 from wilq.schemas import ActionObject
@@ -49,17 +50,7 @@ def execute_content_target_draft_action(
         )
     try:
         payload = build_content_dev_draft_write_payload(action)
-        if payload.authoring_mode == "acf_flexible_content":
-            draft_id = create_wordpress_acf_draft(
-                payload,
-                connector_id=action.connector,
-                action_apply_authorized=True,
-            )
-        else:
-            draft_id = create_wordpress_draft_post(
-                payload,
-                connector_id=action.connector,
-            )
+        draft_id = _create_wordpress_draft(payload, connector_id=action.connector)
     except WordPressDraftVerificationError as error:
         execution = ContentWordPressDraftExecutionResult(
             status="blocked",
@@ -134,6 +125,24 @@ def execute_content_target_draft_action(
 
 def _dev_draft_writes_enabled() -> bool:
     return wordpress_draft_writes_enabled()
+
+
+def _create_wordpress_draft(
+    payload: ContentDevDraftWritePayload,
+    *,
+    connector_id: str,
+) -> str:
+    if payload.authoring_mode == "acf_flexible_content":
+        return create_wordpress_acf_draft(
+            payload,
+            connector_id=connector_id,
+            action_apply_authorized=True,
+        )
+    return create_wordpress_draft_post(
+        payload,
+        connector_id=connector_id,
+        endpoint=payload.endpoint,
+    )
 
 
 def _blocked_execution_result(
