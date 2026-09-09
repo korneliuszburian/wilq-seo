@@ -118,6 +118,7 @@ def _action(action_id: str, binding: ContentDraftRevisionBinding) -> ActionObjec
                 "revision_id": binding.revision_id,
                 "revision_digest": binding.content_digest,
             },
+            "wordpress_draft_binding": binding.model_dump(mode="json"),
         },
         validation_status="valid",
         created_by="operator_test",
@@ -280,6 +281,7 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
     [
         ("unbound", "wordpress_action_chain_binding_mismatch"),
         ("mismatched", "wordpress_action_chain_binding_mismatch"),
+        ("action_full_mismatch", "wordpress_revision_binding_mismatch"),
         ("wrong_actor", "wordpress_action_actor_mismatch"),
         ("reordered", "wordpress_action_chain_order_invalid"),
     ],
@@ -302,6 +304,10 @@ def test_invalid_dev_draft_action_chain_stops_before_claim_and_adapter(
         }
     elif fault == "wrong_actor":
         action.audit_events[2].actor = "inny_operator"
+    elif fault == "action_full_mismatch":
+        action.payload["wordpress_draft_binding"] = binding.model_copy(
+            update={"approval_decision_id": "inna_decyzja"}
+        ).model_dump(mode="json")
     else:
         action.audit_events[1].created_at = action.audit_events[0].created_at - timedelta(
             seconds=1

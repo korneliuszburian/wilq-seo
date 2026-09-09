@@ -56,7 +56,11 @@ def content_dev_draft_apply_binding(
     """Bind a dev-draft action to the exact approved revision claimed at apply."""
 
     binding = request.wordpress_draft if request is not None else None
-    action_binding = action.payload.get("content_target_draft_binding")
+    raw_action_binding = action.payload.get("wordpress_draft_binding")
+    try:
+        action_binding = ContentDraftRevisionBinding.model_validate(raw_action_binding)
+    except (TypeError, ValueError):
+        action_binding = None
     if binding is None:
         return None, [
             ActionWordPressDraftApplyBlocker(
@@ -66,14 +70,7 @@ def content_dev_draft_apply_binding(
                 next_step="Odśwież akcję dla aktualnej wersji i ponów apply.",
             )
         ]
-    if not isinstance(action_binding, dict) or any(
-        action_binding.get(action_key) != getattr(binding, binding_key)
-        for action_key, binding_key in (
-            ("work_item_id", "work_item_id"),
-            ("revision_id", "revision_id"),
-            ("revision_digest", "content_digest"),
-        )
-    ):
+    if action_binding is None or action_binding != binding:
         return None, [
             ActionWordPressDraftApplyBlocker(
                 code="wordpress_revision_binding_mismatch",
