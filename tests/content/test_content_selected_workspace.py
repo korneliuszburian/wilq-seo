@@ -254,13 +254,15 @@ def test_selected_workspace_snapshot_uses_explicit_store_without_factory(monkeyp
     _block_selected_snapshot_side_effects(monkeypatch)
     monkeypatch.setattr(
         selected_snapshot_router,
-        "build_content_diagnostics_cached",
-        lambda: SimpleNamespace(decision_queue=[selected]),
+        "inventory_decision_for_work_item",
+        lambda *_args, **_kwargs: selected,
     )
     monkeypatch.setattr(
         selected_snapshot_router,
-        "inventory_decision_for_work_item",
-        lambda *_args, **_kwargs: None,
+        "build_content_diagnostics_cached",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("exact selected workspace must not build global diagnostics")
+        ),
     )
     monkeypatch.setattr(
         selected_snapshot_router,
