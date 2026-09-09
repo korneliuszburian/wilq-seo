@@ -8,6 +8,11 @@ from wilq.connectors.wordpress.client import (
     create_wordpress_acf_draft,
     create_wordpress_draft_post,
 )
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftExecutionBoundary,
+    ContentWordPressDraftExecutionResult,
+)
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.policies import wordpress_draft_writes_enabled
 from wilq.content.workflow.target.dev_draft_action import (
     CONTENT_DEV_DRAFT_ACTION_TYPE,
@@ -20,6 +25,8 @@ CONTENT_DEV_DRAFT_MUTATION_ADAPTER = "content_dev_draft_execution_boundary"
 
 def execute_content_target_draft_action(
     action: ActionObject,
+    *,
+    binding: ContentDraftRevisionBinding | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     """Execute one separately reviewed, create-only draft action on dev.
 
@@ -30,10 +37,16 @@ def execute_content_target_draft_action(
 
     if action.payload.get("action_type") != CONTENT_DEV_DRAFT_ACTION_TYPE:
         return None, ["Ta akcja nie jest obsługiwaną akcją szkicu treści na dev."]
+    if binding is None:
+        return None, ["Akcja szkicu dev nie ma atomowo przejętej zatwierdzonej rewizji."]
     if not _dev_draft_writes_enabled():
-        return None, [
-            "Środowisko dev nie zezwala obecnie na utworzenie szkicu WordPress."
-        ]
+        return _blocked_execution_result(
+            action,
+            binding,
+            "Środowisko dev nie zezwala obecnie na utworzenie szkicu WordPress.",
+            external_write_attempted=False,
+            live_write_enabled=False,
+        )
     try:
         payload = build_content_dev_draft_write_payload(action)
         if payload.authoring_mode == "acf_flexible_content":
@@ -48,6 +61,17 @@ def execute_content_target_draft_action(
                 connector_id=action.connector,
             )
     except WordPressDraftVerificationError as error:
+        execution = ContentWordPressDraftExecutionResult(
+            status="blocked",
+            mode="live",
+            boundary=ContentWordPressDraftExecutionBoundary(
+                live_write_enabled=True,
+                live_adapter_configured=True,
+            ),
+            revision_binding=binding,
+            wordpress_post_id=error.post_id,
+            external_write_attempted=True,
+        )
         return {
             "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
             "connector": action.connector,
@@ -64,9 +88,33 @@ def execute_content_target_draft_action(
             "update_allowed": False,
             "delete_allowed": False,
             "redacted": True,
+            "execution_result": execution.model_dump(mode="json"),
         }, [error.public_message]
-    except (ValueError, WordPressDraftWriteError) as error:
-        return None, [str(error)]
+    except ValueError as error:
+        return _blocked_execution_result(
+            action,
+            binding,
+            str(error),
+            external_write_attempted=False,
+        )
+    except WordPressDraftWriteError as error:
+        return _blocked_execution_result(
+            action,
+            binding,
+            str(error),
+            external_write_attempted=error.external_write_attempted,
+        )
+    execution = ContentWordPressDraftExecutionResult(
+        status="created",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=True,
+            live_adapter_configured=True,
+        ),
+        revision_binding=binding,
+        wordpress_post_id=draft_id,
+        external_write_attempted=True,
+    )
     return {
         "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
         "connector": action.connector,
@@ -80,11 +128,40 @@ def execute_content_target_draft_action(
         "update_allowed": False,
         "delete_allowed": False,
         "redacted": True,
+        "execution_result": execution.model_dump(mode="json"),
     }, []
 
 
 def _dev_draft_writes_enabled() -> bool:
     return wordpress_draft_writes_enabled()
+
+
+def _blocked_execution_result(
+    action: ActionObject,
+    binding: ContentDraftRevisionBinding,
+    error: str,
+    *,
+    external_write_attempted: bool,
+    live_write_enabled: bool = True,
+) -> tuple[dict[str, Any], list[str]]:
+    execution = ContentWordPressDraftExecutionResult(
+        status="blocked",
+        mode="live",
+        boundary=ContentWordPressDraftExecutionBoundary(
+            live_write_enabled=live_write_enabled,
+            live_adapter_configured=True,
+        ),
+        revision_binding=binding,
+        external_write_attempted=external_write_attempted,
+    )
+    return {
+        "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
+        "connector": action.connector,
+        "external_write_attempted": external_write_attempted,
+        "verification_status": "blocked",
+        "redacted": True,
+        "execution_result": execution.model_dump(mode="json"),
+    }, [error]
 
 
 __all__ = [

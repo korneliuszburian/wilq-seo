@@ -187,9 +187,15 @@ class _AcfTextCandidate:
 
 
 class WordPressDraftWriteError(RuntimeError):
-    def __init__(self, public_message: str) -> None:
+    def __init__(
+        self,
+        public_message: str,
+        *,
+        external_write_attempted: bool = False,
+    ) -> None:
         super().__init__(public_message)
         self.public_message = public_message
+        self.external_write_attempted = external_write_attempted
 
 
 class WordPressDraftVerificationError(WordPressDraftWriteError):
@@ -259,6 +265,7 @@ def _wordpress_draft_write_http_error(
     response: httpx.Response,
     *,
     operation: str = "utworzenie szkicu",
+    external_write_attempted: bool = False,
 ) -> WordPressDraftWriteError:
     """Return a diagnostic-safe WordPress write failure.
 
@@ -292,7 +299,8 @@ def _wordpress_draft_write_http_error(
                     details.append(f"pola: {', '.join(fields[:8])}")
     suffix = f" ({'; '.join(details)})" if details else ""
     return WordPressDraftWriteError(
-        f"WordPress odrzucił {operation} HTTP {response.status_code}.{suffix}"
+        f"WordPress odrzucił {operation} HTTP {response.status_code}.{suffix}",
+        external_write_attempted=external_write_attempted,
     )
 
 
@@ -618,10 +626,13 @@ def create_wordpress_draft_post(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise _wordpress_draft_write_http_error(exc.response) from exc
+            raise _wordpress_draft_write_http_error(
+                exc.response, external_write_attempted=True
+            ) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
-                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__}).",
+                external_write_attempted=True,
             ) from exc
         return _verified_created_draft_post_id(
             response,
@@ -739,10 +750,13 @@ def create_wordpress_acf_draft(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise _wordpress_draft_write_http_error(exc.response) from exc
+            raise _wordpress_draft_write_http_error(
+                exc.response, external_write_attempted=True
+            ) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
-                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__}).",
+                external_write_attempted=True,
             ) from exc
         return _verified_created_draft_post_id(
             response,
@@ -1301,14 +1315,29 @@ def _acf_material_text(value: Any) -> str:
 
 
 def _created_draft_post_id(response: httpx.Response) -> str:
-    body = response.json()
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise WordPressDraftWriteError(
+            "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
+            external_write_attempted=True,
+        ) from exc
     if not isinstance(body, dict):
-        raise WordPressDraftWriteError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
+        raise WordPressDraftWriteError(
+            "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
+            external_write_attempted=True,
+        )
     post_id = body.get("id")
     if post_id is None:
-        raise WordPressDraftWriteError("WordPress nie zwrócił ID utworzonego szkicu.")
+        raise WordPressDraftWriteError(
+            "WordPress nie zwrócił ID utworzonego szkicu.",
+            external_write_attempted=True,
+        )
     if body.get("status") != "draft":
-        raise WordPressDraftWriteError("WordPress nie potwierdził, że utworzony wpis jest szkicem.")
+        raise WordPressDraftWriteError(
+            "WordPress nie potwierdził, że utworzony wpis jest szkicem.",
+            external_write_attempted=True,
+        )
     return str(post_id)
 
 

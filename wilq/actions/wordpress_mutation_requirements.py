@@ -413,7 +413,7 @@ def _apply_blocker(
 def execute_supported_wordpress_mutation_adapter(
     action: ActionObject,
     mutation_adapter: str,
-    wordpress_capability: WordPressDraftApplyCapability | None = None,
+    wordpress_capability: Any = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if mutation_adapter == "content_dev_draft_discard_execution_boundary":
         from wilq.content.workflow.target.dev_draft_discard_action import (
@@ -426,7 +426,12 @@ def execute_supported_wordpress_mutation_adapter(
             execute_content_target_draft_action,
         )
 
-        return execute_content_target_draft_action(action)
+        binding = (
+            wordpress_capability
+            if isinstance(wordpress_capability, ContentDraftRevisionBinding)
+            else None
+        )
+        return execute_content_target_draft_action(action, binding=binding)
     if mutation_adapter != "wordpress_draft_execution_boundary":
         return None, [f"Adapter zapisu {mutation_adapter} nie ma implementacji wykonania."]
     if wordpress_capability is not None:

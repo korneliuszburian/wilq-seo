@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.actions.service import clear_action_list_cache
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.content.workflow.target.dev_draft_action import (
@@ -122,14 +123,63 @@ def create_content_target_draft_action_endpoint(
     revision_id: str,
     command: ContentTargetDraftActionCommand,
 ) -> ActionObject:
+    store = content_workflow_store()
     preview = _live_content_target_draft_preview(work_item_id, revision_id)
     try:
-        action = create_content_target_draft_action(preview, command)
+        action = create_content_target_draft_action(
+            preview,
+            command,
+            wordpress_draft_binding=_approved_revision_binding(
+                store,
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+            ),
+        )
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     persisted = persist_content_target_draft_action(action)
     clear_action_list_cache()
     return persisted
+
+
+def _approved_revision_binding(
+    store: ContentWorkflowStore,
+    *,
+    work_item_id: str,
+    revision_id: str,
+) -> ContentDraftRevisionBinding:
+    revision = next(
+        (
+            candidate
+            for candidate in store.list_draft_revisions(work_item_id)
+            if candidate.revision_id == revision_id
+        ),
+        None,
+    )
+    review = store.load_draft_revision_review(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+    )
+    if (
+        revision is None
+        or review is None
+        or review.decision != "approved"
+        or review.revision_digest != revision.content_digest
+        or not revision.planning_digest
+        or not revision.final_canonical_url
+    ):
+        raise ValueError("Akcja szkicu dev wymaga dokładnej zatwierdzonej rewizji.")
+    return ContentDraftRevisionBinding(
+        work_item_id=revision.work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{revision.work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id=revision.draft_package_id,
+        draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
+        approval_decision_id=review.decision_id,
+        final_canonical_url=revision.final_canonical_url,
+    )
 
 
 def _live_content_target_draft_preview(

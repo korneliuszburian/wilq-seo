@@ -8,12 +8,16 @@ import pytest
 import wilq.content.workflow.pipeline_steps.stage_activation as stage_activation
 import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
 from wilq.connectors.wordpress import client as wordpress_client
-from wilq.connectors.wordpress.client import WordPressDraftPostReadback
+from wilq.connectors.wordpress.client import (
+    WordPressDraftPostReadback,
+    WordPressDraftWriteError,
+)
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
     ContentWordPressDraftPayload,
 )
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 
 
@@ -44,6 +48,20 @@ def _post_payload() -> SimpleNamespace:
         title="Testowy szkic",
         content_html="<p>Oczekiwana treść.</p>",
         acf=None,
+    )
+
+
+def _binding() -> ContentDraftRevisionBinding:
+    return ContentDraftRevisionBinding(
+        work_item_id="content_work_item_test",
+        handoff_id="wordpress_draft_handoff_content_work_item_test_revision_test",
+        revision_id="revision_test",
+        content_digest="a" * 64,
+        draft_package_id="draft_package_test",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        approval_decision_id="decision_test",
+        final_canonical_url="https://ekologus.pl/test/",
     )
 
 
@@ -85,12 +103,16 @@ def test_dev_draft_execution_marks_matching_content_readback_as_verified(
         ),
     )
 
-    result, errors = dev_draft_execution.execute_content_target_draft_action(_action())
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
 
     assert errors == []
     assert result is not None
     assert result["created_draft_id"] == "417"
     assert result["verification_status"] == "verified"
+    assert result["execution_result"]["wordpress_post_id"] == "417"
+    assert result["execution_result"]["revision_binding"]["revision_id"] == "revision_test"
     assert [request.method for request in requests] == ["POST", "GET"]
 
 
@@ -132,17 +154,89 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
         ),
     )
 
-    result, errors = dev_draft_execution.execute_content_target_draft_action(_action())
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
 
     assert result is not None
     assert result["created_draft_id"] == "417"
     assert result["external_write_attempted"] is True
     assert result["verification_status"] == "blocked"
+    assert result["execution_result"]["external_write_attempted"] is True
     assert result["verification_blocker_code"] == "wordpress_draft_content_mismatch"
     assert errors == [
         "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści."
     ]
     assert [request.method for request in requests] == ["POST", "GET"]
+
+
+def test_dev_draft_execution_consumes_claim_after_undecodable_post_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            201,
+            content=b"not-json",
+            headers={"content-type": "application/json"},
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: _post_payload(),
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda payload, *, connector_id: wordpress_client.create_wordpress_draft_post(
+            payload,
+            connector_id=connector_id,
+            http_client=http_client,
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == ["WordPress zwrócił nieprawidłową odpowiedź szkicu."]
+    assert result is not None
+    assert result["external_write_attempted"] is True
+    assert result["execution_result"]["external_write_attempted"] is True
+    assert [request.method for request in requests] == ["POST"]
+
+
+def test_dev_draft_execution_marks_prewrite_failure_as_retryable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: _post_payload(),
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            WordPressDraftWriteError("Brakuje konfiguracji WordPress.")
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == ["Brakuje konfiguracji WordPress."]
+    assert result is not None
+    assert result["external_write_attempted"] is False
+    assert result["execution_result"]["external_write_attempted"] is False
 
 
 def _created_execution(content_html: str) -> ContentWordPressDraftExecutionResult:

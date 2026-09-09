@@ -1,10 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import type { ReactElement, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionObject } from "../lib/api";
+import * as actionApi from "../lib/api";
 import { ActionFocus, ActionReviewGatePanel } from "./ActionPanels";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -24,6 +25,100 @@ vi.mock("@tanstack/react-router", () => ({
 describe("ActionPanels", () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("threads the exact dev-draft binding through every action control", async () => {
+    const binding = {
+      work_item_id: "content_work_item_bdo",
+      handoff_id: "wordpress_draft_handoff_content_work_item_bdo_revision_1",
+      revision_id: "revision_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_1",
+      draft_package_digest: "b".repeat(64),
+      planning_digest: "c".repeat(64),
+      approval_decision_id: "decision_1",
+      final_canonical_url: "https://ekologus.pl/bdo/"
+    };
+    const pending = () => new Promise<never>(() => {});
+    const preview = vi.spyOn(actionApi, "previewAction").mockImplementation(pending);
+    const review = vi.spyOn(actionApi, "reviewAction").mockImplementation(pending);
+    const confirm = vi.spyOn(actionApi, "confirmAction").mockImplementation(pending);
+    const impact = vi.spyOn(actionApi, "impactCheckAction").mockImplementation(pending);
+    const apply = vi.spyOn(actionApi, "applyAction").mockImplementation(pending);
+    const action = {
+      id: "act_content_dev_draft_test",
+      title: "Utwórz szkic dev",
+      domain: "content",
+      connector: "wordpress_ekologus",
+      connector_label: "WordPress",
+      mode: "apply",
+      mode_label: "zapis",
+      risk: "medium",
+      risk_label: "średnie ryzyko",
+      status: "ready",
+      status_label: "gotowe",
+      evidence_ids: ["ev_test"],
+      evidence_summary_label: "1 dowód",
+      metrics: [],
+      human_diagnosis: "Exact rewizja jest gotowa.",
+      recommended_reason: "Utwórz jeden szkic.",
+      validation_status: "valid",
+      validation_status_label: "poprawna",
+      review_gate: {
+        status: "ready_to_apply",
+        status_label: "gotowe",
+        summary: "Gotowe.",
+        required_checks: [],
+        required_check_labels: [],
+        operator_checklist: ["exact_document_revision_check"],
+        operator_checklist_labels: ["dokładna wersja"],
+        apply_blockers: [],
+        apply_blocker_labels: [],
+        apply_blocker_summary_label: "brak blokad",
+        confirmation_required: true,
+        apply_allowed: true
+      },
+      preview_cards: [],
+      payload: {
+        action_type: "content_dev_draft_create",
+        wordpress_draft_binding: binding,
+        payload_preview: []
+      },
+      audit_events: []
+    } as unknown as ActionObject;
+
+    renderWithQueryClient(<ActionFocus actions={[action]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Generuj podgląd" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz przegląd" }));
+    fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź efekt" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Potwierdzam exact binding, podgląd, review i kontrolę gotowości szkicu."
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Utwórz szkic treści na dev" }));
+
+    await waitFor(() => {
+      expect(preview).toHaveBeenCalledWith(action.id, expect.objectContaining({
+        wordpress_draft: binding
+      }));
+      expect(review).toHaveBeenCalledWith(action.id, expect.objectContaining({
+        wordpress_draft: binding
+      }));
+      expect(confirm).toHaveBeenCalledWith(action.id, expect.objectContaining({
+        wordpress_draft: binding
+      }));
+      expect(impact).toHaveBeenCalledWith(action.id, expect.objectContaining({
+        wordpress_draft: binding
+      }));
+      expect(apply).toHaveBeenCalledWith(action.id, {
+        confirm: true,
+        confirmed_by: "operator_local_dashboard",
+        wordpress_draft: binding
+      });
+    });
   });
 
   it("shows the safety record without audit or adapter jargon", () => {
