@@ -1379,7 +1379,7 @@ def _verified_created_draft_post_id(
     expected_title_digest = _wordpress_draft_value_digest(expected_title)
     observed_title_digest = _wordpress_draft_value_digest(list(observed_titles))
     if (
-        not observed_raw_title
+        not observed_raw_title.strip()
         or not observed_titles
         or any(title != expected_title for title in observed_titles)
     ):
@@ -1452,7 +1452,7 @@ def _draft_post_readback(
 
 def _wordpress_payload_title(payload: dict[str, Any]) -> str:
     titles = _wordpress_payload_titles(payload)
-    return next((title for title in titles if title), "")
+    return next((title for title in titles if title.strip()), "")
 
 
 def _wordpress_payload_raw_title(payload: dict[str, Any]) -> str:
@@ -1460,7 +1460,7 @@ def _wordpress_payload_raw_title(payload: dict[str, Any]) -> str:
     if not isinstance(raw_title, dict):
         return ""
     raw_value = raw_title.get("raw")
-    return clean_metadata_text(raw_value) if isinstance(raw_value, str) else ""
+    return raw_value if isinstance(raw_value, str) else ""
 
 
 def _wordpress_payload_titles(payload: dict[str, Any]) -> tuple[str, ...]:
