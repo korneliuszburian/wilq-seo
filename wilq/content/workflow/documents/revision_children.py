@@ -5,9 +5,12 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionCorrectionReason,
     ContentDraftRevisionCtaBlock,
+    ContentDraftRevisionFaqItem,
+    ContentDraftRevisionInternalLink,
     ContentDraftRevisionOfficialSourceReference,
     ContentDraftRevisionProposalMetadata,
     ContentDraftRevisionSection,
+    ContentDraftRevisionSourceProvenance,
 )
 
 
@@ -15,7 +18,10 @@ def build_child_draft_revision_command(
     base_revision: ContentDraftRevision,
     *,
     sections: list[ContentDraftRevisionSection],
+    source_provenance: list[ContentDraftRevisionSourceProvenance] | None = None,
+    faq: list[ContentDraftRevisionFaqItem] | None = None,
     cta_blocks: list[ContentDraftRevisionCtaBlock] | None = None,
+    internal_links: list[ContentDraftRevisionInternalLink] | None = None,
     official_source_references: list[ContentDraftRevisionOfficialSourceReference] | None = None,
     proposal_metadata: ContentDraftRevisionProposalMetadata | None,
     correction_reason: ContentDraftRevisionCorrectionReason | None = None,
@@ -39,15 +45,17 @@ def build_child_draft_revision_command(
         source_material_ids=base_revision.source_material_ids,
         knowledge_card_ids=base_revision.knowledge_card_ids,
         document_kind=base_revision.document_kind,
-        source_provenance=base_revision.source_provenance,
+        source_provenance=(
+            base_revision.source_provenance if source_provenance is None else source_provenance
+        ),
         final_canonical_url=base_revision.final_canonical_url,
         new_page_document_identity=base_revision.new_page_document_identity,
         title=base_revision.title,
         page_assets=base_revision.page_assets,
         sections=sections,
-        faq=base_revision.faq,
+        faq=base_revision.faq if faq is None else faq,
         cta_blocks=base_revision.cta_blocks if cta_blocks is None else cta_blocks,
-        internal_links=base_revision.internal_links,
+        internal_links=base_revision.internal_links if internal_links is None else internal_links,
         official_source_references=(
             base_revision.official_source_references
             if official_source_references is None
