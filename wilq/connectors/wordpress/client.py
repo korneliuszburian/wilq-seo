@@ -1447,7 +1447,7 @@ def _draft_post_readback(
 
 def _wordpress_payload_title(payload: dict[str, Any]) -> str:
     titles = _wordpress_payload_titles(payload)
-    return titles[0] if titles else ""
+    return next((title for title in titles if title), "")
 
 
 def _wordpress_payload_titles(payload: dict[str, Any]) -> tuple[str, ...]:
@@ -1457,10 +1457,12 @@ def _wordpress_payload_titles(payload: dict[str, Any]) -> tuple[str, ...]:
         raw_value = raw_title.get("raw")
         if isinstance(raw_value, str):
             values.append(clean_metadata_text(raw_value))
-    rendered = wordpress_title(raw_title)
-    if rendered and rendered not in values:
-        values.append(rendered)
-    return tuple(value for value in values if value)
+        rendered_value = raw_title.get("rendered")
+        if isinstance(rendered_value, str):
+            rendered = clean_metadata_text(rendered_value)
+            if rendered not in values:
+                values.append(rendered)
+    return tuple(values)
 
 
 def wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:
