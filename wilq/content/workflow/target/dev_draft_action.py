@@ -122,7 +122,7 @@ class ContentDevDraftWritePayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     connector: Literal["wordpress_ekologus"]
-    endpoint: str = Field(pattern=r"^[a-z0-9_-]+$")
+    endpoint: Literal["posts", "pages", "uslugi"]
     authoring_mode: Literal["acf_flexible_content", "wordpress_post_content"]
     post_status: Literal["draft"] = "draft"
     create_only: Literal[True] = True
@@ -454,7 +454,7 @@ def _draft_payload_identity(
     return payload
 
 
-def _wordpress_endpoint(target: object) -> str:
+def _wordpress_endpoint(target: object) -> Literal["posts", "pages", "uslugi"]:
     endpoint = getattr(target, "rest_endpoint", None)
     post_type = getattr(target, "post_type", None)
     # Older persisted target contracts predate ``rest_endpoint``.  Their
@@ -462,9 +462,13 @@ def _wordpress_endpoint(target: object) -> str:
     # instead of accidentally changing a post draft into a page draft.
     if endpoint == "pages" and post_type == "post":
         endpoint = "posts"
-    if not isinstance(endpoint, str) or endpoint not in {"posts", "pages", "uslugi"}:
-        raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
-    return endpoint
+    if endpoint == "posts":
+        return "posts"
+    if endpoint == "pages":
+        return "pages"
+    if endpoint == "uslugi":
+        return "uslugi"
+    raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
 
 
 def _draft_title(preview: ContentTargetDraftPreview) -> str:
