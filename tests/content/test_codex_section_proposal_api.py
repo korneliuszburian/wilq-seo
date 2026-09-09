@@ -8,8 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
-from apps.api.wilq_api.routers import content_codex_proposal
-from apps.api.wilq_api.routers import content_workflow
+from apps.api.wilq_api.routers import content_codex_proposal, content_workflow
 from wilq.content.drafts import codex_section_proposal
 from wilq.content.drafts.codex_section_proposal import propose_content_section_revision
 from wilq.content.drafts.codex_section_proposal_contracts import (
