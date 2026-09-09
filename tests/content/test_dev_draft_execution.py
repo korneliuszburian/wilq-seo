@@ -170,6 +170,48 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
     assert [request.method for request in requests] == ["POST", "GET"]
 
 
+def test_dev_draft_execution_consumes_claim_after_undecodable_post_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            201,
+            content=b"not-json",
+            headers={"content-type": "application/json"},
+        )
+
+    http_client = httpx.Client(transport=httpx.MockTransport(handler))
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: _post_payload(),
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda payload, *, connector_id: wordpress_client.create_wordpress_draft_post(
+            payload,
+            connector_id=connector_id,
+            http_client=http_client,
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == ["WordPress zwrócił nieprawidłową odpowiedź szkicu."]
+    assert result is not None
+    assert result["external_write_attempted"] is True
+    assert result["execution_result"]["external_write_attempted"] is True
+    assert [request.method for request in requests] == ["POST"]
+
+
 def test_dev_draft_execution_marks_prewrite_failure_as_retryable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

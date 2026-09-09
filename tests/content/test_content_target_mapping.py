@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -633,6 +634,7 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
 
     assert action.payload["action_type"] == dev_draft_action.CONTENT_DEV_DRAFT_ACTION_TYPE
@@ -698,6 +700,7 @@ def test_content_dev_draft_write_payload_blocks_acf_action_without_clone_plan(
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -731,6 +734,7 @@ def test_content_dev_draft_write_payload_requires_one_exact_title(monkeypatch) -
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
 
     no_title = draft_preview.model_copy(
@@ -782,6 +786,7 @@ def test_content_dev_draft_payload_uses_observed_service_rest_endpoint(
             expected_payload_digest=service_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -811,6 +816,7 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -877,6 +883,7 @@ def test_content_dev_draft_prewrite_check_does_not_claim_public_measurement() ->
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     action.audit_events = [
         AuditEvent(
@@ -931,6 +938,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     state_store = LocalStateStore(tmp_path / "actions.sqlite3")
     connector = type(
@@ -1084,6 +1092,7 @@ def test_content_dev_draft_payload_rechecks_the_confirmation_used_for_payload() 
             expected_payload_digest=first_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     changed_confirmation = first_preview.confirmation.model_copy(
         update={"confirmation_digest": "f" * 64}
@@ -1112,6 +1121,14 @@ def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(
         "content_target_draft_preview_endpoint",
         lambda *_: draft_preview,
     )
+    monkeypatch.setattr(
+        content_target_mapping,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            list_draft_revisions=lambda _work_item_id: [revision],
+            load_draft_revision_review=lambda **_kwargs: _review(revision),
+        ),
+    )
     monkeypatch.setattr(dev_draft_action, "local_state_store", lambda: state_store)
     app = FastAPI()
     router = APIRouter()
@@ -1138,6 +1155,9 @@ def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(
     assert response.json()["payload"]["content_target_draft_binding"]["payload_digest"] == (
         draft_preview.payload_digest
     )
+    assert response.json()["payload"]["wordpress_draft_binding"] == _apply_binding(
+        revision
+    ).model_dump(mode="json")
 
 
 def _confirmation_request(

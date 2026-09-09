@@ -151,6 +151,8 @@ class ContentDevDraftWritePayload(BaseModel):
 def create_content_target_draft_action(
     preview: ContentTargetDraftPreview,
     command: ContentTargetDraftActionCommand,
+    *,
+    wordpress_draft_binding: ContentDraftRevisionBinding,
 ) -> ActionObject:
     """Turn a confirmed data projection into an auditable, still non-writing action."""
 
@@ -166,6 +168,12 @@ def create_content_target_draft_action(
         raise ValueError("Akcja wskazuje inne potwierdzenie przypisania.")
     if command.expected_payload_digest != preview.payload_digest:
         raise ValueError("Akcja wskazuje inny podgląd danych do szkicu.")
+    if (
+        wordpress_draft_binding.work_item_id != preview.work_item_id
+        or wordpress_draft_binding.revision_id != preview.revision.revision_id
+        or wordpress_draft_binding.content_digest != preview.revision.content_digest
+    ):
+        raise ValueError("Binding WordPress wskazuje inną zatwierdzoną rewizję.")
 
     target = preview.target.target_contract
     surface = target.authoring_surface
@@ -224,6 +232,7 @@ def create_content_target_draft_action(
             "preview_contract": CONTENT_DEV_DRAFT_ACTION_CONTRACT,
             "mode": "dev_draft_only",
             "content_target_draft_binding": binding,
+            "wordpress_draft_binding": wordpress_draft_binding.model_dump(mode="json"),
             "draft_payload": draft_payload,
             "payload_preview": [payload_preview],
             "required_validation": [

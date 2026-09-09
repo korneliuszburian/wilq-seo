@@ -205,6 +205,7 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
             expected_payload_digest=preview.payload_digest or "",
             requested_by="Wilku",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     payload = dev_draft_action.build_content_dev_draft_write_payload(action, preview=preview)
 

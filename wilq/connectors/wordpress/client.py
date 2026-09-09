@@ -1315,7 +1315,13 @@ def _acf_material_text(value: Any) -> str:
 
 
 def _created_draft_post_id(response: httpx.Response) -> str:
-    body = response.json()
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise WordPressDraftWriteError(
+            "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
+            external_write_attempted=True,
+        ) from exc
     if not isinstance(body, dict):
         raise WordPressDraftWriteError(
             "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
