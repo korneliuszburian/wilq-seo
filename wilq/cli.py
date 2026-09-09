@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, Literal, cast
 
 import typer
 
@@ -337,6 +337,10 @@ def wordpress_apply_reconcile(
         str | None,
         typer.Option("--wordpress-post-id", help="Required for an applied draft."),
     ] = None,
+    wordpress_endpoint: Annotated[
+        str | None,
+        typer.Option("--wordpress-endpoint", help="Exact WordPress endpoint for an applied draft."),
+    ] = None,
     confirm_inspection: Annotated[
         bool,
         typer.Option(
@@ -358,16 +362,27 @@ def wordpress_apply_reconcile(
     if normalized_outcome == "applied":
         if not wordpress_post_id:
             raise typer.BadParameter("Applied wymaga --wordpress-post-id.")
+        if wordpress_endpoint not in {"posts", "pages", "uslugi"}:
+            raise typer.BadParameter(
+                "Applied wymaga --wordpress-endpoint: posts, pages albo uslugi."
+            )
         try:
-            readback = read_wordpress_draft_post(wordpress_post_id)
+            readback = read_wordpress_draft_post(
+                wordpress_post_id,
+                endpoint=wordpress_endpoint,
+            )
         except WordPressDraftReadError as exc:
             raise typer.BadParameter(str(exc)) from exc
         if readback.status != "draft":
             raise typer.BadParameter("Wskazany wpis WordPress nie ma statusu draft.")
-    elif wordpress_post_id is not None:
-        raise typer.BadParameter("Failed nie może wskazywać WordPress post ID.")
+    elif wordpress_post_id is not None or wordpress_endpoint is not None:
+        raise typer.BadParameter("Failed nie może wskazywać WordPress post ID ani endpointu.")
 
     resolved_outcome = cast(WordPressRevisionApplyClaimFinalStatus, normalized_outcome)
+    resolved_endpoint = cast(
+        Literal["posts", "pages", "uslugi"] | None,
+        wordpress_endpoint,
+    )
     try:
         audit = content_workflow_store().reconcile_wordpress_revision_apply_claim(
             work_item_id=work_item_id,
@@ -375,6 +390,7 @@ def wordpress_apply_reconcile(
             reconciled_by=confirmed_by.strip(),
             notes=notes.strip(),
             wordpress_post_id=wordpress_post_id,
+            wordpress_endpoint=resolved_endpoint,
         )
     except (RuntimeError, ValueError) as exc:
         raise typer.BadParameter(str(exc)) from exc
@@ -384,6 +400,7 @@ def wordpress_apply_reconcile(
             "work_item_id": work_item_id,
             "outcome": normalized_outcome,
             "wordpress_post_id": wordpress_post_id,
+            "wordpress_endpoint": wordpress_endpoint,
             "audit_event_id": audit.id,
             "external_write_retried": False,
             "actor_contract": "local_operator_attribution_only",

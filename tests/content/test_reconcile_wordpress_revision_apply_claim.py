@@ -113,6 +113,7 @@ def test_reconcile_applied_persists_synthetic_created_execution(tmp_path: Path) 
         reconciled_by="operator",
         notes="Szkic potwierdzony w WordPress.",
         wordpress_post_id="1275",
+        wordpress_endpoint="pages",
     )
 
     execution = store.latest_wordpress_draft_execution("created-item")
@@ -120,6 +121,7 @@ def test_reconcile_applied_persists_synthetic_created_execution(tmp_path: Path) 
     assert execution.status == "created"
     assert execution.external_write_attempted is True
     assert execution.wordpress_post_id == "1275"
+    assert execution.endpoint == "pages"
 
 
 def test_reconcile_cas_allows_only_one_terminal_transition(tmp_path: Path) -> None:
@@ -150,7 +152,7 @@ def test_reconcile_applied_requires_wordpress_post_id(tmp_path: Path) -> None:
         claimed_at=utc_now() - timedelta(seconds=301),
     )
 
-    with pytest.raises(ValueError, match="ID szkicu WordPress"):
+    with pytest.raises(ValueError, match="ID szkicu i endpointu WordPress"):
         _store(path).reconcile_wordpress_revision_apply_claim(
             work_item_id="missing-post-id",
             outcome="applied",
