@@ -470,7 +470,7 @@
       "version": "2026-09-09-r1",
       "service_card_ids": [],
       "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
-      "official_source_hosts": ["commission.europa.eu", "www.consilium.europa.eu", "eur-lex.europa.eu"],
+      "official_source_hosts": ["commission.europa.eu", "climate.ec.europa.eu", "www.consilium.europa.eu", "eur-lex.europa.eu"],
       "max_source_age_days": 180,
       "requirements": [
         {

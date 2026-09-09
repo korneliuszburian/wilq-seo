@@ -184,7 +184,7 @@ def test_green_deal_article_requires_current_eu_policy_coverage() -> None:
     }
     assert {item.candidate_id for item in candidates} == {
         "green_deal_scope_commission_2026_09_09_r1",
-        "green_deal_climate_law_eurlex_2026_09_09_r1",
+        "green_deal_2040_target_commission_2026_09_09_r1",
         "green_deal_fit_for_55_consilium_2026_09_09_r1",
     }
 
