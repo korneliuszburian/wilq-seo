@@ -128,7 +128,7 @@ def test_selected_workspace_passes_current_revision_context_to_document_workspac
         "revision_context_current": False,
         "revision_state": None,
         "item": item,
-        "read_material": True,
+        "read_material": False,
     }
 
 
