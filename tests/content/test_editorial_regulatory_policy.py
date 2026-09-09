@@ -213,6 +213,13 @@ def test_green_deal_profile_rejects_unqualified_climate_target_numbers() -> None
             "oraz 90% do 2040 r. względem 1990 r.; cel neutralności klimatycznej do 2050 r."
         ),
     ) == []
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Cele UE obejmują co najmniej 55% redukcji emisji netto względem 1990 r. "
+            "do 2030 r., 90% do 2040 r. oraz osiągnięcie neutralności klimatycznej do 2050 r."
+        ),
+    ) == []
 
 
 @pytest.mark.parametrize(
