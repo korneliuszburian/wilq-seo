@@ -609,16 +609,11 @@ def _fact_covers_profile(
         age_days = (as_of - date.fromisoformat(fact.freshness_date)).days
     except ValueError:
         return False
-    evidence_by_id = {
-        evidence.id: evidence for evidence in list_evidence_by_ids(fact.evidence_ids)
-    }
-    evidence_is_exact = bool(fact.evidence_ids) and all(
-        evidence_id in evidence_by_id
-        and evidence_by_id[evidence_id].source_id == fact.source_id
-        and evidence_by_id[evidence_id].raw_ref == fact.source_url_or_path
-        for evidence_id in fact.evidence_ids
-    )
-    return (
+    # Most source facts belong to a different subject.  Reject those from
+    # immutable fact metadata before consulting the evidence registry: the
+    # registry lookup is I/O-bound and must be reserved for the few facts that
+    # could actually satisfy this exact regulatory profile.
+    if not (
         fact.review_status == "approved"
         and fact.source_type == "legal_update"
         and fact.official_source
@@ -630,8 +625,18 @@ def _fact_covers_profile(
         and bool(required_ids.intersection(fact.regulatory_requirement_ids))
         and urlsplit(fact.source_url_or_path).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
-        and evidence_is_exact
+    ):
+        return False
+    evidence_by_id = {
+        evidence.id: evidence for evidence in list_evidence_by_ids(fact.evidence_ids)
+    }
+    evidence_is_exact = bool(fact.evidence_ids) and all(
+        evidence_id in evidence_by_id
+        and evidence_by_id[evidence_id].source_id == fact.source_id
+        and evidence_by_id[evidence_id].raw_ref == fact.source_url_or_path
+        for evidence_id in fact.evidence_ids
     )
+    return evidence_is_exact
 
 
 def _candidate_matches_profile(
