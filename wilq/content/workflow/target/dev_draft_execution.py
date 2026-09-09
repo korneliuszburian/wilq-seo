@@ -61,6 +61,7 @@ def execute_content_target_draft_action(
             ),
             revision_binding=binding,
             wordpress_post_id=error.post_id,
+            endpoint=payload.endpoint,
             external_write_attempted=True,
         )
         return {
@@ -104,6 +105,7 @@ def execute_content_target_draft_action(
         ),
         revision_binding=binding,
         wordpress_post_id=draft_id,
+        endpoint=payload.endpoint,
         external_write_attempted=True,
     )
     return {

@@ -221,6 +221,7 @@ def test_dev_draft_execution_uses_confirmed_pages_endpoint(
     assert errors == []
     assert result is not None
     assert result["endpoint"] == "pages"
+    assert result["execution_result"]["endpoint"] == "pages"
     assert all("/pages" in request.url.path for request in requests)
 
 
@@ -572,7 +573,7 @@ def test_stage_readback_surfaces_verified_matching_content_digest(
     monkeypatch.setattr(
         stage_activation,
         "read_wordpress_draft_post",
-        lambda _post_id: _readback(expected_html),
+        lambda _post_id, *, endpoint="posts": _readback(expected_html),
     )
 
     result = stage_activation.wordpress_draft_readback(_created_execution(expected_html))
@@ -587,13 +588,33 @@ def test_stage_readback_surfaces_verified_matching_content_digest(
     assert result.blockers == []
 
 
+def test_stage_readback_uses_persisted_execution_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_html = "<p>Oczekiwana treść.</p>"
+    calls: list[tuple[str, str]] = []
+
+    def readback(post_id: str, *, endpoint: str) -> WordPressDraftPostReadback:
+        calls.append((post_id, endpoint))
+        return _readback(expected_html)
+
+    monkeypatch.setattr(stage_activation, "read_wordpress_draft_post", readback)
+    execution = _created_execution(expected_html).model_copy(update={"endpoint": "pages"})
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "available"
+    assert calls == [("417", "pages")]
+
+
 def test_stage_readback_blocks_content_digest_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
         stage_activation,
         "read_wordpress_draft_post",
-        lambda _post_id: _readback("<p>Inna treść.</p>"),
+        lambda _post_id, *, endpoint="posts": _readback("<p>Inna treść.</p>"),
     )
 
     result = stage_activation.wordpress_draft_readback(
@@ -615,7 +636,7 @@ def test_stage_readback_blocks_non_draft_status(
     monkeypatch.setattr(
         stage_activation,
         "read_wordpress_draft_post",
-        lambda _post_id: _readback(expected_html, status="publish"),
+        lambda _post_id, *, endpoint="posts": _readback(expected_html, status="publish"),
     )
 
     result = stage_activation.wordpress_draft_readback(_created_execution(expected_html))

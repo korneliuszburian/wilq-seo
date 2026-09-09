@@ -117,6 +117,7 @@ class ContentWordPressDraftExecutionResult(BaseModel):
     payload: ContentWordPressDraftPayload | None = None
     revision_binding: ContentDraftRevisionBinding | None = None
     wordpress_post_id: str | None = None
+    endpoint: Literal["posts", "pages", "uslugi"] | None = None
     external_write_attempted: bool = False
     blockers: list[ContentWordPressDraftExecutionBlocker] = Field(default_factory=list)
 
@@ -214,6 +215,7 @@ def execute_content_wordpress_draft_handoff(
         ),
         payload=payload,
         wordpress_post_id=wordpress_post_id,
+        endpoint=payload.endpoint_kind,
         external_write_attempted=True,
     )
 
