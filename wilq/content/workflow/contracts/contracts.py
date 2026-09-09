@@ -544,6 +544,12 @@ class ContentOfficialSourceLineageRebaseRequest(BaseModel):
         return self
 
 
+class ContentRevisionLineageCleanupRequest(BaseModel):
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_fact_id: str = Field(min_length=1)
+    requested_by: str = Field(min_length=1)
+
+
 class ContentDraftRevisionReviewRequest(BaseModel):
     expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     reviewed_by: str = Field(min_length=1)

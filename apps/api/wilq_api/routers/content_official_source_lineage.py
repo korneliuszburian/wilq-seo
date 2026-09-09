@@ -16,6 +16,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionSaveResponse,
     ContentOfficialSourceLineageRebaseRequest,
+    ContentRevisionLineageCleanupRequest,
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.documents.codex_revision_commit import (
@@ -25,6 +26,7 @@ from wilq.content.workflow.documents.codex_revision_commit import (
 from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
+from wilq.content.workflow.documents.lineage_cleanup import build_lineage_cleanup_command
 from wilq.content.workflow.documents.official_source_lineage_store import (
     content_official_source_lineage_store,
 )
@@ -32,6 +34,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     content_draft_package_digest,
 )
+from wilq.content.workflow.store.store import content_workflow_store
 
 ContentOfficialSourceLineageSnapshotLoader = Callable[
     [str], ContentWorkItemWorkflowSnapshotResponse
@@ -43,6 +46,23 @@ def register_content_official_source_lineage_route(
     *,
     snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
 ) -> None:
+    @router.post(
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
+        response_model=ContentDraftRevisionSaveResponse,
+    )
+    def content_revision_lineage_cleanup(work_item_id: str, revision_id: str, request: ContentRevisionLineageCleanupRequest):
+        snapshot = snapshot_loader(work_item_id)
+        revision = snapshot.revision_workspace.latest_revision
+        if revision is None or revision.revision_id != revision_id or revision.content_digest != request.expected_revision_digest:
+            return _conflict(snapshot, "stale_revision", "Odśwież bieżącą rewizję przed cleanupem lineage.")
+        try:
+            command = build_lineage_cleanup_command(base_revision=revision, source_fact_id=request.source_fact_id, requested_by=request.requested_by)
+        except ValueError:
+            return _conflict(snapshot, "stale_revision", "Wskazany fact nie występuje dokładnie w bieżącej lineage.")
+        result = content_workflow_store().append_draft_revision(command)
+        if result.status == "conflict" or result.revision is None:
+            return _conflict(snapshot_loader(work_item_id), "stale_revision", "Stan rewizji zmienił się w trakcie cleanupu.")
+        return ContentDraftRevisionSaveResponse(status=result.status, revision=result.revision, workspace=snapshot_loader(work_item_id).revision_workspace)
     @router.post(
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/official-source-lineage-rebase",
         response_model=ContentDraftRevisionSaveResponse,
