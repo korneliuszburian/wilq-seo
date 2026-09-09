@@ -464,6 +464,47 @@
           ]
         }
       ]
+    },
+    {
+      "id": "european_green_deal_editorial",
+      "version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "official_source_hosts": ["commission.europa.eu", "www.consilium.europa.eu", "eur-lex.europa.eu"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "green_deal_strategy_scope",
+          "label": "strategiczny zakres Europejskiego Zielonego Ładu",
+          "reason": "Europejski Zielony Ład jest agendą i pakietem polityk UE, nie pojedynczą ustawą ani automatycznym obowiązkiem każdej firmy.",
+          "document_assertions": [
+            {"id": "strategy_or_policy_package", "label": "strategia lub pakiet polityk", "required_any_of": ["strategią UE", "pakietem polityk", "agendą polityczną"]},
+            {"id": "not_single_universal_obligation", "label": "brak uniwersalnego obowiązku", "required_any_of": ["nie jest jedną ustawą", "nie nakłada automatycznie obowiązków na każdą firmę", "nie oznacza jednego obowiązku dla każdej firmy"]}
+          ]
+        },
+        {
+          "id": "green_deal_eu_climate_targets",
+          "label": "wiążące cele klimatyczne UE",
+          "reason": "Treść musi oddzielić wiążące cele netto całej UE od indywidualnych limitów firm i uwzględnić aktualny cel 2040.",
+          "document_assertions": [
+            {"id": "eu_target_scope", "label": "zakres celu UE", "required_any_of": ["cel UE", "całej UE", "Unii Europejskiej"]},
+            {"id": "target_2030", "label": "cel 2030", "required_any_of": ["co najmniej 55%", "co najmniej 55 proc."]},
+            {"id": "target_2040", "label": "cel 2040", "required_any_of": ["90%", "90 proc."]},
+            {"id": "target_2050", "label": "neutralność klimatyczna 2050", "required_any_of": ["neutralności klimatycznej do 2050", "neutralna klimatycznie do 2050"]},
+            {"id": "targets_1990_baseline", "label": "poziom bazowy 1990", "required_any_of": ["względem 1990 r.", "w porównaniu z poziomem z 1990 r."]},
+            {"id": "net_target_language", "label": "charakter netto", "required_any_of": ["emisji netto", "netto"]}
+          ]
+        },
+        {
+          "id": "green_deal_sectoral_implementation",
+          "label": "sektorowe wdrożenie polityki",
+          "reason": "Wpływ na przedsiębiorstwo zależy od odrębnych aktów, sektora i roli firmy; nie wolno obiecywać ani przypisywać powszechnego obowiązku liczenia śladu węglowego.",
+          "document_assertions": [
+            {"id": "sectoral_acts", "label": "odrębne akty sektorowe", "required_any_of": ["odrębne akty sektorowe", "konkretnych przepisów sektorowych", "Fit for 55"]},
+            {"id": "company_case_scope", "label": "indywidualny zakres firmy", "required_any_of": ["sektora i roli firmy", "konkretnej działalności", "zależy od działalności firmy"]}
+          ]
+        }
+      ]
     }
   ]
 }

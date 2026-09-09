@@ -374,6 +374,45 @@
       "requirement_ids": ["ippc_current_legal_context"],
       "review_status": "review_required",
       "safe_next_step": "Zweryfikuj krajowe wdrożenie przed opisaniem skutków zmian IED dla polskiej procedury."
+    },
+    {
+      "candidate_id": "green_deal_scope_commission_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://commission.europa.eu/strategy-and-policy/priorities-2019-2024/european-green-deal_en",
+      "source_title": "Komisja Europejska: The European Green Deal",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_strategy_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że Zielony Ład jest agendą polityk UE, bez przekształcania go w pojedynczą ustawę lub powszechny obowiązek firmy."
+    },
+    {
+      "candidate_id": "green_deal_climate_law_eurlex_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:02021R1119-20260407",
+      "source_title": "EUR-Lex: skonsolidowane Europejskie prawo o klimacie",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_eu_climate_targets"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź cele netto UE na 2030, 2040 i 2050 bez przypisywania ich jako bezpośredniego limitu każdej firmie."
+    },
+    {
+      "candidate_id": "green_deal_fit_for_55_consilium_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://www.consilium.europa.eu/en/policies/fit-for-55/",
+      "source_title": "Rada UE: Fit for 55",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_sectoral_implementation"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź sektorowe wdrożenie przez odrębne akty i zachowaj warunkowy zakres dla konkretnej działalności firmy."
     }
   ]
 }

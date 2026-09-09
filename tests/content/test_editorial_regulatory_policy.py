@@ -27,6 +27,7 @@ REACH_CLP_PATH = (
     "ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
 )
 IPPC_PATH = "/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"
+GREEN_DEAL_PATH = "/europejski-zielony-lad-co-to-takiego"
 
 
 def test_integrated_permit_article_has_exact_required_profile() -> None:
@@ -154,6 +155,64 @@ def test_ippc_article_requires_current_official_regulatory_coverage() -> None:
         "ippc_ied_eurlex_2026_09_01_r1",
         "ippc_ied_amendment_eurlex_2026_09_01_r1",
     }
+
+
+def test_green_deal_article_requires_current_eu_policy_coverage() -> None:
+    profile = regulatory_content_profile(
+        service_card_id=None,
+        canonical_path=GREEN_DEAL_PATH,
+    )
+    coverage = regulatory_content_coverage(
+        service_card_id=None,
+        canonical_path=GREEN_DEAL_PATH,
+        source_facts=(),
+        as_of=date(2026, 9, 9),
+    )
+    candidates = regulatory_review_candidates(
+        service_card_id=None,
+        canonical_path=GREEN_DEAL_PATH,
+        coverage=coverage,
+        as_of=date(2026, 9, 9),
+    )
+
+    assert profile is not None
+    assert profile.id == "european_green_deal_editorial"
+    assert {item.id for item in coverage.missing_requirements} == {
+        "green_deal_strategy_scope",
+        "green_deal_eu_climate_targets",
+        "green_deal_sectoral_implementation",
+    }
+    assert {item.candidate_id for item in candidates} == {
+        "green_deal_scope_commission_2026_09_09_r1",
+        "green_deal_climate_law_eurlex_2026_09_09_r1",
+        "green_deal_fit_for_55_consilium_2026_09_09_r1",
+    }
+
+
+def test_green_deal_profile_rejects_unqualified_climate_target_numbers() -> None:
+    profile = regulatory_content_profile(
+        service_card_id=None,
+        canonical_path=GREEN_DEAL_PATH,
+    )
+    assert profile is not None
+    requirement = next(
+        item for item in profile.requirements if item.id == "green_deal_eu_climate_targets"
+    )
+
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Cel UE to 55% do 2030 r., 90% do 2040 r. i neutralność klimatyczna "
+            "do 2050 r. netto."
+        ),
+    )
+    assert regulatory_requirement_assertion_errors(
+        requirement=requirement,
+        text=(
+            "Cel całej UE zakłada co najmniej 55% redukcji emisji netto do 2030 r. "
+            "oraz 90% do 2040 r. względem 1990 r.; cel neutralności klimatycznej do 2050 r."
+        ),
+    ) == []
 
 
 @pytest.mark.parametrize(
