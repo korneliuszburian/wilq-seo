@@ -104,7 +104,24 @@ def execute_content_target_draft_action(
             "execution_result": execution.model_dump(mode="json"),
         }, [str(error)]
     except WordPressDraftWriteError as error:
-        return None, [str(error)]
+        execution = ContentWordPressDraftExecutionResult(
+            status="blocked",
+            mode="live",
+            boundary=ContentWordPressDraftExecutionBoundary(
+                live_write_enabled=True,
+                live_adapter_configured=True,
+            ),
+            revision_binding=binding,
+            external_write_attempted=error.external_write_attempted,
+        )
+        return {
+            "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
+            "connector": action.connector,
+            "external_write_attempted": error.external_write_attempted,
+            "verification_status": "blocked",
+            "redacted": True,
+            "execution_result": execution.model_dump(mode="json"),
+        }, [str(error)]
     execution = ContentWordPressDraftExecutionResult(
         status="created",
         mode="live",

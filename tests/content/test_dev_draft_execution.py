@@ -8,7 +8,10 @@ import pytest
 import wilq.content.workflow.pipeline_steps.stage_activation as stage_activation
 import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
 from wilq.connectors.wordpress import client as wordpress_client
-from wilq.connectors.wordpress.client import WordPressDraftPostReadback
+from wilq.connectors.wordpress.client import (
+    WordPressDraftPostReadback,
+    WordPressDraftWriteError,
+)
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
     ContentWordPressDraftExecutionResult,
@@ -165,6 +168,33 @@ def test_dev_draft_execution_blocks_mismatched_content_after_create(
         "Utworzono szkic WordPress, ale odczyt nie potwierdził zgodności zapisanej treści."
     ]
     assert [request.method for request in requests] == ["POST", "GET"]
+
+
+def test_dev_draft_execution_marks_prewrite_failure_as_retryable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: _post_payload(),
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_draft_post",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            WordPressDraftWriteError("Brakuje konfiguracji WordPress.")
+        ),
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == ["Brakuje konfiguracji WordPress."]
+    assert result is not None
+    assert result["external_write_attempted"] is False
+    assert result["execution_result"]["external_write_attempted"] is False
 
 
 def _created_execution(content_html: str) -> ContentWordPressDraftExecutionResult:

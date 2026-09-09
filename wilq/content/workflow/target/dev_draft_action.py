@@ -6,9 +6,13 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.actions.action_chain import revision_bound_action_chain
 from wilq.actions.metric_utils import unique_values
 from wilq.connectors.wordpress.acf_source_snapshot import read_wordpress_acf_flexible_snapshot
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
+    wordpress_draft_binding_from_audit_event,
+)
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
@@ -78,6 +82,23 @@ def content_dev_draft_apply_binding(
                 next_step="Użyj bindingu dokładnej rewizji zapisanej w tej akcji.",
             )
         ]
+    if request is None or not request.confirmed_by:
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_action_actor_required",
+                label="Brakuje operatora potwierdzającego",
+                reason="Apply szkicu dev wymaga operatora zgodnego z confirm.",
+                next_step="Potwierdź podgląd jako zalogowany operator.",
+            )
+        ]
+    chain, blockers = revision_bound_action_chain(
+        action.audit_events,
+        confirmed_by=request.confirmed_by,
+        binding_from_event=wordpress_draft_binding_from_audit_event,
+        expected_binding=binding,
+    )
+    if chain is None:
+        return None, blockers
     return binding, []
 
 

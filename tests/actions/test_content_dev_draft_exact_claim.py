@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from types import SimpleNamespace
 
 from wilq.actions.apply_lifecycle import ApplyDependencies, apply_action
@@ -74,6 +76,7 @@ def _approved_binding() -> ContentDraftRevisionBinding:
 
 
 def _action(action_id: str, binding: ContentDraftRevisionBinding) -> ActionObject:
+    details = {"wordpress_draft_binding": binding.model_dump(mode="json")}
     events = [
         AuditEvent(
             id=f"{action_id}_{event_type}",
@@ -81,6 +84,7 @@ def _action(action_id: str, binding: ContentDraftRevisionBinding) -> ActionObjec
             event_type=event_type,
             actor="operator_test",
             summary=event_type,
+            details=details,
         )
         for event_type in (
             "action_preview_generated",
@@ -125,10 +129,14 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "dev_claim.sqlite3"))
     binding = _approved_binding()
     adapter_calls: list[str] = []
+    adapter_started = Event()
+    release_adapter = Event()
 
     def execute_adapter(action, _adapter, capability):
-        assert capability == binding
+        assert isinstance(capability, ContentDraftRevisionBinding)
         adapter_calls.append(action.id)
+        adapter_started.set()
+        assert release_adapter.wait(timeout=5)
         execution = ContentWordPressDraftExecutionResult(
             status="created",
             mode="live",
@@ -136,8 +144,8 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
                 live_write_enabled=True,
                 live_adapter_configured=True,
             ),
-            revision_binding=binding,
-            wordpress_post_id="417",
+            revision_binding=capability,
+            wordpress_post_id=str(416 + len(adapter_calls)),
             external_write_attempted=True,
         )
         return {"execution_result": execution.model_dump(mode="json")}, []
@@ -161,20 +169,31 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
         wordpress_draft=binding,
     )
 
-    first = apply_action(
-        _action("act_content_dev_draft_first", binding), request, dependencies=dependencies
-    )
-    second = apply_action(
-        _action("act_content_dev_draft_second", binding), request, dependencies=dependencies
-    )
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_future = executor.submit(
+            apply_action,
+            _action("act_content_dev_draft_first", binding),
+            request,
+            dependencies=dependencies,
+        )
+        assert adapter_started.wait(timeout=5)
+        second = executor.submit(
+            apply_action,
+            _action("act_content_dev_draft_second", binding),
+            request,
+            dependencies=dependencies,
+        ).result(timeout=5)
+        release_adapter.set()
+        first = first_future.result(timeout=5)
 
     assert first.applied is True
     assert second.applied is False
     assert [blocker.code for blocker in second.wordpress_revision_blockers] == [
-        "wordpress_revision_already_applied"
+        "wordpress_revision_apply_in_progress"
     ]
     assert adapter_calls == ["act_content_dev_draft_first"]
-    persisted = store.latest_wordpress_draft_execution(
+    restarted_store = content_workflow_store()
+    persisted = restarted_store.latest_wordpress_draft_execution(
         binding.work_item_id,
         handoff_id=binding.handoff_id,
         revision_id=binding.revision_id,
@@ -182,3 +201,72 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
     )
     assert persisted is not None
     assert persisted.wordpress_post_id == "417"
+
+    replay = apply_action(
+        _action("act_content_dev_draft_replay", binding),
+        request,
+        dependencies=dependencies,
+    )
+    assert replay.applied is False
+    assert [blocker.code for blocker in replay.wordpress_revision_blockers] == [
+        "wordpress_revision_already_applied"
+    ]
+
+    child_created = restarted_store.append_draft_revision(
+        ContentDraftRevisionAppendCommand(
+            work_item_id=binding.work_item_id,
+            base_revision_id=binding.revision_id,
+            draft_package_id=binding.draft_package_id,
+            draft_package_digest=binding.draft_package_digest,
+            planning_digest=binding.planning_digest,
+            final_canonical_url=binding.final_canonical_url,
+            title="Osobno zatwierdzona wersja potomna",
+            sections=[
+                ContentDraftRevisionSection(
+                    heading="Zakres",
+                    body_markdown="Nowa treść wymagająca osobnego review.",
+                    evidence_ids=["ev_dev_claim"],
+                )
+            ],
+            created_by="operator_test",
+        )
+    )
+    assert child_created.revision is not None
+    child_revision = child_created.revision
+    child_reviewed = restarted_store.review_draft_revision(
+        ContentDraftRevisionReviewCommand(
+            work_item_id=child_revision.work_item_id,
+            revision_id=child_revision.revision_id,
+            revision_digest=child_revision.content_digest,
+            decision="approved",
+            reviewed_by="operator_test",
+            checked_items=["tekst", "dowody"],
+            evidence_ids=["ev_dev_claim"],
+        )
+    )
+    assert child_reviewed.review is not None
+    child_binding = ContentDraftRevisionBinding(
+        work_item_id=child_revision.work_item_id,
+        handoff_id=(
+            f"wordpress_draft_handoff_{child_revision.work_item_id}_"
+            f"{child_revision.revision_id}"
+        ),
+        revision_id=child_revision.revision_id,
+        content_digest=child_revision.content_digest,
+        draft_package_id=child_revision.draft_package_id,
+        draft_package_digest=child_revision.draft_package_digest,
+        planning_digest=child_revision.planning_digest,
+        approval_decision_id=child_reviewed.review.decision_id,
+        final_canonical_url=child_revision.final_canonical_url,
+    )
+    child = apply_action(
+        _action("act_content_dev_draft_child", child_binding),
+        request.model_copy(update={"wordpress_draft": child_binding}),
+        dependencies=dependencies,
+    )
+
+    assert child.applied is True
+    assert adapter_calls == [
+        "act_content_dev_draft_first",
+        "act_content_dev_draft_child",
+    ]
