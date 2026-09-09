@@ -25,7 +25,7 @@ def planning_harness(
     return configure_planning_harness(monkeypatch, tmp_path)
 
 
-def test_selected_workspace_reads_current_source_without_starting_planning(
+def test_selected_workspace_uses_persisted_source_without_starting_planning(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -57,9 +57,11 @@ def test_selected_workspace_reads_current_source_without_starting_planning(
 
     assert selected.status_code == 200
     selected_source = selected.json()["workspace"]["source_snapshot"]
-    assert selected_source["status"] == "available"
-    assert selected_source["lead"]
-    assert any("bdo-co-musi-wiedziec-przedsiebiorca" in url for url in live_material_reads)
+    assert selected_source["status"] == "partial"
+    assert selected_source["lead"] is None
+    assert selected_source["status_label"] == "materiał zapisany częściowo"
+    assert "nie pobiera aktualnej treści" in selected_source["reason"]
+    assert live_material_reads == []
 
     planning = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"

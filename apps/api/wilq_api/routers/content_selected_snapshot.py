@@ -71,18 +71,24 @@ def selected_workspace_snapshot_for_work_item_or_404(
 
 
 def _selected_decision_or_404(work_item_id: str) -> ContentDecisionItem:
-    diagnostics = build_content_diagnostics_cached()
-    decision_id = work_item_id.removeprefix("content_work_item_")
-    persisted = next(
-        (item for item in diagnostics.decision_queue if item.id == decision_id),
-        None,
-    )
     metadata = inventory_decision_for_work_item(
         work_item_id,
         read_material=False,
         include_all_metric_facts=True,
     )
-    selected = persisted if persisted is not None else metadata
+    # An exact selected-workspace read must not wait for the global diagnostics
+    # cache to rebuild.  The inventory is the authoritative identity seam for
+    # this URL and already carries its persisted source fields and metric facts.
+    # Keep the broader diagnostics queue as a legacy fallback only when that
+    # exact identity cannot be resolved.
+    selected = metadata
+    if selected is None:
+        diagnostics = build_content_diagnostics_cached()
+        decision_id = work_item_id.removeprefix("content_work_item_")
+        selected = next(
+            (item for item in diagnostics.decision_queue if item.id == decision_id),
+            None,
+        )
     if selected is None:
         raise HTTPException(
             status_code=404,

@@ -128,11 +128,13 @@ def build_content_selected_workspace_with_context(
         revision_context_current=revision_context_current,
         revision_state=revision_state,
         item=item,
-        # The selected workspace is the operator's explicit read of this one
-        # page.  It may therefore resolve the bounded WordPress source
-        # material, but it still does not create a plan, a revision, or a
-        # WordPress action.
-        read_material=True,
+        # Opening a workspace must be bounded by WILQ-owned state.  A live
+        # public WordPress read is an explicit freshness operation, not a
+        # prerequisite for rendering this decision screen: it can otherwise
+        # stall the whole API worker on a remote TLS read.  The document
+        # projection shows persisted source material (and labels it as such)
+        # when the exact work item carries it.
+        read_material=False,
     )
     if workspace is None:
         return ContentSelectedWorkspace(
