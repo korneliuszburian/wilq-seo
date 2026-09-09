@@ -237,7 +237,7 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda value, *, connector_id: (
+        lambda value, *, connector_id, endpoint: (
             created.append((value.content_html or "", connector_id)) or "draft_1354"
         ),
     )

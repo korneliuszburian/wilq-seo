@@ -494,9 +494,10 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
         reconciled_by: str,
         notes: str,
         wordpress_post_id: str | None = None,
+        wordpress_endpoint: Literal["posts", "pages", "uslugi"] | None = None,
     ) -> AuditEvent:
-        if outcome == "applied" and not wordpress_post_id:
-            raise ValueError("Rozstrzygnięcie applied wymaga ID szkicu WordPress.")
+        if outcome == "applied" and (not wordpress_post_id or wordpress_endpoint is None):
+            raise ValueError("Rozstrzygnięcie applied wymaga ID szkicu i endpointu WordPress.")
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             rows = connection.execute(
@@ -538,6 +539,7 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
                     "revision_id": revision_id,
                     "reconciliation_outcome": outcome,
                     "wordpress_post_id": wordpress_post_id,
+                    "wordpress_endpoint": wordpress_endpoint,
                     "notes": notes,
                     "external_write_replayed": False,
                 },
@@ -555,6 +557,7 @@ class _WordPressApplyStoreMixin(_StoreConnectionMixin):
                             live_adapter_configured=True,
                         ),
                         wordpress_post_id=wordpress_post_id,
+                        endpoint=wordpress_endpoint,
                         external_write_attempted=True,
                     ),
                 )

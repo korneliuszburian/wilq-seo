@@ -2281,6 +2281,7 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
   payload: ContentWordPressDraftExecutionPayloadSchema.nullable().optional(),
   revision_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
   wordpress_post_id: z.string().nullable().optional(),
+  endpoint: z.enum(["posts", "pages", "uslugi"]).nullable().optional(),
   external_write_attempted: z.boolean(),
   blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
 });

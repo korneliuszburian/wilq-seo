@@ -324,8 +324,9 @@ def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
     readback_ids: list[str] = []
     write_attempts: list[str] = []
 
-    def draft_readback(post_id: str):
+    def draft_readback(post_id: str, *, endpoint: str):
         readback_ids.append(post_id)
+        assert endpoint == "pages"
         return SimpleNamespace(status="draft")
 
     def forbidden_write(*_args, **_kwargs):
@@ -351,6 +352,8 @@ def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
         "Sprawdzono istniejący szkic na devie po przerwanym procesie.",
         "--wordpress-post-id",
         "1275",
+        "--wordpress-endpoint",
+        "pages",
         "--confirm-inspection",
     ]
     active_claim = CliRunner().invoke(cli_app, cli_args)
@@ -371,6 +374,7 @@ def test_wordpress_apply_reconciliation_reads_draft_and_never_retries_write(
     reconciled_execution = store.latest_wordpress_draft_execution(binding.work_item_id)
     assert reconciled_execution is not None
     assert reconciled_execution.wordpress_post_id == "1275"
+    assert reconciled_execution.endpoint == "pages"
     assert (
         store.claim_wordpress_revision_apply(
             binding,

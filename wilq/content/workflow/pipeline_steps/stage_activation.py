@@ -61,7 +61,12 @@ def wordpress_draft_readback(
             ],
         )
     try:
-        readback = read_wordpress_draft_post(post_id)
+        endpoint = _execution_readback_endpoint(execution)
+        readback = (
+            read_wordpress_draft_post(post_id)
+            if endpoint == "posts"
+            else read_wordpress_draft_post(post_id, endpoint=endpoint)
+        )
     except WordPressDraftReadError as exc:
         return ContentWordPressDraftReadback(
             status="blocked",
@@ -151,6 +156,16 @@ def _wordpress_draft_verification(
             ),
         )
     return expected_content_digest, None, None
+
+
+def _execution_readback_endpoint(
+    execution: ContentWordPressDraftExecutionResult,
+) -> Literal["posts", "pages", "uslugi"]:
+    if execution.endpoint is not None:
+        return execution.endpoint
+    if execution.payload is not None:
+        return execution.payload.endpoint_kind
+    return "posts"
 
 
 def wordpress_draft_activation_missing_step(
