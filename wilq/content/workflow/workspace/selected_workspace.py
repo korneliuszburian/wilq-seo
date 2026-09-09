@@ -128,7 +128,11 @@ def build_content_selected_workspace_with_context(
         revision_context_current=revision_context_current,
         revision_state=revision_state,
         item=item,
-        read_material=False,
+        # The selected workspace is the operator's explicit read of this one
+        # page.  It may therefore resolve the bounded WordPress source
+        # material, but it still does not create a plan, a revision, or a
+        # WordPress action.
+        read_material=True,
     )
     if workspace is None:
         return ContentSelectedWorkspace(

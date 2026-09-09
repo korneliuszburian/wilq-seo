@@ -10,8 +10,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.inventory_binding as inventory_binding
+import wilq.content.workflow.pipeline_steps.decision_context as decision_context
 import wilq.content.workflow.workspace.api as workflow_api
 import wilq.content.workflow.workspace.catalog as inventory_catalog
+import wilq.content.workflow.workspace.document_workspace as document_workspace
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
@@ -675,6 +677,8 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
         )
 
     monkeypatch.setattr(inventory_binding, "read_content_inventory_material", material)
+    monkeypatch.setattr(document_workspace, "read_content_inventory_material", material)
+    monkeypatch.setattr(decision_context, "read_content_inventory_material", material)
 
     def catalog() -> ContentInventoryCatalogResponse:
         items = [
