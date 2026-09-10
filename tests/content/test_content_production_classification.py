@@ -14,6 +14,7 @@ import pytest
 from fastapi import FastAPI
 from pydantic import ValidationError
 
+import wilq.content.workflow.store.store_production_classification as classification_store_module
 from apps.api.wilq_api.routers import content_production_classification as classification_api
 from apps.api.wilq_api.routers.content_workflow import router as content_workflow_router
 from tests.content.production_classification_synthetic import (
@@ -34,6 +35,22 @@ from wilq.content.workflow.decisions.production import (
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
 AUDIT_TIME = datetime(2026, 8, 30, 10, 5, tzinfo=UTC)
+
+
+def test_selected_workspace_lookup_cannot_use_historical_classification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run = _parse(build_inputs())
+    store = ContentWorkflowStore(tmp_path / "historical-selected-workspace.sqlite3")
+    store.record_production_classification(run)
+    monkeypatch.setattr(
+        classification_store_module,
+        "HISTORICAL_PRODUCTION_POLICY_IDS",
+        frozenset({run.input.policy_id}),
+    )
+
+    assert store.load_production_classification_for_work_item("work_current") is None
 
 
 def _parse(
@@ -658,6 +675,44 @@ def test_store_atomically_reads_projects_and_preserves_idempotent_audit(tmp_path
         )
     with pytest.raises(ValidationError):
         store.load_latest_production_classification()
+
+
+def test_current_loader_falls_back_past_a_newer_historical_reference(
+    tmp_path: Path,
+) -> None:
+    run = _parse(build_inputs())
+    store = ContentWorkflowStore(tmp_path / "classification-fallback.sqlite3")
+    store.record_production_classification(run)
+    with sqlite3.connect(store.path) as connection:
+        connection.row_factory = sqlite3.Row
+        current = connection.execute(
+            "SELECT * FROM content_production_classifications"
+        ).fetchone()
+        assert current is not None
+        connection.execute(
+            """
+            INSERT INTO content_production_classifications (
+              input_digest, run_id, run_digest, policy_id, policy_digest,
+              packet_sha256, judge_sha256, recorded_by, reviewed_by,
+              recorded_at, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "f" * 64,
+                "historical_run",
+                "e" * 64,
+                "content_production_wave0_keep_packet_v1",
+                "d" * 64,
+                "c" * 64,
+                "b" * 64,
+                "historical_writer",
+                "historical_reviewer",
+                (AUDIT_TIME + timedelta(days=1)).isoformat(),
+                current["payload_json"],
+            ),
+        )
+
+    assert store.load_latest_production_classification() == run
 
 
 def test_parent_router_asgi_roundtrip_records_reads_retries_and_conflicts(

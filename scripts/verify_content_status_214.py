@@ -40,6 +40,7 @@ CSV_COLUMNS = (
 )
 RECORD_ROLE = "current_state"
 SCHEMA_VERSION = "content_status_214_v1"
+SUPPORTED_SCHEMA_VERSIONS = frozenset({SCHEMA_VERSION})
 AS_OF = "2026-09-10T12:00:00+02:00"
 SOURCE_AUTHORITIES = (
     "WILQ SQLite;canonical content ledger;dev execution readback;dev sitemap inventory"
@@ -284,6 +285,10 @@ def _shape_errors(columns: list[str], rows: list[dict[str, str]]) -> list[str]:
     for index, row in enumerate(rows, start=2):
         if set(row) != expected or any(value is None for value in row.values()):
             errors.append(f"row {index}: CSV row does not match contract columns")
+    schema_versions = {row.get("schema_version", "") for row in rows}
+    unsupported = schema_versions.difference(SUPPORTED_SCHEMA_VERSIONS)
+    if unsupported:
+        errors.append("CSV uses an unsupported schema version")
     return errors
 
 

@@ -15,6 +15,7 @@ from pydantic import TypeAdapter
 import apps.api.wilq_api.routers.content_initial_draft as initial_draft_router
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.store.store_initial_draft_authority as authority_store_module
+import wilq.content.workflow.store.store_production_classification as classification_store_module
 from apps.api.wilq_api.routers.content_initial_draft import (
     register_content_initial_draft_route,
 )
@@ -54,6 +55,7 @@ from tests.content.initial_draft_authority_fakes import (
 from wilq.content.drafts.initial_draft_authority import (
     InitialDraftAuthorityBlocked,
     InitialDraftAuthorityReused,
+    InitialDraftAuthorityUnclassified,
     StatusRead,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -74,6 +76,27 @@ _SubmitEndpoint = Callable[
     ContentInitialDraftResponse | JSONResponse,
 ]
 _ReadEndpoint = Callable[[str], ContentInitialDraftResponse]
+
+
+def test_initial_draft_ignores_historical_classification_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run = _nonreuse_run("refresh")
+    store = ContentWorkflowStore(tmp_path / "historical-initial-draft.sqlite3")
+    store.record_production_classification(run)
+    monkeypatch.setattr(
+        classification_store_module,
+        "HISTORICAL_PRODUCTION_POLICY_IDS",
+        frozenset({run.input.policy_id}),
+    )
+
+    result = store.resolve_initial_draft_authority(
+        run.rows[0].current_work_item_id or "missing",
+        StatusRead(),
+    )
+
+    assert isinstance(result, InitialDraftAuthorityUnclassified)
 
 
 @pytest.mark.parametrize(

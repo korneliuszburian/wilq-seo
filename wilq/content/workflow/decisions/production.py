@@ -342,23 +342,23 @@ class ContentProductionClassificationRecordResult(_FrozenModel):
 
 
 class ContentProductionClassificationReadResult(_FrozenModel):
-    status: Literal["available", "missing"]
+    status: Literal["available", "historical_reference", "missing"]
     run: ContentProductionClassificationRun | None = None
 
     @model_validator(mode="after")
     def require_matching_state(self) -> Self:
-        if (self.status == "available") != (self.run is not None):
+        if (self.status != "missing") != (self.run is not None):
             raise ValueError("Classification read state does not match its payload.")
         return self
 
 
 class ContentProductionClassificationProjectionReadResult(_FrozenModel):
-    status: Literal["available", "missing"]
+    status: Literal["available", "historical_reference", "missing"]
     projection: ContentProductionClassificationProjection | None = None
 
     @model_validator(mode="after")
     def require_matching_state(self) -> Self:
-        if (self.status == "available") != (self.projection is not None):
+        if (self.status != "missing") != (self.projection is not None):
             raise ValueError("Classification projection state does not match its payload.")
         return self
 
@@ -390,6 +390,9 @@ class ContentProductionEvidenceDefectPolicy(_FrozenModel):
 
 
 class ContentProductionAcceptancePolicy(_FrozenModel):
+    authority_role: Literal["current_acceptance", "historical_reference"] = (
+        "current_acceptance"
+    )
     policy_id: str = Field(min_length=1)
     packet_schema_version: str = Field(min_length=1)
     judge_schema_version: str = Field(min_length=1)
@@ -661,6 +664,7 @@ _WAVE0_SOURCES = (
 )
 
 WAVE0_PRODUCTION_ACCEPTANCE_POLICY = ContentProductionAcceptancePolicy(
+    authority_role="historical_reference",
     policy_id="content_production_wave0_keep_packet_v1",
     packet_schema_version="wilq_content_production_classification_v1",
     judge_schema_version="wave0_production_classification_judge_v1",

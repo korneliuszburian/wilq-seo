@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.refresh_preparation_operations as refresh_operations
 import wilq.content.workflow.refresh_preparation_resolution as refresh_resolution
+import wilq.content.workflow.store.store_production_classification as classification_store_module
 from apps.api.wilq_api.routers.content_refresh_preparation import (
     register_content_refresh_preparation_routes,
 )
@@ -54,6 +55,22 @@ RUN_DIGEST = "a" * 64
 DECISION_DIGEST = "b" * 64
 ROW_DIGEST = "c" * 64
 INPUT_DIGEST = "d" * 64
+
+
+def test_refresh_preparation_ignores_historical_classification_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run = _stored_refresh_run()
+    store = ContentWorkflowStore(tmp_path / "historical-refresh.sqlite3")
+    store.record_production_classification(run)
+    monkeypatch.setattr(
+        classification_store_module,
+        "HISTORICAL_PRODUCTION_POLICY_IDS",
+        frozenset({run.input.policy_id}),
+    )
+
+    assert refresh_resolution.classified_refresh_context(store, WORK_ITEM_ID) is None
 
 
 @dataclass

@@ -18,10 +18,14 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationProjectionReadResult,
     ContentProductionClassificationReadResult,
     ContentProductionClassificationRecordResult,
+    ContentProductionClassificationRun,
     ContentProductionClassificationValidationError,
     parse_content_production_classification,
 )
 from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store_production_classification import (
+    HISTORICAL_PRODUCTION_POLICY_IDS,
+)
 
 _MAX_PACKET_BYTES = 1_048_576
 _MAX_JUDGE_BYTES = 65_536
@@ -29,6 +33,7 @@ _ROUTE_PREFIX = "/api/content/production-classifications"
 _REQUEST_INVALID_DETAIL = "production_classification_request_invalid"
 _BASE64_INVALID_DETAIL = "production_classification_base64_invalid"
 _SIZE_INVALID_DETAIL = "production_classification_size_invalid"
+_HISTORICAL_REFERENCE_DETAIL = "production_classification_historical_reference"
 _ERROR_CODE_PATTERN = r"^[a-z][a-z0-9_]*$"
 
 
@@ -76,6 +81,8 @@ def _record_content_production_classification(
 ) -> JSONResponse:
     packet_bytes = _decode_transport(request.packet_base64, _MAX_PACKET_BYTES)
     judge_bytes = _decode_transport(request.judge_base64, _MAX_JUDGE_BYTES)
+    if WAVE0_PRODUCTION_ACCEPTANCE_POLICY.authority_role == "historical_reference":
+        raise HTTPException(status_code=409, detail=_HISTORICAL_REFERENCE_DETAIL)
     try:
         run = parse_content_production_classification(
             packet_bytes=packet_bytes,
@@ -97,9 +104,9 @@ async def latest_content_production_classification() -> ContentProductionClassif
 
 
 def _latest_content_production_classification() -> ContentProductionClassificationReadResult:
-    run = content_workflow_store().load_latest_production_classification()
+    run = content_workflow_store().load_latest_production_classification_reference()
     return ContentProductionClassificationReadResult(
-        status="missing" if run is None else "available",
+        status=_read_status(run),
         run=run,
     )
 
@@ -116,11 +123,29 @@ async def content_production_classification_for_work_item(
 def _content_production_classification_for_work_item(
     work_item_id: str,
 ) -> ContentProductionClassificationProjectionReadResult:
-    projection = content_workflow_store().load_production_classification_for_work_item(work_item_id)
+    projection = content_workflow_store().load_production_classification_reference_for_work_item(
+        work_item_id
+    )
     return ContentProductionClassificationProjectionReadResult(
-        status="missing" if projection is None else "available",
+        status=_read_status(projection),
         projection=projection,
     )
+
+
+def _read_status(value: object | None) -> Literal[
+    "available", "historical_reference", "missing"
+]:
+    if value is None:
+        return "missing"
+    if isinstance(value, ContentProductionClassificationRun):
+        is_historical = value.input.policy_id in HISTORICAL_PRODUCTION_POLICY_IDS
+    else:
+        is_historical = (
+            WAVE0_PRODUCTION_ACCEPTANCE_POLICY.authority_role == "historical_reference"
+        )
+    if is_historical:
+        return "historical_reference"
+    return "available"
 
 
 def _decode_transport(value: str, max_bytes: int) -> bytes:
@@ -144,7 +169,10 @@ def register_content_production_classification_routes(router: APIRouter) -> None
         response_model=ContentProductionClassificationRecordResult,
         responses={
             201: {"model": ContentProductionClassificationRecordResult},
-            409: {"model": ContentProductionClassificationRecordResult},
+            409: {
+                "model": ContentProductionClassificationRecordResult
+                | ContentProductionClassificationErrorResponse
+            },
             422: {"model": ContentProductionClassificationErrorResponse},
         },
         tags=["content"],

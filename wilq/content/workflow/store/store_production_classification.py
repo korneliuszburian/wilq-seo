@@ -11,6 +11,8 @@ from wilq.content.workflow.decisions.production import (
 )
 from wilq.storage.model_json import model_json
 
+HISTORICAL_PRODUCTION_POLICY_IDS = frozenset({"content_production_wave0_keep_packet_v1"})
+
 
 class ProductionClassificationStoreMixin:
     def _connect(self) -> sqlite3.Connection:
@@ -79,11 +81,27 @@ class ProductionClassificationStoreMixin:
         with self._connect() as connection:
             return load_latest_production_classification_from_connection(connection)
 
+    def load_latest_production_classification_reference(
+        self,
+    ) -> ContentProductionClassificationRun | None:
+        with self._connect() as connection:
+            return load_latest_production_classification_reference_from_connection(connection)
+
     def load_production_classification_for_work_item(
         self,
         work_item_id: str,
     ) -> ContentProductionClassificationProjection | None:
         run = self.load_latest_production_classification()
+        if run is None:
+            return None
+        row = run.for_work_item(work_item_id)
+        return None if row is None else project_content_production_classification(run, row)
+
+    def load_production_classification_reference_for_work_item(
+        self,
+        work_item_id: str,
+    ) -> ContentProductionClassificationProjection | None:
+        run = self.load_latest_production_classification_reference()
         if run is None:
             return None
         row = run.for_work_item(work_item_id)
@@ -130,6 +148,21 @@ def _classification_from_row(row: sqlite3.Row) -> ContentProductionClassificatio
 def load_latest_production_classification_from_connection(
     connection: sqlite3.Connection,
 ) -> ContentProductionClassificationRun | None:
+    rows = connection.execute(
+        """
+        SELECT * FROM content_production_classifications
+        ORDER BY recorded_at DESC, rowid DESC
+        """
+    ).fetchall()
+    for row in rows:
+        if cast(str, row["policy_id"]) not in HISTORICAL_PRODUCTION_POLICY_IDS:
+            return _classification_from_row(row)
+    return None
+
+
+def load_latest_production_classification_reference_from_connection(
+    connection: sqlite3.Connection,
+) -> ContentProductionClassificationRun | None:
     row = connection.execute(
         """
         SELECT * FROM content_production_classifications
@@ -143,4 +176,5 @@ def load_latest_production_classification_from_connection(
 __all__ = [
     "ProductionClassificationStoreMixin",
     "load_latest_production_classification_from_connection",
+    "load_latest_production_classification_reference_from_connection",
 ]

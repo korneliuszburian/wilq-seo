@@ -91,6 +91,54 @@ def _asgi_request(app: FastAPI, *, body: object) -> httpx.Response:
     return asyncio.run(exercise())
 
 
+def test_public_wave0_route_is_historical_and_cannot_record_current_acceptance() -> None:
+    inputs = build_inputs()
+    response = _asgi_request(
+        _classification_app(),
+        body={
+            "policy_selector": "wave0-production-classification-v1",
+            "packet_base64": base64.b64encode(inputs.packet_bytes).decode(),
+            "judge_base64": base64.b64encode(inputs.judge_bytes).decode(),
+            "recorded_by": "codex_s0_test",
+            "reviewed_by": "independent_test_judge",
+            "recorded_at": AUDIT_TIME.isoformat(),
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "production_classification_historical_reference"
+    }
+
+
+def test_public_wave0_read_is_labeled_historical_reference(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inputs = build_inputs()
+    store = ContentWorkflowStore(tmp_path / "historical-read.sqlite3")
+    store.record_production_classification(_parse(inputs))
+    monkeypatch.setattr(classification_api, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        classification_api,
+        "HISTORICAL_PRODUCTION_POLICY_IDS",
+        frozenset({inputs.policy.policy_id}),
+    )
+
+    async def read_latest() -> httpx.Response:
+        transport = httpx.ASGITransport(app=_classification_app())
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://testserver",
+        ) as client:
+            return await client.get("/api/content/production-classifications/latest")
+
+    response = asyncio.run(read_latest())
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "historical_reference"
+
+
 @pytest.mark.parametrize(
     ("path", "unsafe_value"),
     [

@@ -1,6 +1,6 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-07-19.
+Stan na: 2026-09-10.
 
 Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
 docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
@@ -18,6 +18,26 @@ Czytaj w tej kolejności:
 6. `docs/PROGRESS.md` — najnowszy krótki dowód i luki.
 7. `PLANS.md` — długotrwały ExecPlan i decyzje.
 8. `rtk bd prime` oraz `rtk bd ready --json` — operacyjny graf pracy.
+
+## Bieżący autorytet produkcji treści
+
+`docs/content-status-214.csv` jest jedynym bieżącym dziennikiem per URL dla
+całej, znormalizowanej sitemap Ekologus dev. Zawiera dokładnie 214 rekordów i
+jest projekcją stanu weryfikowaną przez
+`scripts/verify_content_status_214.py`. Typed rekordy WILQ SQLite/API pozostają
+autorytetem dla evidence, immutable revisions, review, ActionObjectów, audytu i
+readbacku; CSV nie zastępuje tych rekordów.
+
+Poniższe snapshoty są wyłącznie `historical/reference` i nie mogą sterować
+bieżącą kolejką ani nadpisywać CSV:
+
+- `docs/content-dev-state-journal-20260828.json`;
+- `docs/content-keep-eligibility-context-20260828.json`;
+- `docs/content-keep-eligibility-20260828.json`.
+
+Ich kod może pozostać potrzebny do odczytu historii lub regresji, ale nie jest
+writerem kanonicznego journalu. Bieżący plan, kolejność bram i graf dostawy są
+w `PLANS.md`; stan wykonania i WIP należą wyłącznie do Beads.
 
 ## Czym jest WILQ / Better BDOS
 
