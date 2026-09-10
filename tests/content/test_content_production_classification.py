@@ -14,6 +14,7 @@ import pytest
 from fastapi import FastAPI
 from pydantic import ValidationError
 
+import wilq.content.workflow.store.store_production_classification as classification_store_module
 from apps.api.wilq_api.routers import content_production_classification as classification_api
 from apps.api.wilq_api.routers.content_workflow import router as content_workflow_router
 from tests.content.production_classification_synthetic import (
@@ -34,6 +35,22 @@ from wilq.content.workflow.decisions.production import (
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
 AUDIT_TIME = datetime(2026, 8, 30, 10, 5, tzinfo=UTC)
+
+
+def test_selected_workspace_lookup_cannot_use_historical_classification(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run = _parse(build_inputs())
+    store = ContentWorkflowStore(tmp_path / "historical-selected-workspace.sqlite3")
+    store.record_production_classification(run)
+    monkeypatch.setattr(
+        classification_store_module,
+        "HISTORICAL_PRODUCTION_POLICY_IDS",
+        frozenset({run.input.policy_id}),
+    )
+
+    assert store.load_production_classification_for_work_item("work_current") is None
 
 
 def _parse(

@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sqlite3
 import sys
+from argparse import Namespace
 from pathlib import Path
+
+import pytest
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = _ROOT / "scripts/verify_content_status_214.py"
@@ -13,6 +17,14 @@ assert _SPEC is not None and _SPEC.loader is not None
 status = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = status
 _SPEC.loader.exec_module(status)
+
+_EXPORT_SCRIPT = _ROOT / "scripts/export_content_status_csv.py"
+_EXPORT_SPEC = importlib.util.spec_from_file_location(
+    "export_content_status_csv", _EXPORT_SCRIPT
+)
+assert _EXPORT_SPEC is not None and _EXPORT_SPEC.loader is not None
+exporter = importlib.util.module_from_spec(_EXPORT_SPEC)
+_EXPORT_SPEC.loader.exec_module(exporter)
 
 
 def test_canonical_status_csv_satisfies_the_current_state_contract() -> None:
@@ -23,6 +35,49 @@ def test_canonical_status_csv_satisfies_the_current_state_contract() -> None:
     assert sum(row["revision_scope"] == "current" for row in rows) == 18
     assert sum(row["semantic_review_status"] == "zero_findings" for row in rows) == 17
     assert sum(row["delivery_status"] == "dev_draft_verified" for row in rows) == 8
+
+
+def test_status_contract_rejects_an_unsupported_schema_version() -> None:
+    columns, rows = status.load_rows(_ROOT / "docs/content-status-214.csv")
+    changed_rows = [dict(row) for row in rows]
+    changed_rows[0]["schema_version"] = "content_status_214_v2"
+
+    errors = status.validate_rows(columns, changed_rows)
+
+    assert "CSV uses an unsupported schema version" in errors
+
+
+def test_legacy_exporter_cannot_overwrite_the_canonical_journal() -> None:
+    args = Namespace(
+        journal=Path("not-read.json"),
+        sitemap=Path("not-read.json"),
+        acf_inventory=Path("not-read.json"),
+        state_db=Path("not-read.sqlite3"),
+        output=_ROOT / "docs/content-status-214.csv",
+    )
+
+    with pytest.raises(ValueError, match="legacy exporter schema"):
+        exporter.export(args)
+
+
+def test_legacy_exporter_cannot_overwrite_a_hardlink_to_the_journal(
+    tmp_path: Path,
+) -> None:
+    alias = _ROOT / "docs" / f".{tmp_path.name}-journal-alias.csv"
+    try:
+        os.link(_ROOT / "docs/content-status-214.csv", alias)
+        args = Namespace(
+            journal=Path("not-read.json"),
+            sitemap=Path("not-read.json"),
+            acf_inventory=Path("not-read.json"),
+            state_db=Path("not-read.sqlite3"),
+            output=alias,
+        )
+
+        with pytest.raises(ValueError, match="legacy exporter schema"):
+            exporter.export(args)
+    finally:
+        alias.unlink(missing_ok=True)
 
 
 def test_historical_journal_sidecar_requires_supersession_markers(tmp_path: Path) -> None:
