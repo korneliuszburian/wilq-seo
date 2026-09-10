@@ -1,6 +1,96 @@
 # Source Registry
 
-Last checked: 2026-06-17.
+Last checked: 2026-09-10.
+
+## Current content and SEO decision registry
+
+Rola: `decision`. Ten rejestr odpowiada na pytanie: które zewnętrzne mechanizmy
+mają sterować evidence-bound pipeline'em 214 URL-i i 57 stron `keep`, a które
+pozostają odrzucone, testowe albo odroczone? Właściciel decyzji: WILQ Content
+Ops. Konsument: Bead `wilq-seo-1oa.36.102.2` (registry), następnie S2.3 source
+packets, S5 quality gates i S9 production cohorts. Każda implementacja musi
+mieć własny Bead i falsifier;
+rejestr nie jest approvalem treści ani obietnicą pozycji w Google.
+
+### Źródła primary i zakres autorytetu
+
+| ID | Źródło i wersja | Mechanizm, który rzeczywiście wspiera | Decyzja |
+|---|---|---|---|
+| SEO-G1 | [Creating helpful, reliable, people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content), updated 2025-12-10; checked 2026-09-10 | Oryginalna, kompletna wartość dla odbiorcy; opisowy title/H1; brak przesady; sourcing i demonstrable expertise. | `adopt` |
+| SEO-G2 | [Google Search Essentials](https://developers.google.com/search/docs/essentials), page checked 2026-09-10 | Technical requirements, spam policies i people-first best practices; samo spełnienie nie gwarantuje crawl/index/rank. | `adopt` |
+| SEO-G3 | [Guidance on generative AI content](https://developers.google.com/search/docs/fundamentals/using-gen-ai-content), page checked 2026-09-10 | AI nie jest spamem samo w sobie; masowe strony bez wartości są scaled content abuse. | `adopt` |
+| SEO-G3-D | [Guidance on generative AI content](https://developers.google.com/search/docs/fundamentals/using-gen-ai-content), page checked 2026-09-10 | Disclosure zależy od tego, czy odbiorca racjonalnie pyta „jak to powstało”; to nie jest uniwersalny ranking gate. | `defer` |
+| SEO-G4 | [Google's guide to optimizing for AI features](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide), page checked 2026-09-10 | Nie tworzyć osobnej strony dla każdej wariacji zapytania; skuteczne SEO i satysfakcja użytkownika zamiast AEO/GEO hacks. | `adopt` |
+| SEO-G5 | [SEO Starter Guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide), page checked 2026-09-10 | Używać słów odbiorcy w title/H1/alt/link text, ale nie wymagać każdej wariacji query ani exact-match stuffing. | `adopt` |
+| SEO-G6 | [WCAG 2.2 Recommendation](https://www.w3.org/TR/WCAG22/), Recommendation 2024-12-12; checked 2026-09-10 | Testowalne kryteria dostępności dla treści na każdym urządzeniu; nie wyczerpuje wszystkich potrzeb użytkowników. | `adopt` |
+| IR-1 | [ReAct](https://arxiv.org/abs/2210.03629), 2022; checked 2026-09-10 | Rozdzielenie rozumowania i działania narzędziowego. | `adopt` |
+| IR-2 | [Self-RAG](https://arxiv.org/abs/2310.11511), 2023; checked 2026-09-10 | Retrieval + critique może poprawić controllability, ale nie dowodzi prawdy bez source lineage. | `adopt` |
+| IR-3 | [RAGAS](https://arxiv.org/abs/2309.15217), 2023 | Relevance/faithfulness/context precision jako vocabulary eval; nie jest rankingowym SEO score. | `lab-test` |
+
+### Mechanism → local decision
+
+- **People-first i information gain — `adopt`.** Każdy packet i revision musi
+  wskazać odbiorcę, problem, odpowiedź, źródłowe fakty i wartość ponad oczywiste
+  streszczenie. Falsifier: treść jest tylko parafrazą źródeł, nie ma konkretnego
+  answer/CTA albo jej heading obiecuje więcej niż evidence — blokada.
+- **No magic word count — `adopt`.** Google nie podaje preferowanej
+  długości; długość może być sygnałem diagnostycznym, nigdy acceptance criterion.
+  Falsifier: usunięcie progu długości nie może zmienić decyzji o jakości bez
+  innego findingu.
+- **Scaled-content anti-slop — `adopt`.** Batch nie może stworzyć stron tylko
+  z wariacji fraz; każda strona ma canonical owner, distinct intent, source pack,
+  information gain i review. Falsifier: duplicate/intent graph wykrywa dwie
+  strony z tą samą odpowiedzią — zatrzymaj cohortę, nie generuj kolejnej strony.
+- **E-E-A-T/YMYL — `adopt`.** Trust, official regulatory source i exact claim
+  ledger są wyżej niż stylistyka; nie tworzymy liczbowego E-E-A-T score. Falsifier:
+  każdy legal/regulatory claim bez aktualnego official source daje typed blocker.
+- **Who/How/Why — `adopt` jako review questions.** WILQ zapisuje lineage i
+  reviewerów wewnętrznie; byline `lab-test`, a automation disclosure `defer`
+  zgodnie z osobnymi wierszami registry.
+  Falsifier: test kontraktu ma wykazać, że pola są unset/blocked, a nie
+  wygenerowane z domysłu.
+- **Plain language — `adopt`.** Deterministyczne long-sentence,
+  wall-of-text, thin-section i heading gates są lokalnym mechanizmem; polski
+  reading-level pozostaje `defer` bez sprawdzonej miary. Falsifier: gate nie
+  może karać poprawnych skrótów prawnych przez prosty split.
+- **Accessibility — `adopt` jako osobna bramka, nie ranking claim.** Heading
+  hierarchy, link purpose, alt text, keyboard/focus i mobile readability są
+  sprawdzane przed dev draft; WCAG conformance nie dowodzi SEO performance.
+- **Retrieval/critique — `adopt` jako kolejność.**
+  `evidence → compact context → deterministic checks → independent judges`;
+  RAGAS vocabulary może służyć eksperymentowi, ale nie zastępuje evidence IDs
+  ani WILQ semantic review.
+
+### Non-proof i supersession
+
+Źródła nie dowodzą rankingu, CTR, leadów, revenue, przyczynowości, jakości
+reader-facing UAT ani zgodności prawnej konkretnej strony. Nowsza sekcja
+`Current content and SEO decision registry` zastępuje wyłącznie tabelę
+`Historical/reference source inventory` poniżej; nie jest drugim plikiem
+authority i nigdy nie jest zastępowana przez historyczny snapshot lub prompt.
+Następny konsument musi przypiąć source-pack i context digest do exact work itemu;
+zmiana official source/freshness unieważnia downstream review tej rewizji.
+
+### Consumer and falsifier map
+
+| ID | Lokalny konsument | Falsifier |
+|---|---|---|
+| SEO-G1 | S5 deterministic/content review; S9 research packet | heading/claim bez wartości dodanej lub nadmierna obietnica blokuje revision |
+| SEO-G2 | S6/S10 technical and policy QA | missing technical/spam gate albo unsupported index claim blokuje URL |
+| SEO-G3 | S4/S5 anti-slop gate | corpus duplicate/intent collision zatrzymuje cohortę |
+| SEO-G3-D | przyszły product contract, nie bieżący gate | brak named owner/contract utrzymuje `defer` |
+| SEO-G4 | S10 corpus intent graph | wariant query nie ma distinct intent → nie twórz nowej strony |
+| SEO-G5 | S2.3 packet i S10 metadata/link QA | exact-match stuffing lub brak safe destination blokuje |
+| SEO-G6 | S10 accessibility QA | nieprzechodzące kryterium WCAG/UX blokuje dev draft |
+| IR-1 | S4 WILQ API/evidence command | brak evidence przed decyzją blokuje command |
+| IR-2 | S5 review ordering | claim bez source lineage nie może przejść |
+| IR-3 | S5.2 lab eval | brak poprawy na ustalonym corpusie odrzuca eksperyment |
+
+## Historical/reference source inventory
+
+Poniższa tabela jest wcześniejszym, szerokim indeksem mechanizmów i narzędzi.
+Ma rolę `historical/reference`; nie jest bieżącą decyzją dla S2.2/S5/S9 i nie
+może sterować kolejką ani nadpisywać aktualnej sekcji powyżej.
 
 | Source | Domain | Why it matters | Product decision | Location |
 | --- | --- | --- | --- | --- |

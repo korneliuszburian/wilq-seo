@@ -4,6 +4,11 @@ Rola dokumentu: `decision` — wynik source-to-decision dla standardów jakości
 Nie opisuje bieżącego stanu produktu; decyzje adopt/reject/lab-test wymagają
 slice'ów z falsifierami (ścieżka: docs/agents/reports/benchmark/ + beads).
 
+Dla bieżącego pipeline'u 214 URL-i nadrzędny jest
+`docs/research/source-registry.md`, sekcja `Current content and SEO decision
+registry` (checked 2026-09-10). Ten dokument zachowuje wcześniejsze decyzje i
+nie zastępuje nowszej sekcji registry.
+
 ## Decision question
 
 - Pytanie: które zewnętrzne standardy jakości treści WILQ ma adoptować w pipeline
