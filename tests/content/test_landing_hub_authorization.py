@@ -241,7 +241,16 @@ def test_duplicate_gate_requires_its_own_evidence_digest() -> None:
     assert blocker.reason == "duplicate_gate_missing"
 
 
-@pytest.mark.parametrize("secret", ["X" * 32, "a" * 32, "a" * 16 + "_" + "b" * 16])
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "X" * 32,
+        "a" * 32,
+        "a" * 16 + "_" + "b" * 16,
+        "A" * 16 + "_" + "B" * 16,
+        "a" * 16 + "-" + "b" * 16,
+    ],
+)
 def test_landing_hub_free_text_is_redacted_before_authorization_digest(
     tmp_path: Path,
     secret: str,
@@ -305,6 +314,43 @@ def test_landing_hub_preview_surfaces_corrupt_receipt_as_typed_blocker(
     assert response.status_code == 200
     assert response.json()["status"] == "blocked"
     assert response.json()["blockers"][0]["reason"] == "authorization_conflict"
+
+
+def test_landing_hub_readback_surfaces_corrupt_receipt_as_typed_result(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, _request, inventory, authorization = _authorization(tmp_path)
+    store.record_landing_hub_authorization(
+        authorization,
+        inventory_binding=inventory,
+    )
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        store,
+        "load_landing_hub_authorization",
+        lambda _authorization_id: (_ for _ in ()).throw(ValueError("corrupt receipt")),
+    )
+
+    response = TestClient(app).get(
+        "/api/content/work-items/landing-hub-authorizations/"
+        f"{authorization.authorization_id}"
+    )
+
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["reason"] == "authorization_conflict"
+
+
+def test_landing_hub_store_rejects_unredacted_free_text_receipt(tmp_path: Path) -> None:
+    store, _run, _request, inventory, authorization = _authorization(tmp_path)
+    unredacted = authorization.model_copy(update={"intent": "A" * 32})
+
+    with pytest.raises(ValueError, match="must be redacted"):
+        store.record_landing_hub_authorization(
+            unredacted,
+            inventory_binding=inventory,
+        )
 
 
 def test_landing_hub_get_routes_do_not_echo_invalid_path_values() -> None:
@@ -451,6 +497,14 @@ def test_landing_hub_route_redacts_before_duplicate_gate_precheck(
 
     assert response.status_code == 201
     assert response.json()["authorization"]["intent"] == redacted_intent
+
+
+def test_landing_hub_post_openapi_documents_all_runtime_statuses() -> None:
+    responses = app.openapi()["paths"][
+        "/api/content/work-items/{work_item_id}/landing-hub-authorizations"
+    ]["post"]["responses"]
+
+    assert {"200", "201", "409", "422"}.issubset(responses)
 
 
 def test_landing_hub_request_rejects_unsafe_cta() -> None:

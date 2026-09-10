@@ -12,6 +12,7 @@ from wilq.content.workflow.landing_hub import (
     ContentLandingHubAuthorizationRecordResult,
     canonical_source_fact_registry_digest,
     inventory_evidence_digest,
+    redact_landing_hub_free_text,
 )
 from wilq.content.workflow.store.store_production_classification import (
     load_latest_production_classification_from_connection,
@@ -32,6 +33,13 @@ class ContentLandingHubAuthorizationStoreMixin:
     ) -> ContentLandingHubAuthorizationRecordResult:
         payload = authorization.model_dump(mode="json")
         redacted_payload = redact_mapping(payload)
+        redacted_payload["intent"] = redact_landing_hub_free_text(
+            str(redacted_payload["intent"])
+        )
+        redacted_payload["blocked_claims"] = [
+            redact_landing_hub_free_text(str(claim))
+            for claim in redacted_payload["blocked_claims"]
+        ]
         if redacted_payload != payload:
             raise ValueError("Landing/hub authorization must be redacted before persistence.")
         accepted = ContentLandingHubAuthorization.model_validate_json(

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Coroutine
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Path, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.workflow.decisions.inventory_binding import (
     content_kind_inventory_binding_for_work_item,
@@ -48,6 +48,21 @@ class ContentLandingHubAuthorizationValidationErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     detail: Literal["landing_hub_authorization_request_invalid"]
+
+
+class ContentLandingHubAuthorizationReadConflictResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["blocked"]
+    authorization_id: str
+    blockers: tuple[ContentLandingHubAuthorizationBlocker, ...]
+    safe_next_step: str
+
+
+ContentLandingHubAuthorizationConflictResponse = Annotated[
+    ContentLandingHubAuthorizationPreview | ContentLandingHubAuthorizationRecordResult,
+    Field(discriminator="status"),
+]
 
 
 def _preview(
@@ -141,7 +156,10 @@ async def record_landing_hub_authorization(
     classification = await asyncio.to_thread(store.load_latest_production_classification)
     row = None if classification is None else classification.for_work_item(work_item_id)
     inventory = await asyncio.to_thread(content_kind_inventory_binding_for_work_item, work_item_id)
-    redacted_request = await asyncio.to_thread(redacted_landing_hub_request, request)
+    try:
+        redacted_request = await asyncio.to_thread(redacted_landing_hub_request, request)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"detail": _INVALID_DETAIL})
     blocker = await asyncio.to_thread(
         landing_hub_authorization_blocker,
         work_item_id=work_item_id,
@@ -214,11 +232,34 @@ async def read_landing_hub_authorization(
     authorization_id: str = Path(
         ..., min_length=1, max_length=280, pattern=r"^[a-z][a-z0-9_-]*$"
     ),
-) -> ContentLandingHubAuthorizationRecordResult:
-    result = await asyncio.to_thread(
-        content_workflow_store().load_landing_hub_authorization,
-        authorization_id,
-    )
+) -> ContentLandingHubAuthorizationRecordResult | JSONResponse:
+    try:
+        result = await asyncio.to_thread(
+            content_workflow_store().load_landing_hub_authorization,
+            authorization_id,
+        )
+    except ValueError:
+        return JSONResponse(
+            status_code=409,
+            content=ContentLandingHubAuthorizationReadConflictResponse(
+                status="blocked",
+                authorization_id=authorization_id,
+                blockers=(
+                    ContentLandingHubAuthorizationBlocker(
+                        seam="authorization",
+                        reason="authorization_conflict",
+                        next_step_pl=(
+                            "Zweryfikuj integralność receiptu i przygotuj nowy "
+                            "landing/hub authorization."
+                        ),
+                    ),
+                ),
+                safe_next_step=(
+                    "Zweryfikuj integralność receiptu i przygotuj nowy "
+                    "landing/hub authorization."
+                ),
+            ).model_dump(mode="json"),
+        )
     if result is None:
         raise HTTPException(status_code=404, detail="content_landing_hub_authorization_not_found")
     return ContentLandingHubAuthorizationRecordResult(status="idempotent", authorization=result)
@@ -241,7 +282,9 @@ def register_content_landing_hub_authorization_routes(router: APIRouter) -> None
         status_code=201,
         response_model=ContentLandingHubAuthorizationRecordResult,
         responses={
-            409: {"model": ContentLandingHubAuthorizationPreview},
+            200: {"model": ContentLandingHubAuthorizationRecordResult},
+            201: {"model": ContentLandingHubAuthorizationRecordResult},
+            409: {"model": ContentLandingHubAuthorizationConflictResponse},
             422: {"model": ContentLandingHubAuthorizationValidationErrorResponse},
         },
         route_class_override=_NoEchoLandingHubAuthorizationRoute,
@@ -252,7 +295,10 @@ def register_content_landing_hub_authorization_routes(router: APIRouter) -> None
         read_landing_hub_authorization,
         methods=["GET"],
         response_model=ContentLandingHubAuthorizationRecordResult,
-        responses={422: {"model": ContentLandingHubAuthorizationValidationErrorResponse}},
+        responses={
+            409: {"model": ContentLandingHubAuthorizationReadConflictResponse},
+            422: {"model": ContentLandingHubAuthorizationValidationErrorResponse},
+        },
         route_class_override=_NoEchoLandingHubAuthorizationRoute,
         tags=["content"],
     )
