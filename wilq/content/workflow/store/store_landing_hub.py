@@ -6,10 +6,12 @@ import json
 import sqlite3
 from typing import cast
 
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.landing_hub import (
     ContentLandingHubAuthorization,
     ContentLandingHubAuthorizationRecordResult,
     canonical_source_fact_registry_digest,
+    inventory_evidence_digest,
 )
 from wilq.content.workflow.store.store_production_classification import (
     load_latest_production_classification_from_connection,
@@ -25,6 +27,8 @@ class ContentLandingHubAuthorizationStoreMixin:
     def record_landing_hub_authorization(
         self,
         authorization: ContentLandingHubAuthorization,
+        *,
+        inventory_binding: ContentKindInventoryBinding | None = None,
     ) -> ContentLandingHubAuthorizationRecordResult:
         payload = authorization.model_dump(mode="json")
         redacted_payload = redact_mapping(payload)
@@ -35,7 +39,7 @@ class ContentLandingHubAuthorizationStoreMixin:
         )
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            _assert_current_landing_hub_authorization(connection, accepted)
+            _assert_current_landing_hub_authorization(connection, accepted, inventory_binding)
             existing_row = connection.execute(
                 "SELECT * FROM content_landing_hub_authorizations WHERE authorization_id = ?",
                 (accepted.authorization_id,),
@@ -105,6 +109,8 @@ class ContentLandingHubAuthorizationStoreMixin:
     def load_latest_landing_hub_authorization(
         self,
         work_item_id: str,
+        *,
+        inventory_binding: ContentKindInventoryBinding | None = None,
     ) -> ContentLandingHubAuthorization | None:
         with self._connect() as connection:
             row = connection.execute(
@@ -119,14 +125,17 @@ class ContentLandingHubAuthorizationStoreMixin:
             if row is None:
                 return None
             authorization = _authorization_from_row(row)
-            _assert_current_landing_hub_authorization(connection, authorization)
+            _assert_current_landing_hub_authorization(connection, authorization, inventory_binding)
         return authorization
 
 
 def _assert_current_landing_hub_authorization(
     connection: sqlite3.Connection,
     authorization: ContentLandingHubAuthorization,
+    inventory_binding: ContentKindInventoryBinding | None,
 ) -> None:
+    if inventory_binding is None:
+        raise ValueError("Landing/hub authorization requires current inventory evidence.")
     run = load_latest_production_classification_from_connection(connection)
     if run is None:
         raise ValueError("Landing/hub authorization requires a current classification.")
@@ -143,7 +152,17 @@ def _assert_current_landing_hub_authorization(
         or classified.canonical_path != authorization.canonical_path
         or classified.public_url != authorization.public_url
         or run.freshness.requires_refresh
-        or authorization.wordpress_content_type.casefold() not in {"page", "pages"}
+        or not inventory_binding.trusted
+        or inventory_binding.work_item_id != authorization.work_item_id
+        or inventory_binding.canonical_path != authorization.canonical_path
+        or inventory_binding.public_url != authorization.public_url
+        or inventory_binding.content_kind != "landing_or_hub"
+        or inventory_binding.wordpress_content_type.casefold() not in {"page", "pages"}
+        or inventory_binding.wordpress_content_type != authorization.wordpress_content_type
+        or tuple(sorted(inventory_binding.inventory_evidence_ids))
+        != authorization.inventory_evidence_ids
+        or inventory_evidence_digest(tuple(sorted(inventory_binding.inventory_evidence_ids)))
+        != authorization.inventory_evidence_digest
         or authorization.source_fact_registry_digest
         != canonical_source_fact_registry_digest()
     ):

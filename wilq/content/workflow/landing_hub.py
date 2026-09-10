@@ -23,7 +23,7 @@ from wilq.security.redaction import redact_mapping
 _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9/_~.%-]*$")
-_LOWERCASE_SECRET_VALUE = re.compile(r"(?<![A-Za-z0-9])[a-z0-9]{32,}(?![A-Za-z0-9])")
+_LOWERCASE_SECRET_VALUE = re.compile(r"(?<![A-Za-z0-9_])[a-z0-9_]{32,}(?![A-Za-z0-9_])")
 _SAFE_OPERATOR = re.compile(r"^[\w .-]+$", re.UNICODE)
 _UNSAFE_OPERATOR = re.compile(
     r"(?:basic|bearer|token|password|secret|credential|api[_ -]?key)",
@@ -380,7 +380,7 @@ def build_landing_hub_authorization(
     request: ContentLandingHubAuthorizationRequest,
     authorized_at: datetime,
 ) -> ContentLandingHubAuthorization:
-    request = _redacted_request(request)
+    request = redacted_landing_hub_request(request)
     blocker = landing_hub_authorization_blocker(
         work_item_id=work_item_id,
         classification=classification,
@@ -639,7 +639,7 @@ def duplicate_gate_receipt_digest(intent: str, evidence_ids: tuple[str, ...]) ->
     )
 
 
-def _redacted_request(
+def redacted_landing_hub_request(
     request: ContentLandingHubAuthorizationRequest,
 ) -> ContentLandingHubAuthorizationRequest:
     payload = redact_mapping(request.model_dump(mode="json"))
@@ -703,4 +703,5 @@ __all__ = [
     "landing_hub_authorization_blocker",
     "landing_hub_authorization_digest",
     "landing_hub_input_digest",
+    "redacted_landing_hub_request",
 ]

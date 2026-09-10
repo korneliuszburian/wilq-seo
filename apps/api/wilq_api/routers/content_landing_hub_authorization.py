@@ -22,6 +22,7 @@ from wilq.content.workflow.landing_hub import (
     ContentLandingHubAuthorizationRequest,
     build_landing_hub_authorization,
     landing_hub_authorization_blocker,
+    redacted_landing_hub_request,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas.core import utc_now
@@ -76,7 +77,10 @@ def _preview(
     if classification is None or row is None or inventory is None:
         raise RuntimeError("Landing/hub preview lost its exact context.")
     try:
-        authorization = store.load_latest_landing_hub_authorization(work_item_id)
+        authorization = store.load_latest_landing_hub_authorization(
+            work_item_id,
+            inventory_binding=inventory,
+        )
     except ValueError:
         return ContentLandingHubAuthorizationPreview(
             status="blocked",
@@ -137,13 +141,14 @@ async def record_landing_hub_authorization(
     classification = await asyncio.to_thread(store.load_latest_production_classification)
     row = None if classification is None else classification.for_work_item(work_item_id)
     inventory = await asyncio.to_thread(content_kind_inventory_binding_for_work_item, work_item_id)
+    redacted_request = await asyncio.to_thread(redacted_landing_hub_request, request)
     blocker = await asyncio.to_thread(
         landing_hub_authorization_blocker,
         work_item_id=work_item_id,
         classification=classification,
         row=row,
         inventory_binding=inventory,
-        request=request,
+        request=redacted_request,
     )
     if blocker is not None:
         preview = ContentLandingHubAuthorizationPreview(
@@ -166,12 +171,40 @@ async def record_landing_hub_authorization(
             classification=classification,
             row=row,
             inventory_binding=inventory,
-            request=request,
+            request=redacted_request,
             authorized_at=utc_now(),
         )
-        result = await asyncio.to_thread(store.record_landing_hub_authorization, authorization)
+        result = await asyncio.to_thread(
+            store.record_landing_hub_authorization,
+            authorization,
+            inventory_binding=inventory,
+        )
     except ValueError:
         preview = await asyncio.to_thread(_preview, store, work_item_id)
+        if preview.status == "ready_to_authorize":
+            preview = preview.model_copy(
+                update={
+                    "status": "blocked",
+                    "blockers": (
+                        ContentLandingHubAuthorizationBlocker(
+                            seam="authorization",
+                            reason="authorization_conflict",
+                            evidence_ids=(
+                                ()
+                                if inventory is None
+                                else tuple(sorted(inventory.inventory_evidence_ids))
+                            ),
+                            next_step_pl=(
+                                "Ponów preview i przygotuj nowy receipt dla bieżącego "
+                                "exact URL-a."
+                            ),
+                        ),
+                    ),
+                    "safe_next_step": (
+                        "Ponów preview i przygotuj nowy receipt dla bieżącego exact URL-a."
+                    ),
+                }
+            )
         return JSONResponse(status_code=409, content=preview.model_dump(mode="json"))
     status_code = {"created": 201, "idempotent": 200, "conflict": 409}[result.status]
     return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))

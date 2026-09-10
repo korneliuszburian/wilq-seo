@@ -80,10 +80,14 @@ def _authorization(tmp_path: Path):
 
 
 def test_landing_hub_authorization_is_exact_idempotent_and_append_only(tmp_path: Path) -> None:
-    store, _run, _request, _inventory, authorization = _authorization(tmp_path)
+    store, _run, _request, inventory, authorization = _authorization(tmp_path)
 
-    created = store.record_landing_hub_authorization(authorization)
-    repeated = store.record_landing_hub_authorization(authorization)
+    created = store.record_landing_hub_authorization(
+        authorization, inventory_binding=inventory
+    )
+    repeated = store.record_landing_hub_authorization(
+        authorization, inventory_binding=inventory
+    )
 
     assert created.status == "created"
     assert repeated.status == "idempotent"
@@ -184,7 +188,7 @@ def test_superseded_classification_receipt_is_not_read_as_current(
     import wilq.content.workflow.store.store_landing_hub as landing_store_module
 
     store, run, _request, _inventory, authorization = _authorization(tmp_path)
-    store.record_landing_hub_authorization(authorization)
+    store.record_landing_hub_authorization(authorization, inventory_binding=_inventory)
     newer = run.model_copy(update={"run_id": "newer_classification"})
     monkeypatch.setattr(
         landing_store_module,
@@ -193,7 +197,30 @@ def test_superseded_classification_receipt_is_not_read_as_current(
     )
 
     with pytest.raises(ValueError, match="no longer matches current classification"):
-        store.load_latest_landing_hub_authorization(authorization.work_item_id)
+        store.load_latest_landing_hub_authorization(
+            authorization.work_item_id,
+            inventory_binding=_inventory,
+        )
+
+
+def test_inventory_drift_receipt_is_not_read_as_current(tmp_path: Path) -> None:
+    store, _run, _request, inventory, authorization = _authorization(tmp_path)
+    store.record_landing_hub_authorization(
+        authorization,
+        inventory_binding=inventory,
+    )
+    drifted = inventory.__class__(
+        **{
+            **inventory.__dict__,
+            "inventory_evidence_ids": ("ev_new_inventory",),
+        }
+    )
+
+    with pytest.raises(ValueError, match="no longer matches current classification"):
+        store.load_latest_landing_hub_authorization(
+            authorization.work_item_id,
+            inventory_binding=drifted,
+        )
 
 
 def test_duplicate_gate_requires_its_own_evidence_digest() -> None:
@@ -214,7 +241,7 @@ def test_duplicate_gate_requires_its_own_evidence_digest() -> None:
     assert blocker.reason == "duplicate_gate_missing"
 
 
-@pytest.mark.parametrize("secret", ["X" * 32, "a" * 32])
+@pytest.mark.parametrize("secret", ["X" * 32, "a" * 32, "a" * 16 + "_" + "b" * 16])
 def test_landing_hub_free_text_is_redacted_before_authorization_digest(
     tmp_path: Path,
     secret: str,
@@ -239,7 +266,10 @@ def test_landing_hub_free_text_is_redacted_before_authorization_digest(
         request=request_with_secret,
         authorized_at=datetime.now(UTC),
     )
-    stored = store.record_landing_hub_authorization(authorization)
+    stored = store.record_landing_hub_authorization(
+        authorization,
+        inventory_binding=_inventory,
+    )
 
     assert stored.status == "created"
     assert stored.authorization.intent == redacted_intent
@@ -250,11 +280,14 @@ def test_landing_hub_preview_surfaces_corrupt_receipt_as_typed_blocker(
     tmp_path: Path,
 ) -> None:
     store, run, _request, inventory, _authorization_value = _authorization(tmp_path)
-    store.record_landing_hub_authorization(_authorization_value)
+    store.record_landing_hub_authorization(
+        _authorization_value,
+        inventory_binding=inventory,
+    )
     monkeypatch.setattr(
         store,
         "load_latest_landing_hub_authorization",
-        lambda _work_item_id: (_ for _ in ()).throw(ValueError("corrupt receipt")),
+        lambda _work_item_id, **_kwargs: (_ for _ in ()).throw(ValueError("corrupt receipt")),
     )
     monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
     monkeypatch.setattr(
@@ -387,6 +420,37 @@ def test_landing_hub_routes_preview_authorize_and_readback(
     )
     assert invalid.status_code == 422
     assert invalid.json() == {"detail": "landing_hub_authorization_request_invalid"}
+
+
+def test_landing_hub_route_redacts_before_duplicate_gate_precheck(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, request, inventory, _authorization_value = _authorization(tmp_path)
+    redacted_intent = "[REDACTED]"
+    request_with_secret = request.model_copy(
+        update={
+            "intent": "a" * 32,
+            "duplicate_gate_digest": duplicate_gate_receipt_digest(
+                redacted_intent,
+                request.duplicate_gate_evidence_ids,
+            ),
+        }
+    )
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        route_module,
+        "content_kind_inventory_binding_for_work_item",
+        lambda _work_item_id: inventory,
+    )
+
+    response = TestClient(app).post(
+        f"/api/content/work-items/{run.rows[0].current_work_item_id}/landing-hub-authorizations",
+        json=request_with_secret.model_dump(mode="json"),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["authorization"]["intent"] == redacted_intent
 
 
 def test_landing_hub_request_rejects_unsafe_cta() -> None:
