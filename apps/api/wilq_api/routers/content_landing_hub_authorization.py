@@ -96,7 +96,15 @@ def _preview(
             work_item_id,
             inventory_binding=inventory,
         )
-    except ValueError:
+    except ValueError as error:
+        is_stale = "no longer matches current classification" in str(error)
+        next_step = (
+            "Odśwież klasyfikację i inventory, a następnie przygotuj nowy receipt dla "
+            "bieżącego exact URL-a."
+            if is_stale
+            else "Zweryfikuj albo unieważnij uszkodzony receipt i przygotuj nowy "
+            "landing/hub authorization dla bieżącego exact URL-a."
+        )
         return ContentLandingHubAuthorizationPreview(
             status="blocked",
             work_item_id=work_item_id,
@@ -107,18 +115,12 @@ def _preview(
             blockers=(
                 ContentLandingHubAuthorizationBlocker(
                     seam="authorization",
-                    reason="authorization_conflict",
+                    reason="authorization_stale" if is_stale else "authorization_conflict",
                     evidence_ids=tuple(sorted(inventory.inventory_evidence_ids)),
-                    next_step_pl=(
-                        "Zweryfikuj albo unieważnij uszkodzony receipt i przygotuj nowy "
-                        "landing/hub authorization dla bieżącego exact URL-a."
-                    ),
+                    next_step_pl=next_step,
                 ),
             ),
-            safe_next_step=(
-                "Zweryfikuj albo unieważnij uszkodzony receipt i przygotuj nowy "
-                "landing/hub authorization dla bieżącego exact URL-a."
-            ),
+            safe_next_step=next_step,
         )
     if authorization is not None:
         return ContentLandingHubAuthorizationPreview(

@@ -24,7 +24,7 @@ _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9/_~.%-]*$")
 _FREE_TEXT_SECRET_VALUE = re.compile(
-    r"(?<![A-Za-z0-9_.-])[A-Za-z0-9_.-]{32,}(?![A-Za-z0-9_.-])"
+    r"(?<![A-Za-z0-9])[A-Za-z0-9+/=_-]{20,}(?![A-Za-z0-9])"
 )
 _SAFE_OPERATOR = re.compile(r"^[\w .-]+$", re.UNICODE)
 _UNSAFE_OPERATOR = re.compile(
@@ -60,6 +60,7 @@ LandingHubAuthorizationBlockerReason = Literal[
     "duplicate_gate_missing",
     "authorization_digest_mismatch",
     "authorization_conflict",
+    "authorization_stale",
 ]
 
 
@@ -153,7 +154,7 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
     @field_validator("intent")
     @classmethod
     def normalize_intent(cls, value: str) -> str:
-        return _safe_text(value, "Landing/hub intent")
+        return _safe_text(value, "Landing/hub intent", allow_blank=True)
 
     @field_validator("approved_source_fact_ids", "evidence_ids")
     @classmethod
@@ -193,6 +194,7 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
             not normalized
             or not _SAFE_OPERATOR.fullmatch(normalized)
             or _UNSAFE_OPERATOR.search(normalized)
+            or _FREE_TEXT_SECRET_VALUE.fullmatch(normalized)
         ):
             raise ValueError("Landing/hub authorization requires a safe operator identity.")
         return normalized
@@ -655,7 +657,16 @@ def redacted_landing_hub_request(
 
 
 def redact_landing_hub_free_text(value: str) -> str:
-    return _FREE_TEXT_SECRET_VALUE.sub("[REDACTED]", value)
+    return _FREE_TEXT_SECRET_VALUE.sub(_redact_free_text_token, value)
+
+
+def _redact_free_text_token(match: re.Match[str]) -> str:
+    token = match.group(0)
+    if len(token) >= 32 or any(char.isdigit() or char in "+/=_-" for char in token):
+        return "[REDACTED]"
+    if len(token) >= 20 and all(char.casefold() in "abcdef0123456789" for char in token):
+        return "[REDACTED]"
+    return token
 
 
 def canonical_source_fact_registry_digest() -> str:

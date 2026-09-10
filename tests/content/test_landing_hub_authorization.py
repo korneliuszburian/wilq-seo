@@ -316,6 +316,34 @@ def test_landing_hub_preview_surfaces_corrupt_receipt_as_typed_blocker(
     assert response.json()["blockers"][0]["reason"] == "authorization_conflict"
 
 
+def test_landing_hub_preview_labels_superseded_receipt_as_stale(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, _request, inventory, _authorization_value = _authorization(tmp_path)
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        route_module,
+        "content_kind_inventory_binding_for_work_item",
+        lambda _work_item_id: inventory,
+    )
+    monkeypatch.setattr(
+        store,
+        "load_latest_landing_hub_authorization",
+        lambda _work_item_id, **_kwargs: (_ for _ in ()).throw(
+            ValueError("Landing/hub authorization no longer matches current classification.")
+        ),
+    )
+    monkeypatch.setattr(store, "load_latest_production_classification", lambda: run)
+
+    response = TestClient(app).get(
+        f"/api/content/work-items/{run.rows[0].current_work_item_id}/landing-hub-authorization"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["blockers"][0]["reason"] == "authorization_stale"
+
+
 def test_landing_hub_readback_surfaces_corrupt_receipt_as_typed_result(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -345,12 +373,41 @@ def test_landing_hub_readback_surfaces_corrupt_receipt_as_typed_result(
 def test_landing_hub_store_rejects_unredacted_free_text_receipt(tmp_path: Path) -> None:
     store, _run, _request, inventory, authorization = _authorization(tmp_path)
     unredacted = authorization.model_copy(update={"intent": "A" * 32})
+    unredacted_operator = authorization.model_copy(update={"authorized_by": "a" * 64})
 
     with pytest.raises(ValueError, match="must be redacted"):
         store.record_landing_hub_authorization(
             unredacted,
             inventory_binding=inventory,
         )
+    with pytest.raises(ValueError, match="must be redacted"):
+        store.record_landing_hub_authorization(
+            unredacted_operator,
+            inventory_binding=inventory,
+        )
+
+
+def test_landing_hub_route_exposes_typed_intent_missing_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, request, inventory, _authorization_value = _authorization(tmp_path)
+    payload = request.model_dump(mode="json")
+    payload.pop("intent")
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        route_module,
+        "content_kind_inventory_binding_for_work_item",
+        lambda _work_item_id: inventory,
+    )
+
+    response = TestClient(app).post(
+        f"/api/content/work-items/{run.rows[0].current_work_item_id}/landing-hub-authorizations",
+        json=payload,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["blockers"][0]["reason"] == "intent_missing"
 
 
 def test_landing_hub_get_routes_do_not_echo_invalid_path_values() -> None:

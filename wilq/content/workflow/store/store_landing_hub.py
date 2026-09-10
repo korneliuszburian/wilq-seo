@@ -40,6 +40,9 @@ class ContentLandingHubAuthorizationStoreMixin:
             redact_landing_hub_free_text(str(claim))
             for claim in redacted_payload["blocked_claims"]
         ]
+        redacted_payload["authorized_by"] = redact_landing_hub_free_text(
+            str(redacted_payload["authorized_by"])
+        )
         if redacted_payload != payload:
             raise ValueError("Landing/hub authorization must be redacted before persistence.")
         accepted = ContentLandingHubAuthorization.model_validate_json(
