@@ -138,11 +138,12 @@ def prepare_codex_completion(
             raise ValueError("Codex completion requires proposal metadata.")
         return None
     if command.correction_reason in {
+        "canonical_html_alignment",
         "lineage_cleanup",
         "official_source_lineage_rebase",
     }:
         if completed_run is not None:
-            raise ValueError("Lineage-only revision cannot attach a Codex completion.")
+            raise ValueError("Derived revision cannot attach a Codex completion.")
         return None
     if completed_run is None:
         raise ValueError("Codex proposal append requires its completed run.")
