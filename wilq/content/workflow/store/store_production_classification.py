@@ -148,17 +148,16 @@ def _classification_from_row(row: sqlite3.Row) -> ContentProductionClassificatio
 def load_latest_production_classification_from_connection(
     connection: sqlite3.Connection,
 ) -> ContentProductionClassificationRun | None:
-    placeholders = ", ".join("?" for _ in HISTORICAL_PRODUCTION_POLICY_IDS)
-    row = connection.execute(
-        f"""
+    rows = connection.execute(
+        """
         SELECT * FROM content_production_classifications
-        WHERE policy_id NOT IN ({placeholders})
         ORDER BY recorded_at DESC, rowid DESC
-        LIMIT 1
-        """,  # noqa: S608 - placeholders and values are fixed module policy
-        tuple(HISTORICAL_PRODUCTION_POLICY_IDS),
-    ).fetchone()
-    return None if row is None else _classification_from_row(row)
+        """
+    ).fetchall()
+    for row in rows:
+        if cast(str, row["policy_id"]) not in HISTORICAL_PRODUCTION_POLICY_IDS:
+            return _classification_from_row(row)
+    return None
 
 
 def load_latest_production_classification_reference_from_connection(

@@ -677,6 +677,44 @@ def test_store_atomically_reads_projects_and_preserves_idempotent_audit(tmp_path
         store.load_latest_production_classification()
 
 
+def test_current_loader_falls_back_past_a_newer_historical_reference(
+    tmp_path: Path,
+) -> None:
+    run = _parse(build_inputs())
+    store = ContentWorkflowStore(tmp_path / "classification-fallback.sqlite3")
+    store.record_production_classification(run)
+    with sqlite3.connect(store.path) as connection:
+        connection.row_factory = sqlite3.Row
+        current = connection.execute(
+            "SELECT * FROM content_production_classifications"
+        ).fetchone()
+        assert current is not None
+        connection.execute(
+            """
+            INSERT INTO content_production_classifications (
+              input_digest, run_id, run_digest, policy_id, policy_digest,
+              packet_sha256, judge_sha256, recorded_by, reviewed_by,
+              recorded_at, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "f" * 64,
+                "historical_run",
+                "e" * 64,
+                "content_production_wave0_keep_packet_v1",
+                "d" * 64,
+                "c" * 64,
+                "b" * 64,
+                "historical_writer",
+                "historical_reviewer",
+                (AUDIT_TIME + timedelta(days=1)).isoformat(),
+                current["payload_json"],
+            ),
+        )
+
+    assert store.load_latest_production_classification() == run
+
+
 def test_parent_router_asgi_roundtrip_records_reads_retries_and_conflicts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
