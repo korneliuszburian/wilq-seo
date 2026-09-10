@@ -18,6 +18,7 @@ from wilq.content.workflow.research_packet import (
     ContentResearchPacketFreshness,
     ContentResearchPacketInternalLink,
 )
+from wilq.security.redaction import redact_mapping
 from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
 
 
@@ -300,6 +301,19 @@ def test_credential_like_packet_identifier_is_rejected_before_redaction(
 
     with pytest.raises(ValueError, match="credential"):
         ContentResearchPacketCommand.model_validate(payload)
+
+
+def test_credential_like_fact_and_freshness_ids_are_rejected() -> None:
+    token = "gho_" + "a" * 24
+
+    with pytest.raises(ValueError, match="credential"):
+        ContentResearchPacketFreshness(
+            source_id=token,
+            evidence_ids=("ev_1",),
+            checked_at=datetime.now(UTC),
+            status="fresh",
+        )
+    assert redact_mapping({"source_id": token})["source_id"] == "[REDACTED]"
 
 
 def test_long_approved_fact_identifier_survives_redaction_boundary(tmp_path: Path) -> None:

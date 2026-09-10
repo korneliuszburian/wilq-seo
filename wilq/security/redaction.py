@@ -313,6 +313,8 @@ def _looks_like_env_name(value: str) -> bool:
 
 
 def _looks_like_safe_trace_identifier(value: str) -> bool:
+    if re.match(r"^(?:sk-|gho_|ya29\.)", value, re.IGNORECASE):
+        return False
     return bool(SAFE_TRACE_VALUE_RE.fullmatch(value) or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value))
 
 

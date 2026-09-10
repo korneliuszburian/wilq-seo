@@ -24,6 +24,37 @@ from wilq.content.workflow.source_pack_binding import (
 _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9/_~.%-]*$")
+_GENERIC_LONG_TOKEN = re.compile(r"^[A-Za-z0-9_-]{32,}$")
+_SAFE_TOKEN_PREFIXES = (
+    "action_",
+    "ad_",
+    "audit_",
+    "campaign_",
+    "card_",
+    "classification_",
+    "connector_",
+    "content_",
+    "draft_",
+    "ekologus_",
+    "ev_",
+    "fact_",
+    "identity_",
+    "job_",
+    "knowledge_",
+    "page_",
+    "packet_",
+    "post_",
+    "proposal_",
+    "refresh_",
+    "research_",
+    "review_",
+    "run_",
+    "service_",
+    "source_",
+    "workflow_",
+    "work_",
+    "wp_",
+)
 _SECRET_LIKE = re.compile(
     r"(?:sk-[A-Za-z0-9_-]{20,}|gho_[A-Za-z0-9_]{20,}|ya29\.[A-Za-z0-9._-]{20,})",
     re.IGNORECASE,
@@ -94,7 +125,7 @@ def _safe_text(value: str, label: str, *, allow_blank: bool = True) -> str:
         raise ValueError(f"{label} must be non-blank.")
     if any(ord(char) < 32 or ord(char) == 127 for char in normalized):
         raise ValueError(f"{label} must not contain control characters.")
-    if _SECRET_LIKE.search(normalized):
+    if _SECRET_LIKE.search(normalized) or _is_restricted_long_token(normalized):
         raise ValueError(f"{label} must not resemble a credential identifier.")
     return normalized
 
@@ -104,11 +135,22 @@ def _safe_ids(value: tuple[str, ...], label: str) -> tuple[str, ...]:
     if (
         any(not item for item in normalized)
         or any(not re.fullmatch(_SAFE_IDENTIFIER, item) for item in normalized)
+        or any(_is_restricted_long_token(item) for item in normalized)
         or len(normalized) != len(set(normalized))
         or normalized != tuple(sorted(normalized))
     ):
         raise ValueError(f"{label} must be sorted, unique and non-blank.")
     return normalized
+
+
+def _is_restricted_long_token(value: str) -> bool:
+    return bool(
+        _SECRET_LIKE.search(value)
+        or (
+            _GENERIC_LONG_TOKEN.fullmatch(value)
+            and not value.casefold().startswith(_SAFE_TOKEN_PREFIXES)
+        )
+    )
 
 
 class ContentResearchPacketFreshness(_FrozenModel):
@@ -118,6 +160,11 @@ class ContentResearchPacketFreshness(_FrozenModel):
     evidence_ids: tuple[str, ...] = Field(default=(), max_length=256)
     checked_at: datetime
     status: Literal["fresh", "stale", "unknown"]
+
+    @field_validator("source_id")
+    @classmethod
+    def reject_secret_like_source_id(cls, value: str) -> str:
+        return _safe_text(value, "Freshness source ID", allow_blank=False)
 
     @field_validator("evidence_ids")
     @classmethod
