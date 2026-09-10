@@ -60,9 +60,14 @@ from wilq.content.workflow.documents.codex_revision_commit import (
 )
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.editor_child import (
+    editor_child_official_source_references,
+    editor_child_page_assets,
     request_has_full_document_fields,
     revision_evidence_ids,
     validate_full_document_child,
+)
+from wilq.content.workflow.documents.editor_child import (
+    editor_child_retained_lineage as retained_lineage,
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -203,6 +208,8 @@ def _build_editor_save_command(
         and latest_revision.planning_digest is not None
         and revision_context_current
     ):
+        provenance, metadata = retained_lineage(latest_revision, request.correction_reason)
+        official_sources = editor_child_official_source_references(request, latest_revision)
         return ContentDraftRevisionAppendCommand(
             schema_version="wilq_content_draft_revision_v2",
             work_item_id=work_item_id,
@@ -217,31 +224,16 @@ def _build_editor_save_command(
             inventory_digest=latest_revision.inventory_digest,
             source_material_ids=latest_revision.source_material_ids,
             knowledge_card_ids=latest_revision.knowledge_card_ids,
+            source_provenance=provenance,
             final_canonical_url=latest_revision.final_canonical_url,
             title=request.title,
-            page_assets=(
-                request.page_assets
-                if request.page_assets is not None
-                else None
-                if latest_revision.page_assets is None
-                else latest_revision.page_assets.model_copy(
-                    update={"wordpress_title": request.title}
-                )
-            ),
+            page_assets=editor_child_page_assets(request, latest_revision),
             sections=request.sections,
             faq=latest_revision.faq if request.faq is None else request.faq,
             cta_blocks=latest_revision.cta_blocks,
             internal_links=latest_revision.internal_links,
-            official_source_references=(
-                latest_revision.official_source_references
-                if request.official_source_references is None
-                else request.official_source_references
-            ),
-            # An editor save is a human-authored child revision, not a replay
-            # of the parent Codex completion. The immutable base revision
-            # retains the original proposal/run lineage; carrying that run ID
-            # into this child would incorrectly require a second completion.
-            proposal_metadata=None,
+            official_source_references=official_sources,
+            proposal_metadata=metadata,
             refresh_preparation_binding=latest_revision.refresh_preparation_binding,
             correction_reason=request.correction_reason,
             created_by=request.created_by,

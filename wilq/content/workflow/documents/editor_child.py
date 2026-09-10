@@ -3,6 +3,11 @@ from __future__ import annotations
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionCorrectionReason,
+    ContentDraftRevisionOfficialSourceReference,
+    ContentDraftRevisionPageAssets,
+    ContentDraftRevisionProposalMetadata,
+    ContentDraftRevisionSourceProvenance,
     validate_no_inline_link,
 )
 from wilq.security.redaction import redact_mapping
@@ -13,6 +18,42 @@ def request_has_full_document_fields(request: ContentDraftRevisionSaveRequest) -
         request.page_assets is not None
         or request.faq is not None
         or request.official_source_references is not None
+    )
+
+
+def editor_child_page_assets(
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision,
+) -> ContentDraftRevisionPageAssets | None:
+    if request.page_assets is not None:
+        return request.page_assets
+    if latest_revision.page_assets is None:
+        return None
+    return latest_revision.page_assets.model_copy(
+        update={"wordpress_title": request.title}
+    )
+
+
+def editor_child_retained_lineage(
+    latest_revision: ContentDraftRevision,
+    correction_reason: ContentDraftRevisionCorrectionReason | None,
+) -> tuple[
+    list[ContentDraftRevisionSourceProvenance],
+    ContentDraftRevisionProposalMetadata | None,
+]:
+    if correction_reason != "canonical_html_alignment":
+        return [], None
+    return latest_revision.source_provenance, latest_revision.proposal_metadata
+
+
+def editor_child_official_source_references(
+    request: ContentDraftRevisionSaveRequest,
+    latest_revision: ContentDraftRevision,
+) -> list[ContentDraftRevisionOfficialSourceReference]:
+    return (
+        latest_revision.official_source_references
+        if request.official_source_references is None
+        else request.official_source_references
     )
 
 
@@ -177,6 +218,9 @@ def revision_evidence_ids_from_request(
 
 
 __all__ = [
+    "editor_child_page_assets",
+    "editor_child_retained_lineage",
+    "editor_child_official_source_references",
     "request_has_full_document_fields",
     "revision_evidence_ids",
     "validate_full_document_child",
