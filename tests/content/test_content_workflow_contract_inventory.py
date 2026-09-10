@@ -47,6 +47,10 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationReadResult,
     ContentProductionClassificationRecordResult,
 )
+from wilq.content.workflow.landing_hub import (
+    ContentLandingHubAuthorizationPreview,
+    ContentLandingHubAuthorizationRecordResult,
+)
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorizationIdempotentResponse,
     ContentRefreshPreparationPreview,
@@ -156,6 +160,18 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/{work_item_id}/refresh-preparation/authorizations",
     ): ContentRefreshPreparationAuthorizationIdempotentResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/landing-hub-authorization",
+    ): ContentLandingHubAuthorizationPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/landing-hub-authorizations",
+    ): ContentLandingHubAuthorizationRecordResult,
+    (
+        "GET",
+        "/api/content/work-items/landing-hub-authorizations/{authorization_id}",
+    ): ContentLandingHubAuthorizationRecordResult,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/target-discovery",

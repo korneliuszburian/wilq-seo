@@ -41,6 +41,7 @@ ContentRefreshPreparationBlockerCode = Literal[
     "refresh_preparation_service_unavailable",
     "refresh_preparation_service_not_approved",
     "refresh_preparation_service_sources_missing",
+    "refresh_preparation_landing_hub_required",
     "refresh_preparation_input_blocked",
     "refresh_preparation_authorization_missing",
     "refresh_preparation_authorization_foreign",
@@ -69,6 +70,18 @@ class ContentRefreshPreparationBlocker(_StrictModel):
     reason: _NonBlank
     next_step: _NonBlank
     source_codes: list[str] = Field(default_factory=list)
+
+
+def landing_hub_required_blocker() -> ContentRefreshPreparationBlocker:
+    return ContentRefreshPreparationBlocker(
+        code="refresh_preparation_landing_hub_required",
+        label="Landing/hub ma osobną ścieżkę autoryzacji",
+        reason=(
+            "Ten URL jest dokładnie sklasyfikowany jako landing_or_hub; nie można "
+            "przepuścić go przez kartę usługi ani editorial receipt."
+        ),
+        next_step="Użyj endpointu landing-hub authorization dla tego work itemu.",
+    )
 
 
 class ContentRefreshPreparationClassificationBinding(_StrictModel):
@@ -203,9 +216,7 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
     schema_version: Literal[
         "wilq_content_refresh_preparation_authorization_v1",
         "wilq_content_refresh_preparation_authorization_v2",
-    ] = (
-        "wilq_content_refresh_preparation_authorization_v1"
-    )
+    ] = "wilq_content_refresh_preparation_authorization_v1"
     authorization_id: _NonBlank
     authorization_digest: str = Field(pattern=_HEX64)
     work_item_id: _NonBlank
@@ -573,5 +584,6 @@ __all__ = [
     "ContentRefreshPreparationStale",
     "build_content_refresh_preparation_authorization",
     "content_refresh_preparation_authorization_digest",
+    "landing_hub_required_blocker",
     "refresh_preparation_binding_matches_content_identity",
 ]

@@ -186,7 +186,7 @@ def test_existing_v3_store_gains_additive_section_focus_schema(tmp_path: Path) -
             "SELECT COUNT(*) FROM codex_runs WHERE id = 'legacy_run'"
         ).fetchone()[0]
 
-    assert SQLITE_SCHEMA_VERSION == 10
+    assert SQLITE_SCHEMA_VERSION == 11
     assert schema_version == SQLITE_SCHEMA_VERSION
     assert columns == [
         "work_item_id",

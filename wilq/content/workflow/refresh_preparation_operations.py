@@ -40,6 +40,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationSelectionRequired,
     ContentRefreshPreparationStale,
     build_content_refresh_preparation_authorization,
+    landing_hub_required_blocker,
 )
 from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
 from wilq.content.workflow.refresh_preparation_models import (
@@ -91,6 +92,12 @@ def preview(
     if stale is not None:
         return stale
     inventory_binding = content_kind_inventory_loader(work_item_id)
+    if inventory_binding is not None and inventory_binding.content_kind == "landing_or_hub":
+        return blocked_preview(
+            work_item_id,
+            landing_hub_required_blocker(),
+            classification=classified,
+        )
     if inventory_binding is not None and inventory_binding.content_kind == "editorial":
         if service_card_id is not None:
             return blocked_preview(
@@ -273,8 +280,7 @@ def authorize(
                 "Potwierdzenie blockerów nie jest kompletne",
                 "Autoryzacja refresh musi potwierdzać dokładnie bieżący zbiór kodów "
                 "blockerów klasyfikacji.",
-                "Odśwież przygotowanie i potwierdź wszystkie oraz tylko widoczne kody "
-                "blockerów.",
+                "Odśwież przygotowanie i potwierdź wszystkie oraz tylko widoczne kody blockerów.",
                 source_codes=current.classification.classification_blocker_codes,
             )
         )
@@ -319,9 +325,7 @@ def record_authorization(
         planning_input_digest=current.planning_input_digest,
         content_kind=current.content_kind,
         service_card_id=(
-            None
-            if current.service_candidate is None
-            else current.service_candidate.service_card_id
+            None if current.service_candidate is None else current.service_candidate.service_card_id
         ),
         acknowledged_classification_blocker_codes=request.acknowledged_classification_blocker_codes,
         authorized_by=request.authorized_by,
@@ -587,9 +591,7 @@ def _rebuild_authorized_preparation(
     service_card_id: str | None,
     inventory_binding: ContentKindInventoryBinding | None,
 ) -> (
-    RefreshPreparationRebuilt
-    | ContentRefreshPreparationBlocked
-    | RefreshPreparationRuntimeBlocked
+    RefreshPreparationRebuilt | ContentRefreshPreparationBlocked | RefreshPreparationRuntimeBlocked
 ):
     if content_kind == "editorial":
         if service_card_id is not None or inventory_binding is None:
@@ -666,8 +668,7 @@ def authorization_validation_blocker(
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Usługa nie pasuje do autoryzacji",
-            "Wybrana karta usługi różni się od karty związanej z zapisanym receipt "
-            "autoryzacji.",
+            "Wybrana karta usługi różni się od karty związanej z zapisanym receipt autoryzacji.",
             "Odśwież przygotowanie i wybierz usługę zapisaną w aktualnej autoryzacji.",
         )
     if not authorization_matches_context(authorization, classification.binding, planning_input):

@@ -50,6 +50,9 @@ from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
 )
+from wilq.content.workflow.store.store_landing_hub import (
+    ContentLandingHubAuthorizationStoreMixin,
+)
 from wilq.content.workflow.store.store_production_classification import (
     ProductionClassificationStoreMixin,
 )
@@ -612,6 +615,7 @@ class ContentWorkflowStore(
     ContentDeliveryIdentityStoreMixin,
     ContentSourcePackBindingStoreMixin,
     ContentResearchPacketStoreMixin,
+    ContentLandingHubAuthorizationStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,
     ContentKindReceiptStoreMixin,

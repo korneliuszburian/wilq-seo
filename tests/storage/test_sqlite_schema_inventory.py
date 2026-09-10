@@ -69,6 +69,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_planning_reviews",
         "content_private_source_reviews",
         "content_kind_receipts",
+        "content_landing_hub_authorizations",
         "content_production_classifications",
         "content_refresh_preparation_authorizations",
         "content_research_packets",
@@ -235,7 +236,7 @@ def test_post_s5_inventory_is_complete_lineage_bound_and_byte_exact(tmp_path: Pa
         seed_sha256=SEED_SHA256,
     )
 
-    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 10
+    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 11
     assert inventory.identity.sqlite_application_id == 0
     assert inventory.identity.application_sha256 == APPLICATION_SHA256
     assert inventory.identity.seed_sha256 == SEED_SHA256
@@ -310,9 +311,9 @@ def test_catalog_and_identity_are_canonical_across_creation_order(tmp_path: Path
     assert first.identity.identity_sha256 == (
         "".join(
             (
-                    "bada2219a426267dad0418eb",  # pragma: allowlist secret
-                    "432e655e60500b026eac1610",  # pragma: allowlist secret
-                    "204ffb9c41c7e031",  # pragma: allowlist secret
+                    "02904c9fe4ae0b70dee868bf",  # pragma: allowlist secret
+                    "07e587ed4fff30d320fb95d4",  # pragma: allowlist secret
+                    "a36cea5b091a4327",  # pragma: allowlist secret
             )
         )
     )
