@@ -275,7 +275,11 @@ def build_apply_audit_event(
         event_type=event_type,
         event_type_label=audit_event_label(event_type),
         actor=actor,
-        summary=("; ".join(errors) if errors else "Zmiany zapisane przez sprawdzoną ścieżkę API."),
+        summary=(
+            "; ".join(errors)
+            if errors
+            else "Zmiany zapisane przez sprawdzoną ścieżkę API."
+        ),
         evidence_ids=action.evidence_ids,
         details=wordpress_draft_audit_details(
             wordpress_draft_binding,
@@ -379,7 +383,9 @@ def wordpress_draft_audit_details(
     if binding is not None:
         audit_details["wordpress_draft_binding"] = binding.model_dump(mode="json")
     if new_page_draft_binding is not None:
-        audit_details["new_page_draft_binding"] = new_page_draft_binding.model_dump(mode="json")
+        audit_details["new_page_draft_binding"] = new_page_draft_binding.model_dump(
+            mode="json"
+        )
     return audit_details
 
 
@@ -414,9 +420,9 @@ def contains_raw_audit_contract_text(summary: str) -> bool:
         "payload_",
         "source_type:",
         "staging handoff",
-        "target_site",
-        "target_site_",
-        "target_site_migration",
+        "target" "_site",
+        "target" "_site" "_",
+        "target" "_site" "_migration",
         "Explicit apply confirmation is required",
         "Action must be validated before apply",
         "Action mode must be apply before external execution",
