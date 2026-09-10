@@ -59,6 +59,11 @@ _UNSAFE_LOCAL_OPERATOR_RE = re.compile(
     r"(?:basic|bearer|token|password|secret|credential|api[_ -]?key)",
     re.IGNORECASE,
 )
+_UNSAFE_LOCAL_OPERATOR_SECRET_RE = re.compile(
+    r"(?:sk-|gho_|ya29\.)[A-Za-z0-9._-]{12,}"
+    r"|(?<![A-Za-z0-9])[A-Za-z0-9+/=_-]{24,}(?![A-Za-z0-9])",
+    re.IGNORECASE,
+)
 
 
 class _StrictModel(BaseModel):
@@ -210,6 +215,7 @@ class ContentRefreshPreparationAuthorizationRequest(_StrictModel):
             or any(ord(character) < 32 or ord(character) == 127 for character in normalized)
             or not _SAFE_LOCAL_OPERATOR_RE.fullmatch(normalized)
             or _UNSAFE_LOCAL_OPERATOR_RE.search(normalized)
+            or _UNSAFE_LOCAL_OPERATOR_SECRET_RE.search(normalized)
         ):
             raise ValueError(
                 "Refresh authorization requires a safe visible local operator identity."

@@ -194,7 +194,7 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
             not normalized
             or not _SAFE_OPERATOR.fullmatch(normalized)
             or _UNSAFE_OPERATOR.search(normalized)
-            or _FREE_TEXT_SECRET_VALUE.fullmatch(normalized)
+            or _FREE_TEXT_SECRET_VALUE.search(normalized)
         ):
             raise ValueError("Landing/hub authorization requires a safe operator identity.")
         return normalized
@@ -651,6 +651,7 @@ def redacted_landing_hub_request(
     payload["blocked_claims"] = [
         redact_landing_hub_free_text(str(claim)) for claim in payload["blocked_claims"]
     ]
+    payload["authorized_by"] = redact_landing_hub_free_text(str(payload["authorized_by"]))
     return ContentLandingHubAuthorizationRequest.model_validate_json(
         json.dumps(payload, ensure_ascii=False), strict=True
     )

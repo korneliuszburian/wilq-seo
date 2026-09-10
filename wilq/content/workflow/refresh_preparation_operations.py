@@ -372,6 +372,11 @@ def resolve_planning(
             authorization_on_unclassified_blocker(),
         )
     if request.refresh_preparation_authorization_id is None:
+        inventory_binding = content_kind_inventory_loader(work_item_id)
+        if inventory_binding is not None and (
+            kind_blocker := runtime_content_kind_blocker(request.content_kind, inventory_binding)
+        ) is not None:
+            return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
         return unclassified_or_refresh_block(store, work_item_id)
     return resolve_authorized_context(
         store=store,
@@ -406,6 +411,11 @@ def resolve_initial_draft(
     if isinstance(classified, ContentRefreshPreparationBlocker):
         return RefreshPreparationRuntimeBlocked(work_item_id, classified)
     if request.refresh_preparation_authorization_id is None:
+        inventory_binding = content_kind_inventory_loader(work_item_id)
+        if inventory_binding is not None and (
+            kind_blocker := runtime_content_kind_blocker("editorial", inventory_binding)
+        ) is not None:
+            return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
         return RefreshPreparationRuntimeBlocked(work_item_id, missing_authorization_blocker())
     proposal = proposal_store.latest(work_item_id)
     if proposal is None or not proposal_matches_initial_request(proposal, request):

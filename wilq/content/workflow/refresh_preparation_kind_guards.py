@@ -24,12 +24,10 @@ def runtime_content_kind_blocker(
     content_kind: str,
     inventory_binding: ContentKindInventoryBinding | None,
 ) -> ContentRefreshPreparationBlocker | None:
-    if content_kind != "service":
-        return None
-    if inventory_binding is None:
-        return inventory_missing_blocker()
-    if inventory_binding.content_kind == "landing_or_hub":
+    if inventory_binding is not None and inventory_binding.content_kind == "landing_or_hub":
         return landing_hub_required_blocker()
+    if content_kind == "service" and inventory_binding is None:
+        return inventory_missing_blocker()
     return None
 
 

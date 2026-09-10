@@ -410,6 +410,29 @@ def test_landing_hub_route_exposes_typed_intent_missing_blocker(
     assert response.json()["blockers"][0]["reason"] == "intent_missing"
 
 
+def test_landing_hub_route_rejects_redaction_that_breaks_cta_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, request, inventory, _authorization_value = _authorization(tmp_path)
+    payload = request.model_dump(mode="json")
+    payload["cta_destinations"] = ["/" + "A" * 32]
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        route_module,
+        "content_kind_inventory_binding_for_work_item",
+        lambda _work_item_id: inventory,
+    )
+
+    response = TestClient(app).post(
+        f"/api/content/work-items/{run.rows[0].current_work_item_id}/landing-hub-authorizations",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "landing_hub_authorization_request_invalid"}
+
+
 def test_landing_hub_get_routes_do_not_echo_invalid_path_values() -> None:
     client = TestClient(app)
 
@@ -482,6 +505,35 @@ def test_existing_refresh_path_blocks_when_inventory_identity_is_missing(
         inventory_binding=None,
     )
     assert rebuilt.blocker.code == "refresh_preparation_inventory_missing"
+
+
+def test_runtime_without_refresh_receipt_routes_landing_to_dedicated_authorization(
+    tmp_path: Path,
+) -> None:
+    store, run, _request, inventory, _authorization_value = _authorization(tmp_path)
+    request = SimpleNamespace(
+        content_kind="editorial",
+        refresh_preparation_authorization_id=None,
+    )
+
+    planning = refresh_operations.resolve_planning(
+        store=store,
+        snapshot_loader=lambda *_args, **_kwargs: None,
+        work_item_id=run.rows[0].current_work_item_id,
+        request=request,
+        content_kind_inventory_loader=lambda _work_item_id: inventory,
+    )
+    initial = refresh_operations.resolve_initial_draft(
+        store=store,
+        snapshot_loader=lambda *_args, **_kwargs: None,
+        proposal_store=SimpleNamespace(),
+        work_item_id=run.rows[0].current_work_item_id,
+        request=SimpleNamespace(refresh_preparation_authorization_id=None),
+        content_kind_inventory_loader=lambda _work_item_id: inventory,
+    )
+
+    assert planning.blocker.code == "refresh_preparation_landing_hub_required"
+    assert initial.blocker.code == "refresh_preparation_landing_hub_required"
 
 
 def test_landing_hub_routes_preview_authorize_and_readback(
@@ -577,4 +629,19 @@ def test_landing_hub_request_rejects_unsafe_cta() -> None:
             cta_destinations=("//evil.example/",),
             duplicate_gate="checked",
             authorized_by="wilku",
+        )
+
+
+def test_landing_hub_request_rejects_embedded_secret_operator_identity() -> None:
+    with pytest.raises(ValueError, match="safe operator identity"):
+        ContentLandingHubAuthorizationRequest(
+            expected_classification_run_id="run",
+            expected_classification_run_digest="a" * 64,
+            expected_decision_set_digest="b" * 64,
+            expected_source_packet_row_digest="c" * 64,
+            intent="hub",
+            approved_source_fact_ids=("fact_one",),
+            evidence_ids=("ev_one",),
+            cta_destinations=("/kontakt/",),
+            authorized_by=f"wilku {'a' * 64}",
         )
