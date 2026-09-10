@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import cast
 
@@ -11,8 +12,9 @@ from wilq.content.workflow.landing_hub import (
     canonical_source_fact_registry_digest,
 )
 from wilq.content.workflow.store.store_production_classification import (
-    _classification_from_row,
+    load_latest_production_classification_from_connection,
 )
+from wilq.security.redaction import redact_mapping
 from wilq.storage.model_json import model_json
 
 
@@ -24,8 +26,12 @@ class ContentLandingHubAuthorizationStoreMixin:
         self,
         authorization: ContentLandingHubAuthorization,
     ) -> ContentLandingHubAuthorizationRecordResult:
+        payload = authorization.model_dump(mode="json")
+        redacted_payload = redact_mapping(payload)
+        if redacted_payload != payload:
+            raise ValueError("Landing/hub authorization must be redacted before persistence.")
         accepted = ContentLandingHubAuthorization.model_validate_json(
-            authorization.model_dump_json(), strict=True
+            json.dumps(redacted_payload, ensure_ascii=False), strict=True
         )
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
@@ -121,21 +127,16 @@ def _assert_current_landing_hub_authorization(
     connection: sqlite3.Connection,
     authorization: ContentLandingHubAuthorization,
 ) -> None:
-    row = connection.execute(
-        """
-        SELECT * FROM content_production_classifications
-        WHERE run_id = ?
-        LIMIT 1
-        """,
-        (authorization.classification_run_id,),
-    ).fetchone()
-    if row is None:
+    run = load_latest_production_classification_from_connection(connection)
+    if run is None:
         raise ValueError("Landing/hub authorization requires a current classification.")
-    run = _classification_from_row(row)
     classified = run.for_work_item(authorization.work_item_id)
     if (
         classified is None
         or classified.current_work_item_id != authorization.work_item_id
+        or classified.decision not in {"refresh", "write"}
+        or any(blocker.blocks_initial_generation is True for blocker in classified.blockers)
+        or run.run_id != authorization.classification_run_id
         or run.run_digest != authorization.classification_run_digest
         or run.input.decision_set_digest != authorization.decision_set_digest
         or classified.source_packet_row_digest != authorization.source_packet_row_digest

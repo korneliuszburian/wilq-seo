@@ -18,6 +18,7 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRun,
     canonical_json_digest,
 )
+from wilq.security.redaction import redact_mapping
 
 _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
@@ -37,6 +38,8 @@ LandingHubAuthorizationBlockerReason = Literal[
     "classification_stale",
     "classification_work_item_mismatch",
     "classification_identity_mismatch",
+    "classification_decision_blocked",
+    "classification_decision_unsupported",
     "content_kind_mismatch",
     "inventory_missing",
     "inventory_untrusted",
@@ -138,6 +141,8 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
     evidence_ids: tuple[str, ...] = Field(default=(), max_length=256)
     cta_destinations: tuple[str, ...] = Field(default=(), max_length=8)
     duplicate_gate: Literal["checked", "risk_found", "missing"] = "missing"
+    duplicate_gate_evidence_ids: tuple[str, ...] = Field(default=(), max_length=256)
+    duplicate_gate_digest: str = ""
     authorized_by: str = Field(min_length=1, max_length=160)
 
     @field_validator("intent")
@@ -153,7 +158,17 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
     @field_validator("blocked_claims")
     @classmethod
     def normalize_claims(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        return tuple(_safe_text(item, "Landing/hub blocked claim") for item in value)
+        normalized = tuple(_safe_text(item, "Landing/hub blocked claim") for item in value)
+        if any(len(item) > 600 for item in normalized):
+            raise ValueError("Landing/hub blocked claims must be at most 600 characters.")
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("Landing/hub blocked claims must be unique.")
+        return tuple(sorted(normalized))
+
+    @field_validator("duplicate_gate_evidence_ids")
+    @classmethod
+    def normalize_duplicate_evidence(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        return _safe_ids(value, "Landing/hub duplicate evidence IDs") if value else value
 
     @field_validator("cta_destinations")
     @classmethod
@@ -204,6 +219,8 @@ class ContentLandingHubAuthorization(_FrozenModel):
     source_fact_registry_digest: str = Field(pattern=_HEX64)
     cta_destinations: tuple[str, ...] = Field(min_length=1, max_length=8)
     duplicate_gate: Literal["checked"] = "checked"
+    duplicate_gate_evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=256)
+    duplicate_gate_digest: str = Field(pattern=_HEX64)
     input_digest: str = Field(pattern=_HEX64)
     authorized_by: str = Field(min_length=1, max_length=160)
     authorized_at: datetime
@@ -220,6 +237,15 @@ class ContentLandingHubAuthorization(_FrozenModel):
     def require_sorted_ids(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         return _safe_ids(value, "Landing/hub authorization IDs")
 
+    @field_validator("blocked_claims")
+    @classmethod
+    def require_canonical_claims(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if any(len(item) > 600 for item in value):
+            raise ValueError("Landing/hub authorization blocked claims are too long.")
+        if len(value) != len(set(value)):
+            raise ValueError("Landing/hub authorization blocked claims must be unique.")
+        return tuple(sorted(value))
+
     @field_validator("cta_destinations")
     @classmethod
     def require_safe_ctas(cls, value: tuple[str, ...]) -> tuple[str, ...]:
@@ -234,6 +260,12 @@ class ContentLandingHubAuthorization(_FrozenModel):
     def require_self_authenticating_receipt(self) -> Self:
         if self.inventory_evidence_digest != inventory_evidence_digest(self.inventory_evidence_ids):
             raise ValueError("Landing/hub inventory evidence digest does not match IDs.")
+        if (
+            not set(self.duplicate_gate_evidence_ids).issubset(set(self.evidence_ids))
+            or self.duplicate_gate_digest
+            != duplicate_gate_receipt_digest(self.intent, self.duplicate_gate_evidence_ids)
+        ):
+            raise ValueError("Landing/hub duplicate gate receipt does not match evidence.")
         digest = landing_hub_authorization_digest(self)
         if self.authorization_digest != digest:
             raise ValueError("Landing/hub authorization digest does not match its receipt.")
@@ -292,6 +324,8 @@ def landing_hub_input_digest(
     source_fact_registry_digest: str,
     cta_destinations: tuple[str, ...],
     duplicate_gate: Literal["checked"],
+    duplicate_gate_evidence_ids: tuple[str, ...],
+    duplicate_gate_digest: str,
 ) -> str:
     return canonical_json_digest(
         {
@@ -310,6 +344,8 @@ def landing_hub_input_digest(
             "source_fact_registry_digest": source_fact_registry_digest,
             "cta_destinations": cta_destinations,
             "duplicate_gate": duplicate_gate,
+            "duplicate_gate_evidence_ids": duplicate_gate_evidence_ids,
+            "duplicate_gate_digest": duplicate_gate_digest,
         }
     )
 
@@ -318,7 +354,7 @@ def landing_hub_authorization_digest(
     value: ContentLandingHubAuthorization | dict[str, object],
 ) -> str:
     payload = value.model_dump(mode="json") if isinstance(value, BaseModel) else dict(value)
-    for name in ("authorization_id", "authorization_digest", "authorized_by", "authorized_at"):
+    for name in ("authorization_id", "authorization_digest", "authorized_at"):
         payload.pop(name, None)
     return sha256(
         json.dumps(
@@ -340,6 +376,7 @@ def build_landing_hub_authorization(
     request: ContentLandingHubAuthorizationRequest,
     authorized_at: datetime,
 ) -> ContentLandingHubAuthorization:
+    request = _redacted_request(request)
     blocker = landing_hub_authorization_blocker(
         work_item_id=work_item_id,
         classification=classification,
@@ -366,6 +403,8 @@ def build_landing_hub_authorization(
         source_fact_registry_digest=registry_digest,
         cta_destinations=request.cta_destinations,
         duplicate_gate="checked",
+        duplicate_gate_evidence_ids=request.duplicate_gate_evidence_ids,
+        duplicate_gate_digest=request.duplicate_gate_digest,
     )
     payload: dict[str, object] = {
         "schema_version": LANDING_HUB_AUTHORIZATION_SCHEMA,
@@ -389,6 +428,8 @@ def build_landing_hub_authorization(
         "source_fact_registry_digest": registry_digest,
         "cta_destinations": request.cta_destinations,
         "duplicate_gate": "checked",
+        "duplicate_gate_evidence_ids": request.duplicate_gate_evidence_ids,
+        "duplicate_gate_digest": request.duplicate_gate_digest,
         "input_digest": input_digest,
         "authorized_by": request.authorized_by,
         "authorized_at": authorized_at.astimezone(UTC).isoformat(),
@@ -437,6 +478,22 @@ def landing_hub_authorization_blocker(
             "classification_work_item_mismatch",
             evidence,
             "Użyj exact current work itemu z klasyfikacji.",
+        )
+    if str(row.decision) == "blocked" or any(
+        blocker.blocks_initial_generation is True for blocker in row.blockers
+    ):
+        return _blocker(
+            "classification",
+            "classification_decision_blocked",
+            evidence,
+            "Usuń blokady klasyfikacji i dopiero potem autoryzuj landing/hub.",
+        )
+    if row.decision not in {"refresh", "write"}:
+        return _blocker(
+            "classification",
+            "classification_decision_unsupported",
+            evidence,
+            "Landing/hub wymaga bieżącej decyzji refresh albo write.",
         )
     if classification.freshness.requires_refresh:
         return _blocker(
@@ -554,7 +611,37 @@ def _landing_hub_request_blocker(
             evidence,
             "Zamknij duplicate/intent gate przed autoryzacją landing/hub.",
         )
+    if (
+        not request.duplicate_gate_evidence_ids
+        or not set(request.duplicate_gate_evidence_ids).issubset(set(request.evidence_ids))
+        or request.duplicate_gate_digest
+        != duplicate_gate_receipt_digest(
+            request.intent,
+            request.duplicate_gate_evidence_ids,
+        )
+    ):
+        return _blocker(
+            "duplicate_gate",
+            "duplicate_gate_missing",
+            evidence,
+            "Dołącz evidence i digest exact duplicate/intent checku.",
+        )
     return None
+
+
+def duplicate_gate_receipt_digest(intent: str, evidence_ids: tuple[str, ...]) -> str:
+    return canonical_json_digest(
+        {"gate": "duplicate_intent", "intent": intent, "evidence_ids": evidence_ids}
+    )
+
+
+def _redacted_request(
+    request: ContentLandingHubAuthorizationRequest,
+) -> ContentLandingHubAuthorizationRequest:
+    payload = redact_mapping(request.model_dump(mode="json"))
+    return ContentLandingHubAuthorizationRequest.model_validate_json(
+        json.dumps(payload, ensure_ascii=False), strict=True
+    )
 
 
 def canonical_source_fact_registry_digest() -> str:

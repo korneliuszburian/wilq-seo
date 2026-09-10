@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Coroutine
+from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from pydantic import BaseModel, ConfigDict
 
 from wilq.content.workflow.decisions.inventory_binding import (
     content_kind_inventory_binding_for_work_item,
@@ -21,6 +26,26 @@ from wilq.content.workflow.store.store import ContentWorkflowStore, content_work
 from wilq.schemas.core import utc_now
 
 _PREFIX = "/api/content/work-items"
+_INVALID_DETAIL = "landing_hub_authorization_request_invalid"
+
+
+class _NoEchoLandingHubAuthorizationRoute(APIRoute):
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        route_handler = super().get_route_handler()
+
+        async def no_echo_route_handler(request: Request) -> Response:
+            try:
+                return await route_handler(request)
+            except RequestValidationError:
+                return JSONResponse(status_code=422, content={"detail": _INVALID_DETAIL})
+
+        return no_echo_route_handler
+
+
+class ContentLandingHubAuthorizationValidationErrorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    detail: Literal["landing_hub_authorization_request_invalid"]
 
 
 def _preview(
@@ -76,14 +101,14 @@ def _preview(
 
 
 async def read_landing_hub_authorization_preview(
-    work_item_id: str,
+    work_item_id: str = Path(..., min_length=1, max_length=240, pattern=r"^[a-z][a-z0-9_-]*$"),
 ) -> ContentLandingHubAuthorizationPreview:
     return await asyncio.to_thread(_preview, content_workflow_store(), work_item_id)
 
 
 async def record_landing_hub_authorization(
-    work_item_id: str,
     request: ContentLandingHubAuthorizationRequest,
+    work_item_id: str = Path(..., min_length=1, max_length=240, pattern=r"^[a-z][a-z0-9_-]*$"),
 ) -> JSONResponse:
     store = content_workflow_store()
     classification = await asyncio.to_thread(store.load_latest_production_classification)
@@ -128,7 +153,9 @@ async def record_landing_hub_authorization(
 
 
 async def read_landing_hub_authorization(
-    authorization_id: str,
+    authorization_id: str = Path(
+        ..., min_length=1, max_length=280, pattern=r"^[a-z][a-z0-9_-]*$"
+    ),
 ) -> ContentLandingHubAuthorizationRecordResult:
     result = await asyncio.to_thread(
         content_workflow_store().load_landing_hub_authorization,
@@ -153,7 +180,11 @@ def register_content_landing_hub_authorization_routes(router: APIRouter) -> None
         methods=["POST"],
         status_code=201,
         response_model=ContentLandingHubAuthorizationRecordResult,
-        responses={409: {"model": ContentLandingHubAuthorizationPreview}},
+        responses={
+            409: {"model": ContentLandingHubAuthorizationPreview},
+            422: {"model": ContentLandingHubAuthorizationValidationErrorResponse},
+        },
+        route_class_override=_NoEchoLandingHubAuthorizationRoute,
         tags=["content"],
     )
     router.add_api_route(

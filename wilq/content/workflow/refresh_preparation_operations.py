@@ -593,6 +593,15 @@ def _rebuild_authorized_preparation(
 ) -> (
     RefreshPreparationRebuilt | ContentRefreshPreparationBlocked | RefreshPreparationRuntimeBlocked
 ):
+    if (
+        content_kind == "service"
+        and inventory_binding is not None
+        and inventory_binding.content_kind == "landing_or_hub"
+    ):
+        return RefreshPreparationRuntimeBlocked(
+            work_item_id,
+            landing_hub_required_blocker(),
+        )
     if content_kind == "editorial":
         if service_card_id is not None or inventory_binding is None:
             return RefreshPreparationRuntimeBlocked(
