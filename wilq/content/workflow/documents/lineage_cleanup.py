@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Literal
 
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionAppendCommand,
     ContentDraftRevisionCtaBlock,
     ContentDraftRevisionFaqItem,
     ContentDraftRevisionInternalLink,
@@ -30,7 +32,7 @@ class LineageCleanupBuildError(ValueError):
 
 def build_lineage_cleanup_command(
     *, base_revision: ContentDraftRevision, source_fact_id: str, requested_by: str
-):
+) -> ContentDraftRevisionAppendCommand:
     """Create an immutable child without one obsolete source fact's unique lineage."""
 
     source_fact_id = _visible_identifier(source_fact_id, "source fact")
@@ -105,16 +107,19 @@ def build_lineage_cleanup_command(
             base_revision.faq,
             removable_evidence_ids,
             component_name="FAQ",
+            replace_evidence=_faq_with_evidence,
         ),
         cta_blocks=_clean_required_evidence(
             base_revision.cta_blocks,
             removable_evidence_ids,
             component_name="CTA",
+            replace_evidence=_cta_with_evidence,
         ),
         internal_links=_clean_required_evidence(
             base_revision.internal_links,
             removable_evidence_ids,
             component_name="link wewnętrzny",
+            replace_evidence=_internal_link_with_evidence,
         ),
         official_source_references=retained_references,
         proposal_metadata=_clean_proposal_metadata(
@@ -153,9 +158,19 @@ def _retained_evidence_ids(
     references: list[ContentDraftRevisionOfficialSourceReference],
 ) -> frozenset[str]:
     evidence_ids: set[str] = set()
-    for item in [*provenance, *references]:
+    for provenance_item in provenance:
         evidence_ids.update(
-            _owned_evidence_ids(item.evidence_ids, owner="retained source lineage")
+            _owned_evidence_ids(
+                provenance_item.evidence_ids,
+                owner="retained source lineage",
+            )
+        )
+    for reference in references:
+        evidence_ids.update(
+            _owned_evidence_ids(
+                reference.evidence_ids,
+                owner="retained source lineage",
+            )
         )
     return frozenset(evidence_ids)
 
@@ -198,6 +213,9 @@ def _clean_required_evidence[
     removable_evidence_ids: frozenset[str],
     *,
     component_name: str,
+    replace_evidence: Callable[
+        [RequiredEvidenceComponent, list[str]], RequiredEvidenceComponent
+    ],
 ) -> list[RequiredEvidenceComponent]:
     cleaned: list[RequiredEvidenceComponent] = []
     for component in components:
@@ -210,8 +228,29 @@ def _clean_required_evidence[
                 "lineage_cleanup_unavailable",
                 f"Cleanup would leave {component_name} without required evidence.",
             )
-        cleaned.append(component.model_copy(update={"evidence_ids": evidence_ids}))
+        cleaned.append(replace_evidence(component, evidence_ids))
     return cleaned
+
+
+def _faq_with_evidence(
+    faq: ContentDraftRevisionFaqItem,
+    evidence_ids: list[str],
+) -> ContentDraftRevisionFaqItem:
+    return faq.model_copy(update={"evidence_ids": evidence_ids})
+
+
+def _cta_with_evidence(
+    cta: ContentDraftRevisionCtaBlock,
+    evidence_ids: list[str],
+) -> ContentDraftRevisionCtaBlock:
+    return cta.model_copy(update={"evidence_ids": evidence_ids})
+
+
+def _internal_link_with_evidence(
+    internal_link: ContentDraftRevisionInternalLink,
+    evidence_ids: list[str],
+) -> ContentDraftRevisionInternalLink:
+    return internal_link.model_copy(update={"evidence_ids": evidence_ids})
 
 
 def _clean_proposal_metadata(
