@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import cast
 
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -38,11 +39,13 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationPreview,
     ContentRefreshPreparationReadyToAuthorize,
     ContentRefreshPreparationSelectionRequired,
-    ContentRefreshPreparationStale,
     build_content_refresh_preparation_authorization,
-    landing_hub_required_blocker,
 )
 from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
+from wilq.content.workflow.refresh_preparation_kind_guards import (
+    preview_content_kind_blocker,
+    runtime_content_kind_blocker,
+)
 from wilq.content.workflow.refresh_preparation_models import (
     ContentKindInventoryLoader,
     RefreshClassificationContext,
@@ -63,6 +66,7 @@ from wilq.content.workflow.refresh_preparation_resolution import (
     proposal_matches_initial_request,
     rebuild_preparation,
 )
+from wilq.content.workflow.refresh_preparation_stale import stale_preview
 from wilq.schemas.core import utc_now
 
 
@@ -92,13 +96,14 @@ def preview(
     if stale is not None:
         return stale
     inventory_binding = content_kind_inventory_loader(work_item_id)
-    if inventory_binding is not None and inventory_binding.content_kind == "landing_or_hub":
+    if (kind_blocker := preview_content_kind_blocker(inventory_binding)) is not None:
         return blocked_preview(
             work_item_id,
-            landing_hub_required_blocker(),
+            kind_blocker,
             classification=classified,
         )
-    if inventory_binding is not None and inventory_binding.content_kind == "editorial":
+    inventory_binding = cast(ContentKindInventoryBinding, inventory_binding)
+    if inventory_binding.content_kind == "editorial":
         if service_card_id is not None:
             return blocked_preview(
                 work_item_id,
@@ -121,28 +126,6 @@ def preview(
     if service_card_id is None:
         return selection_preview(snapshot_loader, work_item_id, classified)
     return selected_preview(store, snapshot_loader, work_item_id, classified, service_card_id)
-
-
-def stale_preview(
-    work_item_id: str,
-    classified: RefreshClassificationContext,
-) -> ContentRefreshPreparationStale | None:
-    if not classified.run.freshness.requires_refresh:
-        return None
-    item = blocker(
-        "stale_production_classification",
-        "Klasyfikacja produkcyjna wymaga odświeżenia",
-        "Najświeższa zaakceptowana klasyfikacja wskazuje konieczność odświeżenia źródeł.",
-        "Odśwież klasyfikację z aktualnych źródeł, a następnie ponów przygotowanie.",
-        source_codes=list(classified.run.freshness.connector_ids),
-    )
-    return ContentRefreshPreparationStale(
-        status="stale",
-        work_item_id=work_item_id,
-        classification=classified.binding,
-        blockers=[item],
-        safe_next_step=item.next_step,
-    )
 
 
 def selection_preview(
@@ -593,15 +576,8 @@ def _rebuild_authorized_preparation(
 ) -> (
     RefreshPreparationRebuilt | ContentRefreshPreparationBlocked | RefreshPreparationRuntimeBlocked
 ):
-    if (
-        content_kind == "service"
-        and inventory_binding is not None
-        and inventory_binding.content_kind == "landing_or_hub"
-    ):
-        return RefreshPreparationRuntimeBlocked(
-            work_item_id,
-            landing_hub_required_blocker(),
-        )
+    if (kind_blocker := runtime_content_kind_blocker(content_kind, inventory_binding)) is not None:
+        return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
     if content_kind == "editorial":
         if service_card_id is not None or inventory_binding is None:
             return RefreshPreparationRuntimeBlocked(

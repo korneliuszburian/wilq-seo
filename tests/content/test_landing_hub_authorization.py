@@ -214,14 +214,16 @@ def test_duplicate_gate_requires_its_own_evidence_digest() -> None:
     assert blocker.reason == "duplicate_gate_missing"
 
 
+@pytest.mark.parametrize("secret", ["X" * 32, "a" * 32])
 def test_landing_hub_free_text_is_redacted_before_authorization_digest(
     tmp_path: Path,
+    secret: str,
 ) -> None:
     store, _run, request, _inventory, _authorization_value = _authorization(tmp_path)
     redacted_intent = "[REDACTED]"
     request_with_secret = request.model_copy(
         update={
-            "intent": "X" * 32,
+            "intent": secret,
             "duplicate_gate_digest": duplicate_gate_receipt_digest(
                 redacted_intent,
                 request.duplicate_gate_evidence_ids,
@@ -241,6 +243,51 @@ def test_landing_hub_free_text_is_redacted_before_authorization_digest(
 
     assert stored.status == "created"
     assert stored.authorization.intent == redacted_intent
+
+
+def test_landing_hub_preview_surfaces_corrupt_receipt_as_typed_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, run, _request, inventory, _authorization_value = _authorization(tmp_path)
+    store.record_landing_hub_authorization(_authorization_value)
+    monkeypatch.setattr(
+        store,
+        "load_latest_landing_hub_authorization",
+        lambda _work_item_id: (_ for _ in ()).throw(ValueError("corrupt receipt")),
+    )
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        route_module,
+        "content_kind_inventory_binding_for_work_item",
+        lambda _work_item_id: inventory,
+    )
+    monkeypatch.setattr(store, "load_latest_production_classification", lambda: run)
+
+    client = TestClient(app)
+    response = client.get(
+        f"/api/content/work-items/{run.rows[0].current_work_item_id}/landing-hub-authorization"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["reason"] == "authorization_conflict"
+
+
+def test_landing_hub_get_routes_do_not_echo_invalid_path_values() -> None:
+    client = TestClient(app)
+
+    preview = client.get(
+        "/api/content/work-items/INVALID/landing-hub-authorization"
+    )
+    receipt = client.get(
+        "/api/content/work-items/landing-hub-authorizations/INVALID"
+    )
+
+    assert preview.status_code == 422
+    assert preview.json() == {"detail": "landing_hub_authorization_request_invalid"}
+    assert receipt.status_code == 422
+    assert receipt.json() == {"detail": "landing_hub_authorization_request_invalid"}
 
 
 def test_existing_refresh_path_blocks_landing_instead_of_service_fallback(
@@ -265,6 +312,40 @@ def test_existing_refresh_path_blocks_landing_instead_of_service_fallback(
 
     assert preview.status == "blocked"
     assert preview.blockers[0].code == "refresh_preparation_landing_hub_required"
+
+
+def test_existing_refresh_path_blocks_when_inventory_identity_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, run, _request, _inventory, _authorization_value = _authorization(tmp_path)
+    monkeypatch.setattr(
+        refresh_operations,
+        "classified_refresh_context",
+        lambda *_args: SimpleNamespace(binding=None),
+    )
+    monkeypatch.setattr(refresh_operations, "stale_preview", lambda *_args: None)
+
+    preview = refresh_operations.preview(
+        store=store,
+        snapshot_loader=lambda *_args, **_kwargs: None,
+        work_item_id=run.rows[0].current_work_item_id,
+        service_card_id="service_card",
+        content_kind_inventory_loader=lambda _work_item_id: None,
+    )
+
+    assert preview.status == "blocked"
+    assert preview.blockers[0].code == "refresh_preparation_inventory_missing"
+
+    rebuilt = refresh_operations._rebuild_authorized_preparation(
+        snapshot_loader=lambda *_args, **_kwargs: None,
+        work_item_id=run.rows[0].current_work_item_id,
+        classified=SimpleNamespace(),
+        content_kind="service",
+        service_card_id="service_card",
+        inventory_binding=None,
+    )
+    assert rebuilt.blocker.code == "refresh_preparation_inventory_missing"
 
 
 def test_landing_hub_routes_preview_authorize_and_readback(

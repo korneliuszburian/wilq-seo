@@ -16,6 +16,7 @@ from wilq.content.workflow.decisions.inventory_binding import (
     content_kind_inventory_binding_for_work_item,
 )
 from wilq.content.workflow.landing_hub import (
+    ContentLandingHubAuthorizationBlocker,
     ContentLandingHubAuthorizationPreview,
     ContentLandingHubAuthorizationRecordResult,
     ContentLandingHubAuthorizationRequest,
@@ -77,7 +78,29 @@ def _preview(
     try:
         authorization = store.load_latest_landing_hub_authorization(work_item_id)
     except ValueError:
-        authorization = None
+        return ContentLandingHubAuthorizationPreview(
+            status="blocked",
+            work_item_id=work_item_id,
+            classification_run_id=classification.run_id,
+            classification_run_digest=classification.run_digest,
+            canonical_path=row.canonical_path,
+            public_url=row.public_url,
+            blockers=(
+                ContentLandingHubAuthorizationBlocker(
+                    seam="authorization",
+                    reason="authorization_conflict",
+                    evidence_ids=tuple(sorted(inventory.inventory_evidence_ids)),
+                    next_step_pl=(
+                        "Zweryfikuj albo unieważnij uszkodzony receipt i przygotuj nowy "
+                        "landing/hub authorization dla bieżącego exact URL-a."
+                    ),
+                ),
+            ),
+            safe_next_step=(
+                "Zweryfikuj albo unieważnij uszkodzony receipt i przygotuj nowy "
+                "landing/hub authorization dla bieżącego exact URL-a."
+            ),
+        )
     if authorization is not None:
         return ContentLandingHubAuthorizationPreview(
             status="authorized",
@@ -114,7 +137,8 @@ async def record_landing_hub_authorization(
     classification = await asyncio.to_thread(store.load_latest_production_classification)
     row = None if classification is None else classification.for_work_item(work_item_id)
     inventory = await asyncio.to_thread(content_kind_inventory_binding_for_work_item, work_item_id)
-    blocker = landing_hub_authorization_blocker(
+    blocker = await asyncio.to_thread(
+        landing_hub_authorization_blocker,
         work_item_id=work_item_id,
         classification=classification,
         row=row,
@@ -136,7 +160,8 @@ async def record_landing_hub_authorization(
     if classification is None or row is None or inventory is None:
         raise RuntimeError("Landing/hub authorization lost its exact context.")
     try:
-        authorization = build_landing_hub_authorization(
+        authorization = await asyncio.to_thread(
+            build_landing_hub_authorization,
             work_item_id=work_item_id,
             classification=classification,
             row=row,
@@ -146,7 +171,7 @@ async def record_landing_hub_authorization(
         )
         result = await asyncio.to_thread(store.record_landing_hub_authorization, authorization)
     except ValueError:
-        preview = _preview(store, work_item_id)
+        preview = await asyncio.to_thread(_preview, store, work_item_id)
         return JSONResponse(status_code=409, content=preview.model_dump(mode="json"))
     status_code = {"created": 201, "idempotent": 200, "conflict": 409}[result.status]
     return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))
@@ -172,6 +197,8 @@ def register_content_landing_hub_authorization_routes(router: APIRouter) -> None
         read_landing_hub_authorization_preview,
         methods=["GET"],
         response_model=ContentLandingHubAuthorizationPreview,
+        responses={422: {"model": ContentLandingHubAuthorizationValidationErrorResponse}},
+        route_class_override=_NoEchoLandingHubAuthorizationRoute,
         tags=["content"],
     )
     router.add_api_route(
@@ -192,6 +219,8 @@ def register_content_landing_hub_authorization_routes(router: APIRouter) -> None
         read_landing_hub_authorization,
         methods=["GET"],
         response_model=ContentLandingHubAuthorizationRecordResult,
+        responses={422: {"model": ContentLandingHubAuthorizationValidationErrorResponse}},
+        route_class_override=_NoEchoLandingHubAuthorizationRoute,
         tags=["content"],
     )
 

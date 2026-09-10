@@ -23,6 +23,7 @@ from wilq.security.redaction import redact_mapping
 _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9/_~.%-]*$")
+_LOWERCASE_SECRET_VALUE = re.compile(r"(?<![A-Za-z0-9])[a-z0-9]{32,}(?![A-Za-z0-9])")
 _SAFE_OPERATOR = re.compile(r"^[\w .-]+$", re.UNICODE)
 _UNSAFE_OPERATOR = re.compile(
     r"(?:basic|bearer|token|password|secret|credential|api[_ -]?key)",
@@ -142,7 +143,9 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
     cta_destinations: tuple[str, ...] = Field(default=(), max_length=8)
     duplicate_gate: Literal["checked", "risk_found", "missing"] = "missing"
     duplicate_gate_evidence_ids: tuple[str, ...] = Field(default=(), max_length=256)
-    duplicate_gate_digest: str = ""
+    duplicate_gate_digest: str = Field(
+        default="", max_length=64, pattern=r"^(?:|[0-9a-f]{64})$"
+    )
     authorized_by: str = Field(min_length=1, max_length=160)
 
     @field_validator("intent")
@@ -174,7 +177,7 @@ class ContentLandingHubAuthorizationRequest(_FrozenModel):
     @classmethod
     def normalize_ctas(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         normalized = tuple(item.strip() for item in value)
-        if any(not _is_safe_path(item) for item in normalized):
+        if any(len(item) > 2048 or not _is_safe_path(item) for item in normalized):
             raise ValueError("Landing/hub CTA destinations must be safe local paths.")
         if len(normalized) != len(set(normalized)):
             raise ValueError("Landing/hub CTA destinations must be unique.")
@@ -250,8 +253,9 @@ class ContentLandingHubAuthorization(_FrozenModel):
     @classmethod
     def require_safe_ctas(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         normalized = tuple(item.strip() for item in value)
-        if any(not _is_safe_path(item) for item in normalized) or len(normalized) != len(
-            set(normalized)
+        if (
+            any(len(item) > 2048 or not _is_safe_path(item) for item in normalized)
+            or len(normalized) != len(set(normalized))
         ):
             raise ValueError("Landing/hub authorization CTA destinations are unsafe or duplicate.")
         return normalized
@@ -639,9 +643,17 @@ def _redacted_request(
     request: ContentLandingHubAuthorizationRequest,
 ) -> ContentLandingHubAuthorizationRequest:
     payload = redact_mapping(request.model_dump(mode="json"))
+    payload["intent"] = _redact_landing_free_text(str(payload["intent"]))
+    payload["blocked_claims"] = [
+        _redact_landing_free_text(str(claim)) for claim in payload["blocked_claims"]
+    ]
     return ContentLandingHubAuthorizationRequest.model_validate_json(
         json.dumps(payload, ensure_ascii=False), strict=True
     )
+
+
+def _redact_landing_free_text(value: str) -> str:
+    return _LOWERCASE_SECRET_VALUE.sub("[REDACTED]", value)
 
 
 def canonical_source_fact_registry_digest() -> str:
