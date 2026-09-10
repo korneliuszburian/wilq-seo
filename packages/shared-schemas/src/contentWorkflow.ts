@@ -3378,6 +3378,12 @@ export const ContentOfficialSourceLineageRebaseRequestSchema = z.object({
   requested_by: z.string().trim().min(1)
 });
 
+export const ContentRevisionLineageCleanupRequestSchema = z.strictObject({
+  expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  source_fact_id: z.string().trim().min(1),
+  requested_by: z.string().trim().min(1)
+});
+
 export const ContentDraftRevisionReviewRequestSchema = z
   .object({
     expected_revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
@@ -5547,6 +5553,9 @@ export type ContentDraftRevisionSaveResponse = z.infer<
 >;
 export type ContentOfficialSourceLineageRebaseRequest = z.input<
   typeof ContentOfficialSourceLineageRebaseRequestSchema
+>;
+export type ContentRevisionLineageCleanupRequest = z.input<
+  typeof ContentRevisionLineageCleanupRequestSchema
 >;
 export type ContentDraftRevisionReviewRequest = z.input<
   typeof ContentDraftRevisionReviewRequestSchema

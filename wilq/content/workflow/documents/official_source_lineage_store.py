@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from wilq.content.workflow.documents.codex_revision_commit import (
     editor_draft_context_is_current,
@@ -24,6 +25,11 @@ from wilq.content.workflow.store.store_queries import (
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import state_db_path
 from wilq.storage.model_json import model_json
+
+ContentOfficialSourceLineageCorrectionReason = Literal[
+    "lineage_cleanup",
+    "official_source_lineage_rebase",
+]
 
 
 class ContentOfficialSourceLineageStore:
@@ -61,7 +67,7 @@ class ContentOfficialSourceLineageStore:
         command: ContentDraftRevisionAppendCommand,
         *,
         expected_latest_review_decision_id: str | None,
-        correction_reason: str,
+        correction_reason: ContentOfficialSourceLineageCorrectionReason,
     ) -> ContentDraftRevisionWriteResult:
         if command.correction_reason != correction_reason:
             raise ValueError(

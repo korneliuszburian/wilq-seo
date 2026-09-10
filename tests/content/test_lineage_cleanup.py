@@ -8,8 +8,14 @@ import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
-from apps.api.wilq_api.routers import content_official_source_lineage as lineage_router
+from apps.api.wilq_api.routers import (
+    content_lineage_cleanup_service as cleanup_service,
+)
 from apps.api.wilq_api.routers import content_workflow
+from apps.api.wilq_api.routers.content_lineage_cleanup_service import (
+    ContentLineageCleanupConflict,
+    execute_content_lineage_cleanup,
+)
 from apps.api.wilq_api.routers.content_official_source_lineage import (
     register_content_official_source_lineage_route,
 )
@@ -17,7 +23,10 @@ from tests.content.test_full_document_revision_v2 import (
     _draft_package,
     _full_document_command,
 )
-from wilq.content.workflow.contracts.contracts import ContentDraftRevisionWorkspace
+from wilq.content.workflow.contracts.contracts import (
+    ContentDraftRevisionWorkspace,
+    ContentRevisionLineageCleanupRequest,
+)
 from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
@@ -220,6 +229,29 @@ def test_cleanup_store_rechecks_context_inside_the_atomic_append(tmp_path: Path)
     assert state.revision_count == 1
 
 
+def test_cleanup_service_returns_a_named_typed_digest_conflict(tmp_path: Path) -> None:
+    base = _persist_lineage_revision(tmp_path)
+    snapshot = SimpleNamespace(
+        revision_workspace=_workspace(base, context_current=True)
+    )
+
+    result = execute_content_lineage_cleanup(
+        work_item_id=base.work_item_id,
+        revision_id=base.revision_id,
+        request=ContentRevisionLineageCleanupRequest(
+            expected_revision_digest="0" * 64,
+            source_fact_id=OBSOLETE_SOURCE_FACT_ID,
+            requested_by="wilku",
+        ),
+        snapshot_loader=lambda _work_item_id: snapshot,
+    )
+
+    assert isinstance(result, ContentLineageCleanupConflict)
+    assert result.status == "conflict"
+    assert result.code == "digest_mismatch"
+    assert result.snapshot is snapshot
+
+
 def test_cleanup_route_requires_current_context_and_returns_typed_child(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -244,7 +276,7 @@ def test_cleanup_route_requires_current_context_and_returns_typed_child(
     app = FastAPI()
     app.include_router(router)
     monkeypatch.setattr(
-        lineage_router,
+        cleanup_service,
         "content_official_source_lineage_store",
         lambda: specialized_store,
     )
@@ -306,7 +338,7 @@ def test_refresh_bound_cleanup_uses_current_semantic_snapshot(
         semantic_snapshot,
     )
     monkeypatch.setattr(
-        lineage_router,
+        cleanup_service,
         "content_official_source_lineage_store",
         lambda: specialized_store,
     )

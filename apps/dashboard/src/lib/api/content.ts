@@ -25,6 +25,7 @@ import {
   ContentNewPageRevisionReviewResponseSchema,
   ContentNewPageTopicRecommendationsSchema,
   ContentOfficialSourceLineageRebaseRequestSchema,
+  ContentRevisionLineageCleanupRequestSchema,
   ContentOperatorContextSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
@@ -83,6 +84,7 @@ import {
   type ContentNewPageRevisionReviewResponse,
   type ContentNewPageTopicRecommendations,
   type ContentOfficialSourceLineageRebaseRequest,
+  type ContentRevisionLineageCleanupRequest,
   type ContentOperatorContext,
   type ContentPlanningProposalRequest,
   type ContentPlanningProposalResponse,
@@ -447,6 +449,20 @@ export function postContentWorkItemOfficialSourceLineageRebase(
     ContentDraftRevisionSaveResponseSchema,
     ContentDraftRevisionConflictSchema,
     ContentOfficialSourceLineageRebaseRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemLineageCleanup(
+  request: ContentRevisionLineageCleanupRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/lineage-cleanup`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionSaveResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentRevisionLineageCleanupRequestSchema.parse(request)
   );
 }
 
