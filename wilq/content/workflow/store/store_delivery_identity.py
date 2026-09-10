@@ -44,7 +44,7 @@ class ContentDeliveryIdentityStoreMixin:
                 (binding.binding_id,),
             ).fetchone()
             if existing_row is not None:
-                existing = _binding_from_row(existing_row)
+                existing = binding_from_row(existing_row)
                 existing_record = _delivery_record_for_binding(connection, existing.binding_id)
                 return ContentDeliveryIdentityRecordResult(
                     status=(
@@ -62,7 +62,7 @@ class ContentDeliveryIdentityStoreMixin:
             if digest_row is not None:
                 return ContentDeliveryIdentityRecordResult(
                     status="conflict",
-                    binding=_binding_from_row(digest_row),
+                    binding=binding_from_row(digest_row),
                     delivery_record=_delivery_record_for_binding(
                         connection, cast(str, digest_row["binding_id"])
                     ),
@@ -127,7 +127,7 @@ class ContentDeliveryIdentityStoreMixin:
                 "SELECT * FROM content_delivery_identity_bindings WHERE binding_id = ?",
                 (binding_id,),
             ).fetchone()
-        return None if row is None else _binding_from_row(row)
+        return None if row is None else binding_from_row(row)
 
     def load_content_delivery_identity_record(
         self, binding_id: str
@@ -139,7 +139,7 @@ class ContentDeliveryIdentityStoreMixin:
             ).fetchone()
             if row is None:
                 return None
-            binding = _binding_from_row(row)
+            binding = binding_from_row(row)
             delivery_record = _delivery_record_for_binding(connection, binding_id)
         return ContentDeliveryIdentityRecordResult(
             status="idempotent",
@@ -188,7 +188,7 @@ def _delivery_record_for_binding(
     return ContentDeliveryRecord.model_validate_json(cast(str, row["payload_json"]), strict=True)
 
 
-def _binding_from_row(row: sqlite3.Row) -> ContentDeliveryIdentityBinding:
+def binding_from_row(row: sqlite3.Row) -> ContentDeliveryIdentityBinding:
     binding = ContentDeliveryIdentityBinding.model_validate_json(
         cast(str, row["payload_json"]), strict=True
     )
@@ -230,4 +230,4 @@ def _binding_from_row(row: sqlite3.Row) -> ContentDeliveryIdentityBinding:
     return binding
 
 
-__all__ = ["ContentDeliveryIdentityStoreMixin"]
+__all__ = ["ContentDeliveryIdentityStoreMixin", "binding_from_row"]

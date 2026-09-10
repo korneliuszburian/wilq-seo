@@ -15,6 +15,21 @@ SAFE_TRACE_VALUE_RE = re.compile(
     r"_[A-Za-z0-9_-]+$"
 )
 SAFE_LOWER_ENUM_VALUE_RE = re.compile(r"^[a-z][a-z0-9_]{7,}$")
+SAFE_OPAQUE_IDENTIFIER_RE = re.compile(r"^[a-z][a-z0-9_-]{0,239}$")
+SAFE_OPAQUE_SECRET_RE = re.compile(
+    r"(?:^|[^A-Za-z0-9])(?:sk-[A-Za-z0-9_-]{20,}|gho_[A-Za-z0-9_]{20,}|ya29\.[A-Za-z0-9._-]{20,})",
+    re.IGNORECASE,
+)
+SAFE_OPAQUE_IDENTIFIER_KEYS = {
+    "source_pack_id",
+    "identity_binding_id",
+    "current_work_item_id",
+    "source_fact_ids",
+    "evidence_ids",
+    "run_id",
+    "registry_id",
+    "recorded_by",
+}
 SAFE_IDENTIFIER_KEYS = {
     "api",
     "action_type",
@@ -101,6 +116,15 @@ SAFE_IDENTIFIER_KEYS = {
     "service_card_digest",
     "overlap_digest",
     "expected_overlap_digest",
+    "binding_digest",
+    "source_pack_sha256",
+    "identity_binding_digest",
+    "source_facts_digest",
+    "evidence_ids_digest",
+    "registry_digest",
+    "context_digest",
+    "source_fact_registry_digest",
+    "fresh_context_digest",
     "foundation_id",
     "recommended_service_card_id",
     "landing_page",
@@ -136,6 +160,14 @@ SAFE_IDENTIFIER_KEYS = {
     "source_id",
     "source_material_id",
     "source_material_ids",
+    "source_pack_id",
+    "identity_binding_id",
+    "source_fact_ids",
+    "run_id",
+    "registry_id",
+    "source",
+    "recorded_by",
+    "source_fact_registry_id",
     "source_public_url",
     "source_url",
     "canonical_path",
@@ -203,6 +235,15 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "service_card_digest",
     "overlap_digest",
     "expected_overlap_digest",
+    "binding_digest",
+    "source_pack_sha256",
+    "identity_binding_digest",
+    "source_facts_digest",
+    "evidence_ids_digest",
+    "registry_digest",
+    "context_digest",
+    "source_fact_registry_digest",
+    "fresh_context_digest",
 }
 CONTENT_TEXT_KEYS = {
     "body_markdown",
@@ -217,9 +258,7 @@ CONTENT_TEXT_KEYS = {
     "anchor_text",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
-SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(
-    r"^/(?:[A-Za-z0-9._~-]+/?)*$"
-)
+SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+/?)*$")
 SAFE_NORMALIZED_PAGE_PATH_ATOM_RE = re.compile(r"^[A-Za-z0-9._~]{1,24}$")
 KNOWN_SECRET_PATH_RE = re.compile(
     r"(?:^|/)(?:gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+)"
@@ -306,6 +345,13 @@ def _redact_safe_identifier_value(key: str, value: Any) -> Any:
         return [_redact_safe_identifier_value(key, item) for item in value]
     if isinstance(value, Mapping):
         return redact_mapping(value)
+    if (
+        key in SAFE_OPAQUE_IDENTIFIER_KEYS
+        and isinstance(value, str)
+        and SAFE_OPAQUE_IDENTIFIER_RE.fullmatch(value)
+        and SAFE_OPAQUE_SECRET_RE.search(value) is None
+    ):
+        return value
     if (
         key in SAFE_DIGEST_IDENTIFIER_KEYS
         and isinstance(value, str)

@@ -175,6 +175,38 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_source_pack_bindings (
+      binding_id TEXT PRIMARY KEY,
+      binding_digest TEXT NOT NULL UNIQUE,
+      source_pack_id TEXT NOT NULL,
+      source_pack_sha256 TEXT NOT NULL,
+      identity_binding_id TEXT NOT NULL,
+      identity_binding_digest TEXT NOT NULL,
+      current_work_item_id TEXT NOT NULL,
+      source_facts_digest TEXT NOT NULL,
+      evidence_ids_digest TEXT NOT NULL,
+      fresh_context_digest TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('exact_current', 'blocked')),
+      recorded_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_source_pack_bindings_no_update
+    BEFORE UPDATE ON content_source_pack_bindings
+    BEGIN
+      SELECT RAISE(ABORT, 'content source-pack bindings are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_source_pack_bindings_no_delete
+    BEFORE DELETE ON content_source_pack_bindings
+    BEGIN
+      SELECT RAISE(ABORT, 'content source-pack bindings are append-only');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_delivery_records (
       record_id TEXT PRIMARY KEY,
       record_digest TEXT NOT NULL UNIQUE,
@@ -420,7 +452,7 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
         )
         """
     )
-    ensure_sqlite_schema_version(connection)
+    ensure_sqlite_schema_version(connection, require_all_milestones=True)
 
 
 def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
@@ -463,6 +495,18 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "inventory_evidence_digest",
         },
         "content_delivery_identity_bindings": {"recorded_by", "recorded_at"},
+        "content_source_pack_bindings": {
+            "source_pack_id",
+            "source_pack_sha256",
+            "identity_binding_id",
+            "identity_binding_digest",
+            "current_work_item_id",
+            "source_facts_digest",
+            "evidence_ids_digest",
+            "fresh_context_digest",
+            "recorded_by",
+            "recorded_at",
+        },
     }
     for table, expected in required_columns.items():
         rows = list(connection.execute(f"PRAGMA table_info({table})"))

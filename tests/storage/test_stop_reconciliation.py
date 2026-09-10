@@ -386,7 +386,7 @@ def test_dry_run_rejects_unsupported_schema_before_classification(tmp_path: Path
     manifest = _manifest(state_path)
     before = state_path.read_bytes()
 
-    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7, 8"):
+    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7, 8, 9"):
         plan_stop_reconciliation(
             LocalStateStore(state_path),
             manifest=manifest,
@@ -412,7 +412,7 @@ def test_apply_rejects_unsupported_schema_before_transaction(tmp_path: Path) -> 
 
     with pytest.raises(
         StopReconciliationManifestError,
-        match="schema version 6, 7, 8",
+        match="schema version 6, 7, 8, 9",
     ) as failure:
         _apply(store=LocalStateStore(state_path), manifest=manifest, backup_path=backup_path)
 
