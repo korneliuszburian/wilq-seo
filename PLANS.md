@@ -87,7 +87,9 @@ links i source/evidence IDs. Wymagania pochodzą z aktualnych, bezpośrednich
 źródeł: Google Search Central i Search Quality Rater Guidelines, źródeł
 urzędowych dla prawa, badań naukowych tam, gdzie rzeczywiście wspierają
 mechanizm, oraz jawnie ograniczonych praktyk UX/content. Każde źródło ma URL,
-datę odczytu, zakres autorytetu, freshness i decyzję `adopt/reject/lab-test`.
+datę odczytu, zakres autorytetu, freshness i decyzję `adopt/reject/lab-test/defer`.
+`defer` wymaga nazwanego ownera i warunku ponownego sprawdzenia; nie oznacza
+odrzucenia i nie może pozostać bezterminowym stanem domyślnym.
 Packet jest typowanym immutable rekordem związanym z current work itemem i
 revision-input digest, nie luźnym Markdownem ani promptowym blobem.
 
