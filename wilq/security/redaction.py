@@ -21,7 +21,11 @@ SAFE_OPAQUE_SECRET_RE = re.compile(
     re.IGNORECASE,
 )
 SAFE_OPAQUE_IDENTIFIER_KEYS = {
+    "packet_id",
     "source_pack_id",
+    "source_pack_binding_id",
+    "source_id",
+    "approved_source_fact_ids",
     "identity_binding_id",
     "current_work_item_id",
     "source_fact_ids",
@@ -77,6 +81,10 @@ SAFE_IDENTIFIER_KEYS = {
     "decision_set_digest",
     "source_packet_row_digest",
     "payload_digest",
+    "packet_id",
+    "packet_digest",
+    "input_digest",
+    "classification_source_row_digest",
     "planning_digest",
     "prompt_digest",
     "prompt_template_id",
@@ -118,6 +126,7 @@ SAFE_IDENTIFIER_KEYS = {
     "expected_overlap_digest",
     "binding_digest",
     "source_pack_sha256",
+    "source_pack_binding_digest",
     "identity_binding_digest",
     "source_facts_digest",
     "evidence_ids_digest",
@@ -161,6 +170,7 @@ SAFE_IDENTIFIER_KEYS = {
     "source_material_id",
     "source_material_ids",
     "source_pack_id",
+    "source_pack_binding_id",
     "identity_binding_id",
     "source_fact_ids",
     "run_id",
@@ -205,6 +215,9 @@ SAFE_SECRET_TELEMETRY_KEYS = {
     "token_usage_output",
 }
 SAFE_DIGEST_IDENTIFIER_KEYS = {
+    "packet_digest",
+    "input_digest",
+    "classification_source_row_digest",
     "content_digest",
     "brief_digest",
     "expected_brief_digest",
@@ -237,6 +250,7 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "expected_overlap_digest",
     "binding_digest",
     "source_pack_sha256",
+    "source_pack_binding_digest",
     "identity_binding_digest",
     "source_facts_digest",
     "evidence_ids_digest",
@@ -256,6 +270,8 @@ CONTENT_TEXT_KEYS = {
     "question",
     "answer_markdown",
     "anchor_text",
+    "destination_path",
+    "cta_destination",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+/?)*$")
@@ -297,6 +313,8 @@ def _looks_like_env_name(value: str) -> bool:
 
 
 def _looks_like_safe_trace_identifier(value: str) -> bool:
+    if re.match(r"^(?:sk-|gho_|ya29\.)", value, re.IGNORECASE):
+        return False
     return bool(SAFE_TRACE_VALUE_RE.fullmatch(value) or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value))
 
 

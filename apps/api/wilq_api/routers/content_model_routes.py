@@ -37,6 +37,9 @@ from apps.api.wilq_api.routers.content_refresh_preparation import (
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
+from apps.api.wilq_api.routers.content_research_packet import (
+    register_content_research_packet_routes,
+)
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
 )
@@ -72,6 +75,7 @@ def register_content_model_routes(
     register_content_regulatory_source_review_routes(router)
     register_content_delivery_identity_routes(router)
     register_content_source_pack_binding_routes(router)
+    register_content_research_packet_routes(router)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)

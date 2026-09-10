@@ -207,6 +207,50 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_research_packets (
+      packet_id TEXT PRIMARY KEY,
+      packet_digest TEXT NOT NULL UNIQUE,
+      identity_binding_id TEXT NOT NULL,
+      identity_binding_digest TEXT NOT NULL,
+      source_pack_binding_id TEXT NOT NULL,
+      source_pack_binding_digest TEXT NOT NULL,
+      current_work_item_id TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      content_kind TEXT NOT NULL,
+      input_digest TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('exact_current', 'blocked')),
+      recorded_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packets_no_update
+    BEFORE UPDATE ON content_research_packets
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packets are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packets_no_replace
+    BEFORE INSERT ON content_research_packets
+    WHEN EXISTS (
+      SELECT 1 FROM content_research_packets
+      WHERE packet_id = NEW.packet_id OR packet_digest = NEW.packet_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packets are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packets_no_delete
+    BEFORE DELETE ON content_research_packets
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packets are append-only');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_delivery_records (
       record_id TEXT PRIMARY KEY,
       record_digest TEXT NOT NULL UNIQUE,
@@ -504,6 +548,22 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "source_facts_digest",
             "evidence_ids_digest",
             "fresh_context_digest",
+            "recorded_by",
+            "recorded_at",
+        },
+        "content_research_packets": {
+            "packet_id",
+            "packet_digest",
+            "identity_binding_id",
+            "identity_binding_digest",
+            "source_pack_binding_id",
+            "source_pack_binding_digest",
+            "current_work_item_id",
+            "canonical_path",
+            "public_url",
+            "content_kind",
+            "input_digest",
+            "status",
             "recorded_by",
             "recorded_at",
         },

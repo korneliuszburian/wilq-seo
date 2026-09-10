@@ -109,7 +109,7 @@ Deterministic gate obejmuje `long_sentence`, `heading_answer_mismatch`,
 `working_note`, `duplicate_paragraph`, weak CTA, język, source/claim oraz
 privacy/consent. Byline/author pozostaje `lab-test`.
 
-DeepSeek V4.1 Flash (`opencode-go/deepseek-flash`) jest advisory judge. Nie może
+DeepSeek V4.1 Flash (`opencode-go/deepseek-v4.1-flash`) jest advisory judge. Nie może
 nadpisać deterministic failure ani nadać approval. Każdy finding ma lokalną
 dyspozycję `accepted/rejected/deferred` z dowodem.
 
