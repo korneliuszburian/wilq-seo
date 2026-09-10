@@ -49,6 +49,9 @@ from apps.api.wilq_api.routers.content_selected_workspace import (
 from apps.api.wilq_api.routers.content_semantic_review import (
     register_content_semantic_review_routes,
 )
+from apps.api.wilq_api.routers.content_source_pack_binding import (
+    register_content_source_pack_binding_routes,
+)
 from apps.api.wilq_api.routers.content_target_discovery import (
     register_content_target_discovery_route,
 )
@@ -68,6 +71,7 @@ def register_content_model_routes(
 ) -> None:
     register_content_regulatory_source_review_routes(router)
     register_content_delivery_identity_routes(router)
+    register_content_source_pack_binding_routes(router)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)

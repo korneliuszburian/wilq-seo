@@ -172,9 +172,7 @@ def test_existing_v3_store_gains_additive_section_focus_schema(tmp_path: Path) -
             )
             """
         )
-        connection.execute(
-            "INSERT INTO codex_runs VALUES ('legacy_run', '2026-08-14', '{}')"
-        )
+        connection.execute("INSERT INTO codex_runs VALUES ('legacy_run', '2026-08-14', '{}')")
         connection.execute("PRAGMA user_version = 3")
 
     store = LocalStateStore(path)
@@ -182,16 +180,13 @@ def test_existing_v3_store_gains_additive_section_focus_schema(tmp_path: Path) -
     assert store.get_content_section_focus("work_1") is None
 
     with sqlite3.connect(path) as connection:
-        columns = [
-            row[1]
-            for row in connection.execute("PRAGMA table_info(content_section_focus)")
-        ]
+        columns = [row[1] for row in connection.execute("PRAGMA table_info(content_section_focus)")]
         schema_version = connection.execute("PRAGMA user_version").fetchone()[0]
         legacy_run_count = connection.execute(
             "SELECT COUNT(*) FROM codex_runs WHERE id = 'legacy_run'"
         ).fetchone()[0]
 
-    assert SQLITE_SCHEMA_VERSION == 8
+    assert SQLITE_SCHEMA_VERSION == 9
     assert schema_version == SQLITE_SCHEMA_VERSION
     assert columns == [
         "work_item_id",
@@ -213,9 +208,7 @@ def test_unrelated_store_cannot_claim_v4_before_focus_table_exists(
 
     assert ContentWorkflowStore(path).list_draft_revisions("work_1") == []
     with sqlite3.connect(path) as connection:
-        version_before_focus_migration = connection.execute(
-            "PRAGMA user_version"
-        ).fetchone()[0]
+        version_before_focus_migration = connection.execute("PRAGMA user_version").fetchone()[0]
         focus_table_before_migration = connection.execute(
             """
             SELECT COUNT(*) FROM sqlite_master
@@ -228,13 +221,13 @@ def test_unrelated_store_cannot_claim_v4_before_focus_table_exists(
 
     assert LocalStateStore(path).get_content_section_focus("work_1") is None
     with sqlite3.connect(path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == SQLITE_SCHEMA_VERSION
         assert (
-            connection.execute("PRAGMA user_version").fetchone()[0]
-            == SQLITE_SCHEMA_VERSION
-        )
-        assert connection.execute(
-            """
+            connection.execute(
+                """
             SELECT COUNT(*) FROM sqlite_master
             WHERE type = 'table' AND name = 'content_section_focus'
             """
-        ).fetchone()[0] == 1
+            ).fetchone()[0]
+            == 1
+        )

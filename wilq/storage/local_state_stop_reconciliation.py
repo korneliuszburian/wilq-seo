@@ -272,7 +272,7 @@ def _read_verified_backup_rows(
 def _require_supported_schema_version(connection: sqlite3.Connection) -> None:
     row = connection.execute("PRAGMA user_version").fetchone()
     schema_version = int(row[0]) if row is not None else 0
-    supported_versions = {6, 7, SQLITE_SCHEMA_VERSION}
+    supported_versions = {6, 7, 8, SQLITE_SCHEMA_VERSION}
     if schema_version not in supported_versions:
         supported_label = ", ".join(str(version) for version in sorted(supported_versions))
         raise StopReconciliationManifestError(
