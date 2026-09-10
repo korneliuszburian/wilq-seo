@@ -41,6 +41,8 @@ ContentRefreshPreparationBlockerCode = Literal[
     "refresh_preparation_service_unavailable",
     "refresh_preparation_service_not_approved",
     "refresh_preparation_service_sources_missing",
+    "refresh_preparation_inventory_missing",
+    "refresh_preparation_landing_hub_required",
     "refresh_preparation_input_blocked",
     "refresh_preparation_authorization_missing",
     "refresh_preparation_authorization_foreign",
@@ -57,6 +59,11 @@ _UNSAFE_LOCAL_OPERATOR_RE = re.compile(
     r"(?:basic|bearer|token|password|secret|credential|api[_ -]?key)",
     re.IGNORECASE,
 )
+_UNSAFE_LOCAL_OPERATOR_SECRET_RE = re.compile(
+    r"(?:sk-|gho_|ya29\.)[A-Za-z0-9._-]{12,}"
+    r"|(?<![A-Za-z0-9])[A-Za-z0-9+/=_-]{24,}(?![A-Za-z0-9])",
+    re.IGNORECASE,
+)
 
 
 class _StrictModel(BaseModel):
@@ -69,6 +76,30 @@ class ContentRefreshPreparationBlocker(_StrictModel):
     reason: _NonBlank
     next_step: _NonBlank
     source_codes: list[str] = Field(default_factory=list)
+
+
+def landing_hub_required_blocker() -> ContentRefreshPreparationBlocker:
+    return ContentRefreshPreparationBlocker(
+        code="refresh_preparation_landing_hub_required",
+        label="Landing/hub ma osobną ścieżkę autoryzacji",
+        reason=(
+            "Ten URL jest dokładnie sklasyfikowany jako landing_or_hub; nie można "
+            "przepuścić go przez kartę usługi ani editorial receipt."
+        ),
+        next_step="Użyj endpointu landing-hub authorization dla tego work itemu.",
+    )
+
+
+def inventory_missing_blocker() -> ContentRefreshPreparationBlocker:
+    return ContentRefreshPreparationBlocker(
+        code="refresh_preparation_inventory_missing",
+        label="Brakuje exact inventory URL-a",
+        reason=(
+            "Refresh nie może wybrać ścieżki service albo editorial bez bieżącego, "
+            "zaufanego powiązania work itemu z inventory."
+        ),
+        next_step="Odśwież WordPress inventory i potwierdź exact binding dla tego work itemu.",
+    )
 
 
 class ContentRefreshPreparationClassificationBinding(_StrictModel):
@@ -184,6 +215,7 @@ class ContentRefreshPreparationAuthorizationRequest(_StrictModel):
             or any(ord(character) < 32 or ord(character) == 127 for character in normalized)
             or not _SAFE_LOCAL_OPERATOR_RE.fullmatch(normalized)
             or _UNSAFE_LOCAL_OPERATOR_RE.search(normalized)
+            or _UNSAFE_LOCAL_OPERATOR_SECRET_RE.search(normalized)
         ):
             raise ValueError(
                 "Refresh authorization requires a safe visible local operator identity."
@@ -203,9 +235,7 @@ class ContentRefreshPreparationAuthorization(_StrictModel):
     schema_version: Literal[
         "wilq_content_refresh_preparation_authorization_v1",
         "wilq_content_refresh_preparation_authorization_v2",
-    ] = (
-        "wilq_content_refresh_preparation_authorization_v1"
-    )
+    ] = "wilq_content_refresh_preparation_authorization_v1"
     authorization_id: _NonBlank
     authorization_digest: str = Field(pattern=_HEX64)
     work_item_id: _NonBlank
@@ -573,5 +603,7 @@ __all__ = [
     "ContentRefreshPreparationStale",
     "build_content_refresh_preparation_authorization",
     "content_refresh_preparation_authorization_digest",
+    "inventory_missing_blocker",
+    "landing_hub_required_blocker",
     "refresh_preparation_binding_matches_content_identity",
 ]

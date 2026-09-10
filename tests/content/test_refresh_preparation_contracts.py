@@ -129,6 +129,9 @@ def test_refresh_authorization_can_bind_an_exact_review_repair_turn() -> None:
         "https://example.test/operator",
         "/private/operator",
         "token operator",
+        "sk-" + "a" * 24,
+        "gho_" + "a" * 24,
+        "ya29." + "a" * 24,
     ],
 )
 def test_refresh_authorization_rejects_unsafe_operator_identity(operator: str) -> None:

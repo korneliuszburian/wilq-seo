@@ -251,6 +251,50 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_landing_hub_authorizations (
+      authorization_id TEXT PRIMARY KEY,
+      authorization_digest TEXT NOT NULL UNIQUE,
+      work_item_id TEXT NOT NULL,
+      classification_run_id TEXT NOT NULL,
+      classification_run_digest TEXT NOT NULL,
+      decision_set_digest TEXT NOT NULL,
+      source_packet_row_digest TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      content_kind TEXT NOT NULL CHECK (content_kind = 'landing_or_hub'),
+      input_digest TEXT NOT NULL,
+      authorized_by TEXT NOT NULL,
+      authorized_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_landing_hub_authorizations_no_update
+    BEFORE UPDATE ON content_landing_hub_authorizations
+    BEGIN
+      SELECT RAISE(ABORT, 'content landing/hub authorizations are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_landing_hub_authorizations_no_delete
+    BEFORE DELETE ON content_landing_hub_authorizations
+    BEGIN
+      SELECT RAISE(ABORT, 'content landing/hub authorizations are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_landing_hub_authorizations_no_replace
+    BEFORE INSERT ON content_landing_hub_authorizations
+    WHEN EXISTS (
+      SELECT 1 FROM content_landing_hub_authorizations
+      WHERE authorization_id = NEW.authorization_id
+         OR authorization_digest = NEW.authorization_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content landing/hub authorizations are append-only');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_delivery_records (
       record_id TEXT PRIMARY KEY,
       record_digest TEXT NOT NULL UNIQUE,
@@ -566,6 +610,21 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "status",
             "recorded_by",
             "recorded_at",
+        },
+        "content_landing_hub_authorizations": {
+            "authorization_id",
+            "authorization_digest",
+            "work_item_id",
+            "classification_run_id",
+            "classification_run_digest",
+            "decision_set_digest",
+            "source_packet_row_digest",
+            "canonical_path",
+            "public_url",
+            "content_kind",
+            "input_digest",
+            "authorized_by",
+            "authorized_at",
         },
     }
     for table, expected in required_columns.items():

@@ -54,7 +54,7 @@ def test_schema_v8_store_is_upgraded_before_source_pack_write(tmp_path: Path) ->
     assert store.load_content_source_pack_binding("missing") is None
 
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone() == (10,)
+        assert connection.execute("PRAGMA user_version").fetchone() == (11,)
         assert connection.execute(
             """
             SELECT 1 FROM sqlite_master

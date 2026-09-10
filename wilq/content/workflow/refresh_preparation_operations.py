@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import cast
 
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -38,10 +39,14 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationPreview,
     ContentRefreshPreparationReadyToAuthorize,
     ContentRefreshPreparationSelectionRequired,
-    ContentRefreshPreparationStale,
     build_content_refresh_preparation_authorization,
 )
 from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
+from wilq.content.workflow.refresh_preparation_kind_guards import (
+    no_receipt_content_kind_resolution,
+    preview_content_kind_blocker,
+    runtime_content_kind_blocker,
+)
 from wilq.content.workflow.refresh_preparation_models import (
     ContentKindInventoryLoader,
     RefreshClassificationContext,
@@ -62,6 +67,7 @@ from wilq.content.workflow.refresh_preparation_resolution import (
     proposal_matches_initial_request,
     rebuild_preparation,
 )
+from wilq.content.workflow.refresh_preparation_stale import stale_preview
 from wilq.schemas.core import utc_now
 
 
@@ -91,7 +97,14 @@ def preview(
     if stale is not None:
         return stale
     inventory_binding = content_kind_inventory_loader(work_item_id)
-    if inventory_binding is not None and inventory_binding.content_kind == "editorial":
+    if (kind_blocker := preview_content_kind_blocker(inventory_binding)) is not None:
+        return blocked_preview(
+            work_item_id,
+            kind_blocker,
+            classification=classified,
+        )
+    inventory_binding = cast(ContentKindInventoryBinding, inventory_binding)
+    if inventory_binding.content_kind == "editorial":
         if service_card_id is not None:
             return blocked_preview(
                 work_item_id,
@@ -114,28 +127,6 @@ def preview(
     if service_card_id is None:
         return selection_preview(snapshot_loader, work_item_id, classified)
     return selected_preview(store, snapshot_loader, work_item_id, classified, service_card_id)
-
-
-def stale_preview(
-    work_item_id: str,
-    classified: RefreshClassificationContext,
-) -> ContentRefreshPreparationStale | None:
-    if not classified.run.freshness.requires_refresh:
-        return None
-    item = blocker(
-        "stale_production_classification",
-        "Klasyfikacja produkcyjna wymaga odświeżenia",
-        "Najświeższa zaakceptowana klasyfikacja wskazuje konieczność odświeżenia źródeł.",
-        "Odśwież klasyfikację z aktualnych źródeł, a następnie ponów przygotowanie.",
-        source_codes=list(classified.run.freshness.connector_ids),
-    )
-    return ContentRefreshPreparationStale(
-        status="stale",
-        work_item_id=work_item_id,
-        classification=classified.binding,
-        blockers=[item],
-        safe_next_step=item.next_step,
-    )
 
 
 def selection_preview(
@@ -273,8 +264,7 @@ def authorize(
                 "Potwierdzenie blockerów nie jest kompletne",
                 "Autoryzacja refresh musi potwierdzać dokładnie bieżący zbiór kodów "
                 "blockerów klasyfikacji.",
-                "Odśwież przygotowanie i potwierdź wszystkie oraz tylko widoczne kody "
-                "blockerów.",
+                "Odśwież przygotowanie i potwierdź wszystkie oraz tylko widoczne kody blockerów.",
                 source_codes=current.classification.classification_blocker_codes,
             )
         )
@@ -319,9 +309,7 @@ def record_authorization(
         planning_input_digest=current.planning_input_digest,
         content_kind=current.content_kind,
         service_card_id=(
-            None
-            if current.service_candidate is None
-            else current.service_candidate.service_card_id
+            None if current.service_candidate is None else current.service_candidate.service_card_id
         ),
         acknowledged_classification_blocker_codes=request.acknowledged_classification_blocker_codes,
         authorized_by=request.authorized_by,
@@ -385,6 +373,10 @@ def resolve_planning(
             authorization_on_unclassified_blocker(),
         )
     if request.refresh_preparation_authorization_id is None:
+        if (blocked := no_receipt_content_kind_resolution(
+            request.content_kind, work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return unclassified_or_refresh_block(store, work_item_id)
     return resolve_authorized_context(
         store=store,
@@ -415,10 +407,18 @@ def resolve_initial_draft(
                 work_item_id,
                 authorization_on_unclassified_blocker(),
             )
+        if (blocked := no_receipt_content_kind_resolution(
+            "editorial", work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return RefreshPreparationUnclassified(work_item_id)
     if isinstance(classified, ContentRefreshPreparationBlocker):
         return RefreshPreparationRuntimeBlocked(work_item_id, classified)
     if request.refresh_preparation_authorization_id is None:
+        if (blocked := no_receipt_content_kind_resolution(
+            "editorial", work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return RefreshPreparationRuntimeBlocked(work_item_id, missing_authorization_blocker())
     proposal = proposal_store.latest(work_item_id)
     if proposal is None or not proposal_matches_initial_request(proposal, request):
@@ -587,10 +587,10 @@ def _rebuild_authorized_preparation(
     service_card_id: str | None,
     inventory_binding: ContentKindInventoryBinding | None,
 ) -> (
-    RefreshPreparationRebuilt
-    | ContentRefreshPreparationBlocked
-    | RefreshPreparationRuntimeBlocked
+    RefreshPreparationRebuilt | ContentRefreshPreparationBlocked | RefreshPreparationRuntimeBlocked
 ):
+    if (kind_blocker := runtime_content_kind_blocker(content_kind, inventory_binding)) is not None:
+        return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
     if content_kind == "editorial":
         if service_card_id is not None or inventory_binding is None:
             return RefreshPreparationRuntimeBlocked(
@@ -666,8 +666,7 @@ def authorization_validation_blocker(
         return blocker(
             "refresh_preparation_authorization_service_mismatch",
             "Usługa nie pasuje do autoryzacji",
-            "Wybrana karta usługi różni się od karty związanej z zapisanym receipt "
-            "autoryzacji.",
+            "Wybrana karta usługi różni się od karty związanej z zapisanym receipt autoryzacji.",
             "Odśwież przygotowanie i wybierz usługę zapisaną w aktualnej autoryzacji.",
         )
     if not authorization_matches_context(authorization, classification.binding, planning_input):

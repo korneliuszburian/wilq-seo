@@ -28,6 +28,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceAssessment,
 )
 from wilq.content.planning.input_summary import ContentPlanningInputSummary
+from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     classification_counts,
@@ -209,6 +210,15 @@ def _authority(
         store=store,
         snapshot_loader=snapshot_loader,
         proposal_store=_FakeProposalStore(proposal=proposal),  # type: ignore[arg-type]
+        content_kind_inventory_loader=lambda work_item_id: ContentKindInventoryBinding(
+            work_item_id=work_item_id,
+            canonical_path="/analiza-pozwolen-zintegrowanych",
+            public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+            wordpress_content_type="uslugi",
+            content_kind="service",
+            inventory_evidence_ids=("ev_service",),
+            trusted=True,
+        ),
     )
     return authority, store, calls, selected_snapshot
 
