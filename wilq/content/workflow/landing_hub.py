@@ -244,6 +244,19 @@ class ContentLandingHubAuthorization(_FrozenModel):
     def require_sorted_ids(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         return _safe_ids(value, "Landing/hub authorization IDs")
 
+    @field_validator("authorized_by")
+    @classmethod
+    def require_safe_operator_identity(cls, value: str) -> str:
+        normalized = value.strip()
+        if (
+            not normalized
+            or not _SAFE_OPERATOR.fullmatch(normalized)
+            or _UNSAFE_OPERATOR.search(normalized)
+            or _FREE_TEXT_SECRET_VALUE.search(normalized)
+        ):
+            raise ValueError("Landing/hub authorization requires a safe operator identity.")
+        return normalized
+
     @field_validator("blocked_claims")
     @classmethod
     def require_canonical_claims(cls, value: tuple[str, ...]) -> tuple[str, ...]:

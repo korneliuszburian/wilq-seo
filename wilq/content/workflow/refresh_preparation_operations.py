@@ -43,6 +43,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
 )
 from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
 from wilq.content.workflow.refresh_preparation_kind_guards import (
+    no_receipt_content_kind_resolution,
     preview_content_kind_blocker,
     runtime_content_kind_blocker,
 )
@@ -372,11 +373,10 @@ def resolve_planning(
             authorization_on_unclassified_blocker(),
         )
     if request.refresh_preparation_authorization_id is None:
-        inventory_binding = content_kind_inventory_loader(work_item_id)
-        if inventory_binding is not None and (
-            kind_blocker := runtime_content_kind_blocker(request.content_kind, inventory_binding)
-        ) is not None:
-            return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
+        if (blocked := no_receipt_content_kind_resolution(
+            request.content_kind, work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return unclassified_or_refresh_block(store, work_item_id)
     return resolve_authorized_context(
         store=store,
@@ -407,15 +407,18 @@ def resolve_initial_draft(
                 work_item_id,
                 authorization_on_unclassified_blocker(),
             )
+        if (blocked := no_receipt_content_kind_resolution(
+            "editorial", work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return RefreshPreparationUnclassified(work_item_id)
     if isinstance(classified, ContentRefreshPreparationBlocker):
         return RefreshPreparationRuntimeBlocked(work_item_id, classified)
     if request.refresh_preparation_authorization_id is None:
-        inventory_binding = content_kind_inventory_loader(work_item_id)
-        if inventory_binding is not None and (
-            kind_blocker := runtime_content_kind_blocker("editorial", inventory_binding)
-        ) is not None:
-            return RefreshPreparationRuntimeBlocked(work_item_id, kind_blocker)
+        if (blocked := no_receipt_content_kind_resolution(
+            "editorial", work_item_id, content_kind_inventory_loader
+        )) is not None:
+            return blocked
         return RefreshPreparationRuntimeBlocked(work_item_id, missing_authorization_blocker())
     proposal = proposal_store.latest(work_item_id)
     if proposal is None or not proposal_matches_initial_request(proposal, request):

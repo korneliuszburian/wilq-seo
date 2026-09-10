@@ -387,6 +387,17 @@ def test_landing_hub_store_rejects_unredacted_free_text_receipt(tmp_path: Path) 
         )
 
 
+def test_landing_hub_store_rejects_forged_unsafe_operator_identity(tmp_path: Path) -> None:
+    store, _run, _request, inventory, authorization = _authorization(tmp_path)
+    forged = authorization.model_copy(update={"authorized_by": "Bearer secret"})
+
+    with pytest.raises(ValueError, match="safe operator identity"):
+        store.record_landing_hub_authorization(
+            forged,
+            inventory_binding=inventory,
+        )
+
+
 def test_landing_hub_route_exposes_typed_intent_missing_blocker(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -533,6 +544,24 @@ def test_runtime_without_refresh_receipt_routes_landing_to_dedicated_authorizati
     )
 
     assert planning.blocker.code == "refresh_preparation_landing_hub_required"
+    assert initial.blocker.code == "refresh_preparation_landing_hub_required"
+
+
+def test_unclassified_initial_draft_routes_landing_to_dedicated_authorization(
+    tmp_path: Path,
+) -> None:
+    _unused, _run, _request, inventory = _context()
+    store = ContentWorkflowStore(tmp_path / "unclassified.sqlite3")
+
+    initial = refresh_operations.resolve_initial_draft(
+        store=store,
+        snapshot_loader=lambda *_args, **_kwargs: None,
+        proposal_store=SimpleNamespace(),
+        work_item_id=inventory.work_item_id,
+        request=SimpleNamespace(refresh_preparation_authorization_id=None),
+        content_kind_inventory_loader=lambda _work_item_id: inventory,
+    )
+
     assert initial.blocker.code == "refresh_preparation_landing_hub_required"
 
 
