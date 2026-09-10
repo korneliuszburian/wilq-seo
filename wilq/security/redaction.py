@@ -24,6 +24,8 @@ SAFE_OPAQUE_IDENTIFIER_KEYS = {
     "packet_id",
     "source_pack_id",
     "source_pack_binding_id",
+    "source_id",
+    "approved_source_fact_ids",
     "identity_binding_id",
     "current_work_item_id",
     "source_fact_ids",

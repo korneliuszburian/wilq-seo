@@ -233,6 +233,17 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TRIGGER IF NOT EXISTS content_research_packets_no_replace
+    BEFORE INSERT ON content_research_packets
+    WHEN EXISTS (
+      SELECT 1 FROM content_research_packets
+      WHERE packet_id = NEW.packet_id OR packet_digest = NEW.packet_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packets are append-only');
+    END
+    """,
+    """
     CREATE TRIGGER IF NOT EXISTS content_research_packets_no_delete
     BEFORE DELETE ON content_research_packets
     BEGIN

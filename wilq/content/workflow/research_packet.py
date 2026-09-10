@@ -251,6 +251,13 @@ class ContentResearchPacketCommand(_FrozenModel):
             raise ValueError("Research packet recorded_at must be timezone-aware.")
         return value.astimezone(UTC)
 
+    @field_validator("cta_destination")
+    @classmethod
+    def require_safe_cta_destination(cls, value: str) -> str:
+        if value and not _is_safe_path(value):
+            raise ValueError("CTA destination must be a safe absolute path.")
+        return value
+
     @field_validator("source_pack_binding_digest", "identity_binding_digest")
     @classmethod
     def require_nonzero_binding_digest(cls, value: str) -> str:
@@ -305,6 +312,13 @@ class ContentResearchPacket(_FrozenModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("Research packet recorded_at must be timezone-aware.")
         return value.astimezone(UTC)
+
+    @field_validator("cta_destination")
+    @classmethod
+    def require_safe_cta_destination(cls, value: str) -> str:
+        if value and not _is_safe_path(value):
+            raise ValueError("CTA destination must be a safe absolute path.")
+        return value
 
     @model_validator(mode="after")
     def require_exact_packet_identity(self) -> Self:

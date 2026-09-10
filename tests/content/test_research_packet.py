@@ -135,6 +135,14 @@ def test_exact_packet_is_redacted_immutable_and_idempotent(tmp_path: Path) -> No
                 "DELETE FROM content_research_packets WHERE packet_id = ?",
                 (created.packet.packet_id,),
             )
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO content_research_packets
+                SELECT * FROM content_research_packets WHERE packet_id = ?
+                """,
+                (created.packet.packet_id,),
+            )
 
 
 def test_stale_freshness_is_a_typed_blocker(tmp_path: Path) -> None:
@@ -241,13 +249,10 @@ def test_cta_rejects_protocol_relative_and_encoded_traversal(
     store, identity = _setup_store(tmp_path)
     command, _ = _packet_command(store, identity)
 
-    result = store.record_content_research_packet(
-        command.model_copy(update={"cta_destination": unsafe_path})
-    )
-
-    assert result.packet.status == "blocked"
-    assert result.packet.blocker is not None
-    assert result.packet.blocker.reason == "cta_destination_invalid"
+    with pytest.raises(ValueError, match="safe absolute path"):
+        ContentResearchPacketCommand.model_validate(
+            command.model_dump(mode="json") | {"cta_destination": unsafe_path}
+        )
 
 
 def test_redaction_happens_before_packet_digesting(tmp_path: Path) -> None:
@@ -295,6 +300,26 @@ def test_credential_like_packet_identifier_is_rejected_before_redaction(
 
     with pytest.raises(ValueError, match="credential"):
         ContentResearchPacketCommand.model_validate(payload)
+
+
+def test_long_approved_fact_identifier_survives_redaction_boundary(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    long_fact_id = "ekologus_" + "a" * 32 + "-v1"
+    payload = command.model_dump(mode="json")
+    payload["approved_source_fact_ids"] = sorted(
+        (*command.approved_source_fact_ids, long_fact_id)
+    )
+
+    result = store.record_content_research_packet(
+        ContentResearchPacketCommand.model_validate(payload)
+    )
+
+    assert result.status == "created"
+    assert result.packet.status == "blocked"
+    assert long_fact_id in result.packet.approved_source_fact_ids
+    assert result.packet.blocker is not None
+    assert result.packet.blocker.reason == "source_fact_not_bound"
 
 
 def test_packet_command_rejects_raw_payload_fields() -> None:
