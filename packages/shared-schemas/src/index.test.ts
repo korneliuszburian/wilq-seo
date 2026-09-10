@@ -52,6 +52,7 @@ import {
   ContentNewPageRevisionReviewConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentRevisionHtmlPackageResponseSchema,
+  ContentRevisionLineageCleanupRequestSchema,
   ContentEditorialIntegrityReportSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionWorkspaceSchema,
@@ -645,6 +646,12 @@ describe("ContentDraftRevisionSchema", () => {
       }]
     };
     expect(ContentDraftRevisionSchema.safeParse(regulated).success).toBe(true);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...regulated,
+        correction_reason: "lineage_cleanup"
+      }).success
+    ).toBe(true);
     expect(ContentDraftRevisionSchema.safeParse({
       ...regulated,
       official_source_references: [{ ...regulated.official_source_references[0], evidence_ids: ["   "] }]
@@ -4503,6 +4510,42 @@ describe("Content work item workflow schemas", () => {
   });
 
   it("guards revision, proposal and conflict inputs at the shared seam", () => {
+    const lineageCleanupRequest = {
+      expected_revision_digest: "a".repeat(64),
+      source_fact_id: "  regulatory_source_fact_83380d0458dfbc43988311bc  ",
+      requested_by: "  wilku  "
+    };
+    const parsedLineageCleanup = ContentRevisionLineageCleanupRequestSchema.parse(
+      lineageCleanupRequest
+    );
+    expect(parsedLineageCleanup.source_fact_id).toBe(
+      "regulatory_source_fact_83380d0458dfbc43988311bc"
+    );
+    expect(parsedLineageCleanup.requested_by).toBe("wilku");
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        expected_revision_digest: "not-a-digest"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        source_fact_id: " "
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        requested_by: " "
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        extra: "unsupported"
+      }).success
+    ).toBe(false);
     expect(
       ContentDraftRevisionSaveRequestSchema.safeParse({
         base_revision_id: null,

@@ -286,6 +286,39 @@ def test_child_revision_preserves_full_document_lineage() -> None:
     assert child.sections[0].source_material_ids == revision.sections[0].source_material_ids
 
 
+def test_child_revision_can_replace_lineage_owned_collections() -> None:
+    command = _command(schema_version="wilq_content_draft_revision_v2")
+    revision = build_stored_draft_revision(
+        command,
+        revision_number=1,
+        content_digest=draft_revision_content_digest(command),
+    )
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_lineage_cleanup",
+        selected_section_headings=[revision.sections[0].heading],
+        section_lineage=[{"heading": revision.sections[0].heading, "evidence_ids": ["ev_lineage"]}],
+        quality_verdict="reviewable",
+    )
+
+    child = build_child_draft_revision_command(
+        revision,
+        sections=revision.sections,
+        source_provenance=[],
+        faq=[],
+        internal_links=[],
+        official_source_references=[],
+        proposal_metadata=metadata,
+        correction_reason="lineage_cleanup",
+        created_by="wilku",
+    )
+
+    assert child.source_provenance == []
+    assert child.faq == []
+    assert child.internal_links == []
+    assert child.official_source_references == []
+    assert child.correction_reason == "lineage_cleanup"
+
+
 def test_regulatory_assurance_provenance_is_canonicalized_for_shared_contracts() -> None:
     metadata = ContentDraftRevisionProposalMetadata(
         codex_run_id="codex_lineage_child",

@@ -12,6 +12,7 @@ import {
   getContentWorkItemMeasurement,
   getContentRegulatorySourceSnapshot,
   postContentRegulatorySourceReview,
+  postContentWorkItemLineageCleanup,
   postContentWorkItemInitialDraft,
   previewAction
 } from "./api";
@@ -342,6 +343,51 @@ describe("content workflow API helpers", () => {
       throw new Error("Expected recorded new-page revision review response.");
     }
     expect(result.review.revision_digest).toBe(request.expected_revision_digest);
+  });
+
+  it("posts a validated lineage cleanup to its encoded exact revision path", async () => {
+    const request = {
+      expected_revision_digest: "a".repeat(64),
+      source_fact_id: "  regulatory_source_fact_obsolete  ",
+      requested_by: "  wilku  "
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/work-items/work%2Fitem/draft-revisions/revision%3Fone/lineage-cleanup"
+      );
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({
+        expected_revision_digest: request.expected_revision_digest,
+        source_fact_id: "regulatory_source_fact_obsolete",
+        requested_by: "wilku"
+      });
+      return new Response(JSON.stringify({
+        status: "conflict",
+        code: "source_fact_not_found",
+        current_revision_id: "revision?one",
+        current_digest: request.expected_revision_digest,
+        safe_next_step: "Odśwież dokument."
+      }), { status: 409, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await postContentWorkItemLineageCleanup(
+      request,
+      "work/item",
+      "revision?one"
+    );
+
+    expect(result.status).toBe("conflict");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(() => postContentWorkItemLineageCleanup(
+      {
+        ...request,
+        expected_revision_digest: "not-a-digest"
+      },
+      "work/item",
+      "revision?one"
+    )).toThrow();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("encodes action IDs for every action helper path suffix", () => {

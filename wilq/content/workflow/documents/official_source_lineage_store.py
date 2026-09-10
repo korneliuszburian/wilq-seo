@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from wilq.content.workflow.documents.codex_revision_commit import (
     editor_draft_context_is_current,
@@ -25,6 +26,11 @@ from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import state_db_path
 from wilq.storage.model_json import model_json
 
+ContentOfficialSourceLineageCorrectionReason = Literal[
+    "lineage_cleanup",
+    "official_source_lineage_rebase",
+]
+
 
 class ContentOfficialSourceLineageStore:
     """Own the atomic, lineage-only append precondition outside the legacy store."""
@@ -38,8 +44,35 @@ class ContentOfficialSourceLineageStore:
         *,
         expected_latest_review_decision_id: str | None,
     ) -> ContentDraftRevisionWriteResult:
-        if command.correction_reason != "official_source_lineage_rebase":
-            raise ValueError("Official-source lineage store accepts only lineage rebase commands.")
+        return self._append_lineage_child(
+            command,
+            expected_latest_review_decision_id=expected_latest_review_decision_id,
+            correction_reason="official_source_lineage_rebase",
+        )
+
+    def append_cleanup(
+        self,
+        command: ContentDraftRevisionAppendCommand,
+        *,
+        expected_latest_review_decision_id: str | None,
+    ) -> ContentDraftRevisionWriteResult:
+        return self._append_lineage_child(
+            command,
+            expected_latest_review_decision_id=expected_latest_review_decision_id,
+            correction_reason="lineage_cleanup",
+        )
+
+    def _append_lineage_child(
+        self,
+        command: ContentDraftRevisionAppendCommand,
+        *,
+        expected_latest_review_decision_id: str | None,
+        correction_reason: ContentOfficialSourceLineageCorrectionReason,
+    ) -> ContentDraftRevisionWriteResult:
+        if command.correction_reason != correction_reason:
+            raise ValueError(
+                "Official-source lineage store accepts only its specialized child command."
+            )
         redacted_command = ContentDraftRevisionAppendCommand.model_validate(
             redact_mapping(command.model_dump(mode="json"))
         )

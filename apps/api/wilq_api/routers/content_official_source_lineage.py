@@ -5,6 +5,11 @@ from collections.abc import Callable
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api.routers.content_lineage_cleanup_service import (
+    ContentLineageCleanupConflict,
+    execute_content_lineage_cleanup,
+    expected_latest_review_decision_id,
+)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBuildResult,
@@ -16,6 +21,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionSaveResponse,
     ContentOfficialSourceLineageRebaseRequest,
+    ContentRevisionLineageCleanupRequest,
     ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.documents.codex_revision_commit import (
@@ -43,6 +49,8 @@ def register_content_official_source_lineage_route(
     *,
     snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
 ) -> None:
+    _register_content_lineage_cleanup_route(router, snapshot_loader=snapshot_loader)
+
     @router.post(
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/official-source-lineage-rebase",
         response_model=ContentDraftRevisionSaveResponse,
@@ -103,13 +111,7 @@ def register_content_official_source_lineage_route(
                 "Bieżący plan nie odpowiada dokładnie rewizji lub nie ma kompletnej "
                 "lineage źródeł urzędowych.",
             )
-        expected_review_decision_id = (
-            None
-            if workspace.status == "unreviewed"
-            else None
-            if workspace.latest_review is None
-            else workspace.latest_review.decision_id
-        )
+        expected_review_decision_id = expected_latest_review_decision_id(workspace)
         with current_editor_draft_context_guard(
             lambda: _current_lineage_rebase_context(
                 snapshot_loader(work_item_id),
@@ -137,6 +139,40 @@ def register_content_official_source_lineage_route(
             status=result.status,
             revision=result.revision,
             workspace=refreshed_workspace,
+        )
+
+
+def _register_content_lineage_cleanup_route(
+    router: APIRouter,
+    *,
+    snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
+) -> None:
+    @router.post(
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
+        response_model=ContentDraftRevisionSaveResponse,
+        responses={409: {"model": ContentDraftRevisionConflictResponse}},
+    )
+    def content_revision_lineage_cleanup(
+        work_item_id: str,
+        revision_id: str,
+        request: ContentRevisionLineageCleanupRequest,
+    ) -> ContentDraftRevisionSaveResponse | JSONResponse:
+        result = execute_content_lineage_cleanup(
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            request=request,
+            snapshot_loader=snapshot_loader,
+        )
+        if isinstance(result, ContentLineageCleanupConflict):
+            return _conflict(
+                result.snapshot,
+                result.code,
+                result.safe_next_step,
+            )
+        return ContentDraftRevisionSaveResponse(
+            status=result.status,
+            revision=result.revision,
+            workspace=result.workspace,
         )
 
 

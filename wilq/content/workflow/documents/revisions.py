@@ -38,6 +38,7 @@ ContentDraftRevisionDecision = Literal[
 ]
 ContentDraftRevisionCorrectionReason = Literal[
     "canonical_html_alignment",
+    "lineage_cleanup",
     "official_source_lineage_rebase",
 ]
 ContentDraftRevisionDocumentKind = Literal["refresh_existing", "new_page"]
