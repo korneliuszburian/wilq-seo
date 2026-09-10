@@ -155,3 +155,44 @@ def test_editorial_integrity_observes_title_change_without_claiming_it_was_unaut
     assert report.result == "structural_change_observed"
     assert report.observed_scope.fields == ["title"]
     assert report.structural_invariants.title_unchanged is False
+
+
+def test_editorial_integrity_compares_canonical_markdown_visible_text_to_html() -> None:
+    body = "**Cele UE** obejmują *monitoring* oraz wymogi dla działalności."
+    root = _revision(
+        "revision_1",
+        "1" * 64,
+        base_revision_id=None,
+        body=body,
+        content_html=content_html_from_markdown(body),
+    )
+    aligned = _revision(
+        "revision_2",
+        "2" * 64,
+        base_revision_id=root.revision_id,
+        body=body,
+        content_html=content_html_from_markdown(body),
+    )
+    divergent = _revision(
+        "revision_3",
+        "3" * 64,
+        base_revision_id=aligned.revision_id,
+        body=body,
+        content_html="<p>Inne cele i inny zakres.</p>",
+    )
+
+    aligned_report = build_content_editorial_integrity_report(
+        work_item_id=root.work_item_id,
+        revision_id=aligned.revision_id,
+        revisions=[root, aligned, divergent],
+    )
+    divergent_report = build_content_editorial_integrity_report(
+        work_item_id=root.work_item_id,
+        revision_id=divergent.revision_id,
+        revisions=[root, aligned, divergent],
+    )
+
+    assert aligned_report.representation_alignment[0].status == "aligned"
+    assert aligned_report.result == "integrity_ok"
+    assert divergent_report.representation_alignment[0].status == "mismatch"
+    assert divergent_report.result == "invalid_representation"
