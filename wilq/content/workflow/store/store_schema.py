@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 
 from wilq.storage.schema_versions import (
@@ -138,6 +139,72 @@ _CONTENT_WORKFLOW_SCHEMA = (
       recorded_at TEXT NOT NULL,
       payload_json TEXT NOT NULL
     )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_delivery_identity_bindings (
+      binding_id TEXT PRIMARY KEY,
+      binding_digest TEXT NOT NULL UNIQUE,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      current_work_item_id TEXT NOT NULL,
+      retained_work_item_id TEXT,
+      classification_run_id TEXT NOT NULL,
+      classification_run_digest TEXT NOT NULL,
+      classification_source_row_digest TEXT NOT NULL,
+      inventory_evidence_digest TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (
+        status IN ('exact_current', 'reconciled_retained', 'blocked')
+      ),
+      recorded_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_bindings_no_update
+    BEFORE UPDATE ON content_delivery_identity_bindings
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity bindings are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_bindings_no_delete
+    BEFORE DELETE ON content_delivery_identity_bindings
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity bindings are append-only');
+    END
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_delivery_records (
+      record_id TEXT PRIMARY KEY,
+      record_digest TEXT NOT NULL UNIQUE,
+      binding_id TEXT NOT NULL UNIQUE,
+      binding_digest TEXT NOT NULL,
+      final_disposition TEXT NOT NULL CHECK (
+        final_disposition IN ('keep', 'noindex', 'redirect', 'remove')
+      ),
+      content_state TEXT NOT NULL CHECK (
+        content_state IN ('identity_bound', 'identity_blocked')
+      ),
+      delivery_status TEXT NOT NULL CHECK (delivery_status IN ('not_started', 'blocked')),
+      robot_ready INTEGER NOT NULL CHECK (robot_ready = 0),
+      blocker_code TEXT,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_records_no_update
+    BEFORE UPDATE ON content_delivery_records
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery records are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_records_no_delete
+    BEFORE DELETE ON content_delivery_records
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery records are append-only');
+    END
     """,
     """
     CREATE TABLE IF NOT EXISTS content_kind_receipts (
@@ -342,6 +409,7 @@ def ensure_content_workflow_schema(connection: sqlite3.Connection) -> None:
     _ensure_content_human_review_updated_at(connection)
     _ensure_content_new_page_apply_result_json(connection)
     _ensure_refresh_preparation_authorization_columns(connection)
+    _ensure_content_delivery_identity_columns(connection)
     connection.execute(
         """
         CREATE UNIQUE INDEX IF NOT EXISTS uq_refresh_preparation_authorization_context
@@ -361,12 +429,18 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
     objects = {
         (str(row[0]), str(row[1]))
         for row in connection.execute(
-            "SELECT type, name FROM sqlite_master WHERE type IN ('table', 'index')"
+            "SELECT type, name FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')"
         )
     }
     for statement in _CONTENT_WORKFLOW_SCHEMA:
         normalized = " ".join(statement.split())
-        object_type = "table" if normalized.startswith("CREATE TABLE") else "index"
+        object_type = (
+            "table"
+            if normalized.startswith("CREATE TABLE")
+            else "trigger"
+            if normalized.startswith("CREATE TRIGGER")
+            else "index"
+        )
         marker = f"CREATE {object_type.upper()} IF NOT EXISTS "
         name = normalized.removeprefix(marker).split(" ", 1)[0]
         if (object_type, name) not in objects:
@@ -388,6 +462,7 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "content_kind",
             "inventory_evidence_digest",
         },
+        "content_delivery_identity_bindings": {"recorded_by", "recorded_at"},
     }
     for table, expected in required_columns.items():
         rows = list(connection.execute(f"PRAGMA table_info({table})"))
@@ -399,6 +474,56 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             if bool(service_row[3]):
                 return False
     return True
+
+
+def _ensure_content_delivery_identity_columns(connection: sqlite3.Connection) -> None:
+    table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+        ("content_delivery_identity_bindings",),
+    ).fetchone()
+    if table is None:
+        return
+    columns = {
+        str(row[1])
+        for row in connection.execute("PRAGMA table_info(content_delivery_identity_bindings)")
+    }
+    if "recorded_by" in columns:
+        return
+    connection.execute("SAVEPOINT migrate_content_delivery_identity_actor")
+    try:
+        connection.execute("DROP TRIGGER IF EXISTS content_delivery_identity_bindings_no_update")
+        connection.execute(
+            "ALTER TABLE content_delivery_identity_bindings "
+            "ADD COLUMN recorded_by TEXT NOT NULL DEFAULT ''"
+        )
+        rows = connection.execute(
+            "SELECT binding_id, payload_json FROM content_delivery_identity_bindings"
+        ).fetchall()
+        for row in rows:
+            payload = json.loads(str(row["payload_json"]))
+            recorded_by = payload.get("recorded_by")
+            if not isinstance(recorded_by, str) or not recorded_by:
+                raise ValueError("Stored content delivery identity has no valid audit actor.")
+            connection.execute(
+                "UPDATE content_delivery_identity_bindings "
+                "SET recorded_by = ? WHERE binding_id = ?",
+                (recorded_by, str(row["binding_id"])),
+            )
+        connection.execute(
+            """
+            CREATE TRIGGER content_delivery_identity_bindings_no_update
+            BEFORE UPDATE ON content_delivery_identity_bindings
+            BEGIN
+              SELECT RAISE(ABORT, 'content delivery identity bindings are append-only');
+            END
+            """
+        )
+    except (json.JSONDecodeError, ValueError, sqlite3.Error):
+        connection.execute("ROLLBACK TO migrate_content_delivery_identity_actor")
+        connection.execute("RELEASE migrate_content_delivery_identity_actor")
+        raise
+    connection.execute("RELEASE migrate_content_delivery_identity_actor")
+    connection.commit()
 
 
 def _ensure_content_human_review_updated_at(connection: sqlite3.Connection) -> None:
@@ -449,10 +574,7 @@ def _ensure_refresh_preparation_authorization_columns(connection: sqlite3.Connec
     column_rows = list(
         connection.execute("PRAGMA table_info(content_refresh_preparation_authorizations)")
     )
-    columns = {
-        str(row[1])
-        for row in column_rows
-    }
+    columns = {str(row[1]) for row in column_rows}
     for name in ("canonical_path", "public_url"):
         if name in columns:
             continue
