@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 import apps.api.wilq_api.routers.content_research_packet as route_module
 from apps.api.wilq_api.main import app
+from tests.content.test_delivery_identity_binding import _command as identity_command
 from tests.content.test_source_pack_binding import _setup_store, _source_command
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.workflow.research_packet import (
@@ -178,7 +179,122 @@ def test_unbound_source_fact_and_identity_mismatch_fail_closed(tmp_path: Path) -
     assert unbound_result.packet.blocker is not None
     assert unbound_result.packet.blocker.reason == "source_fact_not_bound"
     assert identity_result.packet.blocker is not None
-    assert identity_result.packet.blocker.reason == "identity_binding_digest_mismatch"
+    assert identity_result.packet.blocker.reason == "source_pack_identity_mismatch"
+
+
+def test_source_pack_from_another_identity_is_a_typed_blocker(tmp_path: Path) -> None:
+    store, first_identity = _setup_store(tmp_path)
+    second_identity = store.record_content_delivery_identity(
+        identity_command(retained=True)
+    ).binding
+    first_command, first_pack = _packet_command(store, first_identity)
+    second_command, _ = _packet_command(store, second_identity)
+    mixed = second_command.model_copy(
+        update={
+            "source_pack_binding_id": first_pack.binding_id,
+            "source_pack_binding_digest": first_pack.binding_digest,
+        }
+    )
+
+    result = store.record_content_research_packet(mixed)
+
+    assert result.packet.status == "blocked"
+    assert result.packet.blocker is not None
+    assert result.packet.blocker.reason == "source_pack_identity_mismatch"
+    assert first_command.source_pack_binding_id != second_command.source_pack_binding_id
+
+
+@pytest.mark.parametrize(
+    "unsafe_path",
+    [
+        "//evil.example/path",
+        "/%2e%2e/private/",
+        "/%252e%252e/private/",
+        "/%252f%252fevil.example/x",
+    ],
+)
+def test_internal_link_rejects_protocol_relative_and_encoded_traversal(
+    unsafe_path: str,
+) -> None:
+    with pytest.raises(ValueError, match="safe absolute path"):
+        ContentResearchPacketInternalLink(
+            destination_path=unsafe_path,
+            anchor_text="Kontakt",
+            relation="next_step",
+            verification="exact_verified",
+        )
+
+
+@pytest.mark.parametrize(
+    "unsafe_path",
+    [
+        "//evil.example/path",
+        "/%2e%2e/private/",
+        "/%252e%252e/private/",
+        "/%252f%252fevil.example/x",
+    ],
+)
+def test_cta_rejects_protocol_relative_and_encoded_traversal(
+    unsafe_path: str,
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+
+    result = store.record_content_research_packet(
+        command.model_copy(update={"cta_destination": unsafe_path})
+    )
+
+    assert result.packet.status == "blocked"
+    assert result.packet.blocker is not None
+    assert result.packet.blocker.reason == "cta_destination_invalid"
+
+
+def test_redaction_happens_before_packet_digesting(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+
+    result = store.record_content_research_packet(
+        command.model_copy(update={"buyer_problem": "X" * 32})
+    )
+
+    assert result.status == "created"
+    assert result.packet.status == "exact_current"
+    assert result.packet.buyer_problem == "[REDACTED]"
+
+
+def test_redaction_preserves_safe_long_internal_path(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    long_path = "/oferta/" + "A" * 32 + "/"
+    command, _ = _packet_command(
+        store,
+        identity,
+        internal_links=(
+            ContentResearchPacketInternalLink(
+                destination_path=long_path,
+                anchor_text="Oferta",
+                relation="supporting",
+                verification="exact_verified",
+            ),
+        ),
+    )
+
+    result = store.record_content_research_packet(command)
+
+    assert result.status == "created"
+    assert result.packet.internal_links[0].destination_path == long_path
+
+
+def test_credential_like_packet_identifier_is_rejected_before_redaction(
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    payload = command.model_dump(mode="json")
+    payload["recorded_by"] = "sk-" + "a" * 24
+
+    with pytest.raises(ValueError, match="credential"):
+        ContentResearchPacketCommand.model_validate(payload)
 
 
 def test_packet_command_rejects_raw_payload_fields() -> None:

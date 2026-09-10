@@ -268,6 +268,8 @@ CONTENT_TEXT_KEYS = {
     "question",
     "answer_markdown",
     "anchor_text",
+    "destination_path",
+    "cta_destination",
 }
 SAFE_HEX_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 SAFE_NORMALIZED_PAGE_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+/?)*$")

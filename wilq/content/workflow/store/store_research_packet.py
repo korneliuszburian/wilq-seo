@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import cast
 
@@ -32,8 +33,9 @@ class ContentResearchPacketStoreMixin:
         self,
         command: ContentResearchPacketCommand,
     ) -> ContentResearchPacketRecordResult:
+        redacted_input = redact_mapping(command.model_dump(mode="json"))
         accepted = ContentResearchPacketCommand.model_validate_json(
-            command.model_dump_json(), strict=True
+            json.dumps(redacted_input, ensure_ascii=False), strict=True
         )
         accepted = accepted.model_copy(update={"recorded_at": utc_now()})
         with self._connect() as connection:
@@ -69,8 +71,8 @@ class ContentResearchPacketStoreMixin:
                     status="conflict",
                     packet=_packet_from_row(digest_row),
                 )
-            redacted = ContentResearchPacket.model_validate(
-                redact_mapping(packet.model_dump(mode="json"))
+            redacted = ContentResearchPacket.model_validate_json(
+                packet.model_dump_json(), strict=True
             )
             connection.execute(
                 """

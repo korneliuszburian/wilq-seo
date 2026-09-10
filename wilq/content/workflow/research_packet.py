@@ -7,6 +7,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import Literal, Self
+from urllib.parse import unquote
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -52,6 +53,7 @@ ResearchPacketBlockerSeam = Literal[
 ResearchPacketBlockerReason = Literal[
     "source_pack_binding_missing",
     "source_pack_binding_digest_mismatch",
+    "source_pack_identity_mismatch",
     "source_pack_binding_blocked",
     "identity_binding_missing",
     "identity_binding_digest_mismatch",
@@ -142,7 +144,7 @@ class ContentResearchPacketInternalLink(_FrozenModel):
     @classmethod
     def require_safe_destination(cls, value: str) -> str:
         normalized = value.strip()
-        if not _SAFE_PATH.fullmatch(normalized) or ".." in normalized:
+        if not _is_safe_path(normalized):
             raise ValueError("Internal link destination must be a safe absolute path.")
         return normalized
 
@@ -195,6 +197,17 @@ class ContentResearchPacketCommand(_FrozenModel):
     )
     recorded_by: str = Field(min_length=1, max_length=160, pattern=_SAFE_IDENTIFIER)
     recorded_at: datetime
+
+    @field_validator(
+        "source_pack_binding_id",
+        "identity_binding_id",
+        "current_work_item_id",
+        "recorded_by",
+    )
+    @classmethod
+    def reject_credential_like_identifiers(cls, value: str, info: object) -> str:
+        field_name = str(getattr(info, "field_name", "identifier"))
+        return _safe_text(value, field_name, allow_blank=False)
 
     @field_validator(
         "intent",
@@ -467,6 +480,17 @@ def _research_packet_blocker(
             evidence,
             "Użyj ID i digestu z tego same persisted source-pack bindingu.",
         )
+    if (
+        source_pack.identity_binding_id != command.identity_binding_id
+        or source_pack.identity_binding_digest != command.identity_binding_digest
+        or source_pack.current_work_item_id != command.current_work_item_id
+    ):
+        return _blocker(
+            "source_pack_binding",
+            "source_pack_identity_mismatch",
+            source_pack.evidence_ids,
+            "Użyj source-pack bindingu należącego do tego samego identity i work itemu.",
+        )
     if source_pack.status == "blocked":
         return _blocker(
             "source_pack_binding",
@@ -588,7 +612,7 @@ def _semantic_blocker(
     for seam, reason, failed, next_step in checks:
         if failed:
             return _blocker(seam, reason, (), next_step)
-    if not _SAFE_PATH.fullmatch(command.cta_destination) or ".." in command.cta_destination:
+    if not _is_safe_path(command.cta_destination):
         return _blocker(
             "cta",
             "cta_destination_invalid",
@@ -768,7 +792,7 @@ def _require_exact_semantic_fields(packet: ContentResearchPacket) -> None:
         or not packet.internal_links
     ):
         raise ValueError("Exact packet requires legal requirements, CTA and internal links.")
-    if not _SAFE_PATH.fullmatch(packet.cta_destination) or any(
+    if not _is_safe_path(packet.cta_destination) or any(
         link.verification != "exact_verified" for link in packet.internal_links
     ):
         raise ValueError("Exact packet CTA and internal links must be verified safe paths.")
@@ -786,6 +810,28 @@ def _blocker(
         evidence_ids=tuple(sorted(set(evidence_ids)))[:256],
         next_step_pl=next_step,
     )
+
+
+def _is_safe_path(value: str) -> bool:
+    """Accept one local path and reject protocol-relative/encoded traversal."""
+
+    normalized = value.strip()
+    if not _SAFE_PATH.fullmatch(normalized) or normalized.startswith("//"):
+        return False
+    decoded = normalized
+    for _ in range(3):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    if (
+        "%" in decoded
+        or _SECRET_LIKE.search(decoded)
+        or not _SAFE_PATH.fullmatch(decoded)
+        or decoded.startswith("//")
+    ):
+        return False
+    return not any(part in {".", ".."} for part in decoded.split("/"))
 
 
 def _payload(value: ContentResearchPacket | dict[str, object]) -> dict[str, object]:
