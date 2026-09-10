@@ -50,6 +50,8 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "connector_refresh_runs",
         "content_draft_revision_reviews",
         "content_draft_revisions",
+        "content_delivery_identity_bindings",
+        "content_delivery_records",
         "content_human_reviews",
         "content_learning_proposal_history",
         "content_learning_proposals",

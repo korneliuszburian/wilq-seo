@@ -7,6 +7,9 @@ from fastapi import APIRouter
 from apps.api.wilq_api.routers.content_codex_proposal import (
     register_content_revision_repair_route,
 )
+from apps.api.wilq_api.routers.content_delivery_identity import (
+    register_content_delivery_identity_routes,
+)
 from apps.api.wilq_api.routers.content_dev_draft_cleanup import (
     register_content_dev_draft_cleanup_route,
 )
@@ -64,6 +67,7 @@ def register_content_model_routes(
     semantic_review_snapshot_loader: ContentModelSnapshotLoader | None = None,
 ) -> None:
     register_content_regulatory_source_review_routes(router)
+    register_content_delivery_identity_routes(router)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)

@@ -43,6 +43,9 @@ from wilq.content.workflow.store.refresh_preparation_atomic import (
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
 )
+from wilq.content.workflow.store.store_delivery_identity import (
+    ContentDeliveryIdentityStoreMixin,
+)
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
@@ -600,6 +603,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
+    ContentDeliveryIdentityStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,
     ContentKindReceiptStoreMixin,
