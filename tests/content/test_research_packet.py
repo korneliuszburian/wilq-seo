@@ -1,0 +1,226 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+import apps.api.wilq_api.routers.content_research_packet as route_module
+from apps.api.wilq_api.main import app
+from tests.content.test_source_pack_binding import _setup_store, _source_command
+from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.workflow.research_packet import (
+    ContentResearchPacketCommand,
+    ContentResearchPacketFreshness,
+    ContentResearchPacketInternalLink,
+)
+from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
+
+
+def _packet_command(store, identity, *, now: datetime | None = None, **updates: object):
+    source_pack = store.record_content_source_pack_binding(_source_command(identity)).binding
+    timestamp = now or datetime.now(UTC)
+    facts = {fact.source_id: fact for fact in ekologus_source_facts()}
+    blocked_claims = tuple(
+        sorted(
+            {
+                claim
+                for source_id in source_pack.source_fact_ids
+                for claim in facts[source_id].blocked_claims
+            }
+        )
+    )
+    payload: dict[str, object] = {
+        "source_pack_binding_id": source_pack.binding_id,
+        "source_pack_binding_digest": source_pack.binding_digest,
+        "identity_binding_id": identity.binding_id,
+        "identity_binding_digest": identity.binding_digest,
+        "current_work_item_id": identity.current_work_item_id,
+        "content_kind": "service",
+        "intent": "bdo compliance reporting",
+        "query_cluster": tuple(sorted(("bdo", "sprawozdawczość bdo"))),
+        "canonical_owner": identity.canonical_path,
+        "target_audience": "przedsiębiorca",
+        "buyer_problem": "brak pewności obowiązków",
+        "buyer_trigger": "zbliżający się termin",
+        "approved_source_fact_ids": source_pack.source_fact_ids,
+        "blocked_claims": blocked_claims,
+        "evidence_ids": source_pack.evidence_ids,
+        "freshness": tuple(
+            ContentResearchPacketFreshness(
+                source_id=source_id,
+                evidence_ids=source_pack.evidence_ids,
+                checked_at=timestamp,
+                status="fresh",
+            )
+            for source_id in source_pack.source_fact_ids
+        ),
+        "legal_source_requirements": ("none_identified",),
+        "cta_destination": "/kontakt/",
+        "internal_links": (
+            ContentResearchPacketInternalLink(
+                destination_path="/kontakt/",
+                anchor_text="Skontaktuj się",
+                relation="next_step",
+                verification="exact_verified",
+            ),
+        ),
+        "recorded_by": "research_packet_test",
+        "recorded_at": timestamp,
+    }
+    payload.update(updates)
+    return ContentResearchPacketCommand.model_validate(payload), source_pack
+
+
+def test_schema_v9_store_upgrades_research_packet_table(tmp_path: Path) -> None:
+    path = tmp_path / "schema-v9.sqlite3"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE legacy_marker (id TEXT PRIMARY KEY)")
+        connection.execute("PRAGMA user_version = 9")
+
+    from wilq.content.workflow.store.store import ContentWorkflowStore
+
+    store = ContentWorkflowStore(path)
+    assert store.load_content_research_packet("missing") is None
+
+    with sqlite3.connect(path) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (
+            SQLITE_SCHEMA_VERSION,
+        )
+        assert connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'content_research_packets'"
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT 1 FROM sqlite_master "
+            "WHERE type = 'trigger' AND name = 'content_research_packets_no_update'"
+        ).fetchone() == (1,)
+
+
+def test_exact_packet_is_redacted_immutable_and_idempotent(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, source_pack = _packet_command(store, identity)
+
+    created = store.record_content_research_packet(command)
+    retry = store.record_content_research_packet(
+        command.model_copy(update={"recorded_by": "retry_actor"})
+    )
+
+    assert created.status == "created"
+    assert created.packet.status == "exact_current"
+    assert created.packet.source_pack_binding_id == source_pack.binding_id
+    assert retry.status == "idempotent"
+    assert retry.packet == created.packet
+    assert store.load_content_research_packet(created.packet.packet_id) == created.packet
+
+    with sqlite3.connect(store.path) as connection:
+        payload = json.loads(
+            connection.execute(
+                "SELECT payload_json FROM content_research_packets WHERE packet_id = ?",
+                (created.packet.packet_id,),
+            ).fetchone()[0]
+        )
+        assert "extracted_fact" not in json.dumps(payload)
+        assert "source_url_or_path" not in json.dumps(payload)
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "UPDATE content_research_packets SET status = 'blocked' WHERE packet_id = ?",
+                (created.packet.packet_id,),
+            )
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "DELETE FROM content_research_packets WHERE packet_id = ?",
+                (created.packet.packet_id,),
+            )
+
+
+def test_stale_freshness_is_a_typed_blocker(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    stale = tuple(item.model_copy(update={"status": "stale"}) for item in command.freshness)
+
+    result = store.record_content_research_packet(command.model_copy(update={"freshness": stale}))
+
+    assert result.status == "created"
+    assert result.packet.status == "blocked"
+    assert result.packet.blocker is not None
+    assert result.packet.blocker.reason == "freshness_stale"
+
+
+def test_missing_semantic_material_is_a_typed_blocker(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+
+    result = store.record_content_research_packet(command.model_copy(update={"intent": ""}))
+
+    assert result.packet.status == "blocked"
+    assert result.packet.blocker is not None
+    assert result.packet.blocker.reason == "intent_missing"
+
+
+def test_unbound_source_fact_and_identity_mismatch_fail_closed(tmp_path: Path) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    unbound = command.model_copy(
+        update={
+            "approved_source_fact_ids": tuple(
+                sorted((*command.approved_source_fact_ids, "ekologus_missing_fact"))
+            )
+        }
+    )
+    identity_mismatch = command.model_copy(update={"identity_binding_digest": "a" * 64})
+
+    unbound_result = store.record_content_research_packet(unbound)
+    identity_result = store.record_content_research_packet(identity_mismatch)
+
+    assert unbound_result.packet.blocker is not None
+    assert unbound_result.packet.blocker.reason == "source_fact_not_bound"
+    assert identity_result.packet.blocker is not None
+    assert identity_result.packet.blocker.reason == "identity_binding_digest_mismatch"
+
+
+def test_packet_command_rejects_raw_payload_fields() -> None:
+    with pytest.raises(ValueError):
+        ContentResearchPacketCommand.model_validate(
+            {
+                "source_pack_binding_id": "pack",
+                "source_pack_binding_digest": "a" * 64,
+                "identity_binding_id": "identity",
+                "identity_binding_digest": "b" * 64,
+                "current_work_item_id": "work-item",
+                "content_kind": "service",
+                "recorded_by": "test_actor",
+                "recorded_at": datetime.now(UTC),
+                "extracted_fact": "raw vendor response",
+            }
+        )
+
+
+def test_research_packet_routes_record_and_read(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/content/research-packets",
+        json=command.model_dump(mode="json"),
+    )
+    assert created.status_code == 201
+    packet = created.json()["packet"]
+    readback = client.get(f"/api/content/research-packets/{packet['packet_id']}")
+
+    assert readback.status_code == 200
+    assert readback.json() == {"status": "found", "packet": packet}
+    missing = client.get("/api/content/research-packets/content_research_packet_missing")
+    assert missing.status_code == 404
+    openapi = client.get("/openapi.json").json()
+    post_response = openapi["paths"]["/api/content/research-packets"]["post"]["responses"]["201"]
+    assert post_response["content"]["application/json"]["schema"]["$ref"].endswith(
+        "ContentResearchPacketRecordResult"
+    )

@@ -92,6 +92,9 @@ from wilq.content.workflow.store.store_queries import (
 from wilq.content.workflow.store.store_refresh_preparation import (
     RefreshPreparationAuthorizationStoreMixin,
 )
+from wilq.content.workflow.store.store_research_packet import (
+    ContentResearchPacketStoreMixin,
+)
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
 from wilq.content.workflow.store.store_source_pack_binding import (
@@ -608,6 +611,7 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourcePackBindingStoreMixin,
+    ContentResearchPacketStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,
     ContentKindReceiptStoreMixin,
