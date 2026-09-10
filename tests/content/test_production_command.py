@@ -179,6 +179,123 @@ def test_missing_revision_blocks_repair_before_executor() -> None:
     assert result.blockers[0].code == "repair_requires_revision"
 
 
+def test_repair_claim_prevents_a_second_model_turn() -> None:
+    base = draft_revision(WORK_ITEM_ID, "revision-claim", REVISION_DIGEST)
+    journal = _Journal(
+        ContentDraftRevisionState(
+            status="needs_changes",
+            latest_revision=base,
+            latest_review=draft_review(base, decision="needs_changes"),
+            revision_count=1,
+        )
+    )
+    command = ContentProductionCommand(
+        journal=journal,
+        initial_executor=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("initial must not run")
+        ),
+        repair_executor=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("claim must stop repair before model")
+        ),
+        repair_claim_acquire=lambda *_args: False,
+        repair_claim_release=lambda *_args: None,
+    )
+
+    result = command.run(
+        WORK_ITEM_ID,
+        ContentProductionRepairCommand(
+            expected_base_digest=REVISION_DIGEST,
+            selected_section_ids=["section_scope"],
+            requested_by="wilku",
+        ),
+    )
+
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "repair_claim_unavailable"
+
+
+def test_rejected_review_can_start_exact_repair() -> None:
+    base = draft_revision(WORK_ITEM_ID, "revision-rejected", REVISION_DIGEST)
+    journal = _Journal(
+        ContentDraftRevisionState(
+            status="rejected",
+            latest_revision=base,
+            latest_review=draft_review(base, decision="rejected"),
+            revision_count=1,
+        )
+    )
+    child = base.model_copy(
+        update={
+            "revision_id": "revision-rejected-child",
+            "revision_number": 2,
+            "base_revision_id": base.revision_id,
+            "content_digest": "e" * 64,
+        }
+    )
+    command = ContentProductionCommand(
+        journal=journal,
+        initial_executor=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("initial must not run")
+        ),
+        repair_executor=lambda *_args: ContentCodexSectionProposalResponse.model_construct(
+            status="created",
+            run_id="rejected-repair-run",
+            work_item_id=WORK_ITEM_ID,
+            base_revision_id=base.revision_id,
+            selected_section_headings=["Zakres"],
+            revision=child,
+            runtime={"status": "completed"},
+            safe_next_step="Przeczytaj child revision.",
+        ),
+    )
+
+    result = command.run(
+        WORK_ITEM_ID,
+        ContentProductionRepairCommand(
+            expected_base_digest=REVISION_DIGEST,
+            selected_section_ids=["section_scope"],
+            requested_by="wilku",
+        ),
+    )
+
+    assert result.status == "created"
+    assert result.revision is not None
+    assert result.revision.base_revision_id == base.revision_id
+
+
+def test_repair_digest_mismatch_blocks_before_model() -> None:
+    base = draft_revision(WORK_ITEM_ID, "revision-digest", REVISION_DIGEST)
+    journal = _Journal(
+        ContentDraftRevisionState(
+            status="needs_changes",
+            latest_revision=base,
+            latest_review=draft_review(base, decision="needs_changes"),
+            revision_count=1,
+        )
+    )
+    command = ContentProductionCommand(
+        journal=journal,
+        initial_executor=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("initial must not run")
+        ),
+        repair_executor=lambda *_args: (_ for _ in ()).throw(
+            AssertionError("digest mismatch must stop before model")
+        ),
+    )
+
+    result = command.run(
+        WORK_ITEM_ID,
+        ContentProductionRepairCommand(
+            expected_base_digest="f" * 64,
+            selected_section_ids=["section_scope"],
+            requested_by="wilku",
+        ),
+    )
+
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "repair_base_digest_mismatch"
+
+
 def test_production_command_rejects_invalid_path_without_echo() -> None:
     response = TestClient(app).post(
         "/api/content/work-items/INVALID/production-command",
@@ -225,3 +342,69 @@ def test_production_command_route_reuses_approved_revision_without_model(
     assert response.status_code == 200
     assert response.json()["status"] == "reused"
     assert response.json()["revision"]["revision_id"] == revision.revision_id
+
+
+def test_production_command_route_repair_is_single_child_attempt(monkeypatch) -> None:
+    base = draft_revision(WORK_ITEM_ID, "route-needs-changes", REVISION_DIGEST)
+    child = base.model_copy(
+        update={
+            "revision_id": "route-child",
+            "revision_number": 2,
+            "base_revision_id": base.revision_id,
+            "content_digest": "f" * 64,
+        }
+    )
+    journal = _Journal(
+        ContentDraftRevisionState(
+            status="needs_changes",
+            latest_revision=base,
+            latest_review=draft_review(base, decision="needs_changes"),
+            revision_count=1,
+        )
+    )
+    calls = 0
+
+    def fake_repair_executor(*_args):
+        nonlocal calls
+        calls += 1
+        journal.state = ContentDraftRevisionState(
+            status="unreviewed",
+            latest_revision=child,
+            latest_review=None,
+            revision_count=2,
+        )
+        return ContentCodexSectionProposalResponse.model_construct(
+            status="created",
+            run_id="route-repair-run",
+            work_item_id=WORK_ITEM_ID,
+            base_revision_id=base.revision_id,
+            selected_section_headings=["Zakres"],
+            revision=child,
+            runtime={"status": "completed"},
+            safe_next_step="Przeczytaj child revision.",
+        )
+
+    monkeypatch.setattr(command_route, "content_workflow_store", lambda: journal)
+    monkeypatch.setattr(command_route, "_repair_executor", fake_repair_executor)
+    payload = {
+        "operation": "repair",
+        "expected_base_digest": base.content_digest,
+        "selected_section_ids": ["section_scope"],
+        "requested_by": "wilku",
+    }
+
+    client = TestClient(app)
+    created = client.post(
+        f"/api/content/work-items/{WORK_ITEM_ID}/production-command",
+        json=payload,
+    )
+    repeated = client.post(
+        f"/api/content/work-items/{WORK_ITEM_ID}/production-command",
+        json=payload,
+    )
+
+    assert created.status_code == 201
+    assert created.json()["revision"]["base_revision_id"] == base.revision_id
+    assert repeated.status_code == 409
+    assert repeated.json()["blockers"][0]["code"] == "repair_requires_needs_changes"
+    assert calls == 1

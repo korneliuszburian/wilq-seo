@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -34,6 +35,7 @@ from wilq.content.workflow.production_command import (
     ContentProductionCommand,
     ContentProductionCommandRequest,
     ContentProductionCommandResponse,
+    ContentProductionRepairCommand,
 )
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.storage.local_state import local_state_store
@@ -61,47 +63,88 @@ class _NoEchoProductionCommandRoute(APIRoute):
         return no_echo_route_handler
 
 
-def register_content_production_command_route(
-    router: APIRouter,
-    *,
-    snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
+_REPAIR_CLAIM_LOCK = threading.Lock()
+_ACTIVE_REPAIR_CLAIMS: set[str] = set()
+
+
+def _repair_claim_key(
+    work_item_id: str,
+    request: ContentProductionRepairCommand,
+) -> str:
+    selected = request.selected_section_ids or request.selected_cta_ids
+    return "|".join((work_item_id, request.expected_base_digest, *selected))
+
+
+def _acquire_repair_claim(
+    work_item_id: str,
+    request: ContentProductionRepairCommand,
+) -> bool:
+    key = _repair_claim_key(work_item_id, request)
+    with _REPAIR_CLAIM_LOCK:
+        if key in _ACTIVE_REPAIR_CLAIMS:
+            return False
+        _ACTIVE_REPAIR_CLAIMS.add(key)
+        return True
+
+
+def _release_repair_claim(
+    work_item_id: str,
+    request: ContentProductionRepairCommand,
 ) -> None:
-    def initial_executor(
-        work_item_id: str,
-        request: ContentInitialDraftRequest,
-    ) -> ContentInitialDraftResponse:
-        result = _submit_initial_draft(work_item_id, request, snapshot_loader)
-        if isinstance(result, JSONResponse):
-            return ContentInitialDraftResponse.model_validate(json.loads(bytes(result.body)))
-        return result
+    with _REPAIR_CLAIM_LOCK:
+        _ACTIVE_REPAIR_CLAIMS.discard(_repair_claim_key(work_item_id, request))
 
-    def repair_executor(
-        work_item_id: str,
-        request: ContentRevisionRepairProposalRequest,
-    ) -> ContentCodexSectionProposalResponse:
-        snapshot = snapshot_loader(work_item_id)
-        base_revision = getattr(
-            getattr(snapshot, "revision_workspace", None), "latest_revision", None
-        )
-        if base_revision is not None and base_revision.refresh_preparation_binding is not None:
-            from apps.api.wilq_api.routers.content_workflow import (
-                semantic_review_snapshot_for_work_item_or_404,
-            )
 
-            snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
-            base_revision = snapshot.revision_workspace.latest_revision
-        semantic_review = (
-            None
-            if base_revision is None
-            else content_semantic_review_store().for_revision(
-                work_item_id,
-                base_revision.revision_id,
-                base_revision.content_digest,
-            )
+def _initial_executor(
+    snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
+    work_item_id: str,
+    request: ContentInitialDraftRequest,
+) -> ContentInitialDraftResponse:
+    result = _submit_initial_draft(work_item_id, request, snapshot_loader)
+    if isinstance(result, JSONResponse):
+        return ContentInitialDraftResponse.model_validate(json.loads(bytes(result.body)))
+    return result
+
+
+def _repair_executor(
+    snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
+    work_item_id: str,
+    request: ContentRevisionRepairProposalRequest,
+) -> ContentCodexSectionProposalResponse:
+    snapshot = snapshot_loader(work_item_id)
+    base_revision = getattr(
+        getattr(snapshot, "revision_workspace", None), "latest_revision", None
+    )
+    from apps.api.wilq_api.routers.content_workflow import (
+        _editor_save_context,
+        semantic_review_snapshot_for_work_item_or_404,
+    )
+    from wilq.content.workflow.documents.codex_revision_commit import (
+        current_editor_draft_context_guard,
+    )
+
+    if base_revision is not None and base_revision.refresh_preparation_binding is not None:
+        snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
+        base_revision = snapshot.revision_workspace.latest_revision
+    semantic_review = (
+        None
+        if base_revision is None
+        else content_semantic_review_store().for_revision(
+            work_item_id,
+            base_revision.revision_id,
+            base_revision.content_digest,
         )
+    )
+    with current_editor_draft_context_guard(
+        lambda: _editor_save_context(
+            semantic_review_snapshot_for_work_item_or_404(work_item_id)
+        )
+    ):
         return propose_content_section_revision(
             snapshot=snapshot,
-            base_revision_id=base_revision.revision_id if base_revision is not None else "missing",
+            base_revision_id=(
+                base_revision.revision_id if base_revision is not None else "missing"
+            ),
             request=ContentCodexSectionProposalRequest(
                 expected_base_digest=request.expected_base_digest,
                 selected_section_ids=request.selected_section_ids,
@@ -115,6 +158,12 @@ def register_content_production_command_route(
             planning_input=_current_planning_input(snapshot),
         )
 
+
+def register_content_production_command_route(
+    router: APIRouter,
+    *,
+    snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
+) -> None:
     async def content_production_command(
         request: ContentProductionCommandRequest,
         work_item_id: str = Path(
@@ -123,8 +172,14 @@ def register_content_production_command_route(
     ) -> JSONResponse:
         command = ContentProductionCommand(
             journal=content_workflow_store(),
-            initial_executor=initial_executor,
-            repair_executor=repair_executor,
+            initial_executor=lambda work_item, command_request: _initial_executor(
+                snapshot_loader, work_item, command_request
+            ),
+            repair_executor=lambda work_item, command_request: _repair_executor(
+                snapshot_loader, work_item, command_request
+            ),
+            repair_claim_acquire=_acquire_repair_claim,
+            repair_claim_release=_release_repair_claim,
         )
         result = await asyncio.to_thread(command.run, work_item_id, request)
         status_code = {
@@ -133,6 +188,7 @@ def register_content_production_command_route(
             "generating": 202,
             "created": 201,
             "blocked": 409,
+            "failed": 500,
         }[result.status]
         return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))
 
@@ -146,6 +202,7 @@ def register_content_production_command_route(
             201: {"model": ContentProductionCommandResponse},
             202: {"model": ContentProductionCommandResponse},
             409: {"model": ContentProductionCommandResponse},
+            500: {"model": ContentProductionCommandResponse},
             422: {"model": ContentProductionCommandValidationErrorResponse},
         },
         route_class_override=_NoEchoProductionCommandRoute,

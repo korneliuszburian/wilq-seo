@@ -14,6 +14,7 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
+    ContentInitialDraftReuseBinding,
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -51,19 +52,26 @@ class ContentProductionCommandBlocker(BaseModel):
 class ContentProductionCommandResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: Literal["blocked", "generating", "created", "reused", "idempotent"]
+    status: Literal["blocked", "generating", "created", "reused", "idempotent", "failed"]
     operation: Literal["initial", "repair"]
     work_item_id: str = Field(min_length=1, max_length=240)
     revision: ContentDraftRevision | None = None
     run_id: str | None = None
+    reuse_binding: ContentInitialDraftReuseBinding | None = None
     blockers: list[ContentProductionCommandBlocker] = Field(default_factory=list)
     safe_next_step: str = Field(min_length=1, max_length=600)
 
     @model_validator(mode="after")
     def require_status_shape(self) -> ContentProductionCommandResponse:
         if self.status == "reused":
-            if self.revision is None or self.run_id is not None or self.blockers:
+            if self.revision is None or self.blockers:
                 raise ValueError("Reused production command requires only a revision.")
+            if self.reuse_binding is not None and (
+                self.work_item_id != self.reuse_binding.current_work_item_id
+                or self.revision.revision_id != self.reuse_binding.revision_id
+                or self.revision.content_digest != self.reuse_binding.revision_digest
+            ):
+                raise ValueError("Reused production command binding must match its revision.")
         elif self.status in {"created", "idempotent"}:
             if self.revision is None or self.blockers:
                 raise ValueError("Successful production command requires a revision.")
@@ -85,6 +93,8 @@ InitialCommandExecutor = Callable[
 RepairCommandExecutor = Callable[
     [str, ContentRevisionRepairProposalRequest], ContentCodexSectionProposalResponse
 ]
+RepairClaimAcquire = Callable[[str, ContentProductionRepairCommand], bool]
+RepairClaimRelease = Callable[[str, ContentProductionRepairCommand], None]
 
 
 class ContentProductionCommand:
@@ -96,10 +106,14 @@ class ContentProductionCommand:
         journal: ContentProductionCommandJournal,
         initial_executor: InitialCommandExecutor,
         repair_executor: RepairCommandExecutor,
+        repair_claim_acquire: RepairClaimAcquire | None = None,
+        repair_claim_release: RepairClaimRelease | None = None,
     ) -> None:
         self._journal = journal
         self._initial_executor = initial_executor
         self._repair_executor = repair_executor
+        self._repair_claim_acquire = repair_claim_acquire
+        self._repair_claim_release = repair_claim_release
 
     def run(
         self,
@@ -169,7 +183,7 @@ class ContentProductionCommand:
                 "Child repair wymaga dokładnej zapisanej rewizji i jej review.",
                 "Najpierw przeprowadź operation=initial po przejściu prepare/authorize/plan.",
             )
-        if review is None or review.decision != "needs_changes":
+        if review is None or review.decision not in {"needs_changes", "rejected"}:
             return _blocked(
                 work_item_id,
                 "repair",
@@ -190,18 +204,49 @@ class ContentProductionCommand:
                 "Żądanie wskazuje inną rewizję niż bieżący needs_changes review.",
                 "Odśwież journal i użyj exact revision digestu.",
             )
-        return _from_repair(
-            work_item_id,
-            self._repair_executor(work_item_id, request),
-        )
+        if self._repair_claim_acquire is not None and not self._repair_claim_acquire(
+            work_item_id, request
+        ):
+            return _blocked(
+                work_item_id,
+                "repair",
+                "repair_claim_unavailable",
+                "Poprawka jest już uruchomiona albo kontekst się zmienił",
+                "WILQ nie uruchomi drugiego model turnu dla tego samego child repair.",
+                "Odśwież journal i odczytaj bieżący status poprawki.",
+            )
+        try:
+            return _from_repair(
+                work_item_id,
+                self._repair_executor(work_item_id, request),
+            )
+        finally:
+            if self._repair_claim_release is not None:
+                self._repair_claim_release(work_item_id, request)
 
 
-def _reuse(work_item_id: str, revision: ContentDraftRevision) -> ContentProductionCommandResponse:
+def _reuse(
+    work_item_id: str,
+    revision: ContentDraftRevision,
+    *,
+    reuse_binding: ContentInitialDraftReuseBinding | None = None,
+    run_id: str | None = None,
+) -> ContentProductionCommandResponse:
+    effective_work_item_id = (
+        work_item_id if reuse_binding is None else reuse_binding.current_work_item_id
+    )
+    effective_run_id = run_id or (
+        None
+        if revision.proposal_metadata is None
+        else revision.proposal_metadata.codex_run_id
+    )
     return ContentProductionCommandResponse(
         status="reused",
         operation="initial",
-        work_item_id=work_item_id,
+        work_item_id=effective_work_item_id,
         revision=revision,
+        run_id=effective_run_id,
+        reuse_binding=reuse_binding,
         safe_next_step="Otwórz dokładną zatwierdzoną rewizję; nie uruchamiaj nowej generacji.",
     )
 
@@ -235,7 +280,21 @@ def _from_initial(
     response: ContentInitialDraftResponse,
 ) -> ContentProductionCommandResponse:
     if response.status == "reused":
-        return _reuse(work_item_id, response.revision)  # type: ignore[arg-type]
+        if response.revision is None:
+            return _blocked(
+                work_item_id,
+                "initial",
+                "production_command_blocked",
+                "Reuse nie ma rewizji",
+                "Authority reuse zwrócił niekompletny wynik.",
+                "Odczytaj bieżący revision journal i spróbuj ponownie.",
+            )
+        return _reuse(
+            work_item_id,
+            response.revision,
+            reuse_binding=response.reuse_binding,
+            run_id=response.run_id,
+        )
     if response.status == "created":
         return ContentProductionCommandResponse(
             status="created",
@@ -261,7 +320,13 @@ def _from_initial(
             ],
             safe_next_step=response.safe_next_step,
         )
-    return _blocked_from_items(work_item_id, "initial", response.blockers, response.safe_next_step)
+    if response.status == "failed":
+        return _failed_from_items(
+            work_item_id, "initial", response.blockers, response.safe_next_step
+        )
+    return _blocked_from_items(
+        work_item_id, "initial", response.blockers, response.safe_next_step
+    )
 
 
 def _from_repair(
@@ -286,7 +351,23 @@ def _from_repair(
             run_id=response.run_id,
             safe_next_step=response.safe_next_step,
         )
-    return _blocked_from_items(work_item_id, "repair", response.blockers, response.safe_next_step)
+    if response.status == "failed":
+        return _failed_from_items(
+            work_item_id, "repair", response.blockers, response.safe_next_step
+        )
+    return _blocked_from_items(
+        work_item_id, "repair", response.blockers, response.safe_next_step
+    )
+
+
+def _failed_from_items(
+    work_item_id: str,
+    operation: Literal["initial", "repair"],
+    items: Sequence[object],
+    safe_next_step: str,
+) -> ContentProductionCommandResponse:
+    response = _blocked_from_items(work_item_id, operation, items, safe_next_step)
+    return response.model_copy(update={"status": "failed"})
 
 
 def _blocked_from_items(
