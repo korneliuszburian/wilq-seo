@@ -134,7 +134,7 @@ def _discovery() -> ContentTargetDiscovery:
         post_type=contract.post_type,
         post_status=contract.post_status,
         target_contract=contract,
-        target_contract_digest="d" * 64,
+        target_contract_digest=_canonical_digest(contract.model_dump(mode="json")),
         observation_evidence=observation,
     )
     return ContentTargetDiscovery(
@@ -407,6 +407,13 @@ def _corrupt_latest_record(path: Path, corruption: str) -> None:
                 )
             elif corruption == "selection_mismatch":
                 payload["confirmation"]["selections"][0]["layout_name"] = "not_observed"
+            elif corruption == "contract_body_mismatch":
+                payload["preview_snapshot"]["target"]["target_contract"]["url"] = (
+                    "https://ekologus.dev.proudsite.pl/changed/"
+                )
+                payload["preview_snapshot_digest"] = _canonical_digest(
+                    payload["preview_snapshot"]
+                )
             else:
                 raise AssertionError(f"Unknown test corruption: {corruption}")
             serialized = json.dumps(
@@ -657,8 +664,17 @@ def test_legacy_confirmation_blocks_draft_until_explicit_snapshot_confirmation(
 
 @pytest.mark.parametrize(
     "corruption",
-    "unknown_version malformed_aggregate preview_digest_mismatch binding_digest_mismatch "  # noqa: SIM905 -- compact case table stays within the changed-file budget.
-    "confirmation_digest_mismatch selection_mismatch scalar_mismatch blob_payload".split(),
+    [
+        "unknown_version",
+        "malformed_aggregate",
+        "preview_digest_mismatch",
+        "binding_digest_mismatch",
+        "confirmation_digest_mismatch",
+        "selection_mismatch",
+        "contract_body_mismatch",
+        "scalar_mismatch",
+        "blob_payload",
+    ],
 )
 def test_corrupt_latest_record_fails_closed_without_discovery(
     tmp_path: Path,

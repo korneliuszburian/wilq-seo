@@ -35,10 +35,10 @@ def _preview() -> ContentTargetMappingPreview:
             write_profile_status="ready",
             layouts=[
                 ContentTargetAuthoringLayout(
-                    name="cta", section_index=5, fields=["content"]
+                    name="cta", section_index=5, fields=["content"], writable_fields=["content"]
                 ),
                 ContentTargetAuthoringLayout(
-                    name="cta", section_index=9, fields=["content"]
+                    name="cta", section_index=9, fields=["content"], writable_fields=["content"]
                 ),
             ],
         ),
@@ -152,4 +152,38 @@ def test_acf_mapping_can_confirm_only_selected_rich_text_sections() -> None:
         validate_content_target_mapping_confirmation(
             command=command.model_copy(update={"delivery_scope": "full_document"}),
             preview=preview,
+        )
+
+
+def test_acf_mapping_rejects_layout_without_schema_confirmed_writable_field() -> None:
+    preview = _preview()
+    assert preview.target is not None
+    contract = preview.target.target_contract
+    surface = contract.authoring_surface
+    assert surface is not None
+    blocked_surface = surface.model_copy(
+        update={
+            "layouts": [
+                surface.layouts[0],
+                surface.layouts[1].model_copy(update={"writable_fields": []}),
+            ]
+        },
+        deep=True,
+    )
+    blocked_preview = preview.model_copy(
+        update={
+            "target": preview.target.model_copy(
+                update={
+                    "target_contract": contract.model_copy(
+                        update={"authoring_surface": blocked_surface}
+                    )
+                }
+            )
+        },
+        deep=True,
+    )
+
+    with pytest.raises(ValueError, match="Wybrane pole nie należy do odczytanego layoutu"):
+        validate_content_target_mapping_confirmation(
+            command=_command(blocked_preview, section_index=9), preview=blocked_preview
         )

@@ -1,4 +1,6 @@
+import json
 from datetime import UTC, datetime
+from hashlib import sha256
 from types import SimpleNamespace
 from typing import cast
 
@@ -69,16 +71,19 @@ def _ready_preview():
                         name="title_section",
                         section_index=1,
                         fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
                     ),
                     ContentTargetAuthoringLayout(
                         name="text_section",
                         section_index=2,
                         fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                     ContentTargetAuthoringLayout(
                         name="gallery_section",
                         section_index=3,
                         fields=["images"],
+                        writable_fields=[],
                     ),
                 ],
             )
@@ -242,7 +247,7 @@ class _ApplyClaimStore:
 def _discovery(
     *,
     authoring_surface: ContentTargetAuthoringSurface | None,
-    target_contract_digest: str = "d" * 64,
+    target_contract_digest: str | None = None,
 ) -> ContentTargetDiscovery:
     contract = ContentTargetContract(
         environment="dev",
@@ -263,13 +268,21 @@ def _discovery(
         modified=contract.modified,
         observed_at="2026-07-24T10:00:01Z",
     )
+    exact_target_contract_digest = target_contract_digest or sha256(
+        json.dumps(
+            contract.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     target = ContentTargetDiscoveryTarget(
         object_id=contract.object_id,
         url=contract.url,
         post_type=contract.post_type,
         post_status=contract.post_status,
         target_contract=contract,
-        target_contract_digest=target_contract_digest,
+        target_contract_digest=exact_target_contract_digest,
         observation_evidence=observation,
     )
     return ContentTargetDiscovery(
@@ -298,7 +311,11 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
                 root_field="content_sections",
                 write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             )
         ),
@@ -308,7 +325,14 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
     assert preview.revision.revision_id == revision.revision_id
     assert preview.revision.content_digest == revision.content_digest
     assert preview.target is not None
-    assert preview.target.target_contract_digest == "d" * 64
+    assert preview.target.target_contract_digest == sha256(
+        json.dumps(
+            preview.target.target_contract.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     assert preview.binding_digest is not None
     assert {component.status for component in preview.components} == {"human_only"}
     assert all(
@@ -327,7 +351,11 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
                 root_field="content_sections",
                 write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             ),
             target_contract_digest="e" * 64,
@@ -441,7 +469,11 @@ def test_target_mapping_requires_an_exact_approved_human_review() -> None:
                 root_field="content_sections",
                 write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             )
         ),
@@ -465,9 +497,15 @@ def test_target_mapping_confirmation_binds_every_observed_component_and_field() 
                 root_field="content_sections",
                 write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
-                        name="text_section", fields=["heading", "content_html"]
+                        name="title_section",
+                        fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                 ],
             )
@@ -531,9 +569,15 @@ def test_target_draft_preview_uses_only_the_exact_confirmed_mapping() -> None:
                 root_field="content_sections",
                 write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
-                        name="text_section", fields=["heading", "content_html"]
+                        name="title_section",
+                        fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                 ],
             )
@@ -1181,7 +1225,7 @@ def _confirmation_request(
     )
     return {
         "expected_revision_digest": revision.content_digest,
-        "expected_target_contract_digest": "d" * 64,
+        "expected_target_contract_digest": discovery.target.target_contract_digest,
         "expected_binding_digest": preview.binding_digest,
         "confirmed_by": "Marta Kowalska",
         "selections": [
@@ -1222,9 +1266,15 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
             root_field="content_sections",
             write_profile_status="ready",
             layouts=[
-                ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                 ContentTargetAuthoringLayout(
-                    name="text_section", fields=["heading", "content_html"]
+                    name="title_section",
+                    fields=["wordpress_title"],
+                    writable_fields=["wordpress_title"],
+                ),
+                ContentTargetAuthoringLayout(
+                    name="text_section",
+                    fields=["heading", "content_html"],
+                    writable_fields=["heading", "content_html"],
                 ),
             ],
         )
@@ -1276,7 +1326,10 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
     payload = response.json()
     assert payload["status"] == "created"
     assert payload["confirmation"]["revision"]["revision_id"] == revision.revision_id
-    assert payload["confirmation"]["target_contract_digest"] == "d" * 64
+    assert (
+        payload["confirmation"]["target_contract_digest"]
+        == discovery.target.target_contract_digest
+    )
 
     draft_preview = TestClient(app).get(path.removesuffix("/confirmation") + "/draft-preview")
 
