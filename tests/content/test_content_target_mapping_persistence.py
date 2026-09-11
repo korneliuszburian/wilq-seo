@@ -88,6 +88,7 @@ def _discovery() -> ContentTargetDiscovery:
     surface = ContentTargetAuthoringSurface(
         kind="acf_flexible_content",
         root_field="content_sections",
+        write_profile_status="ready",
         source_acf_digest="1" * 64,
         source_acf_fields_digest="2" * 64,
         source_acf_root_field_count=2,

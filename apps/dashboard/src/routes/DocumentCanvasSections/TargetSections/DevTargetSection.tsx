@@ -6,6 +6,7 @@ import type {
 } from "../shared";
 
 export function DevTargetLivePreview({ url }: { url: string }) {
+  const safeUrl = safeHttpsUrl(url);
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -31,6 +32,10 @@ export function DevTargetLivePreview({ url }: { url: string }) {
       trigger?.focus();
     };
   }, [open]);
+
+  if (!safeUrl) {
+    return <p className="mt-3 text-sm leading-6 text-slate-600">Podgląd jest niedostępny dla niebezpiecznego adresu.</p>;
+  }
 
   return (
     <>
@@ -73,7 +78,7 @@ export function DevTargetLivePreview({ url }: { url: string }) {
             <div className="mt-3 flex justify-end">
               <a
                 className="text-sm font-semibold text-action hover:underline"
-                href={url}
+                href={safeUrl}
                 rel="noreferrer"
                 target="_blank"
               >
@@ -84,7 +89,7 @@ export function DevTargetLivePreview({ url }: { url: string }) {
               className="mt-3 min-h-0 flex-1 rounded-md border border-line bg-white"
               referrerPolicy="no-referrer"
               sandbox="allow-same-origin"
-              src={url}
+              src={safeUrl}
               title="Referencyjny podgląd strony dev"
             />
           </section>
@@ -92,6 +97,14 @@ export function DevTargetLivePreview({ url }: { url: string }) {
       ) : null}
     </>
   );
+}
+
+function safeHttpsUrl(value: string): string | null {
+  try {
+    return new URL(value).protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 export function ComponentMappingList({
@@ -123,11 +136,13 @@ export function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscov
   if (discovery.relation_status === "unavailable") return <>
     <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
     <p className="mt-2 leading-6">{discovery.reason}</p>
+    {discovery.blocker_code ? <p className="mt-2 text-sm text-slate-600">Kod blokady: {discovery.blocker_code}</p> : null}
     {discovery.caveats.map((caveat) => <p key={caveat} className="mt-2 leading-6 text-slate-600">{caveat}</p>)}
   </>;
   if (discovery.relation_status === "ambiguous") return <>
     <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
     <p className="mt-2 leading-6">{discovery.reason}</p>
+    {discovery.blocker_code ? <p className="mt-2 text-sm text-slate-600">Kod blokady: {discovery.blocker_code}</p> : null}
     <ul className="mt-3 space-y-2">
       {discovery.candidates.map((candidate) => <li key={candidate.observation_evidence.evidence_id} className="rounded-lg bg-slate-50 p-3">
         <p className="font-semibold text-ink">{candidate.post_type === "post" ? "Artykuł" : "Strona"} · {wordpressStatus(candidate.post_status)}</p>
@@ -143,6 +158,7 @@ export function DevTargetDetails({ discovery }: { discovery: ContentTargetDiscov
   return <>
     <p className="mt-3 font-semibold text-ink">{discovery.label}</p>
     <p className="mt-2 leading-6">{discovery.reason}</p>
+    {discovery.blocker_code ? <p className="mt-2 text-sm text-slate-600">Kod blokady: {discovery.blocker_code}</p> : null}
     {target ? <div className="mt-3 rounded-lg bg-slate-50 p-3">
       <p className="font-semibold text-ink">Zaobserwowana strona robocza</p>
       <p className="mt-1 break-all leading-6">{target.url}</p>

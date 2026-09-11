@@ -796,6 +796,11 @@ export const ContentTargetAuthoringLayoutSchema = z.object({
   relationships: z.array(ContentTargetAuthoringRelationshipSchema).default([])
 });
 
+const ContentHttpsUrlSchema = z.string().url().refine(
+  (value) => new URL(value).protocol === "https:",
+  "Adres musi używać HTTPS"
+);
+
 export const ContentTargetAuthoringSurfaceSchema = z.object({
   kind: z.enum(["acf_flexible_content", "wordpress_post_content"]),
   root_field: z.string().min(1),
@@ -815,7 +820,7 @@ export const ContentTargetAuthoringSurfaceSchema = z.object({
 export const ContentTargetContractSchema = z.object({
   environment: z.string().min(1),
   object_id: z.string().min(1),
-  url: z.string().url(),
+  url: ContentHttpsUrlSchema,
   post_type: z.string().min(1),
   rest_endpoint: z.string().regex(/^[a-z0-9_-]+$/).default("pages"),
   post_status: z.string().min(1),
@@ -831,7 +836,7 @@ export const ContentTargetObservationEvidenceSchema = z.object({
   connector_id: z.string().min(1),
   object_id: z.string().min(1),
   post_type: z.string().min(1),
-  url: z.string().url(),
+  url: ContentHttpsUrlSchema,
   post_status: z.string().min(1),
   modified: z.string(),
   observed_at: z.string().datetime({ offset: true })
@@ -839,7 +844,7 @@ export const ContentTargetObservationEvidenceSchema = z.object({
 
 export const ContentTargetDiscoveryCandidateSchema = z.object({
   object_id: z.string().min(1),
-  url: z.string().url(),
+  url: ContentHttpsUrlSchema,
   post_type: z.string().min(1),
   post_status: z.string().min(1),
   observation_evidence: ContentTargetObservationEvidenceSchema
@@ -847,7 +852,7 @@ export const ContentTargetDiscoveryCandidateSchema = z.object({
 
 export const ContentTargetDiscoveryTargetSchema = z.object({
   object_id: z.string().min(1),
-  url: z.string().url(),
+  url: ContentHttpsUrlSchema,
   post_type: z.string().min(1),
   post_status: z.string().min(1),
   template: z.string().nullable().optional(),
@@ -867,6 +872,7 @@ export const ContentTargetDiscoverySchema = z.object({
   reason: z.string().min(1),
   target: ContentTargetDiscoveryTargetSchema.nullable().optional(),
   candidates: z.array(ContentTargetDiscoveryCandidateSchema).default([]),
+  blocker_code: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()).default([]),
   caveats: z.array(z.string()).default([])
 });

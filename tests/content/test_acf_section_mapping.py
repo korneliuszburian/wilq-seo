@@ -32,6 +32,7 @@ def _preview() -> ContentTargetMappingPreview:
         authoring_surface=ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field="flexible-home",
+            write_profile_status="ready",
             layouts=[
                 ContentTargetAuthoringLayout(
                     name="cta", section_index=5, fields=["content"]
