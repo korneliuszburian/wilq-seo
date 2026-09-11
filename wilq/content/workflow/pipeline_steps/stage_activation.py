@@ -67,7 +67,12 @@ def wordpress_draft_readback(
             if endpoint == "posts"
             else read_wordpress_draft_post(post_id, endpoint=endpoint)
         )
-    except WordPressDraftReadError as exc:
+    except (WordPressDraftReadError, ValueError) as exc:
+        public_message = (
+            exc.public_message
+            if isinstance(exc, WordPressDraftReadError)
+            else "WordPress zwrócił odpowiedź, której nie można odczytać jako danych szkicu."
+        )
         return ContentWordPressDraftReadback(
             status="blocked",
             wordpress_post_id=post_id,
@@ -75,7 +80,7 @@ def wordpress_draft_readback(
                 ContentWordPressDraftReadbackBlocker(
                     code="wordpress_draft_read_failed",
                     label="Nie udało się odczytać szkicu WordPress",
-                    reason=exc.public_message,
+                    reason=public_message,
                     next_step=(
                         "Sprawdź dostęp REST WordPress i odśwież panel szkicu. "
                         "Nie traktuj samego ID jako potwierdzenia treści."
@@ -143,6 +148,28 @@ def _wordpress_draft_verification(
     ):
         return _verify_acf_readback(execution, readback)
     if payload is None:
+        if (
+            execution.expected_content_digest is not None
+            and execution.observed_content_digest is not None
+        ):
+            if readback.content_digest != execution.observed_content_digest:
+                return (
+                    execution.expected_content_digest,
+                    None,
+                    ContentWordPressDraftReadbackBlocker(
+                        code="wordpress_draft_content_mismatch",
+                        label="Treść szkicu WordPress różni się od utrwalonego readbacku",
+                        reason=(
+                            "Powtórny odczyt pola content z WordPress nie zgadza się z "
+                            "digestem zapisanym po utworzeniu szkicu."
+                        ),
+                        next_step=(
+                            "Nie ponawiaj zapisu automatycznie. Sprawdź szkic po ID i "
+                            "przygotuj nową akcję."
+                        ),
+                    ),
+                )
+            return execution.expected_content_digest, None, None
         return None, None, ContentWordPressDraftReadbackBlocker(
             code="wordpress_draft_verification_unavailable",
             label="Brakuje payloadu do porównania treści szkicu",
