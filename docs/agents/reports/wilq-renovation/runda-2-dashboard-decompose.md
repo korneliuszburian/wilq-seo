@@ -1,6 +1,6 @@
 # WILQ RENOVATION RUNDA 2 — raport końcowy
 
-Role: `current state` (stan Rundy 2 w zakresie dekompozycji dashboardu).
+Role: `historical/reference` (stan zakończonej Rundy 2 w zakresie dekompozycji dashboardu).
 Fixed point: `2e8e0d04` (HEAD `main`), weryfikacja `All checks passed!` w `verify.sh`.
 Raport pokazuje ścieżkę dashboardowej dekompozycji; nie zastępuje codziennej
 dokumentacji bieżącej.

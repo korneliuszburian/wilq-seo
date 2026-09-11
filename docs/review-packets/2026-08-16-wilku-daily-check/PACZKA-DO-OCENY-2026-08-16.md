@@ -1,6 +1,6 @@
 # Pakiet review daily-check dla Wilku — 2026-08-16
 
-Rola dokumentu: `current state` pakietu review dla marketera (Bead `wilq-seo-v9ab.13`).
+Rola dokumentu: `historical/reference` pakietu review z 2026-08-16 (Bead `wilq-seo-v9ab.13`).
 Nie jest publikacją, decyzją ani dowodem UAT. Pokazuje dokładnie to, co WILQ
 zwraca live przez `/api/marketing/daily-check` w dniu generowania; brak świeżego
 odczytu = jawny blocker, nigdy zgadywana metryka.

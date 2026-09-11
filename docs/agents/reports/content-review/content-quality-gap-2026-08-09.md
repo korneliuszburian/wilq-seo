@@ -1,6 +1,6 @@
 # Content Pipeline Quality Gap — research report
 
-Rola dokumentu: `current state / retained reviewer evidence` dla Beada
+Rola dokumentu: `historical/reference / retained reviewer evidence` dla Beada
 `wilq-seo-1oa.36.36`. Fixed point implementacji A–C: `1686215b`. Raport nie
 zastępuje `docs/architecture/system-map.md`, WILQ API ani Beads. Został
 zaktualizowany po live readbacku 2026-08-09; task state pozostaje w Beads.

@@ -1,6 +1,7 @@
 # Paczka treści do review — 3 strony Ekologus
 
-Rola dokumentu: `current state` pakietu review dla marketera. Nie jest publikacją ani zapisem decyzji.
+Rola dokumentu: `historical/reference` pakietu review z 2026-08-12. Nie jest
+publikacją ani zapisem bieżącej decyzji; aktualny stan prowadzą PLANS, Beads, CSV i API.
 
 ## Jak czytać
 

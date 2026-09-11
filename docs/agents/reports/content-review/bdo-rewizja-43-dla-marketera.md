@@ -1,7 +1,8 @@
 # BDO – co musi wiedzieć przedsiębiorca? (rewizja 43) — tekst do oceny
 
-Rola dokumentu: `current state` pakietu review dla marketera. Nie jest publikacją
-ani zapisem decyzji — to komplet danych do podjęcia decyzji przez Wilku.
+Rola dokumentu: `historical/reference` pakietu review dla marketera z rewizji 43.
+Nie jest publikacją ani zapisem bieżącej decyzji; aktualny stan prowadzą PLANS,
+Beads, CSV i API.
 
 ## Decyzja do podjęcia w 30 sekund
 

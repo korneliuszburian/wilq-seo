@@ -1,6 +1,6 @@
 # Pakiet review treści dla Wilku — 2026-08-15
 
-Rola dokumentu: `current state` pakietu UAT dla marketera (Bead `wilq-seo-jst`).
+Rola dokumentu: `historical/reference` pakietu UAT z 2026-08-15 (Bead `wilq-seo-jst`).
 Nie jest publikacją, zapisem decyzji ani dowodem pełnego UAT. Zawiera tylko to,
 co WILQ potwierdza dowodami; brak wartości = jawny blocker.
 

@@ -12,7 +12,9 @@
 > Dla każdego cytowanego screenshotu zapisuje ścieżkę, SHA-256 i rozmiar; bez cytowań lista jest pusta.
 > Manifest nie zatwierdza treści ani jej jakości.
 
-Rola dokumentu: `current state` pakietu review dla marketera. Nie jest publikacją ani zapisem decyzji.
+Rola dokumentu: `historical/reference` pakietu review dla marketera z 2026-08-12.
+Nie jest publikacją ani zapisem bieżącej decyzji; aktualny stan prowadzą PLANS,
+Beads, CSV i API.
 
 ## Jak czytać
 

@@ -1,7 +1,7 @@
 # Blind LLM-judge — wynik benchmarku jakości treści
 
-Rola dokumentu: `current state` wyniku ślepej oceny przed/po. Nie jest publikacją
-ani aprobatą człowieka.
+Rola dokumentu: `historical/reference` wyniku ślepej oceny z 2026-08-12. Nie jest
+publikacją ani aprobatą człowieka; bieżący stan prowadzą PLANS, Beads, CSV i API.
 
 ## Metoda
 
