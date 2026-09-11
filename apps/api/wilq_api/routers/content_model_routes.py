@@ -16,6 +16,9 @@ from apps.api.wilq_api.routers.content_dev_draft_cleanup import (
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
 )
+from apps.api.wilq_api.routers.content_independent_review import (
+    register_content_independent_review_routes,
+)
 from apps.api.wilq_api.routers.content_initial_draft import (
     register_content_initial_draft_route,
 )
@@ -78,6 +81,11 @@ def register_content_model_routes(
     snapshot_loader: ContentModelSnapshotLoader,
     semantic_review_snapshot_loader: ContentModelSnapshotLoader | None = None,
 ) -> None:
+    review_snapshot_loader = (
+        snapshot_loader
+        if semantic_review_snapshot_loader is None
+        else semantic_review_snapshot_loader
+    )
     register_content_regulatory_source_review_routes(router)
     register_content_delivery_identity_routes(router)
     register_content_source_pack_binding_routes(router)
@@ -90,13 +98,13 @@ def register_content_model_routes(
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
     register_content_official_source_lineage_route(
         router,
-        snapshot_loader=(
-            snapshot_loader
-            if semantic_review_snapshot_loader is None
-            else semantic_review_snapshot_loader
-        ),
+        snapshot_loader=review_snapshot_loader,
     )
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
+    register_content_independent_review_routes(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
@@ -110,11 +118,7 @@ def register_content_model_routes(
     register_content_public_deployment_routes(router)
     register_content_semantic_review_routes(
         router,
-        snapshot_loader=(
-            snapshot_loader
-            if semantic_review_snapshot_loader is None
-            else semantic_review_snapshot_loader
-        ),
+        snapshot_loader=review_snapshot_loader,
     )
     register_content_target_discovery_route(router)
     register_content_target_mapping_route(router)

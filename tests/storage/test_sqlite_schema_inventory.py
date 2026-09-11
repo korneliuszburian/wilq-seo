@@ -18,6 +18,7 @@ from wilq.content.planning.generated_proposal_store import ContentPlanningPropos
 from wilq.content.planning.generation_claim_store import (
     ContentPlanningGenerationClaimStore,
 )
+from wilq.content.quality.independent_review_store import ContentIndependentReviewStore
 from wilq.content.quality.semantic_review_store import ContentSemanticReviewStore
 from wilq.content.regulatory.source_fact_proposals import (
     RegulatorySourceFactProposalStore,
@@ -82,6 +83,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_regulatory_source_snapshots",
         "content_section_focus",
         "content_semantic_reviews",
+        "content_independent_review_runs",
         "content_target_mapping_confirmations",
         "content_wordpress_draft_execution_history",
         "content_wordpress_draft_executions",
@@ -112,6 +114,8 @@ def _seed_post_s5(path: Path) -> None:
         with closing(store._connect()) as connection:
             connection.commit()
     with closing(ContentSemanticReviewStore(path)._write_connection()) as connection:
+        connection.commit()
+    with closing(ContentIndependentReviewStore(path)._write_connection()) as connection:
         connection.commit()
 
 
