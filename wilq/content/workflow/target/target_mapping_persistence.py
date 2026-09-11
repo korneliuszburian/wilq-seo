@@ -66,6 +66,11 @@ class ContentTargetMappingPersistedRecord(BaseModel):
             or preview.binding_digest != confirmation.binding_digest
         ):
             raise ValueError("Persisted target mapping identities do not match.")
+        if (
+            _canonical_sha256(target.target_contract.model_dump(mode="json"))
+            != target.target_contract_digest
+        ):
+            raise ValueError("Persisted target mapping contract digest does not match.")
         if preview.binding_digest != _canonical_target_mapping_binding_digest(preview):
             raise ValueError("Persisted target mapping binding digest does not match.")
 
