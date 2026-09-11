@@ -313,6 +313,7 @@ class ContentWordPressDraftReadbackBlocker(BaseModel):
         "missing_wordpress_post_id",
         "wordpress_draft_read_failed",
         "wordpress_draft_status_mismatch",
+        "wordpress_draft_title_mismatch",
         "wordpress_draft_content_mismatch",
         "wordpress_draft_acf_mismatch",
         "wordpress_draft_verification_unavailable",
@@ -328,6 +329,9 @@ class ContentWordPressDraftReadback(BaseModel):
     wordpress_post_id: str | None = None
     post_status: str = ""
     title: str = ""
+    title_digest: str = ""
+    expected_title_digest: str | None = None
+    observed_title_digest: str | None = None
     link: str = ""
     edit_link: str = ""
     modified_gmt: str = ""

@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.connectors.wordpress.client import (
+    WordPressDraftCreationProof,
     WordPressDraftVerificationError,
     WordPressDraftWriteError,
+    _wordpress_draft_value_digest,
     create_wordpress_acf_draft,
     create_wordpress_draft_post,
 )
@@ -52,6 +54,10 @@ def execute_content_target_draft_action(
         payload = build_content_dev_draft_write_payload(action)
         draft_id = _create_wordpress_draft(payload, connector_id=action.connector)
     except WordPressDraftVerificationError as error:
+        digest_fields = _verification_digest_fields(error)
+        expected_fields = _creation_digest_fields(payload, "")
+        for key in ("expected_content_digest", "expected_acf_digest", "expected_title_digest"):
+            digest_fields[key] = digest_fields.get(key) or expected_fields[key]
         execution = ContentWordPressDraftExecutionResult(
             status="blocked",
             mode="live",
@@ -63,6 +69,14 @@ def execute_content_target_draft_action(
             wordpress_post_id=error.post_id,
             endpoint=payload.endpoint,
             external_write_attempted=True,
+            expected_content_digest=digest_fields.get("expected_content_digest"),
+            observed_content_digest=digest_fields.get("observed_content_digest"),
+            expected_acf_digest=digest_fields.get("expected_acf_digest"),
+            observed_acf_digest=digest_fields.get("observed_acf_digest"),
+            expected_title_digest=digest_fields.get("expected_title_digest"),
+            observed_title_digest=digest_fields.get("observed_title_digest"),
+            verification_expected_digest=digest_fields.get("verification_expected_digest"),
+            verification_observed_digest=digest_fields.get("verification_observed_digest"),
         )
         return {
             "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
@@ -96,6 +110,7 @@ def execute_content_target_draft_action(
             str(error),
             external_write_attempted=error.external_write_attempted,
         )
+    digest_fields = _creation_digest_fields(payload, draft_id)
     execution = ContentWordPressDraftExecutionResult(
         status="created",
         mode="live",
@@ -107,6 +122,12 @@ def execute_content_target_draft_action(
         wordpress_post_id=draft_id,
         endpoint=payload.endpoint,
         external_write_attempted=True,
+        expected_content_digest=digest_fields.get("expected_content_digest"),
+        observed_content_digest=digest_fields.get("observed_content_digest"),
+        expected_acf_digest=digest_fields.get("expected_acf_digest"),
+        observed_acf_digest=digest_fields.get("observed_acf_digest"),
+        expected_title_digest=digest_fields.get("expected_title_digest"),
+        observed_title_digest=digest_fields.get("observed_title_digest"),
     )
     return {
         "adapter": CONTENT_DEV_DRAFT_MUTATION_ADAPTER,
@@ -173,6 +194,70 @@ def _blocked_execution_result(
         "redacted": True,
         "execution_result": execution.model_dump(mode="json"),
     }, [error]
+
+
+def _creation_digest_fields(
+    payload: ContentDevDraftWritePayload,
+    draft_id: str,
+) -> dict[str, str | None]:
+    fields: dict[str, str | None] = {
+        "expected_title_digest": _wordpress_draft_value_digest(payload.title),
+        "expected_content_digest": (
+            _wordpress_draft_value_digest(payload.content_html)
+            if payload.content_html is not None
+            else None
+        ),
+        "expected_acf_digest": (
+            _wordpress_draft_value_digest(payload.acf) if payload.acf is not None else None
+        ),
+    }
+    if isinstance(draft_id, WordPressDraftCreationProof):
+        fields.update(
+            {
+                "expected_content_digest": draft_id.expected_content_digest
+                or fields["expected_content_digest"],
+                "observed_content_digest": draft_id.observed_content_digest,
+                "expected_acf_digest": draft_id.expected_acf_digest
+                or fields["expected_acf_digest"],
+                "observed_acf_digest": draft_id.observed_acf_digest,
+                "expected_title_digest": draft_id.expected_title_digest
+                or fields["expected_title_digest"],
+                "observed_title_digest": draft_id.observed_title_digest,
+            }
+        )
+    return fields
+
+
+def _verification_digest_fields(
+    error: WordPressDraftVerificationError,
+) -> dict[str, str | None]:
+    code = error.code
+    fields: dict[str, str | None] = {
+        "verification_expected_digest": error.expected_digest,
+        "verification_observed_digest": error.observed_digest,
+    }
+    if "acf" in code:
+        fields.update(
+            {
+                "expected_acf_digest": error.expected_digest,
+                "observed_acf_digest": error.observed_digest,
+            }
+        )
+    elif "title" in code:
+        fields.update(
+            {
+                "expected_title_digest": error.expected_digest,
+                "observed_title_digest": error.observed_digest,
+            }
+        )
+    elif "content" in code:
+        fields.update(
+            {
+                "expected_content_digest": error.expected_digest,
+                "observed_content_digest": error.observed_digest,
+            }
+        )
+    return fields
 
 
 __all__ = [

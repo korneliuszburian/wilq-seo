@@ -2288,6 +2288,14 @@ export const ContentWordPressDraftExecutionResultSchema = z.object({
   revision_binding: ContentDraftRevisionBindingSchema.nullable().optional(),
   wordpress_post_id: z.string().nullable().optional(),
   endpoint: z.enum(["posts", "pages", "uslugi"]).nullable().optional(),
+  expected_content_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  observed_content_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  expected_acf_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  observed_acf_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  expected_title_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  observed_title_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  verification_expected_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  verification_observed_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   external_write_attempted: z.boolean(),
   blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
 });
@@ -2297,6 +2305,7 @@ export const ContentWordPressDraftReadbackBlockerSchema = z.object({
     "missing_wordpress_post_id",
     "wordpress_draft_read_failed",
     "wordpress_draft_status_mismatch",
+    "wordpress_draft_title_mismatch",
     "wordpress_draft_content_mismatch",
     "wordpress_draft_acf_mismatch",
     "wordpress_draft_verification_unavailable"
@@ -2312,6 +2321,9 @@ export const ContentWordPressDraftReadbackSchema = z.object({
   wordpress_post_id: z.string().nullable().optional(),
   post_status: z.string(),
   title: z.string(),
+  title_digest: z.string().default(""),
+  expected_title_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  observed_title_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   link: z.string(),
   edit_link: z.string().optional(),
   modified_gmt: z.string(),

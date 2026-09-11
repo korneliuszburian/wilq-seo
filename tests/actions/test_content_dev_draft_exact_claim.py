@@ -150,6 +150,10 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
             ),
             revision_binding=capability,
             wordpress_post_id=str(416 + len(adapter_calls)),
+            expected_content_digest="9" * 64,
+            observed_content_digest="8" * 64,
+            expected_acf_digest="7" * 64,
+            observed_acf_digest="6" * 64,
             external_write_attempted=True,
         )
         return {"execution_result": execution.model_dump(mode="json")}, []
@@ -205,6 +209,10 @@ def test_two_dev_draft_actions_for_one_revision_execute_one_adapter(
     )
     assert persisted is not None
     assert persisted.wordpress_post_id == "417"
+    assert persisted.expected_content_digest == "9" * 64
+    assert persisted.observed_content_digest == "8" * 64
+    assert persisted.expected_acf_digest == "7" * 64
+    assert persisted.observed_acf_digest == "6" * 64
 
     replay = apply_action(
         _action("act_content_dev_draft_replay", binding),
