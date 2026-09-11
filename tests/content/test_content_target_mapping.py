@@ -59,6 +59,7 @@ def _ready_preview():
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 source_acf_digest="1" * 64,
                 source_acf_fields_digest="2" * 64,
                 source_acf_root_field_count=2,
@@ -295,6 +296,7 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
                 ],
@@ -323,6 +325,7 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
                 ],
@@ -345,6 +348,7 @@ def test_selected_acf_rich_text_combines_heading_and_body_into_one_confirmed_fie
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="flexible-home",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(
                         name="message",
@@ -435,6 +439,7 @@ def test_target_mapping_requires_an_exact_approved_human_review() -> None:
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
                 ],
@@ -458,6 +463,7 @@ def test_target_mapping_confirmation_binds_every_observed_component_and_field() 
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
@@ -523,6 +529,7 @@ def test_target_draft_preview_uses_only_the_exact_confirmed_mapping() -> None:
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
@@ -1213,6 +1220,7 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
         authoring_surface=ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field="content_sections",
+            write_profile_status="ready",
             layouts=[
                 ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                 ContentTargetAuthoringLayout(

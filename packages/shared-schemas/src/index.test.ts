@@ -2334,7 +2334,7 @@ describe("WordPressAuthoringProfileSchema", () => {
 
 describe("ContentTargetDiscoverySchema", () => {
   it("keeps an observed target contract and its exact observation public", () => {
-    expect(ContentTargetDiscoverySchema.safeParse({
+    const parsed = ContentTargetDiscoverySchema.safeParse({
       response_type: "content_target_discovery",
       contract_version: "content_target_discovery_v2",
       work_item_id: "content_work_item_bdo",
@@ -2374,9 +2374,14 @@ describe("ContentTargetDiscoverySchema", () => {
         }
       },
       candidates: [],
+      blocker_code: "wordpress_native_content_http_error",
       evidence_ids: ["ev_wordpress_target_observation_example"],
       caveats: ["Odczyt nie daje prawa do zapisu."]
-    }).success).toBe(true);
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.blocker_code).toBe("wordpress_native_content_http_error");
+    }
   });
 
   it("keeps observed ACF relationships readable without authorizing a write", () => {
