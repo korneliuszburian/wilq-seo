@@ -34,49 +34,58 @@ Nie wracamy do historycznego JSON journalu ani snapshotu eligibility jako
 bieżącej prawdy. Nie regenerujemy dobrej rewizji: `approved` jest reużywane,
 a `needs_changes` może utworzyć wyłącznie exact immutable child revision.
 
-## Baseline 2026-09-10
+## Baseline 2026-09-11
 
 - 214 URL-i: `57 keep / 87 noindex / 46 redirect / 24 remove`.
 - `keep`: 18 bieżących approved revisions, 17 semantic zero-findings, 1 semantic
-  unavailable (REACH), 8 zweryfikowanych dev draft readbacków, 0 robot-ready.
-- frontier: 8 legacy dev-readback observed (tylko 1 ma `confirmed_the_content`;
-  pozostałe 7 wymaga reconciliation), 8 current-approved z dalszym gate'em,
-  2 historyczne non-reusable, 37 source/service/work-item blocked, 2 z
-  potwierdzonym zewnętrznym dev-REST credential blockerem.
+  unavailable (REACH), 7 zweryfikowanych dev draft readbacków, 0 robot-ready.
+- frontier S6.3 obejmował 7 legacy śladów dev-readback: 6 ma exact mapping i
+  digest-backed readback, a IPPC ma brak exact bieżącego odczytu targetu
+  (`target_unavailable`). CSV ma dziś 7 `dev_draft_verified` (tych 6 oraz
+  niezależnie odświeżony wpis opakowaniowy); IPPC nie jest w tej liczbie. Brak
+  exact odczytu nie jest dowodem nieistnienia obiektu. Pozostałe approved
+  revisions nie są regenerowane: czekają na swój exact gate albo typed blocker.
 - 45 `keep` to editorial, 7 service, 5 landing/hub. Landing/hub nie ma jeszcze
   pełnej typed authorization path.
-- WILQ ma page-bound GSC dla 38/57 keep; 16 ma wpis bez metryk, 3 nie ma matchu.
-  Snapshot GSC obejmuje jeden dzień `2026-09-06`, collected `2026-09-09`,
-  `partial_possible`; służy do kolejności, nie do obietnic wyniku.
+- Świeży odczyt GSC `ev_refresh_refresh_google_search_console_5bb0e4041e05`
+  obejmuje 548 wierszy `query,page` dla `2026-09-08`, z `partial_possible`;
+  bieżący diagnostics queue ma 9 dopasowań page/query. Służy to wyłącznie do
+  kolejności, nie do obietnic wyniku.
 - GA4 jest settling/unverified i nie page-level. Ahrefs jest manualnym domain
   snapshotem i nie page-level. Oba są kontekstem, nie tie-breakerem URL-i.
-- aktualny managed runtime raportuje 1/12 configured connectors i 10 missing
-  credentials; nie wolno odczytywać ani ujawniać wartości `.env`.
-- `target_unavailable` występuje przy 3 keep: dwa direct dev-REST credential
-  blockers i osobny REACH work-item/semantic blocker.
+- Świeży odczyt WordPress `ev_refresh_refresh_wordpress_ekologus_92c1152daeb8`
+  zebrał 176 obiektów, 218 URL-i sitemap targetu i 788 URL-i publicznych;
+  pokrycie jest jawnie `partial`, najnowsza modyfikacja to `2026-09-10`.
+  Endpointy GSC i WordPress ekologus raportują skonfigurowane credentials w tym
+  sprawdzeniu; wartości `.env` nie są ujawniane.
+- `delivery_status=blocked_target_unavailable` występuje przy 3 keep (analiza,
+  Green Deal i IPPC); kod blokera `target_unavailable` pojawia się przy 4 keep,
+  bo REACH ma dodatkowo `blocked_review_and_target_unavailable`. Ten status
+  oznacza brak exact bieżącego odczytu targetu, nie dowiedziony brak obiektu.
 
 ## Priorytet metryczny
 
-Pierwsza dziesiątka page-bound GSC z evidence
-`ev_refresh_refresh_google_search_console_0e332cb3bb35`:
+Pierwsza dziesiątka keep z bieżącego diagnostics queue i evidence
+`ev_refresh_refresh_google_search_console_5bb0e4041e05`:
 
 | # | URL | Wyświetlenia / kliknięcia / zapytania | Następny exact seam |
 |---:|---|---:|---|
-| 1 | `/bdo-co-musi-wiedziec-przedsiebiorca` | 660 / 1 / 16 | audit legal freshness/readback; bez ponownego pisania |
-| 2 | `/operat-wodnoprawny-wszystko-co-musisz-wiedziec` | 145 / 0 / 103 | confirm target mapping; bez ponownego pisania |
-| 3 | `/europejski-zielony-lad-co-to-takiego` | 109 / 4 / 18 | restore dev REST, retry target discovery |
-| 4 | `/remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana` | 98 / 0 / 41 | evidence-bound revision |
-| 5 | `/outsourcing-srodowiskowy-elastyczne-rozwiazanie-dla-twojej-firmy` | 50 / 0 / 29 | evidence-bound revision |
-| 6 | `/oferta/doradztwo-i-outsourcing-ekologiczny` | 49 / 0 / 27 | confirm target mapping |
-| 7 | `/oferta/szkolenia` | 43 / 0 / 30 | confirm target mapping |
-| 8 | `/pozwolenie-zintegrowane-wymagania-i-procedury-ippc` | 31 / 1 / 14 | repair current work-item identity |
-| 9 | `/` | 30 / 0 / 24 | confirm target mapping |
-| 10 | `/ocena-wplywu-projektow-na-srodowisko` | 29 / 0 / 16 | confirm target mapping |
+| 1 | `/bdo-co-musi-wiedziec-przedsiebiorca` | 285 / 1 / 19 | audit legal freshness/readback; bez ponownego pisania |
+| 2 | `/oferta/doradztwo-i-outsourcing-ekologiczny` | 64 / 0 / 33 | confirm target mapping |
+| 3 | `/` | 47 / 1 / 23 | confirm target mapping |
+| 4 | `/europejski-zielony-lad-co-to-takiego` | 46 / 0 / 15 | restore exact target read, retry target discovery |
+| 5 | `/oferta/szkolenia` | 42 / 0 / 19 | confirm target mapping |
+| 6 | `/ocena-wplywu-projektow-na-srodowisko` | 29 / 0 / 16 | confirm target mapping |
+| 7 | `/czym-jest-goz-i-jakie-sa-jego-zalozenia` | 24 / 0 / 10 | evidence-bound revision |
+| 8 | `/czym-sa-historyczne-zanieczyszczenia-i-jakie-obowiazki-ma-wlasciciel-gruntu` | 20 / 0 / 9 | evidence-bound revision |
+| 9 | `/dokumentacja-srodowiskowa-w-procesie-inwestycyjnym` | 20 / 0 / 6 | confirm target mapping |
+| 10 | `/badania-obecnosci-radonu` | 12 / 1 / 5 | fetch full public source and resolve service binding |
 
-Kolejność wykonawcza = potencjał metryczny × gotowość. Po naprawie seamów
-najszybsze existing-revision deliveries to #6, #7 i #9; pierwszy nowy content
-slice to #4 albo #5. #1–2 nie wolno pisać ponownie. #3 pozostaje credential
-blocked, dopóki runtime nie potwierdzi dev REST.
+Kolejność wykonawcza = potencjał metryczny × gotowość. Najszybsze
+existing-revision deliveries to #1, #2, #3, #5 i #9; pierwszy nowy content
+slice wymaga najpierw `prepare_evidence_bound_revision` (#7 albo #8). BDO nie
+może być generowane ponownie, a Green Deal nadal nie ma kompletnego inventory
+do bezpiecznego odświeżenia ani exact bieżącego odczytu targetu.
 
 ## Standard jakości i research
 
@@ -237,8 +246,10 @@ decyzje/paczki dev; bez produkcyjnego delete/redirect apply.
 
 Preflight graph działa przed revision i jest odświeżany po każdej kohorcie.
 Finding zmieniający intent/canonical/link lub visible claim unieważnia downstream
-review/mapping tej revision. `next_action` dla non-keep ma brzmieć
-`prepare_*_policy_review`, nigdy `execute_*`.
+review/mapping tej revision. W bieżącym journalu `next_action` dla non-keep ma
+wartość `execute_*_policy`; jest to kolejka przygotowania polityki w dev, nie
+autoryzacja produkcyjnego delete/redirect/noindex. Przed jakąkolwiek zmianą
+zewnętrzną wymagane są osobne review, ActionObject i authority.
 
 ### S11 — runtime-owned journal i robot-ready gate
 
@@ -279,7 +290,8 @@ i zakończeniu bieżącego Beada zgodnie z WIP=1.
 
 Cel jest kompletny wyłącznie, gdy:
 
-1. validator potwierdza exact 214 rows i `57/87/46/24` przeciw authoritative DB;
+1. validator potwierdza exact 214 rows i `57/87/46/24` z canonical CSV, a wariant
+   `--state-db` dodatkowo sprawdza typed lineage against authoritative SQLite;
 2. 57/57 keep ma exact mapped dev draft readback albo prawdziwy external typed
    blocker; legacy readback bez mapping receipt nie spełnia tego punktu;
 3. żadna dobra current revision nie została bez potrzeby wygenerowana ponownie;
