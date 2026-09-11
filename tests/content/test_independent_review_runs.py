@@ -179,7 +179,9 @@ def test_store_redacts_finding_text_before_persistence(tmp_path) -> None:
         update={
             "findings": [
                 _run().findings[0].model_copy(
-                    update={"reason": "Nie loguj tokenu sk-abcdefghijklmnopqrstuvwxyz123456."}
+                    update={
+                        "reason": "Nie loguj wartości https://example.test/?token=demo."
+                    }
                 )
             ]
         }
@@ -189,7 +191,8 @@ def test_store_redacts_finding_text_before_persistence(tmp_path) -> None:
     stored = store.for_run(run.run_id)
 
     assert stored is not None
-    assert "sk-abcdefghijklmnopqrstuvwxyz123456" not in stored.findings[0].reason
+    assert "token=demo" not in stored.findings[0].reason
+    assert "[REDACTED]" in stored.findings[0].reason
 
 
 def test_redacted_disposition_retry_is_idempotent(tmp_path) -> None:
@@ -199,7 +202,7 @@ def test_redacted_disposition_retry_is_idempotent(tmp_path) -> None:
     request = ContentIndependentFindingDispositionRequest(
         expected_revision_digest=run.revision_digest,
         disposition="deferred",
-        reason="Odłożone po sprawdzeniu sk-abcdefghijklmnopqrstuvwxyz123456.",
+        reason="Odłożone po sprawdzeniu https://example.test/?token=demo.",
         disposed_by="wilku",
         evidence_ids=["ev_1"],
     )
