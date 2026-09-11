@@ -334,9 +334,11 @@ function TargetMappingTargetSummary({
                 {surface.schema_status === "available"
                   ? `Schema ACF z dev rozpoznany${surface.schema_digest ? " dla dokładnego obiektu" : ""}. ` +
                     "WILQ zachowa istniejący układ i może podmienić wyłącznie potwierdzone pola tekstowe."
-                  : `Schema ACF nie jest jeszcze dostępny: ${surface.schema_reason || "brakuje odczytu OPTIONS."}`}
+                  : surface.schema_status === "observed"
+                    ? "ACF jest odczytany przez GET dla dokładnego obiektu. Poniższe pola są obserwacją układu; profil zapisu nadal wymaga tylko bezpośrednich pól zweryfikowanych przez digest źródła."
+                    : `Nie odczytano profilu ACF: ${surface.schema_reason || "brakuje odczytu REST."}`}
               </p>
-              {surface.schema_status === "available" ? (
+              {surface.schema_status !== "unavailable" ? (
                 <details className="mt-2 text-sm text-slate-600">
                   <summary className="cursor-pointer font-medium text-ink">
                     Rozpoznane pola ACF
@@ -347,9 +349,8 @@ function TargetMappingTargetSummary({
                         <span className="font-medium text-ink">
                           {layout.section_index != null ? `Sekcja ${layout.section_index} · ` : ""}{layout.label || layout.name}:
                         </span>{" "}
-                        {layout.schema_fields.length > 0
-                          ? layout.schema_fields.join(", ")
-                          : "brak pola w schema dla tego obserwowanego layoutu"}
+                        {(layout.schema_fields.length > 0 ? layout.schema_fields : layout.fields).join(", ") ||
+                          "brak pola dla tego obserwowanego layoutu"}
                       </li>
                     ))}
                   </ul>

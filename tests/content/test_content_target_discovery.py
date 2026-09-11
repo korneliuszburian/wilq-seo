@@ -158,6 +158,87 @@ def test_target_discovery_reads_exact_dev_object_but_does_not_confirm_relation(m
     assert "nie potwierdza" in discovery.reason
 
 
+def test_target_discovery_distinguishes_observed_acf_get_from_missing_write_schema(
+    monkeypatch,
+) -> None:
+    item = _page("https://ekologus.dev.proudsite.pl/bdo/").model_copy(
+        update={
+            "sections": [
+                WordPressAuthoringDevSection(
+                    section_index=1,
+                    acf_field_name="content_sections",
+                    layout_name="text_section",
+                    layout_label="Sekcja tekstowa",
+                    field_names=["heading", "content"],
+                    text_field_paths=["heading", "content"],
+                )
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "inventory_decision_for_work_item",
+        lambda _work_item_id, **_kwargs: SimpleNamespace(
+            source_public_url=PUBLIC_URL, final_canonical_url=None, page=PUBLIC_URL
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "build_wordpress_authoring_profile",
+        lambda _connector_id, include_dev_content=False: _profile(item),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "read_wordpress_acf_rest_schema",
+        lambda _connector_id, _item: WordPressAcfRestSchema(
+            status="unavailable",
+            root_field="content_sections",
+            source_ref="wp-json/wp/v2/pages/346 OPTIONS",
+            reason="WordPress zwrócił tylko ogólną właściwość acf.",
+        ),
+    )
+    monkeypatch.setattr(
+        discovery_module,
+        "_source_acf_snapshot",
+        lambda _item: WordPressAcfFlexibleSnapshot(
+            object_id="346",
+            content_type="pages",
+            root_field="content_sections",
+            root_digest="a" * 64,
+            rows=[
+                {
+                    "acf_fc_layout": "text_section",
+                    "heading": "Nagłówek",
+                    "content": "Treść obserwowana przez GET.",
+                }
+            ],
+            fields_digest="b" * 64,
+            fields={
+                "content_sections": [
+                    {
+                        "acf_fc_layout": "text_section",
+                        "heading": "Nagłówek",
+                        "content": "Treść obserwowana przez GET.",
+                    }
+                ]
+            },
+        ),
+    )
+
+    discovery = discovery_module.build_content_target_discovery(WORK_ITEM_ID)
+
+    assert discovery is not None and discovery.target is not None
+    surface = discovery.target.target_contract.authoring_surface
+    assert surface is not None
+    assert surface.schema_status == "observed"
+    assert surface.schema_source_ref == "wp-json/wp/v2/pages/346 GET acf"
+    assert surface.layouts[0].fields == ["heading", "content"]
+    assert surface.layouts[0].schema_fields == []
+    assert surface.layouts[0].writable_fields == ["content", "heading"]
+    assert surface.write_profile_status == "ready"
+    assert "REST GET" in surface.write_profile_reason
+
+
 def test_target_discovery_exposes_exact_acf_schema_without_opening_acf_delivery(
     monkeypatch,
 ) -> None:
@@ -274,17 +355,11 @@ def test_native_post_content_get_is_limited_to_https_dev_host(monkeypatch) -> No
         ),
     )
     _patch_native_client(monkeypatch, response, stream_calls, client_kwargs)
-    allowed = _page(
-        "https://ekologus.dev.proudsite.pl/bdo/", content_type="post"
-    )
+    allowed = _page("https://ekologus.dev.proudsite.pl/bdo/", content_type="post")
     foreign = allowed.model_copy(update={"link": "https://attacker.example/bdo/"})
-    insecure = allowed.model_copy(
-        update={"link": "http://ekologus.dev.proudsite.pl/bdo/"}
-    )
+    insecure = allowed.model_copy(update={"link": "http://ekologus.dev.proudsite.pl/bdo/"})
     with_userinfo = allowed.model_copy(
-        update={
-            "link": "https://" + "user:" + "password" + "@ekologus.dev.proudsite.pl/bdo/"
-        }
+        update={"link": "https://" + "user:" + "password" + "@ekologus.dev.proudsite.pl/bdo/"}
     )
 
     assert discovery_module._native_post_content_observed(foreign) is False
@@ -426,9 +501,7 @@ def test_target_discovery_exposes_observed_acf_relationships_without_making_them
             rows=[{"acf_fc_layout": "services", "services_order": [374, 352]}],
             fields_digest="b" * 64,
             fields={
-                "content_sections": [
-                    {"acf_fc_layout": "services", "services_order": [374, 352]}
-                ],
+                "content_sections": [{"acf_fc_layout": "services", "services_order": [374, 352]}],
                 "icon": 1126,
             },
         ),

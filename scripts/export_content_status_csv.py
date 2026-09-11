@@ -28,7 +28,6 @@ def _refuse_canonical_output(output: Path) -> None:
             "content_status_214_v1"
         )
 
-
 def _path(value: str | None) -> str | None:
     if not value:
         return None

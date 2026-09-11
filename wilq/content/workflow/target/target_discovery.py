@@ -77,7 +77,7 @@ class ContentTargetAuthoringSurface(BaseModel):
     kind: Literal["acf_flexible_content", "wordpress_post_content"]
     root_field: str
     layouts: list[ContentTargetAuthoringLayout] = Field(default_factory=list)
-    schema_status: Literal["available", "unavailable"] = "unavailable"
+    schema_status: Literal["available", "observed", "unavailable"] = "unavailable"
     schema_digest: str | None = None
     schema_source_ref: str = ""
     schema_reason: str = ""
@@ -323,6 +323,7 @@ def _observed_target(
         profile,
         observed_at,
         acf_schema=acf_schema,
+        source_snapshot=source_snapshot,
         source_acf_digest=source_snapshot.root_digest if source_snapshot else None,
         source_acf_fields_digest=source_snapshot.fields_digest if source_snapshot else None,
         source_acf_root_field_count=len(source_snapshot.fields) if source_snapshot else None,
@@ -433,6 +434,7 @@ def _target(
     observed_at: str,
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None = None,
     source_acf_digest: str | None = None,
     source_acf_fields_digest: str | None = None,
     source_acf_root_field_count: int | None = None,
@@ -445,6 +447,7 @@ def _target(
         item,
         profile,
         acf_schema=acf_schema,
+        source_acf_snapshot=source_snapshot,
         source_acf_digest=source_acf_digest,
         source_acf_fields_digest=source_acf_fields_digest,
         source_acf_root_field_count=source_acf_root_field_count,
@@ -488,6 +491,7 @@ def _target_contract(
     profile: WordPressAuthoringProfile,
     *,
     acf_schema: WordPressAcfRestSchema | None = None,
+    source_acf_snapshot: WordPressAcfFlexibleSnapshot | None = None,
     source_acf_digest: str | None = None,
     source_acf_fields_digest: str | None = None,
     source_acf_root_field_count: int | None = None,
@@ -502,6 +506,7 @@ def _target_contract(
         writable_fields_by_layout, profile_reason = _acf_writable_fields(
             item,
             acf_schema=acf_schema,
+            source_snapshot=source_acf_snapshot,
             source_acf_digest=source_acf_digest,
             source_acf_row_count=source_acf_row_count,
             source_acf_rows=source_acf_rows,
@@ -524,10 +529,22 @@ def _target_contract(
                 )
                 for section in item.sections
             ],
-            schema_status=acf_schema.status if acf_schema is not None else "unavailable",
+            schema_status=_acf_schema_status(
+                item,
+                acf_schema=acf_schema,
+                source_snapshot=source_acf_snapshot,
+            ),
             schema_digest=acf_schema.schema_digest if acf_schema is not None else None,
-            schema_source_ref=acf_schema.source_ref if acf_schema is not None else "",
-            schema_reason=acf_schema.reason if acf_schema is not None else "",
+            schema_source_ref=_acf_schema_source_ref(
+                item,
+                acf_schema=acf_schema,
+                source_snapshot=source_acf_snapshot,
+            ),
+            schema_reason=_acf_schema_reason(
+                item,
+                acf_schema=acf_schema,
+                source_snapshot=source_acf_snapshot,
+            ),
             source_acf_digest=source_acf_digest,
             source_acf_fields_digest=source_acf_fields_digest,
             source_acf_root_field_count=source_acf_root_field_count,
@@ -590,6 +607,49 @@ def _write_profile_reason(
     )
 
 
+def _acf_schema_status(
+    item: WordPressAuthoringDevContentObject,
+    *,
+    acf_schema: WordPressAcfRestSchema | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None,
+) -> Literal["available", "observed", "unavailable"]:
+    if acf_schema is not None and acf_schema.status == "available":
+        return "available"
+    if source_snapshot is not None and source_snapshot.root_field == item.acf_field_name:
+        return "observed"
+    return "unavailable"
+
+
+def _acf_schema_source_ref(
+    item: WordPressAuthoringDevContentObject,
+    *,
+    acf_schema: WordPressAcfRestSchema | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None,
+) -> str:
+    if acf_schema is not None and acf_schema.status == "available":
+        return acf_schema.source_ref
+    if source_snapshot is not None and source_snapshot.root_field == item.acf_field_name:
+        return f"wp-json/wp/v2/{item.rest_endpoint}/{item.post_id} GET acf"
+    return acf_schema.source_ref if acf_schema is not None else ""
+
+
+def _acf_schema_reason(
+    item: WordPressAuthoringDevContentObject,
+    *,
+    acf_schema: WordPressAcfRestSchema | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None,
+) -> str:
+    if acf_schema is not None and acf_schema.status == "available":
+        return acf_schema.reason
+    if source_snapshot is not None and source_snapshot.root_field == item.acf_field_name:
+        return (
+            "REST GET zwrócił rzeczywisty układ ACF dla dokładnego obiektu; "
+            "OPTIONS nie dostarczył zagnieżdżonego schema, więc pola są obserwacją "
+            "read-only, a nie samodzielną zgodą na zapis."
+        )
+    return acf_schema.reason if acf_schema is not None else ""
+
+
 def _schema_field_names(layout: object) -> list[str]:
     fields = getattr(layout, "fields", [])
     return [field.name for field in fields if isinstance(getattr(field, "name", None), str)]
@@ -599,7 +659,8 @@ def _acf_writable_fields(
     item: WordPressAuthoringDevContentObject,
     *,
     acf_schema: WordPressAcfRestSchema | None,
-    source_acf_digest: str | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None = None,
+    source_acf_digest: str | None = None,
     source_acf_row_count: int | None = None,
     source_acf_rows: list[dict[str, object]] | None = None,
 ) -> tuple[dict[str, list[str]], str]:
@@ -611,12 +672,20 @@ def _acf_writable_fields(
     unknown values remain outside this narrow authoring profile.
     """
 
-    if acf_schema is None or acf_schema.status != "available":
-        return {}, "Brakuje dokładnego schematu REST ACF dla pola Flexible Content."
-    if acf_schema.root_field != item.acf_field_name:
-        return {}, "Odczytany schemat ACF dotyczy innego pola Flexible Content."
+    if acf_schema is not None and acf_schema.status == "available":
+        if acf_schema.root_field != item.acf_field_name:
+            return {}, "Odczytany schemat ACF dotyczy innego pola Flexible Content."
+    elif source_snapshot is None or source_snapshot.root_field != item.acf_field_name:
+        return {}, "Brakuje odczytanego układu ACF dla pola Flexible Content."
     if source_acf_digest is None or not source_acf_row_count or not source_acf_rows:
         return {}, "Odczyt targetu nie potwierdza pełnego digesta źródłowego pola ACF."
+    if acf_schema is None or acf_schema.status != "available":
+        return _observed_acf_writable_fields(
+            item,
+            source_snapshot=source_snapshot,
+        )
+    if acf_schema.root_field != item.acf_field_name:
+        return {}, "Odczytany schemat ACF dotyczy innego pola Flexible Content."
     layouts_by_name = {layout.name: layout for layout in acf_schema.layouts}
     writable_by_layout: dict[str, list[str]] = {}
     for section in item.sections:
@@ -653,6 +722,46 @@ def _acf_writable_fields(
     return (
         {},
         "Schema ACF nie potwierdza obserwowanego, bezpośredniego pola tekstowego "
+        "do bezpiecznej podmiany.",
+    )
+
+
+def _observed_acf_writable_fields(
+    item: WordPressAuthoringDevContentObject,
+    *,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None,
+) -> tuple[dict[str, list[str]], str]:
+    if source_snapshot is None:
+        return {}, "Brakuje odczytanego układu ACF dla pola Flexible Content."
+    observed_writable_by_layout: dict[str, list[str]] = {}
+    for section in item.sections:
+        row_index = section.section_index - 1
+        if row_index < 0 or row_index >= len(source_snapshot.rows):
+            continue
+        row = source_snapshot.rows[row_index]
+        if row.get("acf_fc_layout") != section.layout_name:
+            continue
+        direct_text_candidates = {
+            path
+            for path in section.text_field_paths
+            if "." not in path and path in section.field_names
+        }
+        writable = sorted(
+            field
+            for field in direct_text_candidates
+            if isinstance(row.get(field), str) and row.get(field, "").strip()
+        )
+        if writable:
+            observed_writable_by_layout[section.layout_name] = writable
+    if observed_writable_by_layout:
+        return (
+            observed_writable_by_layout,
+            "REST GET i digest źródła potwierdzają bezpośrednie pola tekstowe; "
+            "klon przed ewentualnym zapisem ponownie zweryfikuje cały układ i typy liści.",
+        )
+    return (
+        {},
+        "REST GET potwierdza układ ACF, ale nie znalazł bezpośredniego pola tekstowego "
         "do bezpiecznej podmiany.",
     )
 

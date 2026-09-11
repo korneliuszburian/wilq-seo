@@ -2440,6 +2440,77 @@ describe("ContentTargetDiscoverySchema", () => {
       }
     }).success).toBe(true);
   });
+
+  it("accepts an ACF shape observed through GET without treating it as a write profile", () => {
+    const result = ContentTargetDiscoverySchema.safeParse({
+      response_type: "content_target_discovery",
+      contract_version: "content_target_discovery_v2",
+      work_item_id: "content_work_item_bdo",
+      relation_status: "partial",
+      label: "Znaleziono stronę dev do sprawdzenia",
+      reason: "Odczyt tylko do weryfikacji.",
+      target: {
+        object_id: "346",
+        url: "https://ekologus.dev.proudsite.pl/bdo/",
+        post_type: "page",
+        post_status: "publish",
+        observed_surfaces: ["acf_flexible_content"],
+        target_contract: {
+          environment: "dev",
+          object_id: "346",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_type: "page",
+          post_status: "publish",
+          modified: "2026-08-28T10:00:00Z",
+          authority: "observation_only",
+          write_authorized: false,
+          authoring_surface: {
+            kind: "acf_flexible_content",
+            root_field: "content_sections",
+            layouts: [{
+              name: "text_section",
+              section_index: 1,
+              label: "Sekcja tekstowa",
+              fields: ["heading", "content"],
+              schema_fields: [],
+              writable_fields: ["heading", "content"],
+              relationships: []
+            }],
+            schema_status: "observed",
+            schema_digest: null,
+            schema_source_ref: "wp-json/wp/v2/pages/346 GET acf",
+            schema_reason: "REST GET zwrócił rzeczywisty układ ACF.",
+            source_acf_digest: "a".repeat(64),
+            source_acf_fields_digest: "b".repeat(64),
+            source_acf_root_field_count: 1,
+            source_acf_row_count: 1,
+            write_profile_status: "ready",
+            write_profile_reason: "Digest źródła potwierdza bezpośrednie pola tekstowe."
+          }
+        },
+        target_contract_digest: "c".repeat(64),
+        observation_evidence: {
+          evidence_id: "ev_wordpress_target_observation_bdo",
+          connector_id: "wordpress_ekologus",
+          object_id: "346",
+          post_type: "page",
+          url: "https://ekologus.dev.proudsite.pl/bdo/",
+          post_status: "publish",
+          modified: "2026-08-28T10:00:00Z",
+          observed_at: "2026-08-28T10:00:01Z"
+        }
+      },
+      candidates: [],
+      evidence_ids: ["ev_wordpress_target_observation_bdo"],
+      caveats: ["Odczyt nie daje prawa do zapisu."]
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.target?.target_contract.authoring_surface?.schema_status).toBe("observed");
+      expect(result.data.target?.target_contract.write_authorized).toBe(false);
+    }
+  });
 });
 
 describe("ContentTargetMappingPreviewSchema", () => {
