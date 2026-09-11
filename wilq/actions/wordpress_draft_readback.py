@@ -7,6 +7,7 @@ from wilq.content.workflow.contracts.contracts import (
 from wilq.content.workflow.pipeline_steps.stage_activation import wordpress_draft_readback
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
+from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
@@ -21,7 +22,10 @@ def last_created_wordpress_draft_readback(
 
     if action.payload.get("action_type") == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE:
         return _new_page_draft_result_readback(action)
-    if action.id != "act_apply_wordpress_draft_handoff":
+    if (
+        action.payload.get("action_type") != CONTENT_DEV_DRAFT_ACTION_TYPE
+        and action.id != "act_apply_wordpress_draft_handoff"
+    ):
         return None
     latest_applied = next(
         (

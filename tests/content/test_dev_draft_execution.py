@@ -709,6 +709,110 @@ def test_stage_readback_surfaces_verified_acf_digest_pair(
     assert result.verification_status == "verified"
 
 
+def test_stage_readback_blocks_payloadless_content_without_digest_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution = _created_execution("").model_copy(
+        update={
+            "payload": None,
+            "expected_content_digest": None,
+            "observed_content_digest": None,
+        }
+    )
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id, *, endpoint="posts": _readback(""),
+    )
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.verification_status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_verification_unavailable"
+    ]
+
+
+def test_stage_readback_blocks_payloadless_acf_without_observed_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution = _created_execution("").model_copy(
+        update={
+            "payload": None,
+            "expected_acf_digest": "a" * 64,
+            "observed_acf_digest": None,
+        }
+    )
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id, *, endpoint="posts": _readback(""),
+    )
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.verification_status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_verification_unavailable"
+    ]
+
+
+def test_stage_readback_blocks_payloadless_title_digest_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_html = "<p>Oczekiwana treść.</p>"
+    execution = _created_execution(expected_html).model_copy(
+        update={
+            "payload": None,
+            "expected_content_digest": wordpress_client._wordpress_draft_value_digest(
+                expected_html
+            ),
+            "observed_content_digest": wordpress_client._wordpress_draft_value_digest(
+                expected_html
+            ),
+            "expected_title_digest": "a" * 64,
+        }
+    )
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id, *, endpoint="posts": _readback(expected_html),
+    )
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.verification_status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_title_mismatch"
+    ]
+
+
+def test_stage_readback_blocks_non_json_authoritative_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution = _created_execution("<p>Oczekiwana treść.</p>")
+
+    def readback(_post_id: str, *, endpoint: str = "posts") -> WordPressDraftPostReadback:
+        raise ValueError("invalid JSON from vendor")
+
+    monkeypatch.setattr(stage_activation, "read_wordpress_draft_post", readback)
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.verification_status == "blocked"
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_read_failed"
+    ]
+
+
 def test_stage_readback_blocks_title_digest_drift(monkeypatch: pytest.MonkeyPatch) -> None:
     expected_html = "<p>Oczekiwana treść.</p>"
     execution = _created_execution(expected_html).model_copy(
