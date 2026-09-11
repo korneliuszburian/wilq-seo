@@ -14,11 +14,16 @@ import {
   validateAction
 } from "../../lib/api";
 import { TraceLine } from "../../components/TraceLine";
-import type { ActionObject, ActionPanelProps } from "./shared";
+import {
+  contentDevDraftBinding,
+  type ActionObject,
+  type ActionPanelProps
+} from "./shared";
 
 type ContentNewPageDraftBinding = z.infer<typeof ContentNewPageDraftBindingSchema>;
 
 export function ActionValidationControls({ action }: ActionPanelProps) {
+  const wordpressDraft = contentDevDraftBinding(action);
   const queryClient = useQueryClient();
   const validationMutation = useMutation({
     mutationFn: () => validateAction(action.id),
@@ -32,7 +37,8 @@ export function ActionValidationControls({ action }: ActionPanelProps) {
       confirmAction(action.id, {
         confirmed_by: "operator_local_dashboard",
         notes: "Operator potwierdza podgląd. Ten krok nie zapisuje zmian.",
-        preview_acknowledged: true
+        preview_acknowledged: true,
+        wordpress_draft: wordpressDraft
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
@@ -97,8 +103,64 @@ export function ActionValidationControls({ action }: ActionPanelProps) {
         />
       </div>
       <ActionImpactCheckControls action={action} />
+      <ActionContentDevDraftApplyControl action={action} />
       <ActionNewPageDraftApplyControl action={action} />
     </div>
+  );
+}
+
+function ActionContentDevDraftApplyControl({ action }: ActionPanelProps) {
+  const binding = contentDevDraftBinding(action);
+  const queryClient = useQueryClient();
+  const [acknowledged, setAcknowledged] = useState(false);
+  const applyMutation = useMutation({
+    mutationFn: () =>
+      applyAction(action.id, {
+        confirm: true,
+        confirmed_by: "operator_local_dashboard",
+        wordpress_draft: binding!
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  if (!binding) return null;
+  const canApply = action.review_gate.apply_allowed && acknowledged;
+  return (
+    <section className="mt-3 rounded-md border border-indigo-200 bg-indigo-50/60 p-3 text-xs">
+      <div className="font-semibold uppercase tracking-normal text-indigo-800">
+        Utwórz jeden szkic treści na dev
+      </div>
+      <p className="mt-1 leading-5 text-slate-700">
+        Zapis dotyczy exact rewizji {binding.content_digest.slice(0, 12)}… i nie publikuje,
+        nie aktualizuje ani nie usuwa istniejącej treści.
+      </p>
+      <label className="mt-3 flex items-start gap-2 leading-5 text-slate-700">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+          className="mt-0.5"
+        />
+        Potwierdzam exact binding, podgląd, review i kontrolę gotowości szkicu.
+      </label>
+      <button
+        type="button"
+        onClick={() => applyMutation.mutate()}
+        disabled={!canApply || applyMutation.isPending}
+        className="mt-3 inline-flex min-h-9 items-center rounded-md bg-action px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {applyMutation.isPending ? "Tworzę szkic…" : "Utwórz szkic treści na dev"}
+      </button>
+      {applyMutation.data ? (
+        <p className={applyMutation.data.applied ? "mt-2 text-action" : "mt-2 text-risk"}>
+          {applyMutation.data.applied
+            ? "Szkic został utworzony i pozostaje nieopublikowany."
+            : applyMutation.data.errors.join(" ")}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
@@ -254,6 +316,7 @@ function ActionConfirmResultPanel({
 }
 
 function ActionImpactCheckControls({ action }: ActionPanelProps) {
+  const wordpressDraft = contentDevDraftBinding(action);
   const queryClient = useQueryClient();
   const impactMutation = useMutation({
     mutationFn: () =>
@@ -261,7 +324,8 @@ function ActionImpactCheckControls({ action }: ActionPanelProps) {
         checked_by: "operator_local_dashboard",
         notes: "Operator sprawdza porównanie efektu przed jakimkolwiek zapisem zmian.",
         pre_window_days: 7,
-        post_window_days: 7
+        post_window_days: 7,
+        wordpress_draft: wordpressDraft
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });

@@ -4,6 +4,7 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.regulatory import (
     ContentRegulatoryReviewCandidate,
@@ -16,6 +17,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
     ContentDraftRevisionSourceProvenance,
+    ContentDraftRevisionState,
     ContentDraftRevisionStateStatus,
 )
 from wilq.content.workflow.pipeline_steps.decision_context import (
@@ -31,6 +33,7 @@ from wilq.content.workflow.workspace.document_lineage import (
     ContentDocumentWorkspaceDocumentLineage,
     build_content_document_lineage,
 )
+from wilq.schemas import ContentDecisionItem
 
 
 class ContentDocumentWorkspaceSourceSection(BaseModel):
@@ -173,25 +176,40 @@ def build_content_document_workspace(
     work_item_id: str,
     *,
     revision_context_current: bool | None = None,
+    revision_state: ContentDraftRevisionState | None = None,
     item: ContentWorkItem | None = None,
+    read_material: bool = True,
 ) -> ContentDocumentWorkspace | None:
     """Build a source-first workspace without planning, generation or delivery reads."""
 
-    context = build_content_decision_context(work_item_id)
+    context = (
+        build_content_decision_context(work_item_id)
+        if read_material
+        else build_content_decision_context(work_item_id, read_material=False)
+    )
     if context is None or context.work_kind != "refresh_existing":
         return None
-    source = (
-        None
-        if context.source_public.url is None
-        else read_content_inventory_material(context.source_public.url)
+    source = None
+    if context.source_public.url is not None:
+        if read_material:
+            source = read_content_inventory_material(context.source_public.url)
+        elif item is not None:
+            source = _persisted_material_from_item(item, url=context.source_public.url)
+    source_snapshot = _source_snapshot(
+        context,
+        source,
+        material_current=read_material,
     )
-    source_snapshot = _source_snapshot(context, source)
-    revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
-    revision = _revision_with_claim_ledger(revision_state.latest_revision, item=item)
+    current_revision_state = (
+        revision_state
+        if revision_state is not None
+        else content_workflow_store().load_draft_revision_state(work_item_id)
+    )
+    revision = _revision_with_claim_ledger(current_revision_state.latest_revision, item=item)
     document = _canonical_document(
-        revision_state.status,
+        current_revision_state.status,
         revision,
-        getattr(revision_state, "latest_review", None),
+        getattr(current_revision_state, "latest_review", None),
     )
     document = _document_for_current_context(
         document,
@@ -210,7 +228,8 @@ def build_content_document_workspace(
             revision_context_current=revision_context_current,
         ),
         regulatory_review_candidates=_regulatory_review_candidates(
-            revision
+            revision,
+            item=item,
         ),
         secondary_disclosures=[
             (
@@ -222,6 +241,45 @@ def build_content_document_workspace(
                 "Gutenberga ani the_content."
             ),
         ],
+    )
+
+
+def _persisted_material_from_item(
+    item: ContentWorkItem,
+    *,
+    url: str,
+) -> ContentInventoryMaterialResponse | None:
+    if not content_work_item_has_persisted_material(item):
+        return None
+    return ContentInventoryMaterialResponse(
+        status="ready",
+        url=url,
+        source_kind=item.wordpress_content_source_kind,
+        title=item.wordpress_title_or_h1,
+        content_text=item.wordpress_content_text,
+        content_summary=item.wordpress_content_summary,
+        content_word_count=item.wordpress_content_word_count,
+        section_headings=item.wordpress_section_headings,
+        acf_field_names=item.wordpress_acf_field_names,
+        acf_section_headings=item.wordpress_acf_section_headings,
+        extraction_region=item.wordpress_content_extraction_region,
+        material_confidence=item.wordpress_content_material_confidence,
+        source_field_lineage=item.wordpress_content_source_field_lineage,
+    )
+
+
+def content_work_item_has_persisted_material(
+    item: ContentWorkItem | ContentDecisionItem,
+) -> bool:
+    """Return whether a stored work item contains text or structural material."""
+
+    return any(
+        (
+            bool(item.wordpress_content_text),
+            bool(item.wordpress_section_headings),
+            bool(item.wordpress_acf_section_headings),
+            bool(item.wordpress_acf_field_names),
+        )
     )
 
 
@@ -246,16 +304,34 @@ def _revision_with_claim_ledger(
 
 def _regulatory_review_candidates(
     revision: ContentDraftRevision | None,
+    *,
+    item: ContentWorkItem | None = None,
 ) -> list[ContentRegulatoryReviewCandidate]:
-    service_card_id = None if revision is None else getattr(revision, "service_card_id", None)
-    if service_card_id is None:
+    editorial_item = item is not None and item.content_kind == "editorial"
+    service_card_id = (
+        None
+        if editorial_item or revision is None
+        else getattr(revision, "service_card_id", None)
+    )
+    canonical_path = (
+        content_normalized_path(
+            None
+            if item is None
+            else item.final_canonical_url or item.intended_final_url or item.source_public_url
+        )
+        if editorial_item
+        else None
+    )
+    if service_card_id is None and not canonical_path:
         return []
     coverage = regulatory_content_coverage(
         service_card_id=service_card_id,
+        canonical_path=canonical_path,
         source_facts=ekologus_source_facts(),
     )
     return regulatory_review_candidates(
         service_card_id=service_card_id,
+        canonical_path=canonical_path,
         coverage=coverage,
     )
 
@@ -263,6 +339,8 @@ def _regulatory_review_candidates(
 def _source_snapshot(
     context: ContentDecisionContext,
     material: ContentInventoryMaterialResponse | None,
+    *,
+    material_current: bool = True,
 ) -> ContentDocumentWorkspaceSourceSnapshot:
     if material is None or material.status != "ready":
         return ContentDocumentWorkspaceSourceSnapshot(
@@ -270,7 +348,11 @@ def _source_snapshot(
             status_label="materiał niedostępny",
             title=context.source_public.title,
             url=context.source_public.url,
-            reason="Aktualny materiał publicznej strony nie jest dostępny do odczytu.",
+            reason=(
+                "Aktualny materiał publicznej strony nie jest dostępny do odczytu."
+                if material_current
+                else "Bieżący snapshot nie zawiera treści ani struktury publicznej strony."
+            ),
             faq_status="unavailable",
             cta_status="unavailable",
             caveats=[context.source_public.reason],
@@ -282,7 +364,9 @@ def _source_snapshot(
     status: Literal["available", "partial", "unavailable"] = "available" if text else "partial"
     return ContentDocumentWorkspaceSourceSnapshot(
         status=status,
-        status_label="materiał dostępny" if text else "materiał częściowy",
+        status_label=("materiał dostępny" if text else "materiał częściowy")
+        if material_current
+        else ("materiał zapisany" if text else "materiał zapisany częściowo"),
         title=material.title or context.source_public.title,
         url=material.url,
         extraction_method=material.extraction_region or material.source_kind,
@@ -295,9 +379,19 @@ def _source_snapshot(
         faq_status="not_observed",
         cta_status="not_observed",
         reason=(
-            "WILQ odczytał aktualny publiczny materiał tej strony."
-            if text
-            else "WILQ odczytał strukturę strony, ale nie pełny tekst jej głównej treści."
+            (
+                "WILQ odczytał aktualny publiczny materiał tej strony."
+                if text
+                else "WILQ odczytał strukturę strony, ale nie pełny tekst jej głównej treści."
+            )
+            if material_current
+            else (
+                "WILQ pokazuje materiał zapisany w bieżącym snapshocie; "
+                "ten odczyt nie pobiera aktualnej treści z WordPressa."
+                if text
+                else "WILQ pokazuje zapisaną strukturę bez pełnego tekstu; "
+                "ten odczyt nie pobiera aktualnej treści z WordPressa."
+            )
         ),
         caveats=[
             (
@@ -305,6 +399,11 @@ def _source_snapshot(
                 "nie znaczy, że nie istnieją na stronie."
             ),
             "Odczyt źródła nie potwierdza miejsca authoringu ani mapowania dev.",
+            *(
+                []
+                if material_current
+                else ["Aktualność materiału sprawdź w ocenie świeżości źródeł dla tej pracy."]
+            ),
         ],
         evidence_ids=list(
             dict.fromkeys(
@@ -605,4 +704,8 @@ def _next_action(
     )
 
 
-__all__ = ["ContentDocumentWorkspace", "build_content_document_workspace"]
+__all__ = [
+    "ContentDocumentWorkspace",
+    "build_content_document_workspace",
+    "content_work_item_has_persisted_material",
+]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export one canonical, human-readable status row for every dev sitemap URL."""
+"""Export the historical v0 status projection to a non-canonical path."""
 
 from __future__ import annotations
 
@@ -10,6 +10,23 @@ import sqlite3
 from pathlib import Path
 from urllib.parse import urlsplit
 
+EXPORT_SCHEMA_VERSION = "legacy_content_status_export_v0"
+CANONICAL_JOURNAL = Path(__file__).resolve().parents[1] / "docs/content-status-214.csv"
+
+
+def _refuse_canonical_output(output: Path) -> None:
+    """Keep this historical exporter from replacing the current-state contract."""
+    same_file = (
+        output.exists()
+        and CANONICAL_JOURNAL.exists()
+        and output.samefile(CANONICAL_JOURNAL)
+    )
+    if output.resolve() == CANONICAL_JOURNAL.resolve() or same_file:
+        raise ValueError(
+            "legacy exporter schema "
+            f"{EXPORT_SCHEMA_VERSION} cannot write canonical journal "
+            "content_status_214_v1"
+        )
 
 def _path(value: str | None) -> str | None:
     if not value:
@@ -66,6 +83,7 @@ def _next_action(state: str, row: dict) -> str:
 
 
 def export(args: argparse.Namespace) -> int:
+    _refuse_canonical_output(args.output)
     journal = json.loads(args.journal.read_text(encoding="utf-8"))
     sitemap = json.loads(args.sitemap.read_text(encoding="utf-8"))
     acf = json.loads(args.acf_inventory.read_text(encoding="utf-8"))

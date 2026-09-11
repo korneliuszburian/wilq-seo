@@ -244,7 +244,7 @@ function ContentWorkflowRouteState({
       <ContentTextWorkspace
         workItemId={selectedWorkItemId}
         selectedWorkspace={selectedWorkspace}
-        requestedBy={operatorLabel ?? "operator_local_dashboard"}
+        requestedBy={operatorLabel}
         onOpenReview={onOpenReview}
       />
     );

@@ -37,7 +37,17 @@ def canonicalize_model_inventory_headings(
             inventory_section.section_id
         )
     if not inventory:
-        return output
+        sections = [
+            section.model_copy(
+                update={"inventory_heading": None, "inventory_section_id": None}
+            )
+            if section.inventory_heading is not None or section.inventory_section_id is not None
+            else section
+            for section in output.sections
+        ]
+        if sections == output.sections:
+            return output
+        return output.model_copy(update={"sections": sections})
     used: set[str] = set()
     used_inventory_section_ids: set[str] = set()
     sections = []
@@ -85,6 +95,16 @@ def canonicalize_model_inventory_headings(
                     )
                     changed = True
                     continue
+            if not matching_ids:
+                sections.append(
+                    _as_created_section(section)
+                    if section.inventory_disposition == "rewrite"
+                    else section.model_copy(
+                        update={"inventory_heading": None, "inventory_section_id": None}
+                    )
+                )
+                changed = True
+                continue
             sections.append(section)
             continue
         match = _best_inventory_heading(section.heading, inventory, used)

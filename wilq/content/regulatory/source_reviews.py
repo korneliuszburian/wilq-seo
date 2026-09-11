@@ -60,7 +60,8 @@ class ContentRegulatorySourceReview(BaseModel):
     candidate_id: str = Field(min_length=1)
     profile_id: str = Field(min_length=1)
     profile_version: str = Field(min_length=1)
-    service_card_ids: list[str] = Field(min_length=1)
+    service_card_ids: list[str] = Field(default_factory=list)
+    canonical_paths: list[str] = Field(default_factory=list)
     source_url: str = Field(min_length=1)
     source_title: str = Field(min_length=1)
     observed_on: str = Field(min_length=1)
@@ -71,6 +72,12 @@ class ContentRegulatorySourceReview(BaseModel):
     decision: Literal["accepted", "rejected"]
     reviewer: str = Field(min_length=1)
     reviewed_at: datetime
+
+    @model_validator(mode="after")
+    def require_content_subject(self) -> ContentRegulatorySourceReview:
+        if not self.service_card_ids and not self.canonical_paths:
+            raise ValueError("Regulatory review requires an exact content subject.")
+        return self
 
     def approved_source_fact(self) -> ContentSourceFact | None:
         if self.decision != "accepted":
@@ -111,6 +118,7 @@ class ContentRegulatorySourceReview(BaseModel):
             regulatory_profile_version=self.profile_version,
             regulatory_requirement_ids=sorted(set(self.covered_requirement_ids)),
             applicable_service_card_ids=sorted(set(self.service_card_ids)),
+            applicable_canonical_paths=sorted(set(self.canonical_paths)),
         )
 
 
@@ -258,10 +266,20 @@ class RegulatorySourceReviewStore:
 
     def approved_source_facts(self) -> tuple[ContentSourceFact, ...]:
         snapshot_store = RegulatorySourceSnapshotStore(self.path)
+        candidates = {
+            candidate.candidate_id: candidate for candidate in regulatory_source_candidates()
+        }
         return tuple(
             fact
             for review in self.list_reviews()
             if review.decision == "accepted"
+            and (candidate := candidates.get(review.candidate_id)) is not None
+            and review.source_url == candidate.source_url
+            and review.profile_id == candidate.profile_id
+            and review.profile_version == candidate.profile_version
+            and set(review.covered_requirement_ids).issubset(candidate.requirement_ids)
+            and set(review.service_card_ids).issubset(candidate.service_card_ids)
+            and set(review.canonical_paths).issubset(candidate.canonical_paths)
             and (latest := snapshot_store.latest(review.candidate_id)) is not None
             and latest.snapshot_id == review.source_snapshot_id
             if (fact := review.approved_source_fact()) is not None
@@ -342,6 +360,7 @@ def _review_from_command(
         profile_id=candidate.profile_id,
         profile_version=candidate.profile_version,
         service_card_ids=candidate.service_card_ids,
+        canonical_paths=candidate.canonical_paths,
         source_url=candidate.source_url,
         source_title=candidate.source_title,
         observed_on=snapshot.observed_on,

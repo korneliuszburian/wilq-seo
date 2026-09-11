@@ -534,3 +534,32 @@ class CodexRun(BaseModel):
     deadline_at: datetime | None = None
     completed_at: datetime | None = None
     error: str | None = None
+
+
+class CodexRunHistorySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    skill: str | None = None
+    status: Literal["started", "completed", "failed", "blocked"]
+    model: str | None = None
+    prompt_template_id: str | None = None
+    cost_estimate_pln: float | None = Field(default=None, ge=0)
+    source_material_count: int = Field(ge=0)
+    started_at: datetime
+
+
+class CodexRunHistoryPage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[CodexRunHistorySummary]
+    total_count: int = Field(ge=0)
+    next_cursor: str | None = None
+
+
+class CodexRunNotFound(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["codex_run_not_found"] = "codex_run_not_found"
+    code: Literal["codex_run_not_found"] = "codex_run_not_found"
+    run_id: str

@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.actions.service import clear_action_list_cache
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.content.workflow.target.dev_draft_action import (
@@ -22,6 +23,12 @@ from wilq.content.workflow.target.target_mapping import (
     ContentTargetMappingPreview,
     build_content_target_draft_preview,
     build_content_target_mapping_preview,
+)
+from wilq.content.workflow.target.target_mapping_persistence import (
+    ContentTargetMappingDraftState,
+    build_legacy_target_mapping_draft_preview,
+    build_persisted_target_mapping_preview,
+    confirmation_for_live_target_mapping,
 )
 from wilq.schemas import ActionObject
 
@@ -58,15 +65,13 @@ def content_target_mapping_preview_endpoint(
     revision_id: str,
 ) -> ContentTargetMappingPreview:
     store = content_workflow_store()
-    mapping, _ = _mapping_preview(work_item_id, revision_id, store)
+    state = _persisted_draft_state(store, work_item_id, revision_id)
+    if state is not None and state.status == "snapshot_available":
+        return _persisted_mapping_preview(store, state)
+    mapping, _ = _live_mapping_preview(work_item_id, revision_id, store)
     if mapping.target is None or mapping.binding_digest is None:
         return mapping
-    confirmation = store.load_target_mapping_confirmation(
-        work_item_id=work_item_id,
-        revision_id=revision_id,
-        target_contract_digest=mapping.target.target_contract_digest,
-        binding_digest=mapping.binding_digest,
-    )
+    confirmation = _mapping_confirmation(store, work_item_id, revision_id, mapping)
     return mapping.model_copy(update={"confirmation": confirmation})
 
 
@@ -75,18 +80,25 @@ def content_target_draft_preview_endpoint(
     revision_id: str,
 ) -> ContentTargetDraftPreview:
     store = content_workflow_store()
-    mapping, revisions = _mapping_preview(work_item_id, revision_id, store)
-    confirmation = _mapping_confirmation(store, work_item_id, revision_id, mapping)
-    try:
-        return build_content_target_draft_preview(
+    state = _persisted_draft_state(store, work_item_id, revision_id)
+    if state is not None:
+        if state.status == "legacy_confirmation":
+            return build_legacy_target_mapping_draft_preview(state)
+        revisions = store.list_draft_revisions(work_item_id)
+        mapping = _persisted_mapping_preview(store, state, revisions=revisions)
+        return _draft_preview_from_mapping(
             work_item_id=work_item_id,
             revision_id=revision_id,
             revisions=revisions,
-            mapping_preview=mapping,
-            confirmation=confirmation,
+            mapping=mapping,
+            confirmation=(
+                state.confirmation if mapping.status == "ready_for_human_mapping" else None
+            ),
         )
-    except ValueError as error:
-        raise HTTPException(status_code=409, detail=str(error)) from error
+    return _live_content_target_draft_preview(work_item_id, revision_id, store=store)
+
+
+_PUBLIC_DRAFT_PREVIEW_ENDPOINT = content_target_draft_preview_endpoint
 
 
 def confirm_content_target_mapping_endpoint(
@@ -95,7 +107,7 @@ def confirm_content_target_mapping_endpoint(
     command: ContentTargetMappingConfirmationCommand,
 ) -> ContentTargetMappingConfirmationResult:
     store = content_workflow_store()
-    mapping, _ = _mapping_preview(work_item_id, revision_id, store)
+    mapping, _ = _live_mapping_preview(work_item_id, revision_id, store)
     try:
         return store.record_target_mapping_confirmation(
             work_item_id=work_item_id,
@@ -111,9 +123,18 @@ def create_content_target_draft_action_endpoint(
     revision_id: str,
     command: ContentTargetDraftActionCommand,
 ) -> ActionObject:
-    preview = content_target_draft_preview_endpoint(work_item_id, revision_id)
+    store = content_workflow_store()
+    preview = _live_content_target_draft_preview(work_item_id, revision_id)
     try:
-        action = create_content_target_draft_action(preview, command)
+        action = create_content_target_draft_action(
+            preview,
+            command,
+            wordpress_draft_binding=_approved_revision_binding(
+                store,
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+            ),
+        )
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     persisted = persist_content_target_draft_action(action)
@@ -121,7 +142,96 @@ def create_content_target_draft_action_endpoint(
     return persisted
 
 
-def _mapping_preview(
+def _approved_revision_binding(
+    store: ContentWorkflowStore,
+    *,
+    work_item_id: str,
+    revision_id: str,
+) -> ContentDraftRevisionBinding:
+    revision = next(
+        (
+            candidate
+            for candidate in store.list_draft_revisions(work_item_id)
+            if candidate.revision_id == revision_id
+        ),
+        None,
+    )
+    review = store.load_draft_revision_review(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+    )
+    if (
+        revision is None
+        or review is None
+        or review.decision != "approved"
+        or review.revision_digest != revision.content_digest
+        or not revision.planning_digest
+        or not revision.final_canonical_url
+    ):
+        raise ValueError("Akcja szkicu dev wymaga dokładnej zatwierdzonej rewizji.")
+    return ContentDraftRevisionBinding(
+        work_item_id=revision.work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{revision.work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id=revision.draft_package_id,
+        draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
+        approval_decision_id=review.decision_id,
+        final_canonical_url=revision.final_canonical_url,
+    )
+
+
+def _live_content_target_draft_preview(
+    work_item_id: str,
+    revision_id: str,
+    *,
+    store: ContentWorkflowStore | None = None,
+) -> ContentTargetDraftPreview:
+    if (
+        store is None
+        and content_target_draft_preview_endpoint is not _PUBLIC_DRAFT_PREVIEW_ENDPOINT
+    ):
+        # Preserve the established route-level adapter seam used by focused
+        # tests. The production endpoint identity always takes the live path.
+        return content_target_draft_preview_endpoint(work_item_id, revision_id)
+    active_store = content_workflow_store() if store is None else store
+    mapping, revisions = _live_mapping_preview(work_item_id, revision_id, active_store)
+    return _draft_preview_from_mapping(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revisions=revisions,
+        mapping=mapping,
+        confirmation=_mapping_confirmation(
+            active_store,
+            work_item_id,
+            revision_id,
+            mapping,
+        ),
+    )
+
+
+def _draft_preview_from_mapping(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revisions: list[ContentDraftRevision],
+    mapping: ContentTargetMappingPreview,
+    confirmation: ContentTargetMappingConfirmation | None,
+) -> ContentTargetDraftPreview:
+    try:
+        return build_content_target_draft_preview(
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            revisions=revisions,
+            mapping_preview=mapping,
+            confirmation=confirmation,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+def _live_mapping_preview(
     work_item_id: str,
     revision_id: str,
     store: ContentWorkflowStore,
@@ -146,6 +256,40 @@ def _mapping_preview(
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
+def _persisted_draft_state(
+    store: ContentWorkflowStore,
+    work_item_id: str,
+    revision_id: str,
+) -> ContentTargetMappingDraftState | None:
+    if not isinstance(store, ContentWorkflowStore):
+        return None
+    return store.load_target_mapping_draft_state(
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+    )
+
+
+def _persisted_mapping_preview(
+    store: ContentWorkflowStore,
+    state: ContentTargetMappingDraftState,
+    *,
+    revisions: list[ContentDraftRevision] | None = None,
+) -> ContentTargetMappingPreview:
+    local_revisions = (
+        store.list_draft_revisions(state.confirmation.work_item_id)
+        if revisions is None
+        else revisions
+    )
+    return build_persisted_target_mapping_preview(
+        state=state,
+        revisions=local_revisions,
+        human_review=store.load_draft_revision_review(
+            work_item_id=state.confirmation.work_item_id,
+            revision_id=state.confirmation.revision.revision_id,
+        ),
+    )
+
+
 def _mapping_confirmation(
     store: ContentWorkflowStore,
     work_item_id: str,
@@ -154,6 +298,16 @@ def _mapping_confirmation(
 ) -> ContentTargetMappingConfirmation | None:
     if mapping.target is None or mapping.binding_digest is None:
         return None
+    if isinstance(store, ContentWorkflowStore):
+        return confirmation_for_live_target_mapping(
+            state=store.load_target_mapping_draft_state(
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+            ),
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            mapping=mapping,
+        )
     return store.load_target_mapping_confirmation(
         work_item_id=work_item_id,
         revision_id=revision_id,

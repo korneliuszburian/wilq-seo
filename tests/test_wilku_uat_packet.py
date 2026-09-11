@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -10,14 +12,7 @@ WILKU_UAT_PACKET = (
     / "2026-08-15-wilku-content-uat"
     / "PACZKA-DO-OCENY-2026-08-15.md"
 )
-CONTENT_REVIEW_PACKET = (
-    REPOSITORY_ROOT
-    / "docs"
-    / "agents"
-    / "reports"
-    / "content-review"
-    / "paczka-tresci-5-stron-2026-08-12.md"
-)
+UAT_REVISION_MANIFEST = WILKU_UAT_PACKET.parent / "revision.manifest.json"
 
 
 def test_wilku_uat_packet_has_required_decision_surface() -> None:
@@ -40,18 +35,27 @@ def test_wilku_uat_packet_has_required_decision_surface() -> None:
         assert marker in packet, f"Brak wymaganego elementu pakietu: {marker}"
 
 
-def test_wilku_uat_packet_matches_content_review_packet_revisions() -> None:
+def test_wilku_uat_packet_matches_committed_revision_manifest() -> None:
     packet = WILKU_UAT_PACKET.read_text(encoding="utf-8")
-    review = CONTENT_REVIEW_PACKET.read_text(encoding="utf-8")
-
-    for revision_id in (
+    manifest = json.loads(UAT_REVISION_MANIFEST.read_text(encoding="utf-8"))
+    fixed_point_match = re.search(r"source fixed point: `([0-9a-f]{40})`", packet)
+    assert fixed_point_match is not None
+    revision_ids = [
         "content_revision_f4c23cfcd5b6449c83281545b4883e2c",
         "content_revision_66f7eec3ec9646a5a8ed5327a44e3da8",
         "content_revision_62ef7b61f6fd4a399a41d3ab33094fc9",
         "content_revision_b14c7fc23fcc4907aadf24c431cc656a",
         "content_revision_787c4e52b3f941f3a048a63355e8cf45",
-    ):
-        assert revision_id in review, f"Rewizja {revision_id} brakuje w paczce treści"
+    ]
+
+    assert manifest == {
+        "contract": "wilku_content_uat_revision_manifest_v1",
+        "source_fixed_point": fixed_point_match.group(1),
+        "revision_ids": revision_ids,
+        "human_review_required": True,
+        "publish_ready": False,
+    }
+    for revision_id in revision_ids:
         assert revision_id in packet, f"Rewizja {revision_id} brakuje w pakiecie UAT"
 
 

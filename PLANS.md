@@ -109,9 +109,10 @@ Deterministic gate obejmuje `long_sentence`, `heading_answer_mismatch`,
 `working_note`, `duplicate_paragraph`, weak CTA, język, source/claim oraz
 privacy/consent. Byline/author pozostaje `lab-test`.
 
-DeepSeek V4.1 Flash (`opencode-go/deepseek-flash`) jest advisory judge. Nie może
+DeepSeek V4.1 Flash (`opencode-go/deepseek-v4.1-flash`) jest advisory judge. Nie może
 nadpisać deterministic failure ani nadać approval. Każdy finding ma lokalną
-dyspozycję `accepted/rejected/deferred` z dowodem.
+dyspozycję `accept_and_fix | reject_with_evidence | deferred | human_decision`,
+z exact evidence.
 
 Zakazane skróty: magic SEO score, długość tekstu jako jakość, keyword stuffing,
 substring coverage jako dowód intencji, current-vs-current uniqueness,
@@ -175,7 +176,9 @@ Naprawić REACH work-item availability bez syntetycznego semantic PASS.
 
 Realizacja dzieli się na trzy atomowe Beady: deterministic gate; typed
 `ContentIndependentReviewRun` z rolą/model/version/evidence i persisted finding
-disposition; osobny REACH recovery. Jeden run nie może udawać trzech ról.
+disposition (`accept_and_fix | reject_with_evidence | deferred | human_decision`,
+każda z exact evidence); osobny REACH recovery. Jeden run nie może udawać
+trzech ról.
 
 ### S6 — exact target discovery i mapping
 

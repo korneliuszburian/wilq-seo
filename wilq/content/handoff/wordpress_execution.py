@@ -5,6 +5,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.connectors.wordpress.client import (
+    WordPressDraftCreationProof,
+    _wordpress_draft_value_digest,
+)
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.revision_document_renderer import (
     revision_document_html,
@@ -117,6 +121,15 @@ class ContentWordPressDraftExecutionResult(BaseModel):
     payload: ContentWordPressDraftPayload | None = None
     revision_binding: ContentDraftRevisionBinding | None = None
     wordpress_post_id: str | None = None
+    endpoint: Literal["posts", "pages", "uslugi"] | None = None
+    expected_content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    observed_content_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    expected_acf_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    observed_acf_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    expected_title_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    observed_title_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    verification_expected_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    verification_observed_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     external_write_attempted: bool = False
     blockers: list[ContentWordPressDraftExecutionBlocker] = Field(default_factory=list)
 
@@ -204,6 +217,7 @@ def execute_content_wordpress_draft_handoff(
             live_write_enabled=live_write_enabled,
             create_draft=create_draft,
         )
+    digest_fields = _creation_digest_fields(payload, wordpress_post_id)
     return ContentWordPressDraftExecutionResult(
         status="created",
         mode=mode,
@@ -214,6 +228,13 @@ def execute_content_wordpress_draft_handoff(
         ),
         payload=payload,
         wordpress_post_id=wordpress_post_id,
+        endpoint=payload.endpoint_kind,
+        expected_title_digest=digest_fields["expected_title_digest"],
+        observed_title_digest=digest_fields["observed_title_digest"],
+        expected_content_digest=digest_fields["expected_content_digest"],
+        observed_content_digest=digest_fields["observed_content_digest"],
+        expected_acf_digest=digest_fields["expected_acf_digest"],
+        observed_acf_digest=digest_fields["observed_acf_digest"],
         external_write_attempted=True,
     )
 
@@ -232,6 +253,7 @@ def _failed_wordpress_draft_creation(
         "wordpress_draft_"
     )
     failed_post_id = getattr(exc, "post_id", None)
+    digest_fields = _verification_digest_fields(exc)
     return ContentWordPressDraftExecutionResult(
         status="blocked",
         mode=mode,
@@ -242,7 +264,17 @@ def _failed_wordpress_draft_creation(
         ),
         payload=payload,
         wordpress_post_id=failed_post_id if isinstance(failed_post_id, str) else None,
-        external_write_attempted=True,
+        expected_content_digest=digest_fields.get("expected_content_digest")
+        or _wordpress_draft_value_digest(payload.content_html or payload.content_markdown),
+        observed_content_digest=digest_fields.get("observed_content_digest"),
+        expected_acf_digest=digest_fields.get("expected_acf_digest"),
+        observed_acf_digest=digest_fields.get("observed_acf_digest"),
+        expected_title_digest=digest_fields.get("expected_title_digest")
+        or _wordpress_draft_value_digest(payload.title),
+        observed_title_digest=digest_fields.get("observed_title_digest"),
+        verification_expected_digest=digest_fields.get("verification_expected_digest"),
+        verification_observed_digest=digest_fields.get("verification_observed_digest"),
+        external_write_attempted=bool(getattr(exc, "external_write_attempted", True)),
         blockers=[
             build_blocker(
                 ContentWordPressDraftExecutionBlocker,
@@ -261,6 +293,57 @@ def _failed_wordpress_draft_creation(
             )
         ],
     )
+
+
+def _verification_digest_fields(exc: Exception) -> dict[str, str | None]:
+    code = getattr(exc, "code", None)
+    expected = getattr(exc, "expected_digest", None)
+    observed = getattr(exc, "observed_digest", None)
+    if not isinstance(code, str):
+        return {}
+    fields: dict[str, str | None] = {
+        "verification_expected_digest": expected,
+        "verification_observed_digest": observed,
+    }
+    if "acf" in code:
+        fields.update({"expected_acf_digest": expected, "observed_acf_digest": observed})
+    elif "title" in code:
+        fields.update({"expected_title_digest": expected, "observed_title_digest": observed})
+    elif "content" in code:
+        fields.update(
+            {"expected_content_digest": expected, "observed_content_digest": observed}
+        )
+    return fields
+
+
+def _creation_digest_fields(
+    payload: ContentWordPressDraftPayload,
+    post_id: str,
+) -> dict[str, str | None]:
+    fields: dict[str, str | None] = {
+        "expected_title_digest": _wordpress_draft_value_digest(payload.title),
+        "observed_title_digest": None,
+        "expected_content_digest": _wordpress_draft_value_digest(
+            payload.content_html or payload.content_markdown
+        ),
+        "observed_content_digest": None,
+        "expected_acf_digest": None,
+        "observed_acf_digest": None,
+    }
+    if isinstance(post_id, WordPressDraftCreationProof):
+        fields.update(
+            {
+                "expected_title_digest": post_id.expected_title_digest
+                or fields["expected_title_digest"],
+                "observed_title_digest": post_id.observed_title_digest,
+                "expected_content_digest": post_id.expected_content_digest
+                or fields["expected_content_digest"],
+                "observed_content_digest": post_id.observed_content_digest,
+                "expected_acf_digest": post_id.expected_acf_digest,
+                "observed_acf_digest": post_id.observed_acf_digest,
+            }
+        )
+    return fields
 
 
 def content_wordpress_draft_execution_blockers(

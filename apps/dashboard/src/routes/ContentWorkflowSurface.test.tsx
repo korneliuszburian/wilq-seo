@@ -28,7 +28,7 @@ import {
   type ActionObject,
   type ContentDraftRevision,
   type ContentDraftRevisionReview,
-  type ContentInitialDraftResponse,
+  type ContentWorkItemInitialDraftResponse,
   type ContentDocumentWorkspace,
   type ContentSelectedWorkspace,
   type ContentInventoryCatalogResponse,
@@ -178,6 +178,16 @@ describe("ContentWorkflowSurface", () => {
       label: "Przygotuj nową wersję",
       reason: "Przygotowanie dokumentu jest kolejnym krokiem."
     };
+    noDocument.regulatory_review_candidates = [{
+      candidate_id: "integrated_permit_candidate",
+      source_url: "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
+      source_title: "Ustawa ooś — aktualny tekst",
+      observed_on: "2026-08-31",
+      requirement_ids: ["integrated_permit_distinct_roles"],
+      requirement_labels: ["Odrębne role decyzji"],
+      review_status: "review_required",
+      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
+    }];
     const readyPlan = {
       status: "ready",
       work_item_id: "content_work_item_bdo",
@@ -252,6 +262,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Szczegóły i dev")).toBeInTheDocument();
     expect(screen.getByText(/Nie ma jeszcze zapisanej wersji dokumentu/)).toBeInTheDocument();
     expect(screen.queryByTestId("content-official-sources")).not.toBeInTheDocument();
+    expect(screen.getByTestId("content-regulatory-source-review")).toHaveTextContent(
+      "Ustawa ooś — aktualny tekst"
+    );
+    expect(screen.getByRole("button", { name: "Przygotuj propozycję do review" })).toBeEnabled();
     await waitFor(() => expect(getContentWorkItemPlanningProposal).toHaveBeenCalledTimes(1));
     const prepare = screen.getByRole("button", { name: "Przygotuj nową wersję" });
     await waitFor(() => expect(prepare).toBeEnabled());
@@ -1160,9 +1174,11 @@ function selectedWorkspace(
 ): ContentSelectedWorkspace {
   return {
     response_type: "content_selected_workspace",
-    contract_version: "content_selected_workspace_v1",
+    contract_version: "content_selected_workspace_v2",
     status: "ready",
     work_item_id: workspace.work_item_id,
+    requested_work_item_id: workspace.work_item_id,
+    production_decision: { status: "missing" },
     operator_journey: contentOperatorJourney(workspace, devDraftReady),
     workspace,
     reason: "WILQ odczytał dokładny workspace wskazanej strony.",
@@ -1594,15 +1610,17 @@ function savedFullDraftRevision(): ContentDraftRevision {
 
 function initialDraftResponse(
   revision = savedFullDraftRevision()
-): ContentInitialDraftResponse {
+): ContentWorkItemInitialDraftResponse {
   return {
     status: "created",
     work_item_id: revision.work_item_id,
     proposal_id: "content_planning_proposal_bdo",
     run_id: "codex_content_initial_draft_bdo",
     revision,
+    reuse_binding: null,
     runtime: {
       status: "completed",
+      run_id: "codex_content_initial_draft_bdo",
       thread_id: "thread_initial_bdo",
       turn_id: "turn_initial_bdo",
       event_methods: ["turn/completed"],

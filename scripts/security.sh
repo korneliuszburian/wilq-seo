@@ -22,18 +22,9 @@ if uv run --extra dev python -m detect_secrets --version >/dev/null 2>&1; then
   uv run --extra dev python -m detect_secrets scan . \
     --exclude-files "$detect_secrets_exclude" \
     > "$detect_secrets_output"
-  uv run python - "$detect_secrets_output" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-payload = json.loads(Path(sys.argv[1]).read_text())
-results = payload.get("results", {})
-if results:
-    print(json.dumps({"results": results}, indent=2))
-    raise SystemExit("detect-secrets found potential findings")
-print(json.dumps({"results": {}}))
-PY
+  uv run python scripts/filter_detect_secrets.py \
+    --repository-root . \
+    "$detect_secrets_output"
 else
   echo "Skipping detect-secrets: command unavailable."
 fi

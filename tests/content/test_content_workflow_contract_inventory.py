@@ -10,7 +10,10 @@ from apps.api.wilq_api.routers.content_workflow_http import _browser_item
 from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentRevisionRepairProposalResponse,
 )
-from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftResponse
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftGenerationResponse,
+    ContentWorkItemInitialDraftResponse,
+)
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.measurement.read_contracts import ContentMeasurementReadResponse
@@ -19,6 +22,11 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
+from wilq.content.quality.independent_review_contracts import (
+    ContentIndependentFindingDispositionResponse,
+    ContentIndependentReviewRunCollection,
+    ContentIndependentReviewRunResponse,
+)
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalResponse,
@@ -39,6 +47,20 @@ from wilq.content.workflow.contracts.contracts import (
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.contracts.section_focus import ContentSectionFocusResponse
+from wilq.content.workflow.decisions.production import (
+    ContentProductionClassificationProjectionReadResult,
+    ContentProductionClassificationReadResult,
+    ContentProductionClassificationRecordResult,
+)
+from wilq.content.workflow.landing_hub import (
+    ContentLandingHubAuthorizationPreview,
+    ContentLandingHubAuthorizationRecordResult,
+)
+from wilq.content.workflow.production_command import ContentProductionCommandResponse
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationAuthorizationIdempotentResponse,
+    ContentRefreshPreparationPreview,
+)
 from wilq.content.workflow.target.new_page import (
     ContentNewPageBriefWorkspace,
     ContentNewPageFoundationResult,
@@ -63,6 +85,18 @@ from wilq.content.workflow.workspace.selected_workspace import ContentSelectedWo
 from wilq.schemas import ActionObject, MetricFact
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
+    (
+        "POST",
+        "/api/content/production-classifications",
+    ): ContentProductionClassificationRecordResult,
+    (
+        "GET",
+        "/api/content/production-classifications/latest",
+    ): ContentProductionClassificationReadResult,
+    (
+        "GET",
+        "/api/content/production-classifications/work-items/{work_item_id}",
+    ): ContentProductionClassificationProjectionReadResult,
     (
         "GET",
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
@@ -126,6 +160,30 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentSelectedWorkspace,
     (
         "GET",
+        "/api/content/work-items/{work_item_id}/refresh-preparation",
+    ): ContentRefreshPreparationPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/refresh-preparation/authorizations",
+    ): ContentRefreshPreparationAuthorizationIdempotentResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/landing-hub-authorization",
+    ): ContentLandingHubAuthorizationPreview,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/landing-hub-authorizations",
+    ): ContentLandingHubAuthorizationRecordResult,
+    (
+        "GET",
+        "/api/content/work-items/landing-hub-authorizations/{authorization_id}",
+    ): ContentLandingHubAuthorizationRecordResult,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/production-command",
+    ): ContentProductionCommandResponse,
+    (
+        "GET",
         "/api/content/work-items/{work_item_id}/target-discovery",
     ): ContentTargetDiscovery,
     (
@@ -175,6 +233,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentDraftRevisionSaveResponse,
     (
         "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
+    ): ContentDraftRevisionSaveResponse,
+    (
+        "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{base_revision_id}/repair-proposal",
     ): ContentRevisionRepairProposalResponse,
     (
@@ -194,6 +256,18 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     ): ContentSemanticReviewResponse,
     (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+    ): ContentIndependentReviewRunCollection,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+    ): ContentIndependentReviewRunResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews/{run_id}/findings/{finding_id}/disposition",
+    ): ContentIndependentFindingDispositionResponse,
+    (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
     ): ContentDraftRevisionReviewResponse,
@@ -208,15 +282,15 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     (
         "POST",
         "/api/content/work-items/{work_item_id}/initial-draft",
-    ): ContentInitialDraftResponse,
+    ): ContentWorkItemInitialDraftResponse,
     (
         "POST",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
-    ): ContentInitialDraftResponse,
+    ): ContentInitialDraftGenerationResponse,
     (
         "GET",
         "/api/content/work-items/{work_item_id}/initial-draft",
-    ): ContentInitialDraftResponse,
+    ): ContentWorkItemInitialDraftResponse,
     (
         "POST",
         "/api/content/work-items/measurement-window",
@@ -278,6 +352,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
                 "planning-proposal",
                 "semantic-review",
                 "fact-proposal",
+                "independent-reviews",
             )
         )
     }
@@ -297,6 +372,8 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews/{run_id}/findings/{finding_id}/disposition",
         "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
         "/api/content/regulatory-source-fact-proposals/{proposal_id}/review",
     }
@@ -377,6 +454,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
         if not route.path.startswith(
             (
                 "/api/content/work-items",
+                "/api/content/production-classifications",
                 "/api/content/knowledge-cards",
                 "/api/content/service-profile",
                 "/api/content/new-page-briefs",

@@ -108,6 +108,7 @@ def content_planning_turn_request(
             "operation": "propose_content_plan",
             "work_item_id": planning_input.work_item_id,
             "planning_input_digest": planning_input.planning_input_digest,
+            "content_kind": planning_input.content_kind,
             "service_card_id": planning_input.confirmed_service_card_id,
             "input_schema": planning_input.schema_name,
             "criteria_version": planning_input.criteria_version,
@@ -118,9 +119,7 @@ def content_planning_turn_request(
                 "publish_ready": False,
             },
             "regulatory_document_assertions": (
-                regulatory_turn_context.regulatory_document_assertion_context(
-                    planning_input
-                )
+                regulatory_turn_context.regulatory_document_assertion_context(planning_input)
             ),
             "placement_contract": _placement_contract(planning_input),
         },
@@ -193,6 +192,18 @@ def _planning_instruction(planning_input: ContentPlanningInput) -> str:
     )
 
 
+def _bind_planning_subject_schema(
+    schema: dict[str, object],
+    properties_: dict[str, object],
+    planning_input: ContentPlanningInput,
+) -> None:
+    mapping(properties_, "content_kind")["const"] = planning_input.content_kind
+    required = schema.setdefault("required", [])
+    if isinstance(required, list) and "content_kind" not in required:
+        required.append("content_kind")
+    mapping(properties_, "service_card_id")["const"] = planning_input.confirmed_service_card_id
+
+
 def content_planning_output_schema(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
@@ -226,9 +237,7 @@ def content_planning_output_schema(
         candidate.target_url for candidate in planning_input.internal_link_candidates
     ]
 
-    mapping(schema_properties, "service_card_id")["const"] = (
-        planning_input.confirmed_service_card_id
-    )
+    _bind_planning_subject_schema(schema, schema_properties, planning_input)
     restrict_array(properties(section), "query_terms", queries)
     restrict_array(properties(section), "evidence_ids", evidence_ids)
     restrict_array(properties(section), "claim_ids", claim_ids)
@@ -266,18 +275,9 @@ def content_planning_output_schema(
     _restrict_string(properties(link), "target_url", internal_link_urls)
     _restrict_single_link_candidate_evidence(link, planning_input)
     restrict_array(properties(hypothesis), "evidence_ids", evidence_ids)
-    # Keep the first plan deliberately compact.  The model is producing a
-    # reviewable strategy, not the full article; bounded arrays materially
-    # reduce structured-output search while still leaving room for a normal
-    # service page and its evidence lineage.
     cap_array(schema_properties, "sections", 12)
     cap_array(schema_properties, "faq", 8)
     cap_array(schema_properties, "cta_blocks", 4)
-    # The quality gate already owns this invariant after parsing, but the
-    # structured-output boundary must communicate it to Codex as well.  An
-    # empty array is schema-valid only when no CTA is required by the exact
-    # planning input; otherwise it needlessly burns a run before being
-    # rejected downstream.
     mapping(schema_properties, "cta_blocks")["minItems"] = planning_input.minimum_cta_blocks
     cap_array(schema_properties, "conditional_hypotheses", 4)
     restrict_array(

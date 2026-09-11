@@ -572,6 +572,11 @@ def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_stale_state.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_stale_metrics.duckdb"))
+    clear_google_service_env(monkeypatch)
+    credentials_json = tmp_path / "google_adc.json"
+    credentials_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(credentials_json))
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
     completed_at = datetime.now(UTC) - timedelta(hours=72)
     run = ConnectorRefreshRun(
         id="refresh_google_analytics_4_stale_test",
@@ -623,6 +628,7 @@ def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
     assert "do odświeżenia" in freshness["summary"]
     assert "odczyt danych GA4" in freshness["next_step"]
     assert "odświeżenia" in payload["operator_summary"]["summary"]
+    assert payload["connector"]["refresh_state"]["refresh_allowed"] is True
     data_readiness = payload["data_readiness"]
     assert data_readiness["state"] == "refresh_available"
     assert data_readiness["factual_metric_count"] == 0

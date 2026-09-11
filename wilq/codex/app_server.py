@@ -3,17 +3,19 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import shutil
 import signal
 import tempfile
-import tomllib
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, Protocol, cast
 
-from wilq.codex.runtime_status import codex_auth_path
+from wilq.codex.app_server_process import (
+    THREAD_CONFIG,
+    CodexAppServerProcessFailure,
+    prepare_codex_app_server_launch,
+)
 
 CodexAppServerTurnStatus = Literal["completed", "blocked", "failed"]
 
@@ -47,64 +49,6 @@ _EXTERNAL_METHODS = frozenset({"turn/diff/updated"})
 _READ_LIMIT_BYTES = 8 * 1024 * 1024
 _DEFAULT_TIMEOUT_SECONDS = 120.0
 _PROCESS_EXIT_GRACE_SECONDS = 2.0
-_CODEX_PROCESS_ENV_NAMES = frozenset(
-    {
-        "LANG",
-        "LC_ALL",
-        "LC_CTYPE",
-        "LOGNAME",
-        "NODE_EXTRA_CA_CERTS",
-        "PATH",
-        "SHELL",
-        "SSL_CERT_DIR",
-        "SSL_CERT_FILE",
-        "USER",
-    }
-)
-_DISABLED_TOOL_FEATURES = (
-    "apps",
-    "browser_use",
-    "browser_use_external",
-    "browser_use_full_cdp_access",
-    "code_mode_host",
-    "computer_use",
-    "goals",
-    "hooks",
-    "image_generation",
-    "in_app_browser",
-    "multi_agent",
-    "plugins",
-    "remote_plugin",
-    "shell_snapshot",
-    "shell_tool",
-    "skill_mcp_dependency_install",
-    "tool_call_mcp_elicitation",
-    "tool_suggest",
-    "unified_exec",
-    "workspace_dependencies",
-)
-_CODEX_CONFIG_OVERRIDES = (
-    'approval_policy="never"',
-    'sandbox_mode="read-only"',
-    "features.remote_models=false",
-    'web_search="disabled"',
-    "mcp_servers={}",
-    "apps={_default={enabled=false,destructive_enabled=false,open_world_enabled=false}}",
-    'shell_environment_policy={inherit="none"}',
-)
-_THREAD_CONFIG = {
-    "apps": {
-        "_default": {
-            "destructive_enabled": False,
-            "enabled": False,
-            "open_world_enabled": False,
-        }
-    },
-    "features": {feature: False for feature in _DISABLED_TOOL_FEATURES},
-    "mcp_servers": {},
-    "shell_environment_policy": {"inherit": "none"},
-    "web_search": "disabled",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +97,6 @@ class _ExternalCallBlocked(_SafeTransportFailure):
 @dataclass(slots=True)
 class _TurnObserver:
     thread_id: str | None = None
-    model: str | None = None
     turn_id: str | None = None
     event_methods: list[str] = field(default_factory=list)
     item_types: list[str] = field(default_factory=list)
@@ -225,13 +168,6 @@ class _TurnObserver:
         )
 
 
-@dataclass(frozen=True, slots=True)
-class _IsolatedCodexRuntime:
-    auth_path: Path
-    cwd: str
-    environment: Mapping[str, str]
-
-
 class StdioCodexAppServerClient:
     def __init__(self, *, timeout_seconds: float = _DEFAULT_TIMEOUT_SECONDS) -> None:
         self._timeout_seconds = timeout_seconds
@@ -293,6 +229,11 @@ class StdioCodexAppServerClient:
                 blocker=CodexAppServerTurnBlocker(code=exc.code, message=exc.safe_message),
                 external_call_attempted=True,
             )
+        except CodexAppServerProcessFailure as exc:
+            return observer.result(
+                "failed",
+                blocker=CodexAppServerTurnBlocker(code=exc.code, message=exc.safe_message),
+            )
         except _SafeTransportFailure as exc:
             if observer.stderr_stream_disconnected:
                 return observer.result(
@@ -332,14 +273,14 @@ class StdioCodexAppServerClient:
         observer: _TurnObserver,
     ) -> CodexAppServerTurnResult:
         with tempfile.TemporaryDirectory(prefix="wilq-codex-app-server-") as root:
-            runtime = _prepare_isolated_runtime(Path(root))
+            launch = prepare_codex_app_server_launch(Path(root))
             process = await asyncio.create_subprocess_exec(
-                *_codex_process_command(),
+                *launch.command,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=runtime.cwd,
-                env=dict(runtime.environment),
+                cwd=launch.cwd,
+                env=dict(launch.environment),
                 limit=_READ_LIMIT_BYTES,
                 start_new_session=True,
             )
@@ -353,9 +294,17 @@ class StdioCodexAppServerClient:
                         "Nie udało się otworzyć bezpiecznego kanału do Codexa.",
                     )
                 stderr_task = asyncio.create_task(_observe_stderr(stderr, observer=observer))
-                await _initialize_app_server(stdin, stdout, runtime, observer)
-                await _start_thread(stdin, stdout, runtime.cwd, observer)
-                await _start_turn(stdin, stdout, runtime.cwd, request, observer)
+                await _initialize_app_server(stdin, stdout, observer)
+                await _start_thread(stdin, stdout, launch.cwd, observer)
+                await _start_turn(
+                    stdin,
+                    stdout,
+                    launch.cwd,
+                    request,
+                    launch.model,
+                    launch.model_reasoning_effort,
+                    observer,
+                )
                 return await _complete_turn(stdout, observer)
             finally:
                 await _terminate_process(process)
@@ -368,40 +317,9 @@ class StdioCodexAppServerClient:
                             await stderr_task
 
 
-def _prepare_isolated_runtime(root: Path) -> _IsolatedCodexRuntime:
-    source_auth = codex_auth_path()
-    if source_auth is None or not source_auth.is_file():
-        raise _SafeTransportFailure(
-            "codex_not_authenticated",
-            "Lokalny Codex nie ma dostępnej sesji ChatGPT.",
-        )
-    home = root / "home"
-    codex_home = root / "codex-home"
-    cwd = root / "workspace"
-    temp = root / "tmp"
-    for path in (home, codex_home, cwd, temp):
-        path.mkdir(mode=0o700)
-    auth_path = codex_home / "auth.json"
-    try:
-        shutil.copyfile(source_auth, auth_path)
-        auth_path.chmod(0o600)
-    except OSError as exc:
-        raise _SafeTransportFailure(
-            "codex_auth_isolation_failed",
-            "Nie udało się odizolować lokalnej sesji Codexa.",
-        ) from exc
-    environment = _codex_process_environment(root, home, codex_home, temp)
-    return _IsolatedCodexRuntime(
-        auth_path=auth_path,
-        cwd=str(cwd),
-        environment=environment,
-    )
-
-
 async def _initialize_app_server(
     stdin: asyncio.StreamWriter,
     stdout: asyncio.StreamReader,
-    runtime: _IsolatedCodexRuntime,
     observer: _TurnObserver,
 ) -> None:
     await _send_request(
@@ -446,7 +364,7 @@ async def _start_thread(
                 "Return only the requested structured content without using tools or "
                 "external resources."
             ),
-            "config": _THREAD_CONFIG,
+            "config": THREAD_CONFIG,
             "cwd": cwd,
             "developerInstructions": (
                 "Use only the supplied instruction and additional context. Do not call "
@@ -470,7 +388,6 @@ async def _start_thread(
             "codex_protocol_error",
             "Codex nie zwrócił identyfikatora wątku.",
         )
-    observer.model = _string_value(result, "model")
 
 
 async def _start_turn(
@@ -478,6 +395,8 @@ async def _start_turn(
     stdout: asyncio.StreamReader,
     cwd: str,
     request: CodexAppServerStructuredTurnRequest,
+    model: str,
+    effort: str,
     observer: _TurnObserver,
 ) -> None:
     turn_params: dict[str, object] = {
@@ -494,14 +413,14 @@ async def _start_turn(
         "approvalPolicy": "never",
         "cwd": cwd,
         "environments": [],
+        "effort": effort,
         "input": [{"type": "text", "text": request.instruction}],
         "outputSchema": dict(request.output_schema),
         "runtimeWorkspaceRoots": [],
         "sandboxPolicy": {"type": "readOnly", "networkAccess": False},
         "threadId": observer.thread_id,
+        "model": model,
     }
-    if observer.model:
-        turn_params["model"] = observer.model
     await _send_request(
         stdin,
         request_id=3,
@@ -587,87 +506,6 @@ def _validate_request(
             message="Limit czasu Codexa musi być dodatni.",
         )
     return None
-
-
-def _codex_process_environment(
-    root: Path, home: Path, codex_home: Path, temp: Path
-) -> dict[str, str]:
-    environment = {
-        key: value for key, value in os.environ.items() if key in _CODEX_PROCESS_ENV_NAMES
-    }
-    environment.update(
-        {
-            "CODEX_HOME": str(codex_home),
-            "HOME": str(home),
-            "TEMP": str(temp),
-            "TMP": str(temp),
-            "TMPDIR": str(temp),
-            "XDG_CACHE_HOME": str(root / "xdg-cache"),
-            "XDG_CONFIG_HOME": str(root / "xdg-config"),
-            "XDG_DATA_HOME": str(root / "xdg-data"),
-            "XDG_STATE_HOME": str(root / "xdg-state"),
-        }
-    )
-    source_auth = codex_auth_path()
-    if source_auth is not None:
-        source_home = source_auth.parent.parent
-        mise_data = source_auth.parent.parent / ".local" / "share" / "mise"
-        if mise_data.is_dir():
-            # The local `codex` launcher resolves its installed Node runtime
-            # through mise. Keep that runtime lookup available without
-            # inheriting the operator's HOME, config, cache, or credentials.
-            environment["MISE_DATA_DIR"] = str(mise_data)
-        npm_cache = source_home / ".npm"
-        if npm_cache.is_dir():
-            # The launcher resolves @openai/codex through npx. Reuse only the
-            # package cache so an isolated HOME does not trigger a network
-            # install before app-server JSON-RPC can answer.
-            environment["NPM_CONFIG_CACHE"] = str(npm_cache)
-    return environment
-
-
-def _codex_process_command() -> tuple[str, ...]:
-    command = ["codex", "app-server", "--stdio"]
-    overrides = list(_CODEX_CONFIG_OVERRIDES)
-    configured_model = _configured_model()
-    if configured_model is not None:
-        overrides.append(f"model={json.dumps(configured_model, ensure_ascii=False)}")
-    # App-server owns provider selection and its model catalog.  Passing a
-    # custom ``model_providers`` block here looks harmless, but it routes the
-    # Responses stream through providers that are valid for ``codex exec`` and
-    # can still be incompatible with app-server (the observed failure is a
-    # reconnect loop ending in ``responseStreamDisconnected``).  Keep the
-    # app-server on the authenticated provider selected by Codex itself; carry
-    # only the model scalar above.
-    for override in overrides:
-        command.extend(("--config", override))
-    for feature in _DISABLED_TOOL_FEATURES:
-        command.extend(("--disable", feature))
-    return tuple(command)
-
-
-def _configured_model() -> str | None:
-    """Read only the selected model from the operator's Codex config.
-
-    The isolated runtime intentionally does not copy user config wholesale:
-    MCP, plugin and credential settings must not cross the boundary. Newer
-    app-server versions nevertheless need the selected model explicitly when
-    remote model refresh is disabled, so carry this one non-secret scalar.
-    """
-
-    auth_path = codex_auth_path()
-    if auth_path is None:
-        return None
-    config_path = auth_path.parent / "config.toml"
-    try:
-        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
-        return None
-    model = config.get("model")
-    if not isinstance(model, str):
-        return None
-    model = model.strip()
-    return model if 0 < len(model) <= 200 else None
 
 
 async def _send_request(

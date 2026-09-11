@@ -82,6 +82,10 @@ def sitemap_entry_policy(group: str) -> tuple[str, str]:
     return "false", "other"
 
 
+def wordpress_post_type_for_sitemap_group(group: str) -> str | None:
+    return {"posts": "post", "pages": "page", "uslugi": "uslugi"}.get(group)
+
+
 def sitemap_url_object(entry: dict[str, str], *, metadata_group: str = "other") -> dict[str, str]:
     editorial_eligible, inventory_scope = sitemap_entry_policy(metadata_group)
     if is_commerce_only_url(entry["loc"]):
@@ -103,5 +107,6 @@ __all__ = [
     "sitemap_entry_policy",
     "sitemap_group_for_url",
     "sitemap_url_object",
+    "wordpress_post_type_for_sitemap_group",
     "is_commerce_only_url",
 ]

@@ -39,6 +39,32 @@ ContentKnowledgeLifecycleStatus = Literal[
     "rejected",
 ]
 
+# Page identity is curated separately from source-fact lineage. Never derive
+# these bindings from source_url_or_path or service-fit terms.
+_SERVICE_BINDING_URLS_BY_CARD_ID: dict[str, tuple[str, ...]] = {
+    "ekologus_service_homepage_overview": ("https://www.ekologus.pl/",),
+    "ekologus_service_bdo_reporting": (
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+    ),
+    "ekologus_service_environmental_consulting_outsourcing": (
+        "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+    ),
+    "ekologus_service_environmental_training": (
+        "https://www.ekologus.pl/oferta/szkolenia/",
+    ),
+    "ekologus_service_operat_wodnoprawny": (
+        "https://www.ekologus.pl/oferta/opracowania-dokumentacji-ekspertyz/",
+    ),
+    "ekologus_service_remediation_monitoring": (
+        "https://www.ekologus.pl/oferta/pomiary-i-analizy/",
+        "https://www.ekologus.pl/oferta/rekultywacje-i-remediacje/",
+    ),
+}
+
+
+def ekologus_service_binding_urls(card_id: str) -> list[str]:
+    return list(_SERVICE_BINDING_URLS_BY_CARD_ID.get(card_id, ()))
+
 
 class ContentSourceFact(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -73,6 +99,7 @@ class ContentSourceFact(BaseModel):
     regulatory_profile_version: str | None = None
     regulatory_requirement_ids: list[str] = Field(default_factory=list)
     applicable_service_card_ids: list[str] = Field(default_factory=list)
+    applicable_canonical_paths: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_review_state(self) -> ContentSourceFact:
@@ -109,6 +136,7 @@ class ContentSourceFact(BaseModel):
             "usage_notes": self.usage_notes,
             "regulatory_requirement_ids": self.regulatory_requirement_ids,
             "applicable_service_card_ids": self.applicable_service_card_ids,
+            "applicable_canonical_paths": self.applicable_canonical_paths,
         }
         blank_list_fields = sorted(
             field_name
@@ -138,6 +166,7 @@ class ContentSourceFact(BaseModel):
                 self.regulatory_profile_version is not None,
                 self.regulatory_requirement_ids,
                 self.applicable_service_card_ids,
+                self.applicable_canonical_paths,
             )
         )
         if regulatory_fields_present and not (
@@ -145,11 +174,11 @@ class ContentSourceFact(BaseModel):
             and self.regulatory_profile_id
             and self.regulatory_profile_version
             and self.regulatory_requirement_ids
-            and self.applicable_service_card_ids
+            and (self.applicable_service_card_ids or self.applicable_canonical_paths)
         ):
             raise ValueError(
                 "regulatory source facts require exact official profile, version, "
-                "requirement and service bindings"
+                "requirement and content-subject bindings"
             )
         if "ekologus_ai_private_source_catalog" in self.source_connectors:
             if self.source_type not in {"private_candidate", "reviewed_internal"}:

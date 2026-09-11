@@ -4,7 +4,7 @@ import json
 import re
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -62,6 +62,18 @@ WORDPRESS_AUTHORING_SECTION_LIMIT = 40
 WORDPRESS_AUTHORING_TEXT_CANDIDATE_LIMIT = 40
 WORDPRESS_AUTHORING_FIELD_NAME_LIMIT = 20
 WORDPRESS_AUTHORING_SECTION_SUMMARY_MAX_CHARS = 280
+WordPressMaterialContentType = Literal["posts", "pages", "uslugi"]
+_WORDPRESS_MATERIAL_CONTENT_TYPE_ALIASES: dict[str, WordPressMaterialContentType] = {
+    "post": "posts",
+    "posts": "posts",
+    "page": "pages",
+    "pages": "pages",
+    "uslugi": "uslugi",
+}
+# A material fallback makes at most three REST probes and one HTML request.
+# Three seconds per request bounds the cold transport path to roughly 12 seconds
+# without retries, matching the existing bounded WordPress metadata reads.
+WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS = 3.0
 _OMIT_ACF_CREATE_VALUE = object()
 _WORDPRESS_REST_SAFE_ERROR_ROOTS = {
     "acf",
@@ -102,6 +114,37 @@ class WordPressDraftPostReadback:
     content_digest: str
     acf_digest: str
     edit_link: str = ""
+
+
+class WordPressDraftCreationProof(str):
+    """String-compatible draft ID carrying redacted create/readback digests."""
+
+    expected_content_digest: str | None
+    observed_content_digest: str | None
+    expected_acf_digest: str | None
+    observed_acf_digest: str | None
+    expected_title_digest: str | None
+    observed_title_digest: str | None
+
+    def __new__(
+        cls,
+        post_id: str,
+        *,
+        expected_content_digest: str | None = None,
+        observed_content_digest: str | None = None,
+        expected_acf_digest: str | None = None,
+        observed_acf_digest: str | None = None,
+        expected_title_digest: str | None = None,
+        observed_title_digest: str | None = None,
+    ) -> WordPressDraftCreationProof:
+        instance = str.__new__(cls, post_id)
+        instance.expected_content_digest = expected_content_digest
+        instance.observed_content_digest = observed_content_digest
+        instance.expected_acf_digest = expected_acf_digest
+        instance.observed_acf_digest = observed_acf_digest
+        instance.expected_title_digest = expected_title_digest
+        instance.observed_title_digest = observed_title_digest
+        return instance
 
 
 @dataclass(frozen=True)
@@ -175,9 +218,15 @@ class _AcfTextCandidate:
 
 
 class WordPressDraftWriteError(RuntimeError):
-    def __init__(self, public_message: str) -> None:
+    def __init__(
+        self,
+        public_message: str,
+        *,
+        external_write_attempted: bool = False,
+    ) -> None:
         super().__init__(public_message)
         self.public_message = public_message
+        self.external_write_attempted = external_write_attempted
 
 
 class WordPressDraftVerificationError(WordPressDraftWriteError):
@@ -192,7 +241,7 @@ class WordPressDraftVerificationError(WordPressDraftWriteError):
         expected_digest: str | None = None,
         observed_digest: str | None = None,
     ) -> None:
-        super().__init__(public_message)
+        super().__init__(public_message, external_write_attempted=True)
         self.post_id = post_id
         self.code = code
         self.expected_digest = expected_digest
@@ -247,6 +296,7 @@ def _wordpress_draft_write_http_error(
     response: httpx.Response,
     *,
     operation: str = "utworzenie szkicu",
+    external_write_attempted: bool = False,
 ) -> WordPressDraftWriteError:
     """Return a diagnostic-safe WordPress write failure.
 
@@ -280,7 +330,8 @@ def _wordpress_draft_write_http_error(
                     details.append(f"pola: {', '.join(fields[:8])}")
     suffix = f" ({'; '.join(details)})" if details else ""
     return WordPressDraftWriteError(
-        f"WordPress odrzucił {operation} HTTP {response.status_code}.{suffix}"
+        f"WordPress odrzucił {operation} HTTP {response.status_code}.{suffix}",
+        external_write_attempted=external_write_attempted,
     )
 
 
@@ -606,16 +657,20 @@ def create_wordpress_draft_post(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise _wordpress_draft_write_http_error(exc.response) from exc
+            raise _wordpress_draft_write_http_error(
+                exc.response, external_write_attempted=True
+            ) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
-                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__}).",
+                external_write_attempted=True,
             ) from exc
         return _verified_created_draft_post_id(
             response,
             connector_id=connector_id,
             endpoint=normalized_endpoint,
             http_client=client,
+            expected_title=str(getattr(payload, "title", "")),
             expected_content=content,
         )
     finally:
@@ -727,16 +782,20 @@ def create_wordpress_acf_draft(
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise _wordpress_draft_write_http_error(exc.response) from exc
+            raise _wordpress_draft_write_http_error(
+                exc.response, external_write_attempted=True
+            ) from exc
         except httpx.HTTPError as exc:
             raise WordPressDraftWriteError(
-                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__})."
+                f"Połączenie WordPress przerwało tworzenie szkicu ({type(exc).__name__}).",
+                external_write_attempted=True,
             ) from exc
         return _verified_created_draft_post_id(
             response,
             connector_id=connector_id,
             endpoint=endpoint,
             http_client=client,
+            expected_title=title,
             expected_acf=normalized_acf,
         )
     finally:
@@ -836,11 +895,7 @@ def read_wordpress_draft_discard_readback(
         http_client=http_client,
     )
     content, acf = _wordpress_draft_values(payload)
-    raw_title = payload.get("title")
-    title = wordpress_title(payload)
-    if not title and isinstance(raw_title, dict):
-        raw_title_value = raw_title.get("raw")
-        title = clean_metadata_text(raw_title_value) if isinstance(raw_title_value, str) else ""
+    title = _wordpress_payload_title(payload)
     return WordPressDraftDiscardReadback(
         post_id=str(payload.get("id") or post_id),
         endpoint=endpoint.strip().strip("/"),
@@ -1070,8 +1125,12 @@ def _read_wordpress_material_from_rest(
     read_base_url: str,
     auth: httpx.BasicAuth | None,
     rest_context: str,
+    content_type_hint: WordPressMaterialContentType | None,
 ) -> WordPressContentMaterial | None:
-    for content_type in WORDPRESS_CONTENT_TYPES:
+    content_types = (
+        (content_type_hint,) if content_type_hint is not None else WORDPRESS_CONTENT_TYPES
+    )
+    for content_type in content_types:
         try:
             response = client.get(
                 urljoin(read_base_url, f"wp-json/wp/v2/{content_type}"),
@@ -1086,6 +1145,7 @@ def _read_wordpress_material_from_rest(
                     # instead of silently falling back to rendered HTML.
                     **({"per_page": WORDPRESS_CONTENT_PER_PAGE} if requested_path == "/" else {}),
                 },
+                timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
         except httpx.HTTPError:
@@ -1104,7 +1164,7 @@ def _read_wordpress_material_from_rest(
 def _read_wordpress_material_from_html(
     client: httpx.Client, *, url: str
 ) -> WordPressContentMaterial:
-    response = client.get(url, timeout=20)
+    response = client.get(url, timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
     parser = _HtmlMetadataParser()
     parser.feed(response.text[:200_000])
@@ -1136,6 +1196,7 @@ def read_wordpress_content_material(
     url: str,
     connector_id: str = "wordpress_ekologus",
     *,
+    content_type_hint: str | None = None,
     http_client: httpx.Client | None = None,
 ) -> WordPressContentMaterial:
     """Read one public content object dynamically from REST or rendered HTML.
@@ -1151,7 +1212,7 @@ def read_wordpress_content_material(
     if credentials is None or missing_credentials(connector_id, credentials):
         raise WordPressDraftReadError("Brakuje konfiguracji WordPress do odczytu materiału.")
     owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=20)
+    client = http_client or httpx.Client(timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS)
     try:
         requested_path = urlparse(url).path.rstrip("/") or "/"
         slug = requested_path.rsplit("/", 1)[-1]
@@ -1177,6 +1238,9 @@ def read_wordpress_content_material(
             read_base_url=read_base_url,
             auth=auth,
             rest_context=rest_context,
+            content_type_hint=normalize_wordpress_material_content_type_hint(
+                content_type_hint
+            ),
         )
         if material is not None:
             return material
@@ -1186,6 +1250,18 @@ def read_wordpress_content_material(
     finally:
         if owns_client:
             client.close()
+
+
+def normalize_wordpress_material_content_type_hint(
+    value: str | None,
+) -> WordPressMaterialContentType | None:
+    """Allow only known REST endpoint hints; unknown inventory keeps bounded fallback."""
+
+    if value is None:
+        return None
+    return _WORDPRESS_MATERIAL_CONTENT_TYPE_ALIASES.get(
+        value.strip().strip("/").casefold()
+    )
 
 
 def _material_from_rest_item(
@@ -1268,14 +1344,29 @@ def _acf_material_text(value: Any) -> str:
 
 
 def _created_draft_post_id(response: httpx.Response) -> str:
-    body = response.json()
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise WordPressDraftWriteError(
+            "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
+            external_write_attempted=True,
+        ) from exc
     if not isinstance(body, dict):
-        raise WordPressDraftWriteError("WordPress zwrócił nieprawidłową odpowiedź szkicu.")
+        raise WordPressDraftWriteError(
+            "WordPress zwrócił nieprawidłową odpowiedź szkicu.",
+            external_write_attempted=True,
+        )
     post_id = body.get("id")
     if post_id is None:
-        raise WordPressDraftWriteError("WordPress nie zwrócił ID utworzonego szkicu.")
+        raise WordPressDraftWriteError(
+            "WordPress nie zwrócił ID utworzonego szkicu.",
+            external_write_attempted=True,
+        )
     if body.get("status") != "draft":
-        raise WordPressDraftWriteError("WordPress nie potwierdził, że utworzony wpis jest szkicem.")
+        raise WordPressDraftWriteError(
+            "WordPress nie potwierdził, że utworzony wpis jest szkicem.",
+            external_write_attempted=True,
+        )
     return str(post_id)
 
 
@@ -1285,6 +1376,7 @@ def _verified_created_draft_post_id(
     connector_id: str,
     endpoint: str,
     http_client: httpx.Client,
+    expected_title: str,
     expected_content: object | None = None,
     expected_acf: object | None = None,
 ) -> str:
@@ -1313,6 +1405,17 @@ def _verified_created_draft_post_id(
             code="wordpress_draft_status_mismatch",
             expected_digest=expected_digest,
         )
+    observed_raw_title = _wordpress_payload_raw_title(payload)
+    expected_title_digest = _wordpress_draft_value_digest(expected_title)
+    observed_title_digest = _wordpress_draft_value_digest(observed_raw_title)
+    if not observed_raw_title.strip() or observed_raw_title != expected_title:
+        raise WordPressDraftVerificationError(
+            "Utworzono szkic WordPress, ale odczyt nie potwierdził tytułu.",
+            post_id=post_id,
+            code="wordpress_draft_title_mismatch",
+            expected_digest=expected_title_digest,
+            observed_digest=observed_title_digest,
+        )
     observed_content, observed_acf = _wordpress_draft_values(payload)
     observed_value = observed_content if expected_content is not None else observed_acf
     observed_digest = _wordpress_draft_value_digest(observed_value)
@@ -1334,7 +1437,15 @@ def _verified_created_draft_post_id(
             expected_digest=expected_digest,
             observed_digest=observed_digest,
         )
-    return post_id
+    return WordPressDraftCreationProof(
+        post_id,
+        expected_content_digest=expected_digest if expected_content is not None else None,
+        observed_content_digest=observed_digest if expected_content is not None else None,
+        expected_acf_digest=expected_digest if expected_content is None else None,
+        observed_acf_digest=observed_digest if expected_content is None else None,
+        expected_title_digest=expected_title_digest,
+        observed_title_digest=observed_title_digest,
+    )
 
 
 def _draft_post_readback(
@@ -1357,7 +1468,7 @@ def _draft_post_readback(
         post_id=str(post_id) if post_id is not None else requested_post_id,
         endpoint=endpoint,
         status=str(body.get("status") or ""),
-        title=wordpress_title(body.get("title")),
+        title=_wordpress_payload_title(body),
         link=str(body.get("link") or ""),
         edit_link=wordpress_edit_link(
             credentials_base_url,
@@ -1371,6 +1482,34 @@ def _draft_post_readback(
         content_digest=_wordpress_draft_value_digest(content),
         acf_digest=_wordpress_draft_value_digest(acf),
     )
+
+
+def _wordpress_payload_title(payload: dict[str, Any]) -> str:
+    titles = _wordpress_payload_titles(payload)
+    return next((title for title in titles if title.strip()), "")
+
+
+def _wordpress_payload_raw_title(payload: dict[str, Any]) -> str:
+    raw_title = payload.get("title")
+    if not isinstance(raw_title, dict):
+        return ""
+    raw_value = raw_title.get("raw")
+    return raw_value if isinstance(raw_value, str) else ""
+
+
+def _wordpress_payload_titles(payload: dict[str, Any]) -> tuple[str, ...]:
+    raw_title = payload.get("title")
+    values: list[str] = []
+    if isinstance(raw_title, dict):
+        raw_value = raw_title.get("raw")
+        if isinstance(raw_value, str):
+            values.append(_wordpress_payload_raw_title(payload))
+        rendered_value = raw_title.get("rendered")
+        if isinstance(rendered_value, str):
+            rendered = clean_metadata_text(rendered_value)
+            if rendered not in values:
+                values.append(rendered)
+    return tuple(values)
 
 
 def wordpress_edit_link(credentials_base_url: str | None, post_id: str) -> str:

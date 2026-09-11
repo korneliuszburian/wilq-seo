@@ -43,6 +43,7 @@ from wilq.content.planning.generation_claim_store import (
     PlanningGenerationClaim,
 )
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 
 BDO_WORK_ITEM_ID = inventory_work_item_id(
@@ -402,12 +403,89 @@ def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
         claim_version=claim_a.claim_version,
         status="failed",
     )
+    _assert_claim_schema_columns(path)
+
+
+def test_refresh_binding_claim_rejects_an_unbound_worker_terminal_result(tmp_path: Path) -> None:
+    path = tmp_path / "bound-refresh-claim.sqlite3"
+    store = ContentPlanningProposalStore(path)
+    claim_store = ContentPlanningGenerationClaimStore(path)
+    binding = _refresh_preparation_binding()
+    work_item_id = "content_work_item_refresh"
+    service_card_id = "ekologus_service_operat_wodnoprawny"
+    digest = "d" * 64
+    queued = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        refresh_preparation_binding=binding,
+        safe_next_step="Plan jest przygotowywany.",
+    )
+    assert (
+        store.enqueue_pending(
+            work_item_id=work_item_id,
+            service_card_id=service_card_id,
+            planning_input_digest=digest,
+            response=queued,
+        )
+        == "queued"
+    )
+    bound_claim = claim_store.claim(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="authorized-worker",
+        refresh_preparation_binding=binding,
+    )
+    conflicting_claim = claim_store.claim(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="legacy-worker",
+    )
+    unbound_terminal = _failed_terminal_response(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        label="Wynik starego workera",
+    )
+
+    assert bound_claim.outcome == "acquired"
+    assert conflicting_claim.outcome == "binding_conflict"
+    assert (
+        store.save_terminal_response(
+            unbound_terminal,
+            job_planning_input_digest=digest,
+            claim_version=bound_claim.claim_version,
+        )
+        == "claim_stale"
+    )
+    assert not claim_store.finish(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="authorized-worker",
+        claim_version=bound_claim.claim_version,
+        status="failed",
+    )
+    assert claim_store.finish(
+        work_item_id=work_item_id,
+        service_card_id=service_card_id,
+        planning_input_digest=digest,
+        claim_owner="authorized-worker",
+        claim_version=bound_claim.claim_version,
+        status="failed",
+        refresh_preparation_binding=binding,
+    )
     with sqlite3.connect(path) as connection:
-        columns = {
-            str(row[1])
-            for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
-        }
-    assert "claim_version" in columns
+        stored = connection.execute(
+            """
+            SELECT refresh_preparation_authorization_id,
+                   refresh_preparation_authorization_digest
+            FROM content_planning_generation_claims
+            """
+        ).fetchone()
+    assert stored == (binding.authorization_id, binding.authorization_digest)
 
 
 def test_snapshot_and_selected_workspace_reads_do_not_create_planning_jobs(
@@ -546,6 +624,23 @@ def _failed_terminal_response(
     )
 
 
+def _refresh_preparation_binding() -> ContentRefreshPreparationBinding:
+    digest = "a" * 64
+    return ContentRefreshPreparationBinding(
+        authorization_id=f"content_refresh_preparation_authorization_{digest[:24]}",
+        authorization_digest=digest,
+        classification_run_id="content_production_classification_test",
+        classification_run_digest="b" * 64,
+        decision_set_digest="c" * 64,
+        source_packet_row_digest="d" * 64,
+        current_work_item_id="content_work_item_refresh",
+        canonical_path="/analiza-pozwolen-zintegrowanych",
+        public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+        service_card_id="ekologus_service_operat_wodnoprawny",
+        planning_input_digest="d" * 64,
+    )
+
+
 def _create_legacy_claim_table(path: Path) -> None:
     with sqlite3.connect(path) as connection:
         connection.execute(
@@ -563,6 +658,19 @@ def _create_legacy_claim_table(path: Path) -> None:
             )
             """
         )
+
+
+def _assert_claim_schema_columns(path: Path) -> None:
+    with sqlite3.connect(path) as connection:
+        columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(content_planning_generation_claims)")
+        }
+    assert {
+        "claim_version",
+        "refresh_preparation_authorization_id",
+        "refresh_preparation_authorization_digest",
+    }.issubset(columns)
 
 
 def _planning_generation_job_count(path: Path) -> int:

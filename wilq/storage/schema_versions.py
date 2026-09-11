@@ -4,13 +4,44 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 5
+SQLITE_SCHEMA_VERSION = 11
 DUCKDB_SCHEMA_VERSION = 2
 _CONTENT_SECTION_FOCUS_SCHEMA_VERSION = 4
 _STOP_TELEMETRY_SCHEMA_VERSION = 5
+_STOP_TELEMETRY_INDEX_SCHEMA_VERSION = 6
+_LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION = 7
+_REFRESH_PREPARATION_AUTHORIZATION_SCHEMA_VERSION = 8
+_CONTENT_DELIVERY_SCHEMA_VERSION = 9
+_CONTENT_RESEARCH_PACKET_SCHEMA_VERSION = 10
+_CONTENT_LANDING_HUB_SCHEMA_VERSION = 11
 _SQLITE_SCHEMA_MILESTONES = (
-    (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "content_section_focus"),
-    (_STOP_TELEMETRY_SCHEMA_VERSION, "codex_stop_events"),
+    (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "table", "content_section_focus"),
+    (_STOP_TELEMETRY_SCHEMA_VERSION, "table", "codex_stop_events"),
+    (
+        _STOP_TELEMETRY_INDEX_SCHEMA_VERSION,
+        "index",
+        "idx_codex_stop_events_received_at_id",
+    ),
+    (
+        _LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION,
+        "table",
+        "codex_stop_reconciliation_batches",
+    ),
+    (
+        _LEGACY_STOP_RECONCILIATION_SCHEMA_VERSION,
+        "table",
+        "codex_stop_events_legacy",
+    ),
+    (
+        _REFRESH_PREPARATION_AUTHORIZATION_SCHEMA_VERSION,
+        "table",
+        "content_refresh_preparation_authorizations",
+    ),
+    (_CONTENT_DELIVERY_SCHEMA_VERSION, "table", "content_delivery_identity_bindings"),
+    (_CONTENT_DELIVERY_SCHEMA_VERSION, "table", "content_source_pack_bindings"),
+    (_CONTENT_DELIVERY_SCHEMA_VERSION, "table", "content_delivery_records"),
+    (_CONTENT_RESEARCH_PACKET_SCHEMA_VERSION, "table", "content_research_packets"),
+    (_CONTENT_LANDING_HUB_SCHEMA_VERSION, "table", "content_landing_hub_authorizations"),
 )
 
 
@@ -24,22 +55,27 @@ def reject_newer_sqlite_schema(connection: sqlite3.Connection) -> None:
         )
 
 
-def ensure_sqlite_schema_version(connection: sqlite3.Connection) -> None:
+def ensure_sqlite_schema_version(
+    connection: sqlite3.Connection,
+    *,
+    require_all_milestones: bool = False,
+) -> None:
     row = connection.execute("PRAGMA user_version").fetchone()
     current_version = int(row[0]) if row is not None else 0
     target_version = SQLITE_SCHEMA_VERSION
-    for schema_version, required_table in _SQLITE_SCHEMA_MILESTONES:
-        if current_version >= schema_version or schema_version > SQLITE_SCHEMA_VERSION:
-            continue
-        table_exists = connection.execute(
-            """
-            SELECT 1 FROM sqlite_master
-            WHERE type = 'table' AND name = ?
-            """,
-            (required_table,),
-        ).fetchone()
-        if table_exists is None:
-            target_version = min(target_version, schema_version - 1)
+    if require_all_milestones:
+        for schema_version, object_type, object_name in _SQLITE_SCHEMA_MILESTONES:
+            if current_version >= schema_version or schema_version > SQLITE_SCHEMA_VERSION:
+                continue
+            object_exists = connection.execute(
+                """
+                SELECT 1 FROM sqlite_master
+                WHERE type = ? AND name = ?
+                """,
+                (object_type, object_name),
+            ).fetchone()
+            if object_exists is None:
+                target_version = min(target_version, schema_version - 1)
     if current_version < target_version:
         connection.execute(f"PRAGMA user_version = {target_version}")
 

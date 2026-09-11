@@ -116,6 +116,14 @@ class ContentDecisionItem(BaseModel):
     wordpress_match_label: str | None = None
     wordpress_match_confidence: str | None = None
     wordpress_match_confidence_label: str | None = None
+    wordpress_content_type: str | None = None
+    content_kind: Literal[
+        "service",
+        "editorial",
+        "landing_or_hub",
+        "taxonomy_or_system",
+        "ambiguous",
+    ] = "ambiguous"
     wordpress_title_or_h1: str | None = None
     wordpress_inventory_source: str | None = None
     wordpress_modified_gmt: str | None = None

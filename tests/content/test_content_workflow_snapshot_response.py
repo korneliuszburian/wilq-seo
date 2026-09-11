@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal
 
 import pytest
@@ -14,6 +15,7 @@ from apps.api.wilq_api.routers.content_workflow_http import (
 from wilq.content.workflow.contracts.contracts import (
     ContentWorkItemBrowserWorkflowSnapshotResponse,
 )
+from wilq.schemas import ContentDecisionItem
 
 InvalidJourneyCase = Literal[
     "reordered",
@@ -82,6 +84,119 @@ def test_selected_internal_workflow_snapshot_uses_same_safe_projection(
     ).model_dump(mode="json")
     ContentWorkItemBrowserWorkflowSnapshotResponse.model_validate(payload)
     _assert_browser_safe_generation_readiness(payload)
+
+
+def test_selected_inventory_merge_preserves_acf_field_names() -> None:
+    existing = ContentDecisionItem.model_construct(
+        id="reach",
+        decision_type="refresh_or_merge",
+        title="REACH",
+        rationale="test",
+        next_step="test",
+        wordpress_acf_field_names=[],
+    )
+    selected = ContentDecisionItem.model_construct(
+        id="reach",
+        decision_type="refresh_or_merge",
+        title="REACH",
+        rationale="test",
+        next_step="test",
+        wordpress_acf_field_names=["hero_component", "faq_items"],
+    )
+
+    merged = content_snapshot._merge_selected_inventory_fields(existing, selected)
+
+    assert merged.wordpress_acf_field_names == ["hero_component", "faq_items"]
+
+
+def test_snapshot_recovers_ready_inventory_work_item_when_diagnostics_alias_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    work_item_id = "content_work_item_inventory_reach"
+    selected = type(
+        "SelectedDecision",
+        (),
+        {
+            "id": "reach",
+            "status": "ready",
+            "source_connectors": ["wordpress_ekologus"],
+            "final_canonical_url": "https://www.ekologus.pl/reach/",
+            "evidence_ids": ["ev_reach_inventory"],
+        },
+    )()
+    sentinel = type(
+        "Snapshot",
+        (),
+        {
+            "revision_workspace": type(
+                "Workspace", (), {"latest_revision": None, "context_current": True}
+            )(),
+        },
+    )()
+
+    class Store:
+        def load_draft_revision_state(self, _work_item_id):
+            return SimpleNamespace(
+                latest_revision=SimpleNamespace(planning_digest="b" * 64),
+                latest_review=SimpleNamespace(),
+            )
+
+        def load_planning_decisions(self, _work_item_id):
+            return []
+
+        def latest_human_review(self, _work_item_id):
+            return SimpleNamespace(id="human_review")
+
+        def latest_audit_for_review(self, _review_id):
+            return None
+
+    class ProposalStore:
+        def latest_for_planning_digest(self, _work_item_id, _digest):
+            return SimpleNamespace()
+
+    builder_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    monkeypatch.setattr(content_snapshot, "content_workflow_store", lambda: Store())
+    monkeypatch.setattr(
+        content_snapshot,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "inventory_decision_for_work_item",
+        lambda *_args, **_kwargs: selected,
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "build_content_freshness_assessment_fast",
+        lambda **_kwargs: type("Freshness", (), {})(),
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "diagnostics_with_exact_gsc_demand",
+        lambda *_args, **_kwargs: SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "build_content_work_item_diagnostics_snapshot_response_for_work_item",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        content_snapshot,
+        "build_content_work_item_snapshot_response_from_selected_decision",
+        lambda *args, **kwargs: builder_calls.append((args, kwargs)) or sentinel,
+    )
+    monkeypatch.setattr(content_snapshot, "_with_recorded_human_review", lambda value: value)
+
+    result = content_snapshot.snapshot_for_work_item_or_404(
+        work_item_id,
+    )
+
+    assert result is sentinel
+    assert len(builder_calls) == 3
+    assert builder_calls[-1][0][0] is selected
+    assert builder_calls[-1][1]["freshness_assessment"] is not None
 
 
 @pytest.mark.parametrize(

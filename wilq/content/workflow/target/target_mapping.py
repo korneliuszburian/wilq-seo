@@ -493,7 +493,7 @@ def _target_fields_for_mapping_selection(
                 ),
                 None,
             )
-        target_fields = set(layout.writable_fields or layout.fields) if layout is not None else None
+        target_fields = set(layout.writable_fields) if layout is not None else None
     else:
         if selection.target_section_index is not None:
             raise ValueError("Treść wpisu WordPress nie wskazuje pozycji sekcji ACF.")
@@ -1033,6 +1033,7 @@ def _is_exact_approved_review(
     return bool(
         review
         and review.decision == "approved"
+        and review.work_item_id == revision.work_item_id
         and review.revision_id == revision.revision_id
         and review.revision_digest == revision.content_digest
     )

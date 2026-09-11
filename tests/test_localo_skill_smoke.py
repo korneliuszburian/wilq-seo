@@ -146,6 +146,9 @@ def test_localo_smoke_uses_diagnostics_without_refresh_by_default(
 
     assert module.main() == 0
     assert ("POST", "/api/connectors/localo/refresh") not in calls
+    assert calls.count(
+        ("POST", "/api/actions/act_review_localo_visibility_facts/validate")
+    ) == 1
 
 
 def test_localo_smoke_accepts_missing_refresh_when_access_is_blocked() -> None:

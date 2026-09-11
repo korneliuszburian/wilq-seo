@@ -205,6 +205,8 @@ class ContentDecisionContext(BaseModel):
 
 def build_content_decision_context(
     work_item_id: str,
+    *,
+    read_material: bool = True,
 ) -> ContentDecisionContext | None:
     """Build the first read-only context without opening planning or authoring.
 
@@ -224,7 +226,10 @@ def build_content_decision_context(
         return None
 
     source_url = _source_url(decision)
-    catalog_item, material = _source_material(source_url)
+    catalog_item, material = _source_material(
+        source_url,
+        read_material=read_material,
+    )
     freshness = build_content_freshness_assessment_fast(
         relevant_connector_ids=decision.source_connectors,
     )
@@ -298,6 +303,8 @@ def _source_url(decision: ContentDecisionItem) -> str | None:
 
 def _source_material(
     source_url: str | None,
+    *,
+    read_material: bool = True,
 ) -> tuple[ContentInventoryCatalogItem | None, ContentInventoryMaterialResponse | None]:
     if source_url is None:
         return None, None
@@ -308,6 +315,8 @@ def _source_material(
     )
     if catalog_item is None:
         return None, None
+    if not read_material:
+        return catalog_item, None
     return catalog_item, read_content_inventory_material(source_url, catalog=catalog)
 
 

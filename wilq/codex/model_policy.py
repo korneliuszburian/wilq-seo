@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -13,18 +13,51 @@ MODEL_POLICY_NOTES = [
 ]
 
 _SAFE_MODEL_VALUE_LENGTH = 200
+_PROJECT_CODEX_CONFIG_PATH = Path(__file__).resolve().parents[2] / ".codex" / "config.toml"
+_CONTENT_RUNTIME_MODEL = "gpt-5.6-terra"
+_CONTENT_RUNTIME_REASONING_EFFORT = "max"
+
+
+@dataclass(frozen=True, slots=True)
+class CodexRuntimeSelection:
+    """One trusted model selection for every WILQ content app-server turn."""
+
+    model: str
+    model_reasoning_effort: str
+
+
+def configured_codex_runtime_selection() -> CodexRuntimeSelection | None:
+    """Return the exact project-pinned selection or fail closed.
+
+    The app-server receives an isolated ``CODEX_HOME`` that contains only the
+    operator login. Model selection must therefore come from the tracked WILQ
+    configuration rather than the operator's global Codex preferences.
+    """
+
+    config = _project_codex_config()
+    model = _configured_scalar(config, "model")
+    model_reasoning_effort = _configured_scalar(config, "model_reasoning_effort")
+    if model != _CONTENT_RUNTIME_MODEL:
+        return None
+    if model_reasoning_effort != _CONTENT_RUNTIME_REASONING_EFFORT:
+        return None
+    return CodexRuntimeSelection(
+        model=model,
+        model_reasoning_effort=model_reasoning_effort,
+    )
 
 
 def configured_codex_model() -> str | None:
-    return _configured_scalar("model")
+    selection = configured_codex_runtime_selection()
+    return selection.model if selection is not None else None
 
 
 def configured_codex_reasoning_effort() -> str | None:
-    return _configured_scalar("model_reasoning_effort")
+    selection = configured_codex_runtime_selection()
+    return selection.model_reasoning_effort if selection is not None else None
 
 
-def _configured_scalar(key: str) -> str | None:
-    config = _codex_config()
+def _configured_scalar(config: dict[str, Any], key: str) -> str | None:
     value = config.get(key)
     if not isinstance(value, str):
         return None
@@ -32,24 +65,18 @@ def _configured_scalar(key: str) -> str | None:
     return value if 0 < len(value) <= _SAFE_MODEL_VALUE_LENGTH else None
 
 
-def _codex_config() -> dict[str, Any]:
-    codex_home = os.environ.get("CODEX_HOME")
-    if codex_home:
-        config_path = Path(codex_home).expanduser() / "config.toml"
-    else:
-        home = os.environ.get("HOME")
-        if not home:
-            return {}
-        config_path = Path(home).expanduser() / ".codex" / "config.toml"
+def _project_codex_config() -> dict[str, Any]:
     try:
-        value = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        value = tomllib.loads(_PROJECT_CODEX_CONFIG_PATH.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
         return {}
     return value
 
 
 __all__ = [
+    "CodexRuntimeSelection",
     "MODEL_POLICY_NOTES",
     "configured_codex_model",
     "configured_codex_reasoning_effort",
+    "configured_codex_runtime_selection",
 ]

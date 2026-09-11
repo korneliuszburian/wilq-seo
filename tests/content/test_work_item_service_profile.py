@@ -61,6 +61,28 @@ def test_unbound_work_item_is_a_blocker_not_a_free_text_service_guess() -> None:
     assert "typed karty usługi" in context.reason
 
 
+def test_editorial_post_does_not_require_or_guess_a_service_card() -> None:
+    context = build_content_work_item_service_profile_context(
+        ContentWorkItem(
+            id="content_work_item_editorial",
+            topic="Analiza pozwoleń zintegrowanych",
+            wordpress_content_type="post",
+            content_kind="editorial",
+            source_public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+            evidence_ids=["ev_wordpress_editorial"],
+            source_connectors=["wordpress_ekologus"],
+        )
+    )
+
+    assert context.binding_status == "not_required"
+    assert context.decision_status == "ready"
+    assert context.service_card_id is None
+    assert context.service_candidates == []
+    assert context.knowledge_card_ids == []
+    assert context.cta_patterns == []
+    assert "redakcyjn" in context.reason
+
+
 def test_gsc_query_candidate_does_not_expose_service_claims_or_cta() -> None:
     page = "https://www.ekologus.pl/kariera/"
     context = build_content_work_item_service_profile_context(
@@ -88,8 +110,12 @@ def test_gsc_query_candidate_does_not_expose_service_claims_or_cta() -> None:
     assert context.service_card_id is None
     assert context.allowed_claims == []
     assert context.claims_needing_review == []
+    assert context.blocked_claims == []
     assert context.cta_patterns == []
     assert context.source_fact_ids == []
+    assert context.source_material_ids == []
+    assert context.evidence_ids == []
+    assert context.knowledge_card_ids == []
     assert any(
         candidate.service_card_id == "ekologus_service_bdo_reporting"
         for candidate in context.service_candidates
@@ -152,11 +178,11 @@ def test_two_exact_pages_use_one_normalized_service_candidate_contract() -> None
     assert not outsourcing.missing_contracts
 
 
-def test_exact_landing_url_wins_when_page_copy_mentions_bdo_too() -> None:
+def test_exact_landing_url_beats_foreign_fuzzy_bdo_terms() -> None:
     context = build_content_work_item_service_profile_context(
         ContentWorkItem(
             id="content_work_item_outsourcing_with_bdo_copy",
-            topic="Doradztwo i outsourcing ekologiczny",
+            topic="Neutralny temat strony",
             source_public_url=(
                 "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
             ),
@@ -175,6 +201,15 @@ def test_exact_landing_url_wins_when_page_copy_mentions_bdo_too() -> None:
     assert context.service_card_id == (
         "ekologus_service_environmental_consulting_outsourcing"
     )
+    assert any(
+        candidate.service_card_id == "ekologus_service_bdo_reporting"
+        for candidate in context.service_candidates
+    )
+    assert [
+        candidate.service_card_id
+        for candidate in context.service_candidates
+        if candidate.recommended
+    ] == ["ekologus_service_environmental_consulting_outsourcing"]
 
     for foreign_topic in ("subdomena firmowa", "rozliczenie podatku dochodowego"):
         unrelated = build_content_work_item_service_profile_context(

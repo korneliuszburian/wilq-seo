@@ -6,8 +6,13 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.actions.action_chain import revision_bound_action_chain
 from wilq.actions.metric_utils import unique_values
 from wilq.connectors.wordpress.acf_source_snapshot import read_wordpress_acf_flexible_snapshot
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
+    wordpress_draft_binding_from_audit_event,
+)
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
@@ -21,11 +26,16 @@ from wilq.content.workflow.target.target_mapping import (
     build_content_target_draft_preview,
     build_content_target_mapping_preview,
 )
+from wilq.content.workflow.target.target_mapping_persistence import (
+    confirmation_for_live_target_mapping,
+)
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionMode,
     ActionObject,
     ActionRisk,
     ActionStatus,
+    ActionWordPressDraftApplyBlocker,
     AuditEvent,
     OpportunityDomain,
 )
@@ -34,6 +44,59 @@ from wilq.storage.local_state import local_state_store
 CONTENT_DEV_DRAFT_ACTION_TYPE = "content_dev_draft_create"
 CONTENT_DEV_DRAFT_ACTION_CONTRACT = "content_dev_draft_action_v1"
 CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT = "content_dev_draft_action_created"
+
+
+def content_dev_draft_apply_binding(
+    action: ActionObject,
+    request: ActionApplyRequest | None,
+) -> tuple[
+    ContentDraftRevisionBinding | None,
+    list[ActionWordPressDraftApplyBlocker],
+]:
+    """Bind a dev-draft action to the exact approved revision claimed at apply."""
+
+    binding = request.wordpress_draft if request is not None else None
+    raw_action_binding = action.payload.get("wordpress_draft_binding")
+    try:
+        action_binding = ContentDraftRevisionBinding.model_validate(raw_action_binding)
+    except (TypeError, ValueError):
+        action_binding = None
+    if binding is None:
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_revision_binding_required",
+                label="Brakuje dokładnej wersji treści",
+                reason="Utworzenie szkicu dev wymaga bindingu zatwierdzonej rewizji.",
+                next_step="Odśwież akcję dla aktualnej wersji i ponów apply.",
+            )
+        ]
+    if action_binding is None or action_binding != binding:
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_revision_binding_mismatch",
+                label="Wersja apply nie pasuje do akcji szkicu dev",
+                reason="Żądanie wskazuje inną rewizję niż zatwierdzony payload akcji.",
+                next_step="Użyj bindingu dokładnej rewizji zapisanej w tej akcji.",
+            )
+        ]
+    if request is None or not request.confirmed_by:
+        return None, [
+            ActionWordPressDraftApplyBlocker(
+                code="wordpress_action_actor_required",
+                label="Brakuje operatora potwierdzającego",
+                reason="Apply szkicu dev wymaga operatora zgodnego z confirm.",
+                next_step="Potwierdź podgląd jako zalogowany operator.",
+            )
+        ]
+    chain, blockers = revision_bound_action_chain(
+        action.audit_events,
+        confirmed_by=request.confirmed_by,
+        binding_from_event=wordpress_draft_binding_from_audit_event,
+        expected_binding=binding,
+    )
+    if chain is None:
+        return None, blockers
+    return binding, []
 
 
 class ContentTargetDraftActionCommand(BaseModel):
@@ -59,7 +122,7 @@ class ContentDevDraftWritePayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     connector: Literal["wordpress_ekologus"]
-    endpoint: str = Field(pattern=r"^[a-z0-9_-]+$")
+    endpoint: Literal["posts", "pages", "uslugi"]
     authoring_mode: Literal["acf_flexible_content", "wordpress_post_content"]
     post_status: Literal["draft"] = "draft"
     create_only: Literal[True] = True
@@ -85,6 +148,8 @@ class ContentDevDraftWritePayload(BaseModel):
 def create_content_target_draft_action(
     preview: ContentTargetDraftPreview,
     command: ContentTargetDraftActionCommand,
+    *,
+    wordpress_draft_binding: ContentDraftRevisionBinding,
 ) -> ActionObject:
     """Turn a confirmed data projection into an auditable, still non-writing action."""
 
@@ -100,6 +165,12 @@ def create_content_target_draft_action(
         raise ValueError("Akcja wskazuje inne potwierdzenie przypisania.")
     if command.expected_payload_digest != preview.payload_digest:
         raise ValueError("Akcja wskazuje inny podgląd danych do szkicu.")
+    if (
+        wordpress_draft_binding.work_item_id != preview.work_item_id
+        or wordpress_draft_binding.revision_id != preview.revision.revision_id
+        or wordpress_draft_binding.content_digest != preview.revision.content_digest
+    ):
+        raise ValueError("Binding WordPress wskazuje inną zatwierdzoną rewizję.")
 
     target = preview.target.target_contract
     surface = target.authoring_surface
@@ -158,6 +229,7 @@ def create_content_target_draft_action(
             "preview_contract": CONTENT_DEV_DRAFT_ACTION_CONTRACT,
             "mode": "dev_draft_only",
             "content_target_draft_binding": binding,
+            "wordpress_draft_binding": wordpress_draft_binding.model_dump(mode="json"),
             "draft_payload": draft_payload,
             "payload_preview": [payload_preview],
             "required_validation": [
@@ -333,14 +405,15 @@ def current_content_target_draft_preview(
         ),
         discovery=discovery,
     )
-    confirmation = None
-    if mapping.target is not None and mapping.binding_digest is not None:
-        confirmation = store.load_target_mapping_confirmation(
+    confirmation = confirmation_for_live_target_mapping(
+        state=store.load_target_mapping_draft_state(
             work_item_id=work_item_id,
             revision_id=revision_id,
-            target_contract_digest=mapping.target.target_contract_digest,
-            binding_digest=mapping.binding_digest,
-        )
+        ),
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        mapping=mapping,
+    )
     return build_content_target_draft_preview(
         work_item_id=work_item_id,
         revision_id=revision_id,
@@ -381,7 +454,7 @@ def _draft_payload_identity(
     return payload
 
 
-def _wordpress_endpoint(target: object) -> str:
+def _wordpress_endpoint(target: object) -> Literal["posts", "pages", "uslugi"]:
     endpoint = getattr(target, "rest_endpoint", None)
     post_type = getattr(target, "post_type", None)
     # Older persisted target contracts predate ``rest_endpoint``.  Their
@@ -389,9 +462,13 @@ def _wordpress_endpoint(target: object) -> str:
     # instead of accidentally changing a post draft into a page draft.
     if endpoint == "pages" and post_type == "post":
         endpoint = "posts"
-    if not isinstance(endpoint, str) or endpoint not in {"posts", "pages", "uslugi"}:
-        raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
-    return endpoint
+    if endpoint == "posts":
+        return "posts"
+    if endpoint == "pages":
+        return "pages"
+    if endpoint == "uslugi":
+        return "uslugi"
+    raise ValueError("Odczytany typ obiektu dev nie obsługuje tworzenia szkicu.")
 
 
 def _draft_title(preview: ContentTargetDraftPreview) -> str:
@@ -423,8 +500,10 @@ def _acf_clone_plan(preview: ContentTargetDraftPreview) -> ContentAcfClonePlan |
     surface = preview.target.target_contract.authoring_surface
     source_digest = surface.source_acf_digest if surface is not None else None
     fields_digest = surface.source_acf_fields_digest if surface is not None else None
-    if source_digest is None or fields_digest is None or any(
-        component.target_section_index is None for component in preview.components
+    if (
+        source_digest is None
+        or fields_digest is None
+        or any(component.target_section_index is None for component in preview.components)
     ):
         # Older local previews cannot have been produced by the current target
         # discovery contract. They remain executable only in compatibility

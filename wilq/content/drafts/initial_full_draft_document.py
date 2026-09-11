@@ -71,8 +71,13 @@ def build_initial_draft_revision_command(
         draft_package_digest=content_draft_package_digest(package),
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input.planning_input_digest,
+        content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
-        service_digest=_service_digest(planning_input),
+        service_digest=(
+            _service_digest(planning_input)
+            if planning_input.content_kind == "service"
+            else None
+        ),
         inventory_digest=content_planning_inventory_digest(planning_input.inventory),
         source_material_ids=sorted(
             {
@@ -112,8 +117,7 @@ def build_initial_draft_revision_command(
                 "semantic_review_required",
                 *(
                     ["regulatory_draft_assurance_passed"]
-                    if regulatory_assurance is not None
-                    and regulatory_assurance.status == "passed"
+                    if regulatory_assurance is not None and regulatory_assurance.status == "passed"
                     else []
                 ),
             ],
@@ -121,12 +125,12 @@ def build_initial_draft_revision_command(
                 None if regulatory_assurance is None else regulatory_assurance.codex_run_id
             ),
             regulatory_assurance_criteria_version=(
-                None
-                if regulatory_assurance is None
-                else regulatory_assurance.criteria_version
+                None if regulatory_assurance is None else regulatory_assurance.criteria_version
             ),
             review_scope="persisted_full_document_and_declared_lineage",
+            refresh_preparation_binding=proposal.refresh_preparation_binding,
         ),
+        refresh_preparation_binding=proposal.refresh_preparation_binding,
         created_by=request.requested_by,
     )
 

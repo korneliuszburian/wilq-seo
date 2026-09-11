@@ -15,6 +15,7 @@ from apps.api.wilq_api.routers.content_snapshot import (
 from tests._contract_support.action_candidate_seed import (
     save_content_workflow_service_page_metric_facts,
 )
+from wilq.connectors.wordpress.client import WordPressDraftCreationProof
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
 from wilq.content.handoff.wordpress_execution import (
@@ -503,6 +504,40 @@ def test_wordpress_execution_adapter_failure_is_sanitized_after_action_apply(
     assert [blocker.code for blocker in result.blockers] == ["live_adapter_failed"]
     assert result.blockers[0].reason == "WordPress odrzucił szkic testowy."
     assert "secret technical details" not in str(result.model_dump(mode="json"))
+
+
+def test_wordpress_execution_persists_creation_proof_digests(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_success.sqlite3"))
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES", "true")
+    _persist_write_authorization_events()
+    proof = WordPressDraftCreationProof(
+        "417",
+        expected_content_digest="9" * 64,
+        observed_content_digest="8" * 64,
+        expected_title_digest="7" * 64,
+        observed_title_digest="6" * 64,
+    )
+    result = execute_content_wordpress_draft_handoff(
+        handoff=ContentWordPressDraftHandoff.model_validate(_wordpress_handoff()),
+        draft_package=ContentDraftPackage.model_validate(_draft_package()),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=lambda _payload: proof,
+        action_apply_authorized=True,
+        write_authorization=ContentWordPressDraftWriteAuthorization.model_validate(
+            _write_authorization()
+        ),
+        write_authorization_verified=True,
+    )
+
+    assert result.status == "created"
+    assert result.expected_content_digest == "9" * 64
+    assert result.observed_content_digest == "8" * 64
+    assert result.expected_title_digest == "7" * 64
+    assert result.observed_title_digest == "6" * 64
 
 
 def test_wordpress_write_readiness_blocks_when_live_env_is_disabled(

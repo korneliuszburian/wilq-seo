@@ -31,21 +31,25 @@ def draftable_planning_sections(
 def bind_draftable_planning_sections(
     proposal_sections: Iterable[ContentPlanningSection],
     revision_sections: Iterable[ContentDraftRevisionSection],
+    *,
+    allow_revision_subset: bool = False,
 ) -> dict[str, ContentPlanningSection]:
     """Bind every draftable plan section to exactly one revision target."""
 
     bound = {
-        section.section_id: section
-        for section in draftable_planning_sections(proposal_sections)
+        section.section_id: section for section in draftable_planning_sections(proposal_sections)
     }
     revision_ids = {
         section_id
         for section in revision_sections
         if (section_id := section.section_id) is not None
     }
-    if set(bound) != revision_ids:
+    binding_matches = (
+        revision_ids.issubset(bound) if allow_revision_subset else set(bound) == revision_ids
+    )
+    if not binding_matches:
         raise ValueError("Semantic review proposal sections do not bind to the revision.")
-    return bound
+    return {section_id: bound[section_id] for section_id in revision_ids}
 
 
 __all__ = ["bind_draftable_planning_sections", "draftable_planning_sections"]

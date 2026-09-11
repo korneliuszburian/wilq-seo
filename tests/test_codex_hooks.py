@@ -5,6 +5,7 @@ import os
 import runpy
 import subprocess
 import sys
+import urllib.error
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,30 @@ def test_stop_hook_outputs_valid_json_when_wilq_api_is_unreachable() -> None:
     assert payload["continue"] is True
     assert "API is unreachable" in payload["systemMessage"]
     assert result.stderr == ""
+
+
+def test_stop_hook_keeps_codex_running_when_telemetry_returns_503(
+    monkeypatch,
+    capsys,
+) -> None:
+    def reject_telemetry(request, *, timeout):
+        raise urllib.error.HTTPError(
+            request.full_url,
+            503,
+            "Stop telemetry unavailable",
+            hdrs=None,
+            fp=None,
+        )
+
+    monkeypatch.setenv("WILQ_API_BASE_URL", "http://127.0.0.1:8000")
+    monkeypatch.setattr("urllib.request.urlopen", reject_telemetry)
+    namespace = runpy.run_path(str(REPO_ROOT / ".codex/hooks/stop_log.py"))
+
+    namespace["main"]()
+
+    output = json.loads(capsys.readouterr().out)
+    assert output["continue"] is True
+    assert "API is unreachable" in output["systemMessage"]
 
 
 def test_hooks_config_uses_uv_python_instead_of_global_python3() -> None:

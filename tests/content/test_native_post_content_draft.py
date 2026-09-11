@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 import wilq.content.workflow.target.dev_draft_action as dev_draft_action
 import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionPageAssets,
@@ -115,6 +116,20 @@ def _approved_review(revision: ContentDraftRevision) -> ContentDraftRevisionRevi
     )
 
 
+def _apply_binding(revision: ContentDraftRevision) -> ContentDraftRevisionBinding:
+    return ContentDraftRevisionBinding(
+        work_item_id=revision.work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{revision.work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id="draft_package_bdo",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        approval_decision_id=_approved_review(revision).decision_id,
+        final_canonical_url="https://www.ekologus.pl/bdo/",
+    )
+
+
 def _confirmed_mapping(
     revision: ContentDraftRevision,
     review: ContentDraftRevisionReview,
@@ -190,6 +205,7 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
             expected_payload_digest=preview.payload_digest or "",
             requested_by="Wilku",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     payload = dev_draft_action.build_content_dev_draft_write_payload(action, preview=preview)
 
@@ -221,11 +237,13 @@ def test_native_post_content_mapping_builds_an_exact_draft_only_payload(monkeypa
     monkeypatch.setattr(
         dev_draft_execution,
         "create_wordpress_draft_post",
-        lambda value, *, connector_id: (
+        lambda value, *, connector_id, endpoint: (
             created.append((value.content_html or "", connector_id)) or "draft_1354"
         ),
     )
-    result, errors = dev_draft_execution.execute_content_target_draft_action(action)
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        action, binding=_apply_binding(revision)
+    )
 
     assert errors == []
     assert result is not None

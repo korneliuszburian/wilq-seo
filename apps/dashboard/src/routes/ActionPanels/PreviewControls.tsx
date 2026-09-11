@@ -3,11 +3,17 @@ import { FileJson, RefreshCw } from "lucide-react";
 
 import { type ActionPreviewResult, previewAction } from "../../lib/api";
 import { TraceLine } from "../../components/TraceLine";
-import type { ActionPanelProps } from "./shared";
+import { contentDevDraftBinding, type ActionPanelProps } from "./shared";
 
 export function ActionPreviewControls({ action }: ActionPanelProps) {
+  const wordpressDraft = contentDevDraftBinding(action);
   const previewMutation = useMutation({
-    mutationFn: () => previewAction(action.id)
+    mutationFn: () =>
+      previewAction(action.id, {
+        requested_by: "operator_local_dashboard",
+        max_items: 8,
+        wordpress_draft: wordpressDraft
+      })
   });
 
   return (

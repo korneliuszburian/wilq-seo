@@ -5,20 +5,38 @@ from collections.abc import Callable
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from wilq.content.planning.dynamic_input import build_content_planning_input
+from apps.api.wilq_api.routers.content_lineage_cleanup_service import (
+    ContentLineageCleanupConflict,
+    execute_content_lineage_cleanup,
+    expected_latest_review_decision_id,
+)
+from wilq.content.drafts.package import ContentDraftPackage
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInputBuildResult,
+    build_content_planning_input,
+)
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
     ContentDraftRevisionPublicConflictCode,
     ContentDraftRevisionSaveResponse,
     ContentOfficialSourceLineageRebaseRequest,
+    ContentRevisionLineageCleanupRequest,
     ContentWorkItemWorkflowSnapshotResponse,
+)
+from wilq.content.workflow.documents.codex_revision_commit import (
+    ContentDraftRevisionContext,
+    current_editor_draft_context_guard,
 )
 from wilq.content.workflow.documents.official_source_lineage import (
     build_official_source_lineage_rebase_command,
 )
 from wilq.content.workflow.documents.official_source_lineage_store import (
     content_official_source_lineage_store,
+)
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    content_draft_package_digest,
 )
 
 ContentOfficialSourceLineageSnapshotLoader = Callable[
@@ -31,6 +49,8 @@ def register_content_official_source_lineage_route(
     *,
     snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
 ) -> None:
+    _register_content_lineage_cleanup_route(router, snapshot_loader=snapshot_loader)
+
     @router.post(
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/official-source-lineage-rebase",
         response_model=ContentDraftRevisionSaveResponse,
@@ -56,12 +76,7 @@ def register_content_official_source_lineage_route(
                 "digest_mismatch",
                 "Odśwież dokument przed uzupełnieniem źródeł urzędowych.",
             )
-        if (
-            base_revision.schema_version != "wilq_content_draft_revision_v2"
-            or base_revision.official_source_references
-            or workspace.status not in {"unreviewed", "deferred"}
-            or not workspace.context_current
-        ):
+        if not _lineage_rebase_available(snapshot, base_revision):
             return _conflict(
                 snapshot,
                 "official_source_lineage_unavailable",
@@ -69,16 +84,13 @@ def register_content_official_source_lineage_route(
                 "rewizji bez zapisanej lineage.",
             )
         planning = snapshot.planning_workspace
-        if planning is None or base_revision.service_card_id is None:
+        if planning is None:
             return _conflict(
                 snapshot,
                 "official_source_lineage_unavailable",
                 "Odśwież bieżący plan i wybór usługi przed uzupełnieniem źródeł urzędowych.",
             )
-        planning_input_result = build_content_planning_input(
-            with_explicit_content_service_selection(snapshot, base_revision.service_card_id),
-            service_card_id=base_revision.service_card_id,
-        )
+        planning_input_result = _planning_input_for_lineage_rebase(snapshot, base_revision)
         if planning_input_result.planning_input is None or planning_input_result.blockers:
             return _conflict(
                 snapshot,
@@ -99,15 +111,17 @@ def register_content_official_source_lineage_route(
                 "Bieżący plan nie odpowiada dokładnie rewizji lub nie ma kompletnej "
                 "lineage źródeł urzędowych.",
             )
-        expected_review_decision_id = (
-            None
-            if workspace.status == "unreviewed"
-            else None if workspace.latest_review is None else workspace.latest_review.decision_id
-        )
-        result = content_official_source_lineage_store().append_rebase(
-            command,
-            expected_latest_review_decision_id=expected_review_decision_id,
-        )
+        expected_review_decision_id = expected_latest_review_decision_id(workspace)
+        with current_editor_draft_context_guard(
+            lambda: _current_lineage_rebase_context(
+                snapshot_loader(work_item_id),
+                requested_by=request.requested_by,
+            )
+        ):
+            result = content_official_source_lineage_store().append_rebase(
+                command,
+                expected_latest_review_decision_id=expected_review_decision_id,
+            )
         if result.status == "conflict":
             return _conflict(
                 snapshot_loader(work_item_id),
@@ -126,6 +140,111 @@ def register_content_official_source_lineage_route(
             revision=result.revision,
             workspace=refreshed_workspace,
         )
+
+
+def _register_content_lineage_cleanup_route(
+    router: APIRouter,
+    *,
+    snapshot_loader: ContentOfficialSourceLineageSnapshotLoader,
+) -> None:
+    @router.post(
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/lineage-cleanup",
+        response_model=ContentDraftRevisionSaveResponse,
+        responses={409: {"model": ContentDraftRevisionConflictResponse}},
+    )
+    def content_revision_lineage_cleanup(
+        work_item_id: str,
+        revision_id: str,
+        request: ContentRevisionLineageCleanupRequest,
+    ) -> ContentDraftRevisionSaveResponse | JSONResponse:
+        result = execute_content_lineage_cleanup(
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            request=request,
+            snapshot_loader=snapshot_loader,
+        )
+        if isinstance(result, ContentLineageCleanupConflict):
+            return _conflict(
+                result.snapshot,
+                result.code,
+                result.safe_next_step,
+            )
+        return ContentDraftRevisionSaveResponse(
+            status=result.status,
+            revision=result.revision,
+            workspace=result.workspace,
+        )
+
+
+def _planning_input_for_lineage_rebase(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    base_revision: ContentDraftRevision,
+) -> ContentPlanningInputBuildResult:
+    planning_snapshot = (
+        with_explicit_content_service_selection(snapshot, base_revision.service_card_id)
+        if base_revision.content_kind == "service" and base_revision.service_card_id is not None
+        else snapshot
+    )
+    return build_content_planning_input(
+        planning_snapshot,
+        service_card_id=base_revision.service_card_id,
+    )
+
+
+def _lineage_rebase_context_allowed(
+    *,
+    context_current: bool,
+    base_revision: ContentDraftRevision,
+    draft_package: ContentDraftPackage | None,
+) -> bool:
+    return context_current or (
+        draft_package is not None
+        and content_draft_package_digest(draft_package) == base_revision.draft_package_digest
+    )
+
+
+def _lineage_rebase_available(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    base_revision: ContentDraftRevision,
+) -> bool:
+    workspace = snapshot.revision_workspace
+    return (
+        base_revision.schema_version == "wilq_content_draft_revision_v2"
+        and workspace.status in {"unreviewed", "deferred"}
+        and _lineage_rebase_context_allowed(
+            context_current=workspace.context_current,
+            base_revision=base_revision,
+            draft_package=snapshot.draft_package.draft_package_result.draft_package,
+        )
+    )
+
+
+def _current_lineage_rebase_context(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    requested_by: str,
+) -> ContentDraftRevisionContext | None:
+    base_revision = snapshot.revision_workspace.latest_revision
+    planning = snapshot.planning_workspace
+    if (
+        base_revision is None
+        or planning is None
+        or not _lineage_rebase_available(snapshot, base_revision)
+    ):
+        return None
+    planning_input_result = _planning_input_for_lineage_rebase(snapshot, base_revision)
+    if planning_input_result.planning_input is None or planning_input_result.blockers:
+        return None
+    try:
+        command = build_official_source_lineage_rebase_command(
+            base_revision=base_revision,
+            planning_input=planning_input_result.planning_input,
+            proposal=planning.proposal,
+            requested_by=requested_by,
+        )
+    except ValueError:
+        return None
+    return ContentDraftRevisionContext.from_command(command)
 
 
 def _conflict(

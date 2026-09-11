@@ -61,8 +61,18 @@ def wordpress_draft_readback(
             ],
         )
     try:
-        readback = read_wordpress_draft_post(post_id)
-    except WordPressDraftReadError as exc:
+        endpoint = _execution_readback_endpoint(execution)
+        readback = (
+            read_wordpress_draft_post(post_id)
+            if endpoint == "posts"
+            else read_wordpress_draft_post(post_id, endpoint=endpoint)
+        )
+    except (WordPressDraftReadError, ValueError) as exc:
+        public_message = (
+            exc.public_message
+            if isinstance(exc, WordPressDraftReadError)
+            else "WordPress zwrócił odpowiedź, której nie można odczytać jako danych szkicu."
+        )
         return ContentWordPressDraftReadback(
             status="blocked",
             wordpress_post_id=post_id,
@@ -70,7 +80,7 @@ def wordpress_draft_readback(
                 ContentWordPressDraftReadbackBlocker(
                     code="wordpress_draft_read_failed",
                     label="Nie udało się odczytać szkicu WordPress",
-                    reason=exc.public_message,
+                    reason=public_message,
                     next_step=(
                         "Sprawdź dostęp REST WordPress i odśwież panel szkicu. "
                         "Nie traktuj samego ID jako potwierdzenia treści."
@@ -81,11 +91,28 @@ def wordpress_draft_readback(
     expected_content_digest, expected_acf_digest, verification_blocker = (
         _wordpress_draft_verification(execution, readback)
     )
+    observed_title_digest = _wordpress_draft_value_digest(readback.title)
+    if (
+        verification_blocker is None
+        and execution.expected_title_digest is not None
+        and observed_title_digest != execution.expected_title_digest
+    ):
+        verification_blocker = ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_title_mismatch",
+            label="Tytuł szkicu WordPress różni się od zatwierdzonego tytułu",
+            reason="Digest tytułu odczytanego z WordPress nie zgadza się z digestem oczekiwanym.",
+            next_step=(
+                "Nie ponawiaj zapisu automatycznie. Sprawdź szkic po ID i przygotuj nową akcję."
+            ),
+        )
     return ContentWordPressDraftReadback(
         status="blocked" if verification_blocker is not None else "available",
         wordpress_post_id=readback.post_id,
         post_status=readback.status,
         title=readback.title,
+        title_digest=observed_title_digest,
+        expected_title_digest=execution.expected_title_digest,
+        observed_title_digest=observed_title_digest,
         link=readback.link,
         edit_link=readback.edit_link,
         modified_gmt=readback.modified_gmt,
@@ -116,7 +143,33 @@ def _wordpress_draft_verification(
             ),
         )
     payload = execution.payload
-    if payload is None or payload.authoring_mode == "acf_flexible_content":
+    if execution.expected_acf_digest is not None and (
+        payload is None or payload.authoring_mode == "acf_flexible_content"
+    ):
+        return _verify_acf_readback(execution, readback)
+    if payload is None:
+        if (
+            execution.expected_content_digest is not None
+            and execution.observed_content_digest is not None
+        ):
+            if readback.content_digest != execution.observed_content_digest:
+                return (
+                    execution.expected_content_digest,
+                    None,
+                    ContentWordPressDraftReadbackBlocker(
+                        code="wordpress_draft_content_mismatch",
+                        label="Treść szkicu WordPress różni się od utrwalonego readbacku",
+                        reason=(
+                            "Powtórny odczyt pola content z WordPress nie zgadza się z "
+                            "digestem zapisanym po utworzeniu szkicu."
+                        ),
+                        next_step=(
+                            "Nie ponawiaj zapisu automatycznie. Sprawdź szkic po ID i "
+                            "przygotuj nową akcję."
+                        ),
+                    ),
+                )
+            return execution.expected_content_digest, None, None
         return None, None, ContentWordPressDraftReadbackBlocker(
             code="wordpress_draft_verification_unavailable",
             label="Brakuje payloadu do porównania treści szkicu",
@@ -136,7 +189,9 @@ def _wordpress_draft_verification(
             reason="Wynik wykonania nie zawiera wartości wysłanej do pola content WordPress.",
             next_step="Przygotuj nową, dokładnie powiązaną akcję create-only.",
         )
-    expected_content_digest = _wordpress_draft_value_digest(expected_content)
+    expected_content_digest = execution.expected_content_digest or _wordpress_draft_value_digest(
+        expected_content
+    )
     if readback.content_digest != expected_content_digest:
         return expected_content_digest, None, ContentWordPressDraftReadbackBlocker(
             code="wordpress_draft_content_mismatch",
@@ -151,6 +206,49 @@ def _wordpress_draft_verification(
             ),
         )
     return expected_content_digest, None, None
+
+
+def _verify_acf_readback(
+    execution: ContentWordPressDraftExecutionResult,
+    readback: WordPressDraftPostReadback,
+) -> tuple[str | None, str | None, ContentWordPressDraftReadbackBlocker | None]:
+    if execution.expected_acf_digest is None or execution.observed_acf_digest is None:
+        return None, None, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_verification_unavailable",
+            label="Brakuje digestów ACF do porównania szkicu",
+            reason=(
+                "WILQ nie ma utrwalonej pary expected/observed ACF wymaganej do "
+                "niezależnego potwierdzenia szkicu."
+            ),
+            next_step=(
+                "Użyj create-only ActionObject z pełnym readbackiem ACF; nie traktuj "
+                "samego ID jako potwierdzenia."
+            ),
+        )
+    if readback.acf_digest != execution.observed_acf_digest:
+        return None, execution.expected_acf_digest, ContentWordPressDraftReadbackBlocker(
+            code="wordpress_draft_acf_mismatch",
+            label="Digest ACF szkicu różni się od utrwalonego readbacku",
+            reason=(
+                "Powtórny odczyt ACF nie zgadza się z digestem zapisanym po "
+                "utworzeniu szkicu."
+            ),
+            next_step=(
+                "Nie ponawiaj zapisu automatycznie; sprawdź szkic po ID i "
+                "przygotuj nową akcję."
+            ),
+        )
+    return None, execution.expected_acf_digest, None
+
+
+def _execution_readback_endpoint(
+    execution: ContentWordPressDraftExecutionResult,
+) -> Literal["posts", "pages", "uslugi"]:
+    if execution.endpoint is not None:
+        return execution.endpoint
+    if execution.payload is not None:
+        return execution.payload.endpoint_kind
+    return "posts"
 
 
 def wordpress_draft_activation_missing_step(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from threading import RLock
 from time import monotonic
 
@@ -22,6 +23,7 @@ from wilq.content.canonical.landing_identity import (
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.planning.generated_proposal import read_content_planning_proposal
 from wilq.content.planning.generated_proposal_store import (
+    ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
 from wilq.content.review.human import ContentHumanReview
@@ -92,6 +94,7 @@ _SELECTED_INVENTORY_FIELDS = (
     "wordpress_content_inventory_note",
     "wordpress_acf_section_inventory_status",
     "wordpress_acf_section_inventory_note",
+    "wordpress_acf_field_names",
     "wordpress_acf_section_headings",
     "wordpress_acf_section_count",
 )
@@ -121,6 +124,76 @@ def _merge_selected_inventory_fields(
     return existing.model_copy(update=updates)
 
 
+def _snapshot_builder(
+    *,
+    diagnostics: ContentDiagnosticsResponse | None,
+    work_item_id: str,
+    selected_decision_override: ContentDecisionItem | None,
+    selected_freshness_override: ContentFreshnessAssessment | None,
+    revision_state: ContentDraftRevisionState,
+    planning_decisions: list[ContentPlanningDecision],
+    service_card_id_override: str | None,
+) -> Callable[
+    [
+        ContentPlanningProposal | None,
+        ContentHumanReview | None,
+        ContentWordPressDraftAuditEnvelope | None,
+    ],
+    ContentWorkItemWorkflowSnapshotResponse | None,
+]:
+    def build(
+        generated_planning_proposal: ContentPlanningProposal | None,
+        human_review: ContentHumanReview | None,
+        audit: ContentWordPressDraftAuditEnvelope | None,
+    ) -> ContentWorkItemWorkflowSnapshotResponse | None:
+        if selected_decision_override is not None:
+            if selected_freshness_override is None:
+                raise RuntimeError("Selected snapshot requires a current freshness assessment.")
+            return build_content_work_item_snapshot_response_from_selected_decision(
+                selected_decision_override,
+                freshness_assessment=selected_freshness_override,
+                human_review=human_review,
+                audit=audit,
+                revision_state=revision_state,
+                planning_decisions=planning_decisions,
+                generated_planning_proposal=generated_planning_proposal,
+                service_card_id_override=service_card_id_override,
+            )
+        if diagnostics is None:
+            raise RuntimeError("Global diagnostics are required for fallback snapshots.")
+        return build_content_work_item_diagnostics_snapshot_response_for_work_item(
+            diagnostics,
+            work_item_id,
+            human_review=human_review,
+            audit=audit,
+            revision_state=revision_state,
+            planning_decisions=planning_decisions,
+            generated_planning_proposal=generated_planning_proposal,
+            service_card_id_override=service_card_id_override,
+        )
+
+    return build
+
+
+def _can_use_revision_bound_proposal(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    prefer_revision_bound_proposal: bool,
+) -> bool:
+    return snapshot.revision_workspace.context_current or prefer_revision_bound_proposal
+
+
+def _revision_bound_planning_digest(
+    revision_state: ContentDraftRevisionState,
+    prefer_revision_bound_proposal: bool,
+) -> str | None:
+    revision = revision_state.latest_revision
+    if revision is None or revision.planning_digest is None:
+        return None
+    if revision_state.latest_review is None and not prefer_revision_bound_proposal:
+        return None
+    return revision.planning_digest
+
+
 def snapshot_for_work_item_or_404(
     work_item_id: str,
     *,
@@ -131,8 +204,12 @@ def snapshot_for_work_item_or_404(
     revision_state_override: ContentDraftRevisionState | None = None,
     selected_decision_override: ContentDecisionItem | None = None,
     selected_freshness_override: ContentFreshnessAssessment | None = None,
+    service_card_id_override: str | None = None,
+    prefer_revision_bound_proposal: bool = False,
     resolve_planning_proposal: bool = True,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
+    store = content_workflow_store()
+    revision_state = revision_state_override or store.load_draft_revision_state(work_item_id)
     diagnostics = (
         diagnostics_override
         if diagnostics_override is not None
@@ -142,107 +219,64 @@ def snapshot_for_work_item_or_404(
             else diagnostics_with_exact_gsc_demand(work_item_id)
         )
     )
-    store = content_workflow_store()
-    revision_state = (
-        revision_state_override
-        if revision_state_override is not None
-        else store.load_draft_revision_state(work_item_id)
-    )
     planning_decisions = (
         store.load_planning_decisions(work_item_id)
         if planning_decisions_override is None
         else planning_decisions_override
     )
+    build_snapshot = _snapshot_builder(
+        diagnostics=diagnostics,
+        work_item_id=work_item_id,
+        selected_decision_override=selected_decision_override,
+        selected_freshness_override=selected_freshness_override,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+        service_card_id_override=service_card_id_override,
+    )
     proposal_store = content_planning_proposal_store()
-    def build_snapshot(
-        generated_planning_proposal: ContentPlanningProposal | None,
-        *,
-        human_review_override: ContentHumanReview | None = human_review,
-        audit_override: ContentWordPressDraftAuditEnvelope | None = audit,
-    ) -> ContentWorkItemWorkflowSnapshotResponse | None:
-        if selected_decision_override is not None:
-            if selected_freshness_override is None:
-                raise RuntimeError(
-                    "Selected snapshot requires a current freshness assessment."
-                )
-            return build_content_work_item_snapshot_response_from_selected_decision(
-                selected_decision_override,
-                freshness_assessment=selected_freshness_override,
-                human_review=human_review_override,
-                audit=audit_override,
-                revision_state=revision_state,
-                planning_decisions=planning_decisions,
-                generated_planning_proposal=generated_planning_proposal,
-            )
-        if diagnostics is None:
-            raise RuntimeError("Global diagnostics are required for fallback snapshots.")
-        return build_content_work_item_diagnostics_snapshot_response_for_work_item(
-            diagnostics,
-            work_item_id,
-            human_review=human_review_override,
-            audit=audit_override,
+    snapshot = build_snapshot(None, human_review, audit)
+    if snapshot is None and selected_decision_override is None and diagnostics_override is None:
+        snapshot, recovered_decision, recovered_freshness = _recover_selected_inventory_snapshot(
+            work_item_id=work_item_id,
+            selected_freshness_override=selected_freshness_override,
             revision_state=revision_state,
             planning_decisions=planning_decisions,
-            generated_planning_proposal=generated_planning_proposal,
+            service_card_id_override=service_card_id_override,
+            human_review=human_review,
+            audit=audit,
         )
-
-    snapshot = build_snapshot(None)
+        if recovered_decision is not None:
+            selected_decision_override = recovered_decision
+            selected_freshness_override = recovered_freshness
+            build_snapshot = _snapshot_builder(
+                diagnostics=None,
+                work_item_id=work_item_id,
+                selected_decision_override=recovered_decision,
+                selected_freshness_override=recovered_freshness,
+                revision_state=revision_state,
+                planning_decisions=planning_decisions,
+                service_card_id_override=service_card_id_override,
+            )
     if snapshot is None:
         raise HTTPException(
             status_code=404,
             detail="Content work item is not available for the gated workflow.",
         )
-    # A persisted, current revision is an immutable fixed point. Prefer the
-    # proposal bound to its planning digest only while that revision still
-    # matches the current source context. Once the context changes, expose the
-    # newest proposal so an operator can review it instead of being trapped on
-    # the superseded plan that cannot produce another draft.
-    revision_bound_proposal = (
-        proposal_store.latest_for_planning_digest(
-            work_item_id,
-            revision_state.latest_revision.planning_digest,
-        )
-        if (
-            revision_state.latest_revision is not None
-            and revision_state.latest_review is not None
-            and revision_state.latest_revision.planning_digest is not None
-        )
-        else None
+    snapshot, generated_planning_proposal = _resolve_snapshot_planning(
+        snapshot=snapshot,
+        build_snapshot=build_snapshot,
+        proposal_store=proposal_store,
+        work_item_id=work_item_id,
+        revision_state=revision_state,
+        prefer_revision_bound_proposal=prefer_revision_bound_proposal,
+        resolve_planning_proposal=resolve_planning_proposal,
+        human_review=human_review,
+        audit=audit,
     )
-    generated_planning_proposal: ContentPlanningProposal | None
-    if revision_bound_proposal is not None and snapshot.revision_workspace.context_current:
-        generated_planning_proposal = revision_bound_proposal
-    elif not resolve_planning_proposal:
-        # The first selected-page read is a context projection. Planning has
-        # its own public read seam and must not rebuild the full planning input
-        # while the operator is only opening the workspace.
-        generated_planning_proposal = None
-    else:
-        # This is a read-only projection. Proposal creation belongs exclusively
-        # to POST /planning-proposals; the reader only attaches an exact,
-        # persisted proposal that is ready for the current planning input.
-        generated_response = read_content_planning_proposal(
-            snapshot=snapshot,
-            store=proposal_store,
-        )
-        generated_planning_proposal = (
-            generated_response.proposal if generated_response.status == "ready" else None
-        )
-    if generated_planning_proposal is not None:
-        snapshot = build_snapshot(generated_planning_proposal)
-        if snapshot is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Content work item is not available after planning lookup.",
-            )
     review = store.latest_human_review(work_item_id)
     if human_review is None and review is not None:
         audit_record = store.latest_audit_for_review(review.id)
-        snapshot = build_snapshot(
-            generated_planning_proposal,
-            human_review_override=review,
-            audit_override=audit_record,
-        )
+        snapshot = build_snapshot(generated_planning_proposal, review, audit_record)
         if snapshot is None:
             raise HTTPException(
                 status_code=404,
@@ -250,6 +284,104 @@ def snapshot_for_work_item_or_404(
             )
         snapshot = _with_recorded_human_review(snapshot)
     return snapshot
+
+
+def _ready_inventory_overrides(
+    work_item_id: str,
+    selected_freshness_override: ContentFreshnessAssessment | None,
+) -> tuple[ContentDecisionItem | None, ContentFreshnessAssessment | None]:
+    selected = inventory_decision_for_work_item(
+        work_item_id,
+        read_material=True,
+        include_all_metric_facts=True,
+    )
+    if (
+        selected is None
+        or selected.status != "ready"
+        or not selected.final_canonical_url
+        or not selected.evidence_ids
+        or not selected.source_connectors
+    ):
+        return None, selected_freshness_override
+    freshness = selected_freshness_override or build_content_freshness_assessment_fast(
+        relevant_connector_ids=selected.source_connectors,
+    )
+    return selected, freshness
+
+
+def _resolve_snapshot_planning(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    build_snapshot: Callable[..., ContentWorkItemWorkflowSnapshotResponse | None],
+    proposal_store: ContentPlanningProposalStore,
+    work_item_id: str,
+    revision_state: ContentDraftRevisionState,
+    prefer_revision_bound_proposal: bool,
+    resolve_planning_proposal: bool,
+    human_review: ContentHumanReview | None,
+    audit: ContentWordPressDraftAuditEnvelope | None,
+) -> tuple[ContentWorkItemWorkflowSnapshotResponse, ContentPlanningProposal | None]:
+    revision_bound_digest = _revision_bound_planning_digest(
+        revision_state, prefer_revision_bound_proposal
+    )
+    revision_bound_proposal = (
+        None
+        if revision_bound_digest is None
+        else proposal_store.latest_for_planning_digest(work_item_id, revision_bound_digest)
+    )
+    if revision_bound_proposal is not None and _can_use_revision_bound_proposal(
+        snapshot, prefer_revision_bound_proposal
+    ):
+        generated = revision_bound_proposal
+    elif not resolve_planning_proposal:
+        generated = None
+    else:
+        generated_response = read_content_planning_proposal(
+            snapshot=snapshot,
+            store=proposal_store,
+        )
+        generated = generated_response.proposal if generated_response.status == "ready" else None
+    if generated is not None:
+        refreshed = build_snapshot(generated, human_review, audit)
+        if refreshed is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Content work item is not available after planning lookup.",
+            )
+        snapshot = refreshed
+    return snapshot, generated
+
+
+def _recover_selected_inventory_snapshot(
+    *,
+    work_item_id: str,
+    selected_freshness_override: ContentFreshnessAssessment | None,
+    revision_state: ContentDraftRevisionState,
+    planning_decisions: list[ContentPlanningDecision],
+    service_card_id_override: str | None,
+    human_review: ContentHumanReview | None,
+    audit: ContentWordPressDraftAuditEnvelope | None,
+) -> tuple[
+    ContentWorkItemWorkflowSnapshotResponse | None,
+    ContentDecisionItem | None,
+    ContentFreshnessAssessment | None,
+]:
+    selected, freshness = _ready_inventory_overrides(
+        work_item_id,
+        selected_freshness_override,
+    )
+    if selected is None:
+        return None, None, freshness
+    snapshot = _snapshot_builder(
+        diagnostics=None,
+        work_item_id=work_item_id,
+        selected_decision_override=selected,
+        selected_freshness_override=freshness,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+        service_card_id_override=service_card_id_override,
+    )(None, human_review, audit)
+    return snapshot, selected, freshness
 
 
 def snapshot_for_default_work_item_or_404() -> ContentWorkItemWorkflowSnapshotResponse:
@@ -319,6 +451,59 @@ def _with_recorded_human_review(
     )
 
 
+def _diagnostics_with_selected_inventory(
+    diagnostics: ContentDiagnosticsResponse,
+    work_item_id: str,
+) -> ContentDiagnosticsResponse:
+    inventory_decision = inventory_decision_for_work_item(work_item_id)
+    if inventory_decision is None:
+        return diagnostics
+    decision_queue = [
+        _merge_selected_inventory_fields(item, inventory_decision)
+        if item.id == inventory_decision.id
+        else item
+        for item in diagnostics.decision_queue
+    ]
+    if not any(item.id == inventory_decision.id for item in diagnostics.decision_queue):
+        decision_queue.append(inventory_decision)
+    return diagnostics.model_copy(
+        update={
+            "decision_queue": decision_queue,
+            "freshness_assessment": build_content_freshness_assessment_fast(
+                relevant_connector_ids=inventory_decision.source_connectors,
+            ),
+        }
+    )
+
+
+def _exact_gsc_facts_for_decision(decision: ContentDecisionItem) -> list[MetricFact]:
+    current_evidence_ids = set(decision.evidence_ids)
+    candidate_facts = [
+        fact
+        for lookup_url in landing_page_metric_lookup_urls(decision.page)
+        for fact in metric_store().list_metric_facts_for_content_url(
+            ["google_search_console"],
+            lookup_url,
+            content_path=landing_page_metric_lookup_path(decision.page),
+        )
+    ]
+    return [
+        fact
+        for fact in {
+            candidate.model_dump_json(): candidate for candidate in candidate_facts
+        }.values()
+        if fact.evidence_id in current_evidence_ids
+        and match_landing_page(
+            decision.page,
+            LandingPageCandidate(
+                candidate_id=fact.evidence_id,
+                url=fact.dimensions.get("page"),
+            ),
+        ).matched
+        and content_query_is_planning_signal(fact.dimensions.get("query", ""))
+    ]
+
+
 def diagnostics_with_exact_gsc_demand(
     work_item_id: str,
 ) -> ContentDiagnosticsResponse:
@@ -345,32 +530,7 @@ def diagnostics_with_exact_gsc_demand(
             and now - cached[0] < _EXACT_DIAGNOSTICS_CACHE_SECONDS
         ):
             return cached[3]
-    inventory_decision = inventory_decision_for_work_item(work_item_id)
-    if inventory_decision is not None:
-        # The broad diagnostics queue may already contain a cheap URL-only
-        # decision with the same id. For an explicitly selected page, replace
-        # that row with the exact inventory-bound decision so rendered
-        # provenance (ACF/the_content), source lineage and material confidence
-        # cannot be lost before the snapshot is assembled.
-        decision_queue = [
-            _merge_selected_inventory_fields(item, inventory_decision)
-            if item.id == inventory_decision.id
-            else item
-            for item in diagnostics.decision_queue
-        ]
-        if not any(item.id == inventory_decision.id for item in diagnostics.decision_queue):
-            decision_queue.append(inventory_decision)
-        diagnostics = diagnostics.model_copy(
-            update={
-                "decision_queue": decision_queue,
-                # A selected workflow must not inherit connector quality
-                # caveats from unrelated content consumers (for example the
-                # shop WordPress source on an ordinary ekologus.pl page).
-                "freshness_assessment": build_content_freshness_assessment_fast(
-                    relevant_connector_ids=inventory_decision.source_connectors,
-                ),
-            }
-        )
+    diagnostics = _diagnostics_with_selected_inventory(diagnostics, work_item_id)
     diagnostics = content_diagnostics_with_ads_refresh(
         diagnostics,
         latest_ads_refresh(
@@ -393,31 +553,7 @@ def diagnostics_with_exact_gsc_demand(
                 result,
             )
         return result
-    current_evidence_ids = set(decision.evidence_ids)
-    candidate_facts = [
-        fact
-        for lookup_url in landing_page_metric_lookup_urls(decision.page)
-        for fact in metric_store().list_metric_facts_for_content_url(
-            ["google_search_console"],
-            lookup_url,
-            content_path=landing_page_metric_lookup_path(decision.page),
-        )
-    ]
-    exact_facts = [
-        fact
-        for fact in {
-            candidate.model_dump_json(): candidate for candidate in candidate_facts
-        }.values()
-        if fact.evidence_id in current_evidence_ids
-        and match_landing_page(
-            decision.page,
-            LandingPageCandidate(
-                candidate_id=fact.evidence_id,
-                url=fact.dimensions.get("page"),
-            ),
-        ).matched
-        and content_query_is_planning_signal(fact.dimensions.get("query", ""))
-    ]
+    exact_facts = _exact_gsc_facts_for_decision(decision)
     if not exact_facts:
         result = diagnostics
         with _exact_diagnostics_cache_lock:

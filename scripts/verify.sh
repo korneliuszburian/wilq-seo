@@ -51,6 +51,7 @@ PY
 
 scripts/quality.sh
 scripts/security.sh
+uv run python scripts/validate_source_registry.py
 WILQ_TEST_EXCLUSIVE=1 scripts/test.sh --full
 
 WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run python - <<'PY'
@@ -116,7 +117,7 @@ print("Skill structure smoke passed")
 PY
 
 skill_api_base="http://127.0.0.1:${skill_api_port}"
-skill_api_log="${TMPDIR:-/tmp}/wilq-skill-api.log"
+skill_api_log="$verify_tmp_dir/wilq-skill-api.log"
 WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" \
   uv run python -m uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$skill_api_port" >"$skill_api_log" 2>&1 &
 skill_api_pid="$!"
@@ -149,8 +150,8 @@ fi
 if [ -d apps/dashboard/node_modules ]; then
   dashboard_api_base="http://127.0.0.1:${dashboard_api_port}"
   dashboard_base="http://127.0.0.1:${dashboard_dev_port}"
-  dashboard_api_log="${TMPDIR:-/tmp}/wilq-dashboard-api.log"
-  dashboard_dev_log="${TMPDIR:-/tmp}/wilq-dashboard-vite.log"
+  dashboard_api_log="$verify_tmp_dir/wilq-dashboard-api.log"
+  dashboard_dev_log="$verify_tmp_dir/wilq-dashboard-vite.log"
   uv run python -m uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$dashboard_api_port" >"$dashboard_api_log" 2>&1 &
   dashboard_api_pid="$!"
   for _ in $(seq 1 80); do

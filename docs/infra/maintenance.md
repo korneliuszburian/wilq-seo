@@ -100,6 +100,33 @@ porażce. Po nieudanym cutoverze zatrzymuje writerów, ponownie wskazuje
 niezmienioną poprzednią parę, sprawdza jej `storage_proof`, uruchamia runtime i
 wykonuje readback. Nie wykonuje restore in-place i nie nadpisuje plików w ciemno.
 
+## Kandydat backupu przed migracją SQLite
+
+Silniejszy seam dla przyszłych migracji SQLite znajduje się w
+`wilq/storage/migration_backup_candidate.py`. Wymaga wcześniej zaakceptowanego,
+dokładnego receipt D1 (`exact_post_s5`) z pełnym fingerprintem schematu oraz
+tożsamością aplikacji i seedu. Następnie tworzy prywatny kandydat w świeżym
+alternatywnym katalogu: dokładną bajtową kopię `wilq.sqlite3` i kanoniczny
+`manifest.json`.
+
+Kandydat powstaje najpierw w prywatnym katalogu stagingowym obok celu. Kod
+porównuje pełne SHA-256 i rozmiary źródła oraz backupu, inventory/fingerprint D1,
+`PRAGMA integrity_check` i readback z próbnego restore do tymczasowej
+alternatywnej ścieżki. Następnie atomowo rezerwuje świeży katalog docelowy bez
+nadpisania, wiąże zweryfikowany backup i dopiero na końcu manifest jako marker
+ważności. SHA-256 dokładnych bajtów manifestu pozostaje poza manifestem w typed
+receipt i jest obowiązkowym wejściem do późniejszego verify/restore. Brak
+zgodności, zmieniona generacja źródła, niezweryfikowany receipt D1, dodatkowy
+plik, alias albo zmieniony backup/manifest kończy procedurę bez ważnego kandydata
+i bez zapisu do źródła.
+
+Ten seam dotyczy wyłącznie SQLite, bo jest kandydatem rollbacku dla etapów, które
+mutują SQLite. Nie zastępuje ogólnego backupu pary SQLite/DuckDB: `copy_storage_pair`,
+komendy `wilq storage backup|restore` i `scripts/backup.sh` pozostają zgodnościowym
+fallbackiem operacyjnym bez manifestu. Kandydat D2 nie jest zgodą na migrację,
+cutover, dostęp do prywatnego/live storage ani dowodem wykonania restore drill na
+docelowym hoście.
+
 ## Migracja schematu
 
 Migracja nigdy nie obniża wersji. Nowa migracja musi przejść guard wersji, zostać

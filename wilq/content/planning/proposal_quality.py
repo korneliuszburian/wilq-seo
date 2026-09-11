@@ -11,6 +11,17 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
 )
 
+HEADING_EXAGGERATION_PATTERN = re.compile(
+    r"(?:\b(?:"
+    r"(?:naj(?:lepsz|większ|tańsz|skuteczniejsz|wyższ|szybsz)|"
+    r"gwarantowan|idealn|jedyn)"
+    r"(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)|"
+    r"najbardziej|najlepiej|najszybciej|najskuteczniej|zero\s+kosztów|"
+    r"całkowicie\s+bezpieczn(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)"
+    r")\b|\b100\s*%(?!\w))",
+    re.I,
+)
+
 _HEADING_NOISE_PATTERNS = (
     ("heading_navigation_noise", re.compile(r"^(?:zaufali nam|copyright|menu|więcej)\b", re.I)),
     ("heading_presentation_noise", re.compile(r"^poniżej przedstawiamy\b", re.I)),
@@ -29,15 +40,7 @@ _HEADING_NOISE_PATTERNS = (
     ),
     (
         "heading_exaggeration_noise",
-        re.compile(
-            r"(?:\b(?:"
-            r"(?:naj(?:lepsz|większ|tańsz|skuteczniejsz|wyższ|szybsz)|"
-            r"gwarantowan|idealn|jedyn)"
-            r"(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)|zero\s+kosztów|"
-            r"całkowicie\s+bezpieczn(?:y|a|e|i|ego|ej|emu|ą|ym|ych|ymi)"
-            r")\b|\b100\s*%(?!\w))",
-            re.I,
-        ),
+        HEADING_EXAGGERATION_PATTERN,
     ),
 )
 

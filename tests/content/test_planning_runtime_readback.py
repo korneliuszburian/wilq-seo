@@ -10,9 +10,18 @@ def test_persisted_generated_plan_reports_completed_codex_after_reload(monkeypat
         status="completed",
         skill="wilq-content-operator",
     )
+
+    class RunStore:
+        def get_codex_run(self, run_id):
+            assert run_id == "codex_content_planning_demo"
+            return run
+
+        def list_codex_runs(self):
+            raise AssertionError("persisted readback must not scan all Codex runs")
+
     monkeypatch.setattr(
         "wilq.content.planning.generated_proposal.local_state_store",
-        lambda: SimpleNamespace(list_codex_runs=lambda: [run]),
+        lambda: RunStore(),
     )
 
     trace = _persisted_runtime_trace(

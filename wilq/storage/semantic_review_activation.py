@@ -37,6 +37,19 @@ CREATE TABLE IF NOT EXISTS content_semantic_reviews (
 )
 """
 
+_CREATE_INDEPENDENT_REVIEW_TABLE = """
+CREATE TABLE IF NOT EXISTS content_independent_review_runs (
+  run_id TEXT PRIMARY KEY,
+  work_item_id TEXT NOT NULL,
+  revision_id TEXT NOT NULL,
+  revision_digest TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  UNIQUE (work_item_id, revision_id, revision_digest, role)
+)
+"""
+
 
 def activate_semantic_review_storage(
     *,
@@ -75,10 +88,15 @@ def activate_semantic_review_storage(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
             ("content_semantic_reviews",),
         ).fetchone()
+        independent_existed = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ("content_independent_review_runs",),
+        ).fetchone()
         connection.execute(_CREATE_TABLE)
+        connection.execute(_CREATE_INDEPENDENT_REVIEW_TABLE)
         ensure_sqlite_schema_version(connection)
         connection.commit()
-        table_created = existed is None
+        table_created = existed is None or independent_existed is None
     except Exception:
         connection.rollback()
         raise

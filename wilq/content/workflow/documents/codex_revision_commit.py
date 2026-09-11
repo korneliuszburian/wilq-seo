@@ -10,7 +10,8 @@ from typing import Literal, cast
 
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
-    initial_draft_context_digest,
+    initial_draft_context_digest_for_proposal,
+    initial_draft_proposal_context_from_command,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionAppendCommand
 from wilq.schemas.actions import CodexRun
@@ -34,7 +35,8 @@ class ContentDraftRevisionContext:
     draft_package_digest: str
     planning_digest: str
     planning_input_digest: str
-    service_card_id: str
+    content_kind: Literal["service", "editorial"]
+    service_card_id: str | None
     inventory_digest: str
     final_canonical_url: str
 
@@ -45,7 +47,6 @@ class ContentDraftRevisionContext:
     ) -> ContentDraftRevisionContext | None:
         required = (
             command.planning_input_digest,
-            command.service_card_id,
             command.inventory_digest,
             command.final_canonical_url,
         )
@@ -57,7 +58,8 @@ class ContentDraftRevisionContext:
             draft_package_digest=command.draft_package_digest,
             planning_digest=command.planning_digest,
             planning_input_digest=cast(str, command.planning_input_digest),
-            service_card_id=cast(str, command.service_card_id),
+            content_kind=command.content_kind,
+            service_card_id=command.service_card_id,
             inventory_digest=cast(str, command.inventory_digest),
             final_canonical_url=cast(str, command.final_canonical_url),
         )
@@ -135,23 +137,33 @@ def prepare_codex_completion(
         if completed_run is not None:
             raise ValueError("Codex completion requires proposal metadata.")
         return None
-    if command.correction_reason == "official_source_lineage_rebase":
+    if command.correction_reason in {
+        "canonical_html_alignment",
+        "lineage_cleanup",
+        "official_source_lineage_rebase",
+    }:
         if completed_run is not None:
-            raise ValueError("Official-source lineage rebase cannot attach a Codex completion.")
+            raise ValueError("Derived revision cannot attach a Codex completion.")
         return None
     if completed_run is None:
         raise ValueError("Codex proposal append requires its completed run.")
     redacted = CodexRun.model_validate(redact_mapping(completed_run.model_dump(mode="json")))
     if redacted.hook == "content_initial_full_draft":
-        expected_context = initial_draft_context_digest(
+        if (
+            redacted.proposal_id is None
+            or redacted.planning_digest != command.planning_digest
+            or redacted.planning_input_digest != command.planning_input_digest
+        ):
+            raise ValueError("Initial draft completion does not match its exact proposal binding.")
+        expected_context = initial_draft_context_digest_for_proposal(
             base_revision_id=command.base_revision_id,
             draft_package_id=command.draft_package_id,
             draft_package_digest=command.draft_package_digest,
             final_canonical_url=command.final_canonical_url,
-            service_card_id=command.service_card_id,
-            proposal_id=redacted.proposal_id or "",
-            planning_digest=command.planning_digest,
-            planning_input_digest=command.planning_input_digest or "",
+            proposal_context=initial_draft_proposal_context_from_command(
+                command,
+                proposal_id=redacted.proposal_id,
+            ),
         )
         if redacted.initial_draft_context_digest not in {None, expected_context}:
             raise ValueError("Initial draft context changed before append.")

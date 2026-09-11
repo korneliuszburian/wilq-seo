@@ -1,0 +1,2120 @@
+{
+  "generated_at": "2026-08-28",
+  "read_only": true,
+  "rows": [
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/3-kroki-do-bezpiecznego-funkcjonowania-przedsiebiorstwa-w-zgodzie-z-przepisami-w-obszarze-ochrony-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/analiza-pozwolen-zintegrowanych",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/animacja-historii-i-glownych-uslug-ekologus",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "author-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/author/conjure8415",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/badania-obecnosci-radonu",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "category-sitemap.xml",
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/baza-wiedzy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/bdo-co-musi-wiedziec-przedsiebiorca",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/bdo-kolejny-obowiazek-dla-przedsiebiorcy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/bilans-lzo-przekroczenie-standardow-emisyjnych-a-obowiazek-raportowy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/brefy-po-rewizji-europejskiego-biura-ippc-nowy-projekt-konkluzji-bat",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/burza-w-odpadach-2018-2019",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/ciagle-zmiany-w-prawie-wodnym",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/co-powinien-wiedziec-kierownik-skladowiska-odpadow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czy-kazda-rozbudowa-zakladu-przemyslowego-wymaga-decyzji-srodowiskowej",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czy-przygotowane-wieloletnie-plany-inwestycyjne-z-zakresu-gospodarki-odpadami-spelniaja-nowe-wymagania-prawne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czy-wiesz-ze-zgodnie-z-nowa-norma-iso-45001-masz-obowiazek-reagowac-na-sytuacje-awaryjne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czy-wysokosc-skladowiska-odpadow-liczy-sie-z-warstwa-rekultywacyjna",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czym-jest-europejski-system-ekozarzadzania-i-audytu-emas",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czym-jest-goz-i-jakie-sa-jego-zalozenia",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czym-kierowac-sie-podczas-kupna-sorbentu-aby-dobrac-go-odpowiednio-do-naszych-potrzeb",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/czym-sa-historyczne-zanieczyszczenia-i-jakie-obowiazki-ma-wlasciciel-gruntu",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/diwass-od-2026-roku-co-zmienia-cyfrowy-system-transgranicznego-przemieszczania-odpadow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dlaczego-i-kiedy-nalezy-wykonac-ocene-stanu-jakosci-gleby-ziemi-i-wod-podziemnych",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dlaczego-mowimy-o-compliance-czyli-zarzadzaniu-zgodnoscia",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dlaczego-warto-skorzystac-z-uslug-specjalistow-ds-ochrony-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dofinansowanie-na-realizacje-uslug-rozwojowych-dla-msp",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dokumentacja-srodowiskowa-w-procesie-inwestycyjnym",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/dotacje-na-szkolenia-z-krajowego-funduszu-szkoleniowego-2017",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/eko-check-lista-na-koniec-2023",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/europejski-zielony-lad-co-to-takiego",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/fundusze-europejskie-dla-wojewodztwa-slaskiego-2021-2027-wsparcie-msp-na-rzecz-transformacji",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/informacja-o-opakowaniach-i-odpadach-opakowaniowych-oraz-o-oplacie-produktowej",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/istotne-zmiany-prawne-dla-przedsiebiorcow-w-sierpniu-2019",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/jak-dobrac-sorbent-do-twojej-branzy-praktyczny-przewodnik-z-produktami",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/jak-postepowac-z-odpadami-w-swietle-nowej-ustawy-z-14-12-2012-r",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/jak-postepowac-z-olejami-odpadowymi",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/jak-powinien-funkcjonowac-zaklad-ripok-mbp",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "ofertypracy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kariera/ekspert-ds-ochrony-srodowiska",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "ofertypracy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kariera/handlowiec-ds-sprzedazy-srodkow-technicznych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "ofertypracy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kariera/koordynator-ds-organizacji-i-obslugi-szkolen-oraz-eventow",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "ofertypracy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kariera/specjlaista-ds-ochrony-srodowiska",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "kategorie_ofert-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kategoria-oferty/oferty-b2b",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "kategorie_ofert-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/kategoria-oferty/oferty-pracy",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/doradztwo-ekologiczne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/gospodarka-odpadami",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/gospodarka-wodno-sciekowa",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/ochrona-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/przepisy-prawa",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/rekultywacja",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/sorbenty",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post_tag-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/szkolenia-i-rozwoj",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "path": "/kategorie-bazy-wiedzy/wydarzenia",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/kiedy-niezbedne-jest-posiadanie-pozwolenia-wodnoprawnego",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/kip-w-praktyce-inwestycyjnej-najczestsze-bledy-i-ich-konsekwencje",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/kompetencje-przyszlosci-w-ochronie-srodowiska-dlaczego-warto-inwestowac-w-szkolenia",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/kontakt",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/kto-powinien-wnosic-oplaty-za-korzystanie-ze-srodowiska-i-skladac-informacje",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/magazynowanie-odpadow-skladowanie",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/magazynowanie-odpadow-wg-nowych-przepisow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/mapa-strony",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/model-systemu-zarzadzania-energia-wg-iso-500012011",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/na-jakie-wymogi-prawne-zwiazane-ze-srodowiskiem-przygotowac-sie-w-2026",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nabor-na-projekty-goz-mazowsze",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nagroda-eko-innowator-2024-dla-ekologus",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/najistotniejsze-zmiany-prawne-w-ustawie-o-udostepnianiu-informacji-o-srodowisku-i-jego-ochronie-udziale-spoleczenstwa-w-ochronie-srodowiska-oraz-o-ocenach-oddzialywania-na-srodowisko",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nie-zapomnij-o-pozwoleniu-zintegrowanym",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/nota-prawna",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nowe-inwestycje-w-przedsiebiorstwie-brak-wspolpracy-sluzb-ds-rozwoju-ze-sluzbami-ochrony-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nowe-obowiazki-ied-dla-instalacji-ippc",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nowe-rozporzadzenia-do-ustawy-o-odpadach-ze-szczegolnym-uwzglednieniem-przepisow-dotyczacych-magazynowania-odpadow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nowe-zasady-ustalania-oplat-za-uslugi-wodne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/nowy-system-zarzadzania-odpadami-komunalnymi-w-polsce-dobrodziejstwo-czy-problemy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/o-firmie",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/o-firmie/kariera",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/obowiazki-finansowe-i-srodowiskowe-w-czerwcu-kluczowe-terminy-dla-przedsiebiorcow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/obowiazki-pomiarowe-instalacji-wymagajacej-pozwolenia-zintegrowanego-tzw-instalacji-ippc-emisje-pylow-i-gazow-halas-oraz-badania-gleby-ziemi-i-wod-gruntowych",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/obowiazki-przedsiebiorcow-prowadzacych-skladowiska-odpadow-w-swietle-obowiazujacych-przepisow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/obowiazkowe-pomiary-stezenia-radonu-co-powinien-wiedziec-pracodawca",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "obszary_dzialania-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/obszary-dzialania/doradztwo-ekologiczne",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "obszary_dzialania-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/obszary-dzialania/gospodarka-wodno-sciekowa",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/ocena-wplywu-projektow-na-srodowisko",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/ochrona-srodowiska-w-procesie-inwestycyjnym-z-uwzglednieniem-zmian-prawnych-dotyczacych-ocen-oddzialywania-na-srodowisko",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/odeszla-wyjatkowa-osoba-wybitny-ekspert-ekologusa-pani-elzbieta-chrobak",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/odpowiedz-eksperta-dodatkowa-etykieta-na-pustych-pojemnikach-kod-odpadu-15-01-10",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/odpowiedz-eksperta-oplaty-za-uslugi-wodne-za-odprowadzanie-wod-opadowych-i-zmniejszenie-naturalnej-retencji",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/odpowiedz-eksperta-z-zakresu-prawa-wodnego",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/odpowiedzialnosc-prawna-pracodawcy-za-bhp-i-ochrone-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/audyty-systemow-zarzadzania",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/audyty-systemow-zarzadzania/przeglad-spelniania-wymagan-srodowiskowych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/bhp-i-p-poz",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/bhp-i-p-poz/bezpieczenstwo-zakladu-ekspertyzy-i-szkolenia-bhp-ppoz",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/bhp-i-p-poz/outsourcing-srodowiskowy-stala-obsluga",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/bhp-i-p-poz/sprawozdawczosc-srodowiskowa",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/bhp-i-p-poz/sprzedaz-sorbentow-zestawow-awaryjnych-produktow-do-zachowania-porzadku-i-bezpieczenstwa-na-zakladzie",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/doradztwo-i-outsourcing-ekologiczny",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/doradztwo-i-outsourcing-ekologiczny/doradztwo-w-procesie-inwestycyjnym",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/doradztwo-i-outsourcing-ekologiczny/doradztwo-w-przypadku-stwierdzenia-szkody-w-srodowisku",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/doradztwo-i-outsourcing-ekologiczny/konsultacje-eksperckie-w-zakresie-prawa-ochrony-srodowiska",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/oferta-pomiary-emisji",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-do-procesu-inwestycyjnego-doradztwo-i-ekspertyzy",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-do-procesu-inwestycyjnego-doradztwo-i-ekspertyzy/analiza-jakosci-gruntu-pod-nowe-inwestycje",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-do-procesu-inwestycyjnego-doradztwo-i-ekspertyzy/ekspertyza-inwestycyjna-konsultacje-opracowanie-harmonogramu-dzialan-inwestycyjnych-od-strony-wymagan-prawa-ochrony-srodowiska",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-do-procesu-inwestycyjnego-doradztwo-i-ekspertyzy/karta-informacyjna-przedsiewziecia",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-do-procesu-inwestycyjnego-doradztwo-i-ekspertyzy/raport-oceny-oddzialywania-na-srodowisko-ros-lub-karta-informacyjna-przedsiewziecia-kip",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-srodowiskowe",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-srodowiskowe/inne-dokumentacje-specjalistyczne",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-srodowiskowe/odpadowe",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-srodowiskowe/pozwolenie-na-wytwarzanie-odpadow",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/dokumentacje-srodowiskowe/wodno-sciekowe",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/pozwolenia-zintegrowane",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/pozwolenia-zintegrowane/konkluzje-bat",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/pozwolenia-zintegrowane/nowe-wnioski-lub-aktualizacja-obecnych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/opracowania-dokumentacji-ekspertyz/pozwolenia-zintegrowane/raport-poczatkowy-koncowy",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/pomiary-i-analizy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/rekultywacje-i-remediacje",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/analiza-jakosci-gruntu-pod-inwestycje",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/monitoring-gruntu-oraz-wod-podziemnych-po-szkodzie-po-decyzji-badania-kontrolne",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/nadzor-ekspercki-nad-realizacja-remediacji-in-situ-ex-situ",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/ocena-zagrozenia-dla-czlowieka-i-srodowiska",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/projekt-planu-remediacji",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/rekultywacje-i-remediacje/raport-poczatkowy-koncowy-remediacje-monitoring-gruntow-i-wod-podziemnych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/sprzedaz-sorbentow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/oferta/szkolenia",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/remediacje-i-monitoring-gruntow-i-wod-podziemnych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/remediacje-i-monitoring-gruntow-i-wod-podziemnych/sprawozdanie-do-rdos",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-instruktazowe",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-instruktazowe/postepowanie-na-wypadek-awarii",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-instruktazowe/szkolenia-bhp",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-instruktazowe/szkolenia-ppoz",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-instruktazowe/zastosowanie-zestawow-awaryjnych",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-otwarte",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/szkolenia/szkolenia-zamkniete",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj/analiza-inwestycji-w-kierunku-zrownowazonego-rozwoju",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj/cebam",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj/raportowanie-esg",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj/slad-weglowy",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "uslugi-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/oferta/zrownowazony-rozwoj/transformacja-goz",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/operat-wodnoprawny-wszystko-co-musisz-wiedziec",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/operaty-przeciwpozarowe-nowe-wymagania-dla-przedsiebiorcow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/oplata-srodowiskowa-za-srodki-dezynfekcyjne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/oplaty-za-gospodarcze-korzystanie-ze-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/oplaty-za-korzystanie-ze-srodowiska-w-2018-r-nowy-wzor-wykazu-do-naliczania-oplat",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/ostatni-dzwonek-przygotuj-swoja-firme-na-wyzwania-eudr",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/ostatni-miesiac-na-uzupelnienia-w-bdo-zadbaj-juz-teraz-o-swoja-ewidencje-i-sprawozdawczosc-za-2022r",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/outsourcing-srodowiskowy-elastyczne-rozwiazanie-dla-twojej-firmy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "partnerzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/partnerzy/zaufali-nam-1",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "partnerzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/partnerzy/zaufali-nam-2",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "partnerzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/partnerzy/zaufali-nam-3",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "partnerzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/partnerzy/zaufali-nam-4",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/planowane-zmiany-w-ustawie-oos-warto-wczesniej-przygotowac-inwestycje-do-uzyskania-dsu",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/planowanie-i-zarzadzanie-strategiczne-latwiej-zaplanowac-trudniej-wdrozyc",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/planujesz-nowa-inwestycje-produkcyjna-sprawdz-srodowisko-i-inne-wymagania-zanim-zlecisz-projekt-budowlany",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/podsumowanie-spotkania-dla-eko-logusowych-kobiet",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/podsumowanie-tegorocznego-spotkania-eko-kobiet",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/podsumowanie-webinaru-dlaczego-warto-poukladac-procesy-oraz-kwestie-srodowiskowe-w-swojej-firmie",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/podsumowanie-webinaru-dobre-praktyki-oznaczania-miejsc-magazynowania-odpadow-poziomu-odzysku-i-recyklingu-jak-poprawnie-go-wyliczyc",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/podsumowanie-webinaru-kogo-dotyczy-europejski-zielony-lad-srodki-na-innowacje-dla-msp-w-2022",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/polityka-prywatnosci",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/poszukujemy-do-wspolpracy-ekspertow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/poznaj-najnowsza-oferte-uslug-eksperckich",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/pozwolenie-zintegrowane-magazynowanie-odpadow-niebezpiecznych",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/pozwolenie-zintegrowane-wymagania-i-procedury-ippc",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/prawo-wodne-po-nowemu-kluczowe-zmiany-od-lipca-2017",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/prawo-zamowien-publicznych-w-praktyce-bledy-w-opisie-przedmiotu-zamowienia-a-kary-umowne",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/prezydent-podpisal-nowelizacje-ustawy-prawo-ochrony-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/proces-inwestycyjny-w-przedsiewzieciu-budowlanym",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/przesuniecie-terminow-w-zakresie-sprawozdawczosci-w-bdo",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/przygotowanie-do-sprawozdawczosci-srodowiskowej-2024-bdo-kobize-oplaty-srodowiskowe",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/publikacja-konkluzji-bat-dla-branzy-duzych-obiektow-energetycznego-spalania-paliw",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/raport-poczatkowy-i-raport-koncowy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/rewolucja-w-decyzjach-o-warunkach-zabudowy-co-zmienia-sie-od-2026",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/rewolucje-prawne-w-odpadach-2018-2",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/roczne-sprawozdanie-w-bdo-co-sprawdzic-przed-31-grudnia-aby-nie-narazic-sie-na-kary",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/rodzaj-szkolenia/szkolenia-na-stale-w-ofercie",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/rodzaj-szkolenia/szkolenia-realizowane-jednorazowo",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/rodzaj-szkolenia/zakonczone",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/rozbudowa-zakladu-a-koniecznosc-uzyskania-decyzji-srodowiskowej",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/sorbenty-czym-sa-jak-dzialaja-i-dlaczego-warto-je-stosowac",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "specjalisci-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/specjalisci/specjalista-1",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "specjalisci-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/specjalisci/specjalista-2",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "specjalisci-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/specjalisci/specjalista-3",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "specjalisci-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/specjalisci/specjalista-4",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/spotkanie-ekokobiet-2018-2",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/spotkanie-ekokobiet-2019",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/sprawdz-co-ci-grozi-jesli-nie-zlozysz-sprawozdania-z-zakresu-ochrony-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/sprawozdawczosc-srodowiskowa",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/system-zarzadzania-energia-iso-50001",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/szkody-w-srodowisku-jak-zapobiegac-i-naprawiac",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/szkolenia_otwarte",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/szkolenia_otwarte/kierownik-skladowiska-odpadow-2025",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/szkolenia_otwarte/kompendium-wiedzy-z-ochrony-srodowiska-2025",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/szkolenia_otwarte/kompendium-wiedzy-z-ochrony-srodowiska-2025-2",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "szkolenia_otwarte-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/szkolenia_otwarte/szkolenie-otwarte",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-close-sitemap.xml"
+      ],
+      "path": "/szkolenie-zamkniete/ekokobiety-2021",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-close-sitemap.xml"
+      ],
+      "path": "/szkolenie-zamkniete/zagrozenia-przy-stanowiskach-pracy-z-praktycznym-instruktazem-wykorzystania-zestawow-awaryjnych",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/szkolenie-zwiekszajace-swiadomosc-postepowania-w-przypadku-zagrozenia-przy-stanowisku-pracy",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-sitemap.xml"
+      ],
+      "path": "/szkolenie/gospodarka-odpadami-i-opakowaniami-kompendium-wiedzy-dla-przedsiebiorcow",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-sitemap.xml"
+      ],
+      "path": "/szkolenie/kierownik-skladowiska-odpadow-2026",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-sitemap.xml"
+      ],
+      "path": "/szkolenie/kompendium-wiedzy-z-ochrony-srodowiska-2026",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "training-sitemap.xml"
+      ],
+      "path": "/szkolenie/warsztaty-sprawozdawcze-2026",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/targi-expo-silesia-2013-x",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/testy",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_wiedzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/typ/porady",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_wiedzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/typ/wiedza",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "typ_wiedzy-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/typ/wydarzenia",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/uzasadnienie-celowosci-sporzadzania-rachunku-kosztow-srodowiskowych-w-przedsiebiorstwach-przemyslowych",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/wazne-zmiany-prawne-dla-firm-ktorym-do-31-grudnia-2025-beda-konczyc-sie-decyzje-na-wytwarzanie-zbieranie-i-przetwarzanie-odpadow",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "category-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/wiedza",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/wpis-do-ceeb-ostatni-dzwonek",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/wyszukiwarka",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zamkniecie-roku-w-ochronie-srodowiska-jak-uporzadkowac-obowiazki-i-wejsc-spokojnie-w-nowy-rok",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zaostrzone-kary-za-wykroczenia-i-przestepstwa-przeciwko-srodowisku-naturalnemu",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [],
+      "old_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "path": "/zapisz-sie-do-newslettera",
+      "presence": "old_only"
+    },
+    {
+      "dev_sitemaps": [
+        "page-sitemap.xml"
+      ],
+      "old_sitemaps": [],
+      "path": "/zaufali-nam",
+      "presence": "dev_only"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zestawienie-aktualnych-form-wsparcia-i-najnowszych-zmian-prawnych-w-ochronie-srodowiska",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zmiany-w-bdo-po-2020",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zmiany-w-ustawie-o-ocenach-oddzialywania-na-srodowisko-co-powinien-wiedziec-inwestor",
+      "presence": "both"
+    },
+    {
+      "dev_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "old_sitemaps": [
+        "post-sitemap.xml"
+      ],
+      "path": "/zmiany-w-ustawie-prawo-ochrony-srodowiska-wynikajace-z-wdrozenia-dyrektywy-2010-75-ue-w-sprawie-emisji-przemyslowych",
+      "presence": "both"
+    }
+  ],
+  "schema_version": "public_sitemap_inventory_v1",
+  "summary": {
+    "dev_entries": 215,
+    "dev_sitemap_counts": {
+      "author-sitemap.xml": 1,
+      "category-sitemap.xml": 3,
+      "kategorie_ofert-sitemap.xml": 2,
+      "obszary_dzialania-sitemap.xml": 2,
+      "ofertypracy-sitemap.xml": 4,
+      "page-sitemap.xml": 8,
+      "partnerzy-sitemap.xml": 4,
+      "post-sitemap.xml": 115,
+      "post_tag-sitemap.xml": 8,
+      "specjalisci-sitemap.xml": 4,
+      "szkolenia_otwarte-sitemap.xml": 5,
+      "typ_szkolenia_otwarte-sitemap.xml": 3,
+      "typ_wiedzy-sitemap.xml": 3,
+      "uslugi-sitemap.xml": 53
+    },
+    "dev_unique_paths": 214,
+    "excluded_old_sitemaps": [
+      "product-sitemap.xml",
+      "product_cat-sitemap.xml"
+    ],
+    "excluded_policy": "No product URLs from old ekologus.pl are content targets.",
+    "old_entries_non_product": 150,
+    "old_sitemap_counts": {
+      "category-sitemap.xml": 9,
+      "page-sitemap.xml": 19,
+      "post-sitemap.xml": 116,
+      "training-close-sitemap.xml": 2,
+      "training-sitemap.xml": 4
+    },
+    "old_unique_paths_non_product": 150,
+    "presence_counts": {
+      "both": 140,
+      "dev_only": 74,
+      "old_only": 10
+    },
+    "union_unique_paths": 224
+  }
+}

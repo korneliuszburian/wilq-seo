@@ -150,12 +150,11 @@ def test_coverage_fails_closed_for_wrong_service_version_or_stale_source(monkeyp
         _official_fact(requirement_ids=requirements, version="2026-06"),
         _official_fact(requirement_ids=requirements, freshness_date="2025-01-01"),
     )
+    evidence_reads: list[list[str]] = []
     monkeypatch.setattr(
         regulatory_policy,
         "list_evidence_by_ids",
-        lambda evidence_ids: (
-            [_evidence_for(_official_fact(requirement_ids=requirements))] if evidence_ids else []
-        ),
+        lambda evidence_ids: evidence_reads.append(evidence_ids) or [],
     )
 
     for fact in invalid_facts:
@@ -169,6 +168,7 @@ def test_coverage_fails_closed_for_wrong_service_version_or_stale_source(monkeyp
         assert not coverage.complete
         assert coverage.source_fact_ids == []
         assert coverage.evidence_ids == []
+    assert evidence_reads == []
 
 
 def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:

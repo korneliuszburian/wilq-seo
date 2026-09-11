@@ -9,11 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.knowledge.matching_surface import (
     build_content_knowledge_matching_surface,
+    exactly_bound_service_cards,
+    service_card_binding_is_stale,
+    service_card_exact_binding_url,
+    service_card_has_binding_provenance,
     service_card_has_exact_url,
 )
 from wilq.content.knowledge.source_facts import (
     ContentKnowledgeLifecycleStatus,
     ContentSourceFact,
+    ekologus_service_binding_urls,
     ekologus_source_facts,
     knowledge_lifecycle_from_review_status,
 )
@@ -69,6 +74,7 @@ class ContentKnowledgeCard(BaseModel):
     title: str
     summary: str
     service_fit_terms: list[str] = Field(default_factory=list)
+    service_binding_urls: list[str] = Field(default_factory=list)
     buyer_problem_terms: list[str] = Field(default_factory=list)
     buyer_triggers: list[str] = Field(default_factory=list)
     cta_patterns: list[str] = Field(default_factory=list)
@@ -373,6 +379,7 @@ def compile_source_facts_to_knowledge_cards(
                 service_fit_terms=unique(
                     term for fact in card_facts for term in fact.service_fit_terms
                 ),
+                service_binding_urls=ekologus_service_binding_urls(card_id),
                 buyer_problem_terms=unique(
                     term for fact in card_facts for term in fact.buyer_problem_terms
                 ),
@@ -490,17 +497,26 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
         priority_text=surface.priority_text,
     )
     service_cards = [candidate.card for candidate in service_candidates]
-    auto_bound_service_card = next(
+    exact_service_cards = exactly_bound_service_cards(cards, surface.exact_urls)
+    bindable_exact_service_cards = [
+        card for card in exact_service_cards if service_card_has_binding_provenance(card)
+    ]
+    auto_bound_service_card = (
+        bindable_exact_service_cards[0]
+        if len(exact_service_cards) == 1 and len(bindable_exact_service_cards) == 1
+        else None
+    )
+    ambiguous_service_binding = len(exact_service_cards) > 1
+    recommended_service_card = next(
         (
-            candidate.card
-            for candidate in service_candidates
-            if any(
-                strict_normalized_term_matches(term, surface.page_text)
-                for term in candidate.matched_terms
-            )
+            card
+            for card in service_cards
+            if service_card_has_binding_provenance(card)
         ),
         None,
     )
+    if exact_service_cards:
+        recommended_service_card = auto_bound_service_card
     cta_cards = _matching_cards(cards, surface.page_text, "cta_pattern")
     claim_policy_cards = [
         card
@@ -514,15 +530,50 @@ def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCard
     match = ContentKnowledgeCardMatch(
         work_item_id=item.id,
         service_card=auto_bound_service_card,
-        recommended_service_card_id=service_cards[0].id if service_cards else None,
+        recommended_service_card_id=(
+            None
+            if ambiguous_service_binding
+            else (
+                auto_bound_service_card.id
+                if auto_bound_service_card is not None
+                else recommended_service_card.id
+                if recommended_service_card is not None
+                else None
+            )
+        ),
         service_candidates=service_candidates,
-        buyer_problem_cards=service_cards,
+        buyer_problem_cards=[auto_bound_service_card] if auto_bound_service_card else [],
         cta_cards=cta_cards,
         claim_policy_cards=claim_policy_cards,
         evidence_requirement_cards=evidence_requirement_cards,
         measurement_sensitive_cards=measurement_cards,
+        blockers=(
+            [
+                build_blocker(
+                    ContentKnowledgeCardBlocker,
+                    code="ambiguous_service_binding",
+                    label="Adres strony wskazuje więcej niż jedną kartę usługi",
+                    reason=(
+                        "Więcej niż jedna karta usługi ma ten sam dokładny adres "
+                        "powiązania, więc WILQ nie może wybrać jednej automatycznie."
+                    ),
+                    next_step="Wybierz właściwą kartę usługi z listy kandydatów.",
+                    work_item_id=item.id,
+                    required_card_type="service",
+                )
+            ]
+            if ambiguous_service_binding
+            else []
+        ),
     )
-    return match.model_copy(update={"blockers": content_knowledge_card_blockers(match)})
+    return match.model_copy(
+        update={
+            "blockers": [
+                *match.blockers,
+                *content_knowledge_card_blockers(match),
+            ]
+        }
+    )
 
 
 def select_content_knowledge_service_card(
@@ -556,10 +607,48 @@ def select_content_knowledge_service_card(
         return match.model_copy(
             update={
                 "service_card": None,
+                "buyer_problem_cards": [],
                 "blockers": [*match.blockers, stale_blocker],
             }
         )
-    selected_match = match.model_copy(update={"service_card": selected})
+    if not service_card_has_binding_provenance(selected):
+        stale = service_card_binding_is_stale(selected)
+        provenance_blocker = build_blocker(
+            ContentKnowledgeCardBlocker,
+            code=("service_card_provenance_stale" if stale else "service_card_provenance_missing"),
+            label=(
+                "Ślad źródłowy karty usługi jest nieaktualny"
+                if stale
+                else "Karta usługi nie ma kompletnego śladu źródłowego"
+            ),
+            reason=(
+                "Nie można przypisać karty usługi, gdy jej źródło jest nieaktualne lub "
+                "odrzucone."
+                if stale
+                else "Nie można przypisać karty usługi bez evidence ID, source connectora "
+                "i informacji o świeżości."
+            ),
+            next_step=(
+                "Odśwież i ponownie oceń źródło przed wyborem karty."
+                if stale
+                else "Uzupełnij ślad źródłowy albo pozostaw temat do review."
+            ),
+            work_item_id=match.work_item_id,
+            required_card_type="service",
+        )
+        return match.model_copy(
+            update={
+                "service_card": None,
+                "buyer_problem_cards": [],
+                "blockers": [*match.blockers, provenance_blocker],
+            }
+        )
+    selected_match = match.model_copy(
+        update={
+            "service_card": selected,
+            "buyer_problem_cards": [selected],
+        }
+    )
     return selected_match.model_copy(
         update={"blockers": content_knowledge_card_blockers(selected_match)}
     )
@@ -749,12 +838,15 @@ def _matching_service_candidates(
     for card in cards:
         if card.card_type != "service":
             continue
+        exact_binding_url = service_card_exact_binding_url(card, normalized_urls)
         matched_terms = [
             term
             for term in card.service_fit_terms
             if normalize_search_text(term) not in _normalized_broad_service_terms()
             and strict_normalized_term_matches(term, search_text)
         ]
+        if not matched_terms and exact_binding_url is not None:
+            matched_terms = [exact_binding_url]
         if not matched_terms or not _service_match_is_specific(
             card,
             matched_terms,

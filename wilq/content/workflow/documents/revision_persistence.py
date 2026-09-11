@@ -21,9 +21,7 @@ def draft_revision_content_digest(command: ContentDraftRevisionAppendCommand) ->
         "planning_digest": command.planning_digest,
         "final_canonical_url": command.final_canonical_url,
         "title": command.title,
-        "source_provenance": [
-            item.model_dump(mode="json") for item in command.source_provenance
-        ],
+        "source_provenance": [item.model_dump(mode="json") for item in command.source_provenance],
         "sections": [
             _section_digest_payload(section, command.schema_version) for section in command.sections
         ],
@@ -58,7 +56,7 @@ def build_stored_draft_revision(
 def _full_document_digest_payload(
     command: ContentDraftRevisionAppendCommand,
 ) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "schema_version": command.schema_version,
         "document_kind": command.document_kind,
         "new_page_document_identity": (
@@ -82,7 +80,15 @@ def _full_document_digest_payload(
             item.model_dump(mode="json") for item in command.official_source_references
         ],
         "correction_reason": command.correction_reason,
+        "refresh_preparation_binding": (
+            None
+            if command.refresh_preparation_binding is None
+            else command.refresh_preparation_binding.model_dump(mode="json")
+        ),
     }
+    if command.content_kind == "editorial":
+        payload["content_kind"] = command.content_kind
+    return payload
 
 
 def _section_digest_payload(

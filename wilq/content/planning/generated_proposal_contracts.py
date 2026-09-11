@@ -9,6 +9,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
+from wilq.content.planning.subject import PlanningContentKind, planning_subject_key
 from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningConditionalHypothesis,
@@ -23,6 +24,10 @@ from wilq.content.workflow.decisions.planning import (
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningPageAssets as ContentPlanningPageAssetsContract,
 )
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+    ContentRefreshPreparationBlockerCode,
+)
 
 ContentPlanningProposalStatus = Literal[
     "not_generated",
@@ -36,6 +41,7 @@ ContentPlanningProposalStatus = Literal[
 ]
 ContentPlanningProposalBlockerCode = Literal[
     ContentPlanningInputBlockerCode,
+    ContentRefreshPreparationBlockerCode,
     "stale_input",
     "runtime_blocked",
     "runtime_failed",
@@ -45,6 +51,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "lineage_mismatch",
     "persistence_failed",
     "scope_not_current",
+    "content_kind_mismatch",
 ]
 
 
@@ -84,11 +91,7 @@ def regulatory_response_lineage_errors(
         ):
             errors.append(f"regulatory_evidence:{requirement_id}")
         requirement = next(
-            (
-                item
-                for item in input_summary.regulatory_requirements
-                if item.id == requirement_id
-            ),
+            (item for item in input_summary.regulatory_requirements if item.id == requirement_id),
             None,
         )
         if requirement is not None:
@@ -108,15 +111,22 @@ def regulatory_response_lineage_errors(
 class ContentPlanningProposalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    service_card_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
+    service_card_id: str | None = Field(default=None, min_length=1)
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     operator_hint: str = Field(default="", max_length=500)
     requested_by: str = Field(min_length=1)
     regenerate_stale_mapping: bool = False
     regenerate_after_review: bool = False
+    refresh_preparation_authorization_id: str | None = Field(default=None, min_length=1)
+    expected_refresh_preparation_authorization_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
 
     @model_validator(mode="after")
     def strip_visible_text(self) -> ContentPlanningProposalRequest:
+        planning_subject_key(self.content_kind, self.service_card_id)
         self.operator_hint = self.operator_hint.strip()
         self.requested_by = self.requested_by.strip()
         if not self.requested_by:
@@ -125,6 +135,23 @@ class ContentPlanningProposalRequest(BaseModel):
             raise ValueError(
                 "Planning regeneration after review requires a visible repair instruction."
             )
+        if (self.refresh_preparation_authorization_id is None) != (
+            self.expected_refresh_preparation_authorization_digest is None
+        ):
+            raise ValueError(
+                "Refresh preparation authorization ID and digest must be supplied together."
+            )
+        if self.refresh_preparation_authorization_id is not None:
+            self.refresh_preparation_authorization_id = (
+                self.refresh_preparation_authorization_id.strip()
+            )
+            if not self.refresh_preparation_authorization_id:
+                raise ValueError("Refresh preparation authorization ID cannot be blank.")
+            if self.regenerate_stale_mapping:
+                raise ValueError(
+                    "A refresh preparation authorization cannot authorize "
+                    "stale mapping regeneration."
+                )
         return self
 
 
@@ -179,7 +206,8 @@ class ContentPlanningModelOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     language: Literal["pl-PL"] = "pl-PL"
-    service_card_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
+    service_card_id: str | None = Field(min_length=1)
     target_reader: str = Field(min_length=1)
     buyer_problem: str = Field(min_length=1)
     buyer_trigger: str = Field(min_length=1)
@@ -206,6 +234,7 @@ class ContentPlanningModelOutput(BaseModel):
 
     @model_validator(mode="after")
     def require_unique_section_headings(self) -> ContentPlanningModelOutput:
+        planning_subject_key(self.content_kind, self.service_card_id)
         headings = [section.heading.strip() for section in self.sections]
         if len(headings) != len(set(headings)):
             raise ValueError("Planning output section headings must be unique.")
@@ -251,6 +280,7 @@ class ContentPlanningProposalResponse(BaseModel):
 
     status: ContentPlanningProposalStatus
     work_item_id: str = Field(min_length=1)
+    content_kind: PlanningContentKind = "service"
     service_card_id: str | None = None
     planning_input_digest: str | None = Field(
         default=None,
@@ -260,6 +290,7 @@ class ContentPlanningProposalResponse(BaseModel):
     retry_after_seconds: int | None = Field(default=None, ge=0)
     proposal: ContentPlanningProposal | None = None
     planning_workspace: ContentPlanningWorkspace | None = None
+    refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
     runtime: ContentCodexRuntimeTrace = Field(
         default_factory=lambda: ContentCodexRuntimeTrace(status="not_started")
     )
@@ -269,12 +300,23 @@ class ContentPlanningProposalResponse(BaseModel):
 
     @model_validator(mode="after")
     def require_status_payload(self) -> ContentPlanningProposalResponse:
+        self._require_input_summary()
+        self._require_status_specific_payload()
+        self._require_nested_proposal_identity()
+        self._require_refresh_preparation_binding()
+        self._require_regulatory_lineage()
+        self._require_planning_workspace()
+        return self
+
+    def _require_input_summary(self) -> None:
         if (
             self.planning_input_digest is not None
             and self.input_summary is None
             and self.status != "generating"
         ):
             raise ValueError("Planning input digest requires its exact input summary.")
+
+    def _require_status_specific_payload(self) -> None:
         if self.status in {"created", "idempotent", "ready"}:
             if self.proposal is None or self.blockers:
                 raise ValueError("Ready planning response requires a proposal without blockers.")
@@ -286,28 +328,57 @@ class ContentPlanningProposalResponse(BaseModel):
                 raise ValueError("Generating response cannot expose proposal or blockers.")
         elif not self.blockers:
             raise ValueError("Non-ready planning response requires typed blockers.")
-        if self.proposal is not None and (
+
+    def _require_nested_proposal_identity(self) -> None:
+        if self.proposal is None:
+            return
+        if (
             self.proposal.work_item_id != self.work_item_id
+            or self.proposal.content_kind != self.content_kind
             or self.proposal.service_card_id != self.service_card_id
             or self.proposal.planning_input_digest != self.planning_input_digest
         ):
             raise ValueError("Planning response must match the nested exact proposal.")
+
+    def _require_refresh_preparation_binding(self) -> None:
+        binding = self.refresh_preparation_binding
+        proposal_binding = (
+            None if self.proposal is None else self.proposal.refresh_preparation_binding
+        )
+        if binding is None:
+            if proposal_binding is not None:
+                raise ValueError("Bound planning proposal requires its response refresh binding.")
+            return
         if (
+            binding.current_work_item_id != self.work_item_id
+            or binding.content_kind != self.content_kind
+            or binding.service_card_id != self.service_card_id
+            or binding.planning_input_digest != self.planning_input_digest
+        ):
+            raise ValueError("Planning response refresh binding must match its exact identity.")
+        if self.proposal is not None and proposal_binding != binding:
+            raise ValueError("Planning response refresh binding must match its proposal.")
+
+    def _require_regulatory_lineage(self) -> None:
+        if not (
             self.status in {"created", "idempotent", "ready"}
             and self.proposal is not None
             and self.input_summary is not None
         ):
-            lineage_errors = regulatory_response_lineage_errors(self.input_summary, self.proposal)
-            if lineage_errors:
-                raise ValueError(
-                    "Planning response has invalid regulatory lineage: " + ", ".join(lineage_errors)
-                )
-        if self.planning_workspace is not None:
-            if self.status != "ready" or self.proposal is None:
-                raise ValueError("Planning workspace is available only for a ready proposal.")
-            if self.planning_workspace.proposal != self.proposal:
-                raise ValueError("Planning workspace must carry the response exact proposal.")
-        return self
+            return
+        lineage_errors = regulatory_response_lineage_errors(self.input_summary, self.proposal)
+        if lineage_errors:
+            raise ValueError(
+                "Planning response has invalid regulatory lineage: " + ", ".join(lineage_errors)
+            )
+
+    def _require_planning_workspace(self) -> None:
+        if self.planning_workspace is None:
+            return
+        if self.status != "ready" or self.proposal is None:
+            raise ValueError("Planning workspace is available only for a ready proposal.")
+        if self.planning_workspace.proposal != self.proposal:
+            raise ValueError("Planning workspace must carry the response exact proposal.")
 
 
 __all__ = [

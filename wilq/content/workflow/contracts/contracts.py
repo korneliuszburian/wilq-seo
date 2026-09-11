@@ -61,7 +61,9 @@ from wilq.content.workflow.decisions.planning import ContentPlanningWorkspace
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionDecision,
+    ContentDraftRevisionFaqItem,
     ContentDraftRevisionOfficialSourceReference,
+    ContentDraftRevisionPageAssets,
     ContentDraftRevisionReview,
     ContentDraftRevisionSection,
     ContentDraftRevisionStateStatus,
@@ -85,6 +87,9 @@ ContentDraftRevisionPublicConflictCode = Literal[
     "stale_review",
     "digest_mismatch",
     "official_source_lineage_unavailable",
+    "lineage_cleanup_unavailable",
+    "source_fact_not_found",
+    "source_fact_ambiguous",
 ]
 
 
@@ -308,6 +313,7 @@ class ContentWordPressDraftReadbackBlocker(BaseModel):
         "missing_wordpress_post_id",
         "wordpress_draft_read_failed",
         "wordpress_draft_status_mismatch",
+        "wordpress_draft_title_mismatch",
         "wordpress_draft_content_mismatch",
         "wordpress_draft_acf_mismatch",
         "wordpress_draft_verification_unavailable",
@@ -323,6 +329,9 @@ class ContentWordPressDraftReadback(BaseModel):
     wordpress_post_id: str | None = None
     post_status: str = ""
     title: str = ""
+    title_digest: str = ""
+    expected_title_digest: str | None = None
+    observed_title_digest: str | None = None
     link: str = ""
     edit_link: str = ""
     modified_gmt: str = ""
@@ -412,9 +421,7 @@ class ContentPublicDeploymentConfirmationResponse(BaseModel):
 
 class ContentPublicDeploymentReadResponse(BaseModel):
     deployment: ContentPublicDeployment | None = None
-    publication_observations: list[ContentPublicDeploymentObservation] = Field(
-        default_factory=list
-    )
+    publication_observations: list[ContentPublicDeploymentObservation] = Field(default_factory=list)
     measurement_window: ContentMeasurementWindow | None = None
     measurement_outcome: ContentMeasurementOutcomeInterpretation | None = None
     learning_proposal: ContentLearningProposal | None = None
@@ -507,6 +514,12 @@ class ContentDraftRevisionSaveRequest(BaseModel):
     base_revision_id: str | None = None
     title: str = Field(min_length=1)
     sections: list[ContentDraftRevisionSection] = Field(min_length=1)
+    page_assets: ContentDraftRevisionPageAssets | None = None
+    faq: list[ContentDraftRevisionFaqItem] | None = None
+    official_source_references: list[ContentDraftRevisionOfficialSourceReference] | None = Field(
+        default=None,
+        min_length=1,
+    )
     correction_reason: ContentDraftRevisionSaveCorrectionReason | None = None
     created_by: str = Field(min_length=1)
 
@@ -518,6 +531,8 @@ class ContentDraftRevisionSaveRequest(BaseModel):
             raise ValueError("Draft revision requires a visible creator identifier.")
         if any(section.content_html is None for section in self.sections):
             raise ValueError("Workshop saves require canonical content_html for every section.")
+        if self.page_assets is not None and self.page_assets.wordpress_title != self.title:
+            raise ValueError("Draft title must match the WordPress title in page assets.")
         return self
 
 
@@ -533,6 +548,24 @@ class ContentOfficialSourceLineageRebaseRequest(BaseModel):
     def require_visible_requester(self) -> ContentOfficialSourceLineageRebaseRequest:
         if not self.requested_by.strip():
             raise ValueError("Official-source lineage rebase requires a visible requester.")
+        return self
+
+
+class ContentRevisionLineageCleanupRequest(BaseModel):
+    """Narrow command for removing one obsolete source fact's lineage."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    expected_revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    source_fact_id: str = Field(min_length=1)
+    requested_by: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_visible_identifiers(self) -> ContentRevisionLineageCleanupRequest:
+        self.source_fact_id = self.source_fact_id.strip()
+        self.requested_by = self.requested_by.strip()
+        if not self.source_fact_id or not self.requested_by:
+            raise ValueError("Lineage cleanup requires visible source fact and requester IDs.")
         return self
 
 

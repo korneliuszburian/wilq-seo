@@ -5,7 +5,6 @@ from hashlib import sha256
 from typing import Literal
 from urllib.parse import urlparse
 
-import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.connectors.wordpress.acf_relationship_observation import (
@@ -26,6 +25,12 @@ from wilq.connectors.wordpress.authoring import (
 )
 from wilq.content.workflow.decisions.inventory_binding import inventory_decision_for_work_item
 from wilq.content.workflow.policies import wordpress_dev_host_allowed
+from wilq.content.workflow.target.native_content_observation import (
+    NativePostContentObservation,
+    observe_native_post_content,
+    positive_ascii_decimal,
+    valid_url_port,
+)
 from wilq.schemas import utc_now
 
 
@@ -80,7 +85,7 @@ class ContentTargetAuthoringSurface(BaseModel):
     source_acf_fields_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     source_acf_root_field_count: int | None = Field(default=None, ge=0)
     source_acf_row_count: int | None = Field(default=None, ge=0)
-    write_profile_status: Literal["ready", "not_required", "unavailable"] = "ready"
+    write_profile_status: Literal["ready", "not_required", "unavailable"] = "unavailable"
     write_profile_reason: str = ""
 
 
@@ -153,8 +158,12 @@ class ContentTargetDiscovery(BaseModel):
     reason: str
     target: ContentTargetDiscoveryTarget | None = None
     candidates: list[ContentTargetDiscoveryCandidate] = Field(default_factory=list)
+    blocker_code: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+
+
+_NativePostContentObservation = NativePostContentObservation
 
 
 def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery | None:
@@ -175,6 +184,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
             relation_status="unavailable",
             label="Brakuje publicznego adresu do porównania",
             reason="Nie można sprawdzić relacji z dev bez publicznego adresu strony.",
+            blocker_code="missing_public_canonical",
             evidence_ids=evidence_ids,
             caveats=[
                 "Brak adresu nie blokuje pracy nad dokumentem, ale blokuje rozpoznanie targetu."
@@ -182,6 +192,30 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         )
     if profile.dev_content.status != "available":
         return _unavailable_dev_content_discovery(work_item_id, public_url, evidence_ids, profile)
+    invalid_url_items = [
+        item for item in profile.dev_content.items if not _safe_dev_observation_url(item.link)
+    ]
+    if invalid_url_items:
+        return _invalid_dev_inventory_discovery(
+            work_item_id,
+            public_url,
+            evidence_ids,
+            "wordpress_dev_target_url_invalid",
+            "Profil WordPress zwrócił malformed albo niezatwierdzony adres obiektu dev.",
+        )
+    invalid_id_items = [
+        item
+        for item in profile.dev_content.items
+        if not positive_ascii_decimal(item.post_id)
+    ]
+    if invalid_id_items:
+        return _invalid_dev_inventory_discovery(
+            work_item_id,
+            public_url,
+            evidence_ids,
+            "wordpress_dev_target_id_invalid",
+            "Profil WordPress zwrócił nieprawidłowy identyfikator obiektu dev.",
+        )
     matching_items = _unique_matching_items(profile.dev_content.items, public_url)
     if not matching_items:
         return ContentTargetDiscovery(
@@ -190,6 +224,7 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
             relation_status="unavailable",
             label="Nie znaleziono odpowiadającego obiektu na dev",
             reason="WILQ nie znalazł na dev obiektu o tym samym adresie.",
+            blocker_code="target_not_found",
             evidence_ids=evidence_ids,
             caveats=[
                 "Różny adres nie jest dowodem, że target nie istnieje; "
@@ -219,7 +254,35 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
                 "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
             ],
         )
-    target = _observed_target(matching_items[0], profile, observed_at)
+    return _observed_target_discovery(
+        work_item_id, public_url, evidence_ids, matching_items[0], profile, observed_at
+    )
+
+
+def _observed_target_discovery(
+    work_item_id: str,
+    public_url: str,
+    evidence_ids: list[str],
+    item: WordPressAuthoringDevContentObject,
+    profile: WordPressAuthoringProfile,
+    observed_at: str,
+) -> ContentTargetDiscovery:
+    target, native_observation = _observed_target(item, profile, observed_at)
+    native_blocked = (
+        native_observation is not None and native_observation.status == "unavailable"
+    )
+    target_reason = (
+        " WILQ nie potwierdził odczytu natywnej treści WordPress: "
+        + native_observation.reason
+        if native_blocked and native_observation is not None
+        else ""
+    )
+    target_caveats = [
+        "Szczegóły dotyczą odczytanego obiektu dev, nie mapowania zatwierdzonego dokumentu.",
+        "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
+    ]
+    if native_blocked and native_observation is not None:
+        target_caveats.append(native_observation.reason)
     return ContentTargetDiscovery(
         work_item_id=work_item_id,
         public_url=public_url,
@@ -228,13 +291,16 @@ def build_content_target_discovery(work_item_id: str) -> ContentTargetDiscovery 
         reason=(
             "WILQ odczytał konkretną stronę na dev o tym samym adresie, ale sama zgodność "
             "adresu nie potwierdza jeszcze relacji ani prawa do zapisu."
+            + target_reason
         ),
         target=target,
+        blocker_code=(
+            native_observation.blocker_code
+            if native_blocked and native_observation is not None
+            else None
+        ),
         evidence_ids=sorted({*evidence_ids, target.observation_evidence.evidence_id}),
-        caveats=[
-            "Szczegóły dotyczą odczytanego obiektu dev, nie mapowania zatwierdzonego dokumentu.",
-            "Ten odczyt nie odblokowuje ACF, tworzenia draftu ani publikacji.",
-        ],
+        caveats=target_caveats,
     )
 
 
@@ -242,11 +308,16 @@ def _observed_target(
     item: WordPressAuthoringDevContentObject,
     profile: WordPressAuthoringProfile,
     observed_at: str,
-) -> ContentTargetDiscoveryTarget:
+) -> tuple[ContentTargetDiscoveryTarget, _NativePostContentObservation | None]:
     acf_schema = (
         read_wordpress_acf_rest_schema("wordpress_ekologus", item) if item.acf_field_name else None
     )
     source_snapshot = _source_acf_snapshot(item)
+    native_observation = (
+        _native_post_content_observation(item)
+        if not item.acf_field_name and item.content_type in {"page", "post"}
+        else None
+    )
     return _target(
         item,
         profile,
@@ -257,12 +328,14 @@ def _observed_target(
         source_acf_fields_digest=source_snapshot.fields_digest if source_snapshot else None,
         source_acf_root_field_count=len(source_snapshot.fields) if source_snapshot else None,
         source_acf_row_count=len(source_snapshot.rows) if source_snapshot else None,
+        source_acf_rows=(source_snapshot.rows if source_snapshot else None),
         relationships_by_section=_observed_relationships(
             item,
             acf_schema=acf_schema,
             source_snapshot=source_snapshot,
         ),
-    )
+        native_content_observation=native_observation,
+    ), native_observation
 
 
 def _public_url(decision: object) -> str | None:
@@ -322,12 +395,35 @@ def _unavailable_dev_content_discovery(
             if blocker is not None
             else "WILQ nie ma potwierdzonego odczytu obiektów dev."
         ),
+        blocker_code=(None if blocker is None else getattr(blocker, "code", None)),
         evidence_ids=evidence_ids,
         caveats=[
             blocker.next_step
             if blocker is not None
             else "Spróbuj ponownie, gdy odczyt inventory dev będzie dostępny.",
             "Brak odczytu nie jest dowodem, że odpowiadający obiekt dev nie istnieje.",
+        ],
+    )
+
+
+def _invalid_dev_inventory_discovery(
+    work_item_id: str,
+    public_url: str,
+    evidence_ids: list[str],
+    blocker_code: str,
+    reason: str,
+) -> ContentTargetDiscovery:
+    return ContentTargetDiscovery(
+        work_item_id=work_item_id,
+        public_url=public_url,
+        relation_status="unavailable",
+        label="Odrzucono nieprawidłowy obiekt dev",
+        reason=reason,
+        blocker_code=blocker_code,
+        evidence_ids=evidence_ids,
+        caveats=[
+            "WILQ nie przekazuje niezatwierdzonego adresu ani identyfikatora do panelu "
+            "lub odczytów vendorowych."
         ],
     )
 
@@ -343,7 +439,9 @@ def _target(
     source_acf_fields_digest: str | None = None,
     source_acf_root_field_count: int | None = None,
     source_acf_row_count: int | None = None,
+    source_acf_rows: list[dict[str, object]] | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
+    native_content_observation: _NativePostContentObservation | None = None,
 ) -> ContentTargetDiscoveryTarget:
     contract = _target_contract(
         item,
@@ -354,7 +452,9 @@ def _target(
         source_acf_fields_digest=source_acf_fields_digest,
         source_acf_root_field_count=source_acf_root_field_count,
         source_acf_row_count=source_acf_row_count,
+        source_acf_rows=source_acf_rows,
         relationships_by_section=relationships_by_section,
+        native_content_observation=native_content_observation,
     )
     digest = _digest(contract)
     observation = _observation_evidence(item, digest, observed_at)
@@ -376,7 +476,7 @@ def _candidate(
     profile: WordPressAuthoringProfile,
     observed_at: str,
 ) -> ContentTargetDiscoveryCandidate:
-    digest = _digest(_target_contract(item, profile))
+    digest = _digest(_target_contract(item, profile, allow_native_observation=False))
     return ContentTargetDiscoveryCandidate(
         object_id=item.post_id,
         url=item.link,
@@ -396,7 +496,10 @@ def _target_contract(
     source_acf_fields_digest: str | None = None,
     source_acf_root_field_count: int | None = None,
     source_acf_row_count: int | None = None,
+    source_acf_rows: list[dict[str, object]] | None = None,
     relationships_by_section: dict[int, list[ContentTargetAuthoringRelationship]] | None = None,
+    native_content_observation: _NativePostContentObservation | None = None,
+    allow_native_observation: bool = True,
 ) -> ContentTargetContract:
     surface = None
     if item.acf_field_name:
@@ -405,6 +508,8 @@ def _target_contract(
             acf_schema=acf_schema,
             source_snapshot=source_acf_snapshot,
             source_acf_digest=source_acf_digest,
+            source_acf_row_count=source_acf_row_count,
+            source_acf_rows=source_acf_rows,
         )
         schema_layouts = (
             {layout.name: layout for layout in acf_schema.layouts} if acf_schema is not None else {}
@@ -447,7 +552,20 @@ def _target_contract(
             write_profile_status=("ready" if writable_fields_by_layout else "unavailable"),
             write_profile_reason=_write_profile_reason(profile_reason, acf_schema),
         )
-    elif item.content_type == "post" and _native_post_content_observed(item):
+    elif (
+        item.content_type in {"page", "post"}
+        and (
+            (
+                native_content_observation is not None
+                and native_content_observation.status == "available"
+            )
+            or (
+                native_content_observation is None
+                and allow_native_observation
+                and _native_post_content_observed(item)
+            )
+        )
+    ):
         surface = ContentTargetAuthoringSurface(
             kind="wordpress_post_content",
             root_field="content",
@@ -541,8 +659,10 @@ def _acf_writable_fields(
     item: WordPressAuthoringDevContentObject,
     *,
     acf_schema: WordPressAcfRestSchema | None,
-    source_snapshot: WordPressAcfFlexibleSnapshot | None,
-    source_acf_digest: str | None,
+    source_snapshot: WordPressAcfFlexibleSnapshot | None = None,
+    source_acf_digest: str | None = None,
+    source_acf_row_count: int | None = None,
+    source_acf_rows: list[dict[str, object]] | None = None,
 ) -> tuple[dict[str, list[str]], str]:
     """Allow only observed direct string leaves for a preserve-first clone.
 
@@ -557,7 +677,7 @@ def _acf_writable_fields(
             return {}, "Odczytany schemat ACF dotyczy innego pola Flexible Content."
     elif source_snapshot is None or source_snapshot.root_field != item.acf_field_name:
         return {}, "Brakuje odczytanego układu ACF dla pola Flexible Content."
-    if source_acf_digest is None:
+    if source_acf_digest is None or not source_acf_row_count or not source_acf_rows:
         return {}, "Odczyt targetu nie potwierdza pełnego digesta źródłowego pola ACF."
     if acf_schema is None or acf_schema.status != "available":
         return _observed_acf_writable_fields(
@@ -569,8 +689,15 @@ def _acf_writable_fields(
     layouts_by_name = {layout.name: layout for layout in acf_schema.layouts}
     writable_by_layout: dict[str, list[str]] = {}
     for section in item.sections:
+        if section.acf_field_name != item.acf_field_name:
+            continue
         layout = layouts_by_name.get(section.layout_name)
         if layout is None:
+            continue
+        if section.section_index > len(source_acf_rows):
+            continue
+        source_row = source_acf_rows[section.section_index - 1]
+        if source_row.get("acf_fc_layout") != section.layout_name:
             continue
         writable = sorted(
             field.name
@@ -579,6 +706,8 @@ def _acf_writable_fields(
                 field.name in section.field_names
                 and field.field_type == "string"
                 and not field.sub_fields
+                and field.name in source_row
+                and isinstance(source_row[field.name], str)
             )
         )
         if not writable:
@@ -676,6 +805,8 @@ def _observed_relationships(
     layouts_by_name = {layout.name: layout for layout in acf_schema.layouts}
     result: dict[int, list[ContentTargetAuthoringRelationship]] = {}
     for section in item.sections:
+        if section.section_index < 1 or section.acf_field_name != item.acf_field_name:
+            continue
         layout = layouts_by_name.get(section.layout_name)
         row_index = section.section_index - 1
         if layout is None or row_index >= len(source_snapshot.rows):
@@ -696,8 +827,25 @@ def _observed_relationships(
                 )
             ):
                 continue
-            observation = observe_wordpress_acf_panel_labels(item.link, raw_ids)
+            if not _safe_dev_observation_url(item.link):
+                relationships.append(
+                    ContentTargetAuthoringRelationship(
+                        field_name=field.name,
+                        source_ref="",
+                        reason="Adres dev relacji ACF nie spełnia wymagań bezpiecznego odczytu.",
+                    )
+                )
+                continue
+            unique_raw_ids = list(dict.fromkeys(raw_ids))
+            observation = observe_wordpress_acf_panel_labels(item.link, unique_raw_ids)
             if observation.status != "available":
+                relationships.append(
+                    ContentTargetAuthoringRelationship(
+                        field_name=field.name,
+                        source_ref=observation.source_url,
+                        reason=observation.reason,
+                    )
+                )
                 continue
             relationships.append(
                 ContentTargetAuthoringRelationship(
@@ -709,7 +857,7 @@ def _observed_relationships(
                             relationship_id=relationship_id,
                             label=observation.labels_by_id[relationship_id],
                         )
-                        for relationship_id in raw_ids
+                        for relationship_id in unique_raw_ids
                     ],
                     reason=observation.reason,
                 )
@@ -720,31 +868,29 @@ def _observed_relationships(
 
 
 def _native_post_content_observed(item: WordPressAuthoringDevContentObject) -> bool:
-    """Observe core post content without retaining it or inferring a surface from type."""
+    """Compatibility boolean for callers that only need surface availability."""
+    return _native_post_content_observation(item).status == "available"
 
-    parsed = urlparse(item.link)
-    if (
-        parsed.scheme != "https"
-        or not wordpress_dev_host_allowed(item.link)
-        or parsed.username is not None
-        or parsed.password is not None
-        or not item.post_id
-    ):
-        return False
+
+def _native_post_content_observation(
+    item: WordPressAuthoringDevContentObject,
+) -> _NativePostContentObservation:
+    return observe_native_post_content(item)
+
+
+def _safe_dev_observation_url(value: str) -> bool:
     try:
-        response = httpx.get(
-            f"{parsed.scheme}://{parsed.netloc}/wp-json/wp/v2/posts/{item.post_id}",
-            params={"_fields": "content"},
-            timeout=3,
-            follow_redirects=False,
-        )
-        response.raise_for_status()
-        payload = response.json()
-    except (httpx.HTTPError, ValueError):
+        parsed = urlparse(value)
+    except ValueError:
         return False
-    content = payload.get("content") if isinstance(payload, dict) else None
-    rendered = content.get("rendered") if isinstance(content, dict) else None
-    return isinstance(rendered, str) and bool(rendered.strip())
+    if not valid_url_port(parsed):
+        return False
+    return (
+        parsed.scheme == "https"
+        and wordpress_dev_host_allowed(value)
+        and parsed.username is None
+        and parsed.password is None
+    )
 
 
 def _digest(contract: ContentTargetContract) -> str:
@@ -791,7 +937,10 @@ def _observation_evidence(
 
 
 def _path(value: str) -> str:
-    path = urlparse(value).path.rstrip("/")
+    try:
+        path = urlparse(value).path.rstrip("/")
+    except ValueError:
+        return ""
     return path or "/"
 
 

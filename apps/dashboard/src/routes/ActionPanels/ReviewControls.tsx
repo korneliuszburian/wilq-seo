@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { type ActionReviewRequest, reviewAction } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
-import type { ActionPanelProps } from "./shared";
+import { contentDevDraftBinding, type ActionPanelProps } from "./shared";
 
 type ActionReviewOutcome = ActionReviewRequest["outcome"];
 
@@ -16,6 +16,7 @@ const ACTION_REVIEW_OPTIONS: Array<{ value: ActionReviewOutcome; label: string }
 ];
 
 export function ActionHumanReviewControls({ action }: ActionPanelProps) {
+  const wordpressDraft = contentDevDraftBinding(action);
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<ActionReviewOutcome>("approved_for_prepare");
   const [notes, setNotes] = useState(
@@ -28,7 +29,8 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
         reviewed_by: "operator_local_dashboard",
         notes: notes.trim(),
         checked_items: action.review_gate.operator_checklist.slice(0, 8),
-        blockers: action.review_gate.apply_blockers.slice(0, 8)
+        blockers: action.review_gate.apply_blockers.slice(0, 8),
+        wordpress_draft: wordpressDraft
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });

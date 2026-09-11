@@ -45,6 +45,16 @@ def register_content_revision_repair_route(
     ) -> ContentRevisionRepairProposalResponse | JSONResponse:
         snapshot = snapshot_loader(work_item_id)
         base_revision = snapshot.revision_workspace.latest_revision
+        # Refresh-bound editorial revisions must be evaluated against the
+        # exact persisted planning binding, not the generic diagnostics
+        # fallback (which has no editorial service selection).
+        if base_revision is not None and base_revision.refresh_preparation_binding is not None:
+            from apps.api.wilq_api.routers.content_workflow import (
+                semantic_review_snapshot_for_work_item_or_404,
+            )
+
+            snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
+            base_revision = snapshot.revision_workspace.latest_revision
         semantic_review = (
             None
             if base_revision is None
@@ -80,11 +90,17 @@ def _current_planning_input(
 ) -> ContentPlanningInput | None:
     workspace = getattr(snapshot, "planning_workspace", None)
     proposal = None if workspace is None else workspace.proposal
-    service_card_id = None if proposal is None else proposal.service_card_id
-    if service_card_id is None:
+    if proposal is None:
+        return None
+    service_card_id = proposal.service_card_id
+    if proposal.content_kind == "service" and service_card_id is None:
         return None
     result = build_content_planning_input(
-        with_explicit_content_service_selection(snapshot, service_card_id),
+        (
+            with_explicit_content_service_selection(snapshot, service_card_id)
+            if service_card_id is not None
+            else snapshot
+        ),
         service_card_id=service_card_id,
     )
     return None if result.blockers else result.planning_input

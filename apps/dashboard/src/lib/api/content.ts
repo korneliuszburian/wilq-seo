@@ -6,8 +6,11 @@ import {
   ContentDraftRevisionReviewResponseSchema,
   ContentDraftRevisionSaveResponseSchema,
   ContentEditorialIntegrityReportSchema,
+  ContentInitialDraftConflictResponseSchema,
+  ContentInitialDraftGenerationResponseSchema,
   ContentInitialDraftRequestSchema,
-  ContentInitialDraftResponseSchema,
+  ContentWorkItemInitialDraftRequestSchema,
+  ContentWorkItemInitialDraftResponseSchema,
   ContentInventoryCatalogResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
@@ -22,6 +25,7 @@ import {
   ContentNewPageRevisionReviewResponseSchema,
   ContentNewPageTopicRecommendationsSchema,
   ContentOfficialSourceLineageRebaseRequestSchema,
+  ContentRevisionLineageCleanupRequestSchema,
   ContentOperatorContextSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
@@ -61,8 +65,11 @@ import {
   type ContentDraftRevisionReviewResponse,
   type ContentDraftRevisionSaveResponse,
   type ContentEditorialIntegrityReport,
+  type ContentInitialDraftConflictResponse,
+  type ContentInitialDraftGenerationResponse,
   type ContentInitialDraftRequest,
-  type ContentInitialDraftResponse,
+  type ContentWorkItemInitialDraftRequest,
+  type ContentWorkItemInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -77,6 +84,7 @@ import {
   type ContentNewPageRevisionReviewResponse,
   type ContentNewPageTopicRecommendations,
   type ContentOfficialSourceLineageRebaseRequest,
+  type ContentRevisionLineageCleanupRequest,
   type ContentOperatorContext,
   type ContentPlanningProposalRequest,
   type ContentPlanningProposalResponse,
@@ -318,10 +326,10 @@ export function createContentNewPageDeliveryAction(
 export function createContentNewPageInitialDraft(
   briefId: string,
   request: ContentInitialDraftRequest
-): Promise<ContentInitialDraftResponse> {
+): Promise<ContentInitialDraftGenerationResponse> {
   return apiPost(
     `/api/content/new-page-briefs/${encodeURIComponent(briefId)}/initial-draft`,
-    ContentInitialDraftResponseSchema,
+    ContentInitialDraftGenerationResponseSchema,
     ContentInitialDraftRequestSchema.parse(request)
   );
 }
@@ -444,6 +452,20 @@ export function postContentWorkItemOfficialSourceLineageRebase(
   );
 }
 
+export function postContentWorkItemLineageCleanup(
+  request: ContentRevisionLineageCleanupRequest,
+  workItemId: string,
+  revisionId: string
+): Promise<ContentDraftRevisionSaveResponse | ContentDraftRevisionConflict> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/draft-revisions/${encodeURIComponent(revisionId)}/lineage-cleanup`;
+  return apiPostWithConflict(
+    path,
+    ContentDraftRevisionSaveResponseSchema,
+    ContentDraftRevisionConflictSchema,
+    ContentRevisionLineageCleanupRequestSchema.parse(request)
+  );
+}
+
 export function postContentWorkItemRevisionRepairProposal(
   request: ContentRevisionRepairProposalRequest,
   workItemId: string,
@@ -490,25 +512,25 @@ export function getContentWorkItemSemanticReview(
 }
 
 export function postContentWorkItemInitialDraft(
-  request: ContentInitialDraftRequest,
+  request: ContentWorkItemInitialDraftRequest,
   workItemId: string
-): Promise<ContentInitialDraftResponse> {
+): Promise<ContentWorkItemInitialDraftResponse | ContentInitialDraftConflictResponse> {
   const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/initial-draft`;
   return apiPostWithConflict(
     path,
-    ContentInitialDraftResponseSchema,
-    ContentInitialDraftResponseSchema,
-    ContentInitialDraftRequestSchema.parse(request),
+    ContentWorkItemInitialDraftResponseSchema,
+    ContentInitialDraftConflictResponseSchema,
+    ContentWorkItemInitialDraftRequestSchema.parse(request),
     CODEX_PROPOSAL_TIMEOUT_MS
   );
 }
 
 export function getContentWorkItemInitialDraft(
   workItemId: string
-): Promise<ContentInitialDraftResponse> {
+): Promise<ContentWorkItemInitialDraftResponse> {
   return apiGet(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/initial-draft`,
-    ContentInitialDraftResponseSchema
+    ContentWorkItemInitialDraftResponseSchema
   );
 }
 

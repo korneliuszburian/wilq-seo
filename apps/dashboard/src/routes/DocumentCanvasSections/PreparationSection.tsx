@@ -10,6 +10,8 @@ import {
   postContentWorkItemPlanningProposal
 } from "../../lib/api";
 import { useContentPlanningProposal } from "../contentWorkflowQueries";
+import { RegulatorySourceReviewCandidates } from "../PlanningEvidenceDetails";
+import { planningRequestFromResponse } from "./planningRequest";
 import type { ContentDocumentWorkspace } from "./shared";
 
 type DocumentPreparationPhase = "idle" | "planning" | "drafting" | "complete";
@@ -38,17 +40,10 @@ export function ContentDocumentPreparationAction({
         !planningResponseCanCreateDraft(planningResponse) &&
         planningResponse.status !== "generating"
       ) {
-        if (!planningResponse.service_card_id || !planningResponse.planning_input_digest) {
-          throw new Error(planningResponse.safe_next_step);
-        }
-        planningResponse = await postContentWorkItemPlanningProposal({
-          service_card_id: planningResponse.service_card_id,
-          expected_planning_input_digest: planningResponse.planning_input_digest,
-          requested_by: requestedBy,
-          operator_hint: "",
-          regenerate_stale_mapping: false,
-          regenerate_after_review: false
-        }, workspace.work_item_id);
+        planningResponse = await postContentWorkItemPlanningProposal(
+          planningRequestFromResponse(planningResponse, requestedBy),
+          workspace.work_item_id
+        );
       }
       planningResponse = await pollPlanningResponse(
         planningResponse,
@@ -120,6 +115,11 @@ export function ContentDocumentPreparationAction({
         {label}
       </button>
       {message ? <p className="mt-3 text-sm leading-5 text-wait">{message}</p> : null}
+      <RegulatorySourceReviewCandidates
+        candidates={workspace.regulatory_review_candidates}
+        onRecorded={() => void queryClient.invalidateQueries({ queryKey: ["content-workflow"] })}
+        title="Źródła urzędowe do sprawdzenia przed przygotowaniem dokumentu"
+      />
     </>
   );
 }
@@ -175,5 +175,3 @@ function waitForDocumentPreparationPoll(retryAfterSeconds?: number | null): Prom
   const delayMs = Math.max(1, retryAfterSeconds ?? 1.5) * 1_000;
   return new Promise((resolve) => window.setTimeout(resolve, delayMs));
 }
-
-

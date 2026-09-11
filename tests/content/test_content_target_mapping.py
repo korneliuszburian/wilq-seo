@@ -1,4 +1,7 @@
+import json
 from datetime import UTC, datetime
+from hashlib import sha256
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
@@ -13,6 +16,7 @@ from wilq.actions import audit_store as action_audit_store
 from wilq.actions import payloads as action_payloads
 from wilq.actions import service as action_service
 from wilq.connectors.wordpress.acf_source_snapshot import WordPressAcfFlexibleSnapshot
+from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -57,6 +61,7 @@ def _ready_preview():
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 source_acf_digest="1" * 64,
                 source_acf_fields_digest="2" * 64,
                 source_acf_root_field_count=2,
@@ -66,16 +71,19 @@ def _ready_preview():
                         name="title_section",
                         section_index=1,
                         fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
                     ),
                     ContentTargetAuthoringLayout(
                         name="text_section",
                         section_index=2,
                         fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                     ContentTargetAuthoringLayout(
                         name="gallery_section",
                         section_index=3,
                         fields=["images"],
+                        writable_fields=[],
                     ),
                 ],
             )
@@ -206,10 +214,40 @@ def _review(revision: ContentDraftRevision) -> ContentDraftRevisionReview:
     )
 
 
+def _apply_binding(revision: ContentDraftRevision) -> ContentDraftRevisionBinding:
+    return ContentDraftRevisionBinding(
+        work_item_id=revision.work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{revision.work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id=revision.draft_package_id,
+        draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
+        approval_decision_id=_review(revision).decision_id,
+        final_canonical_url=revision.final_canonical_url,
+    )
+
+
+class _ApplyClaimStore:
+    def __init__(self) -> None:
+        self.status: str | None = None
+
+    def claim_wordpress_revision_apply(self, *_args, **_kwargs):
+        if self.status is None:
+            self.status = "claimed"
+            return "acquired"
+        return "in_progress" if self.status == "claimed" else self.status
+
+    def finish_wordpress_revision_apply_claim(self, _binding, *, status, adapter_result, **_):
+        execution = (adapter_result or {}).get("execution_result", {})
+        retryable = status == "failed" and execution.get("external_write_attempted") is False
+        self.status = None if retryable else status
+
+
 def _discovery(
     *,
     authoring_surface: ContentTargetAuthoringSurface | None,
-    target_contract_digest: str = "d" * 64,
+    target_contract_digest: str | None = None,
 ) -> ContentTargetDiscovery:
     contract = ContentTargetContract(
         environment="dev",
@@ -230,13 +268,21 @@ def _discovery(
         modified=contract.modified,
         observed_at="2026-07-24T10:00:01Z",
     )
+    exact_target_contract_digest = target_contract_digest or sha256(
+        json.dumps(
+            contract.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     target = ContentTargetDiscoveryTarget(
         object_id=contract.object_id,
         url=contract.url,
         post_type=contract.post_type,
         post_status=contract.post_status,
         target_contract=contract,
-        target_contract_digest=target_contract_digest,
+        target_contract_digest=exact_target_contract_digest,
         observation_evidence=observation,
     )
     return ContentTargetDiscovery(
@@ -263,8 +309,13 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             )
         ),
@@ -274,7 +325,14 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
     assert preview.revision.revision_id == revision.revision_id
     assert preview.revision.content_digest == revision.content_digest
     assert preview.target is not None
-    assert preview.target.target_contract_digest == "d" * 64
+    assert preview.target.target_contract_digest == sha256(
+        json.dumps(
+            preview.target.target_contract.model_dump(mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     assert preview.binding_digest is not None
     assert {component.status for component in preview.components} == {"human_only"}
     assert all(
@@ -291,8 +349,13 @@ def test_target_mapping_binds_an_approved_revision_to_exact_observed_surface_wit
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             ),
             target_contract_digest="e" * 64,
@@ -313,6 +376,7 @@ def test_selected_acf_rich_text_combines_heading_and_body_into_one_confirmed_fie
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="flexible-home",
+                write_profile_status="ready",
                 layouts=[
                     ContentTargetAuthoringLayout(
                         name="message",
@@ -403,8 +467,13 @@ def test_target_mapping_requires_an_exact_approved_human_review() -> None:
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="text_section", fields=["title", "body"])
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["title", "body"],
+                        writable_fields=["title", "body"],
+                    )
                 ],
             )
         ),
@@ -426,10 +495,17 @@ def test_target_mapping_confirmation_binds_every_observed_component_and_field() 
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
-                        name="text_section", fields=["heading", "content_html"]
+                        name="title_section",
+                        fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                 ],
             )
@@ -491,10 +567,17 @@ def test_target_draft_preview_uses_only_the_exact_confirmed_mapping() -> None:
             authoring_surface=ContentTargetAuthoringSurface(
                 kind="acf_flexible_content",
                 root_field="content_sections",
+                write_profile_status="ready",
                 layouts=[
-                    ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                     ContentTargetAuthoringLayout(
-                        name="text_section", fields=["heading", "content_html"]
+                        name="title_section",
+                        fields=["wordpress_title"],
+                        writable_fields=["wordpress_title"],
+                    ),
+                    ContentTargetAuthoringLayout(
+                        name="text_section",
+                        fields=["heading", "content_html"],
+                        writable_fields=["heading", "content_html"],
                     ),
                 ],
             )
@@ -602,6 +685,7 @@ def test_content_dev_draft_action_binds_the_exact_confirmed_preview_and_fails_cl
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
 
     assert action.payload["action_type"] == dev_draft_action.CONTENT_DEV_DRAFT_ACTION_TYPE
@@ -667,6 +751,7 @@ def test_content_dev_draft_write_payload_blocks_acf_action_without_clone_plan(
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -700,6 +785,7 @@ def test_content_dev_draft_write_payload_requires_one_exact_title(monkeypatch) -
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
 
     no_title = draft_preview.model_copy(
@@ -751,6 +837,7 @@ def test_content_dev_draft_payload_uses_observed_service_rest_endpoint(
             expected_payload_digest=service_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -780,6 +867,7 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     monkeypatch.setattr(
         dev_draft_action,
@@ -797,7 +885,9 @@ def test_content_dev_draft_execution_uses_only_the_exact_acf_payload(monkeypatch
 
     monkeypatch.setattr(dev_draft_execution, "create_wordpress_acf_draft", create)
 
-    result, errors = dev_draft_execution.execute_content_target_draft_action(action)
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        action, binding=_apply_binding(revision)
+    )
 
     assert errors == []
     assert result is not None
@@ -844,6 +934,7 @@ def test_content_dev_draft_prewrite_check_does_not_claim_public_measurement() ->
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     action.audit_events = [
         AuditEvent(
@@ -898,6 +989,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
             expected_payload_digest=draft_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     state_store = LocalStateStore(tmp_path / "actions.sqlite3")
     connector = type(
@@ -912,6 +1004,8 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
     monkeypatch.setattr(action_validation, "get_connector_status", lambda _: connector)
     monkeypatch.setattr(action_payloads, "get_connector_status", lambda _: connector)
     monkeypatch.setattr(action_service, "get_connector_status", lambda _: connector)
+    claim_store = _ApplyClaimStore()
+    monkeypatch.setattr(action_service, "action_content_workflow_store", lambda: claim_store)
     current_preview = [draft_preview]
     monkeypatch.setattr(
         dev_draft_action,
@@ -932,20 +1026,32 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
         lambda payload, **_: created_drafts.append(payload) or "draft_417",
     )
 
-    apply_request = ActionApplyRequest(confirm=True, confirmed_by="Marta Kowalska")
+    binding = _apply_binding(revision)
+    apply_request = ActionApplyRequest(
+        confirm=True,
+        confirmed_by="Marta Kowalska",
+        wordpress_draft=binding,
+    )
     without_validation = action_service.apply_action(action, apply_request)
     assert not without_validation.applied
     assert "Akcja musi być sprawdzona w WILQ przed zapisem zmian." in without_validation.errors
     assert created_drafts == []
 
     assert action_service.validate_action(action).valid
-    action_service.preview_action(action, ActionPreviewRequest(requested_by="Marta Kowalska"))
+    action_service.preview_action(
+        action,
+        ActionPreviewRequest(
+            requested_by="Marta Kowalska",
+            wordpress_draft=binding,
+        ),
+    )
     confirmation_without_review = action_service.confirm_action(
         action,
         ActionConfirmRequest(
             confirmed_by="Marta Kowalska",
             notes="Próbuję potwierdzić szkic bez review.",
             preview_acknowledged=True,
+            wordpress_draft=binding,
         ),
     )
     assert not confirmation_without_review.confirmed
@@ -964,6 +1070,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
             outcome="approved_for_prepare",
             reviewed_by="Marta Kowalska",
             notes="Zatwierdzono dokładny szkic dev.",
+            wordpress_draft=binding,
         ),
     )
     without_confirmation = action_service.apply_action(action, apply_request)
@@ -979,6 +1086,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
             confirmed_by="Marta Kowalska",
             notes="Potwierdzam utworzenie jednego szkicu na dev.",
             preview_acknowledged=True,
+            wordpress_draft=binding,
         ),
     )
     assert confirmation.confirmed
@@ -994,6 +1102,7 @@ def test_content_dev_draft_apply_requires_the_full_action_chain_and_is_single_us
         ActionImpactCheckRequest(
             checked_by="Marta Kowalska",
             notes="Sprawdzono gotowość do utworzenia szkicu.",
+            wordpress_draft=binding,
         ),
     )
     assert preflight.status == "checked"
@@ -1034,6 +1143,7 @@ def test_content_dev_draft_payload_rechecks_the_confirmation_used_for_payload() 
             expected_payload_digest=first_preview.payload_digest,
             requested_by="Marta Kowalska",
         ),
+        wordpress_draft_binding=_apply_binding(revision),
     )
     changed_confirmation = first_preview.confirmation.model_copy(
         update={"confirmation_digest": "f" * 64}
@@ -1062,6 +1172,14 @@ def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(
         "content_target_draft_preview_endpoint",
         lambda *_: draft_preview,
     )
+    monkeypatch.setattr(
+        content_target_mapping,
+        "content_workflow_store",
+        lambda: SimpleNamespace(
+            list_draft_revisions=lambda _work_item_id: [revision],
+            load_draft_revision_review=lambda **_kwargs: _review(revision),
+        ),
+    )
     monkeypatch.setattr(dev_draft_action, "local_state_store", lambda: state_store)
     app = FastAPI()
     router = APIRouter()
@@ -1088,6 +1206,9 @@ def test_content_dev_draft_action_endpoint_persists_only_the_exact_preview(
     assert response.json()["payload"]["content_target_draft_binding"]["payload_digest"] == (
         draft_preview.payload_digest
     )
+    assert response.json()["payload"]["wordpress_draft_binding"] == _apply_binding(
+        revision
+    ).model_dump(mode="json")
 
 
 def _confirmation_request(
@@ -1104,7 +1225,7 @@ def _confirmation_request(
     )
     return {
         "expected_revision_digest": revision.content_digest,
-        "expected_target_contract_digest": "d" * 64,
+        "expected_target_contract_digest": discovery.target.target_contract_digest,
         "expected_binding_digest": preview.binding_digest,
         "confirmed_by": "Marta Kowalska",
         "selections": [
@@ -1143,10 +1264,17 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
         authoring_surface=ContentTargetAuthoringSurface(
             kind="acf_flexible_content",
             root_field="content_sections",
+            write_profile_status="ready",
             layouts=[
-                ContentTargetAuthoringLayout(name="title_section", fields=["wordpress_title"]),
                 ContentTargetAuthoringLayout(
-                    name="text_section", fields=["heading", "content_html"]
+                    name="title_section",
+                    fields=["wordpress_title"],
+                    writable_fields=["wordpress_title"],
+                ),
+                ContentTargetAuthoringLayout(
+                    name="text_section",
+                    fields=["heading", "content_html"],
+                    writable_fields=["heading", "content_html"],
                 ),
             ],
         )
@@ -1198,7 +1326,10 @@ def test_target_mapping_confirmation_endpoint_persists_only_the_exact_preview(
     payload = response.json()
     assert payload["status"] == "created"
     assert payload["confirmation"]["revision"]["revision_id"] == revision.revision_id
-    assert payload["confirmation"]["target_contract_digest"] == "d" * 64
+    assert (
+        payload["confirmation"]["target_contract_digest"]
+        == discovery.target.target_contract_digest
+    )
 
     draft_preview = TestClient(app).get(path.removesuffix("/confirmation") + "/draft-preview")
 

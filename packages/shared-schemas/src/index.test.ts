@@ -19,7 +19,6 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
   ContentDecisionContextSchema,
-  ContentSelectedWorkspaceSchema,
   ContentWorkItemServiceProfileContextSchema,
   ContentPlanningInputReadinessResponseSchema,
   ContentPlanningInputSummarySchema,
@@ -53,11 +52,10 @@ import {
   ContentNewPageRevisionReviewConflictSchema,
   ContentDraftRevisionReviewRequestSchema,
   ContentRevisionHtmlPackageResponseSchema,
+  ContentRevisionLineageCleanupRequestSchema,
   ContentEditorialIntegrityReportSchema,
   ContentDraftRevisionSaveRequestSchema,
   ContentDraftRevisionWorkspaceSchema,
-  ContentInitialDraftRequestSchema,
-  ContentInitialDraftResponseSchema,
   ContentPlanningPageAssetsSchema,
   ContentRevisionRepairProposalRequestSchema,
   ContentKnowledgeCardSchema,
@@ -100,12 +98,21 @@ describe("ContentKnowledgeCardSchema", () => {
       card_type: "regulatory_source",
       title: "BDO: obowiązek rejestracji",
       summary: "Fakt z oficjalnego źródła związany z exact evidence.",
+      service_binding_urls: ["https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"],
       evidence_ids: ["ev_regulatory_source_review_scope"],
       source_fact_ids: ["regulatory_source_fact_scope"],
       source_lineage: ["https://bdo.mos.gov.pl/baza-wiedzy/kto-podlega-pod-obowiazek-rejestracji/"],
       confidence: 1,
       freshness: "reviewed_2026-07-31"
     })).not.toThrow();
+    expect(ContentKnowledgeCardSchema.parse({
+      id: "service_binding_default",
+      card_type: "service",
+      title: "Usługa",
+      summary: "Opis",
+      confidence: 0.8,
+      freshness: "reviewed_2026-08-28"
+    }).service_binding_urls).toEqual([]);
   });
 });
 
@@ -245,6 +252,21 @@ describe("ContentRegulatorySourceReview schemas", () => {
       }).success
     ).toBe(true);
     expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "BDO dla firm",
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        faq: [],
+        correction_reason: "canonical_html_alignment",
+        created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(false);
+    expect(
       ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
         status: "captured",
         snapshot: {
@@ -262,6 +284,27 @@ describe("ContentRegulatorySourceReview schemas", () => {
         safe_next_step: "Sprawdź źródło."
       }).success
     ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "Tytuł dokumentu",
+        page_assets: {
+          wordpress_title: "Inny tytuł",
+          meta_title: "Meta title",
+          meta_description: "Meta description",
+          h1: "Nagłówek",
+          lead: "Lead dokumentu",
+          byline: null
+        },
+        sections: [{
+          heading: "Zakres obowiązków",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_gsc_bdo"]
+        }],
+        created_by: "wilku"
+      }).success
+    ).toBe(false);
     expect(
       ContentRegulatorySourceSnapshotReadResponseSchema.safeParse({
         status: "captured",
@@ -419,120 +462,6 @@ describe("ContentDecisionContextSchema", () => {
   });
 });
 
-describe("ContentSelectedWorkspaceSchema", () => {
-  const operatorJourney = {
-    current_step_id: "draft",
-    steps: [
-      ["scope", "Zakres i cel", "complete", "ready", "zakres gotowy"],
-      ["section_map", "Plan sekcji", "complete", "ready", "plan sekcji gotowy"],
-      ["draft", "Szkic treści", "current", "ready", "czeka na wersję szkicu"],
-      ["review", "Sprawdzenie treści", "pending", "blocked", "czeka na wersję szkicu"],
-      ["dev_draft", "Szkic na devie", "pending", "blocked", "czeka na sprawdzenie wersji"]
-    ].map(([id, title, phase, readiness, statusLabel]) => ({
-      id,
-      title,
-      phase,
-      readiness,
-      status_label: statusLabel,
-      summary: "Stan etapu pochodzi z API.",
-      can_open: phase !== "pending",
-      can_submit: id === "draft",
-      blocker: id === "dev_draft" ? {
-        code: "missing_revision_bound_draft",
-        label: "Brakuje wersji gotowej do przekazania",
-        reason: "Najpierw zapisz i zatwierdź dokładną wersję tekstu."
-      } : null,
-      safe_next_step: "Wykonaj następny bezpieczny krok wskazany przez API."
-    }))
-  };
-  const workspace = {
-    response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v2",
-    work_item_id: "content_work_item_bdo",
-    work_kind: "refresh_existing",
-    service_label: "BDO",
-    source_snapshot: {
-      status: "available",
-      status_label: "materiał dostępny",
-      title: "BDO",
-      url: "https://ekologus.pl/bdo/",
-      extraction_method: "wordpress_rest.content",
-      lead: null,
-      content_excerpt: null,
-      ordered_sections: [],
-      faq_status: "not_observed",
-      cta_status: "not_observed",
-      reason: "Źródło odczytane.",
-      caveats: [],
-      evidence_ids: ["ev_wp_bdo"]
-    },
-    canonical_document: {
-      status: "not_created",
-      revision_id: null,
-      content_digest: null,
-      review_state: "unreviewed",
-      label: "Brak dokumentu",
-      reason: "Brak rewizji.",
-      preview: null
-    },
-    document_lineage: {
-      status: "not_recorded",
-      source_material_ids: [],
-      knowledge_cards: [],
-      unresolved_knowledge_card_ids: [],
-      reason: "Brak rewizji."
-    },
-    comparison: { status: "unavailable", reason: "Brak rewizji.", items: [] },
-    next_action: { kind: "prepare_document", label: "Przygotuj dokument", reason: "Brak rewizji." },
-    regulatory_review_candidates: [{
-      candidate_id: "bdo_sanctions_2026_08_02_r3",
-      source_url: "https://bdo.mos.gov.pl/baza-wiedzy/sankcje/",
-      source_title: "BDO: sankcje za naruszenia obowiązków",
-      observed_on: "2026-08-02",
-      requirement_ids: ["bdo_risks_and_sanctions"],
-      requirement_labels: ["Ryzyka i sankcje"],
-      review_status: "review_required",
-      safe_next_step: "Sprawdź materiał urzędowy przed decyzją."
-    }],
-    secondary_disclosures: []
-  };
-
-  it("keeps ready and missing selection states exact", () => {
-    const parsed = ContentSelectedWorkspaceSchema.parse({
-        status: "ready",
-        work_item_id: "content_work_item_bdo",
-        operator_journey: operatorJourney,
-        workspace,
-        reason: "Odczytano workspace.",
-        safe_next_step: "Przygotuj dokument"
-      });
-    expect(parsed.workspace?.regulatory_review_candidates).toEqual([
-      expect.objectContaining({ candidate_id: "bdo_sanctions_2026_08_02_r3" })
-    ]);
-    expect(parsed.workspace?.source_snapshot.status_label).toBe("materiał dostępny");
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
-        status: "missing",
-        work_item_id: "content_work_item_missing",
-        operator_journey: operatorJourney,
-        workspace: null,
-        reason: "Nie znaleziono strony.",
-        safe_next_step: "Wróć do wyboru."
-      }).success
-    ).toBe(true);
-    expect(
-      ContentSelectedWorkspaceSchema.safeParse({
-        status: "ready",
-        work_item_id: "content_work_item_other",
-        operator_journey: operatorJourney,
-        workspace,
-        reason: "Odczytano workspace.",
-        safe_next_step: "Przygotuj dokument"
-      }).success
-    ).toBe(false);
-  });
-});
-
 describe("ContentPlanningInputSummarySchema", () => {
   const sourceAssessments = [
     "wordpress", "service_profile", "gsc", "ga4", "google_ads",
@@ -666,7 +595,8 @@ describe("ContentDraftRevisionSchema", () => {
         meta_title: "Doradztwo środowiskowe — Ekologus",
         meta_description: "Sprawdź zakres usługi.",
         h1: "Kiedy firma potrzebuje doradztwa środowiskowego",
-        lead: "Najpierw sprawdź sytuację firmy."
+        lead: "Najpierw sprawdź sytuację firmy.",
+        byline: null
       },
       sections: [{
         ...common.sections[0],
@@ -699,6 +629,7 @@ describe("ContentDraftRevisionSchema", () => {
       }]
     });
     expect(parsed.page_assets?.meta_description).toBe("Sprawdź zakres usługi.");
+    expect(parsed.page_assets?.byline).toBeNull();
     expect(parsed.sections[0].section_id).toBe("section_when_support");
     expect(parsed.faq[0].answer_markdown).toBe("Od sprawdzenia sytuacji firmy.");
     expect(parsed.cta_blocks[0].placement).toBe("after_content");
@@ -715,6 +646,12 @@ describe("ContentDraftRevisionSchema", () => {
       }]
     };
     expect(ContentDraftRevisionSchema.safeParse(regulated).success).toBe(true);
+    expect(
+      ContentDraftRevisionSchema.safeParse({
+        ...regulated,
+        correction_reason: "lineage_cleanup"
+      }).success
+    ).toBe(true);
     expect(ContentDraftRevisionSchema.safeParse({
       ...regulated,
       official_source_references: [{ ...regulated.official_source_references[0], evidence_ids: ["   "] }]
@@ -811,47 +748,6 @@ describe("ContentDraftRevisionSchema", () => {
         sections: [{ ...parsed.sections[0], body_markdown }]
       }).success).toBe(false);
     }
-  });
-});
-
-describe("ContentInitialDraftResponseSchema", () => {
-  it("keeps generation exact-bound and fail-closed", () => {
-    expect(ContentInitialDraftRequestSchema.parse({
-      expected_proposal_id: "proposal_1",
-      expected_planning_digest: "a".repeat(64),
-      expected_planning_input_digest: "b".repeat(64),
-      requested_by: "wilku"
-    }).expected_proposal_id).toBe("proposal_1");
-    const blocked = {
-      status: "blocked" as const,
-      work_item_id: "content_work_item_bdo",
-      proposal_id: "proposal_1",
-      run_id: null,
-      revision: null,
-      runtime: {
-        status: "not_started" as const,
-        thread_id: null,
-        turn_id: null,
-        event_methods: [],
-        item_types: [],
-        external_call_attempted: false
-      },
-      blockers: [{
-        code: "planning_not_ready",
-        label: "Plan nie jest jeszcze gotowy",
-        reason: "Brakuje aktualnej mapy sekcji.",
-        next_step: "Sprawdź plan.",
-        source_codes: []
-      }],
-      safe_next_step: "Sprawdź plan.",
-      publish_ready: false as const
-    };
-    expect(ContentInitialDraftResponseSchema.parse(blocked).status).toBe("blocked");
-    expect(ContentInitialDraftResponseSchema.safeParse({
-      ...blocked,
-      status: "created",
-      blockers: []
-    }).success).toBe(false);
   });
 });
 
@@ -2438,7 +2334,7 @@ describe("WordPressAuthoringProfileSchema", () => {
 
 describe("ContentTargetDiscoverySchema", () => {
   it("keeps an observed target contract and its exact observation public", () => {
-    expect(ContentTargetDiscoverySchema.safeParse({
+    const parsed = ContentTargetDiscoverySchema.safeParse({
       response_type: "content_target_discovery",
       contract_version: "content_target_discovery_v2",
       work_item_id: "content_work_item_bdo",
@@ -2478,9 +2374,14 @@ describe("ContentTargetDiscoverySchema", () => {
         }
       },
       candidates: [],
+      blocker_code: "wordpress_native_content_http_error",
       evidence_ids: ["ev_wordpress_target_observation_example"],
       caveats: ["Odczyt nie daje prawa do zapisu."]
-    }).success).toBe(true);
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.blocker_code).toBe("wordpress_native_content_http_error");
+    }
   });
 
   it("keeps observed ACF relationships readable without authorizing a write", () => {
@@ -4685,6 +4586,42 @@ describe("Content work item workflow schemas", () => {
   });
 
   it("guards revision, proposal and conflict inputs at the shared seam", () => {
+    const lineageCleanupRequest = {
+      expected_revision_digest: "a".repeat(64),
+      source_fact_id: "  regulatory_source_fact_83380d0458dfbc43988311bc  ",
+      requested_by: "  wilku  "
+    };
+    const parsedLineageCleanup = ContentRevisionLineageCleanupRequestSchema.parse(
+      lineageCleanupRequest
+    );
+    expect(parsedLineageCleanup.source_fact_id).toBe(
+      "regulatory_source_fact_83380d0458dfbc43988311bc"
+    );
+    expect(parsedLineageCleanup.requested_by).toBe("wilku");
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        expected_revision_digest: "not-a-digest"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        source_fact_id: " "
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        requested_by: " "
+      }).success
+    ).toBe(false);
+    expect(
+      ContentRevisionLineageCleanupRequestSchema.safeParse({
+        ...lineageCleanupRequest,
+        extra: "unsupported"
+      }).success
+    ).toBe(false);
     expect(
       ContentDraftRevisionSaveRequestSchema.safeParse({
         base_revision_id: null,
@@ -4705,6 +4642,42 @@ describe("Content work item workflow schemas", () => {
         }],
         correction_reason: "canonical_html_alignment",
         created_by: "operator_local_dashboard"
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionSaveRequestSchema.safeParse({
+        base_revision_id: "content_revision_r9",
+        title: "Analiza pozwolenia zintegrowanego",
+        page_assets: {
+          wordpress_title: "Analiza pozwolenia zintegrowanego",
+          meta_title: "Analiza pozwolenia zintegrowanego – zakres",
+          meta_description: "Sprawdź zakres analizy i raport początkowy.",
+          h1: "Analiza pozwolenia zintegrowanego",
+          lead: "Praktyczne omówienie dokumentacji instalacji.",
+          byline: null
+        },
+        sections: [{
+          section_id: "section_scope",
+          heading: "Zakres analizy",
+          body_markdown: "Treść sekcji.",
+          content_html: "<p>Treść sekcji.</p>",
+          evidence_ids: ["ev_official"]
+        }],
+        faq: [{
+          faq_id: "faq_initial_report",
+          question: "Kiedy raport może być wymagany?",
+          answer_markdown: "Obowiązek zależy od dwóch łącznych warunków.",
+          evidence_ids: ["ev_official"]
+        }],
+        official_source_references: [{
+          source_fact_id: "regulatory_source_fact_ekoportal",
+          source_url: "https://www.ekoportal.gov.pl/source.pdf",
+          source_title: "Wytyczne Ekoportal",
+          verified_on: "2026-09-01",
+          evidence_ids: ["ev_official"],
+          regulatory_requirement_ids: ["initial_report"]
+        }],
+        created_by: "wilku"
       }).success
     ).toBe(true);
     expect(
@@ -4762,6 +4735,15 @@ describe("Content work item workflow schemas", () => {
         current_revision_id: "content_revision_bdo_2",
         current_digest: "a".repeat(64),
         safe_next_step: "Porównaj wersje."
+      }).success
+    ).toBe(true);
+    expect(
+      ContentDraftRevisionConflictSchema.safeParse({
+        status: "conflict",
+        code: "stale_context",
+        current_revision_id: "content_revision_bdo_2",
+        current_digest: "a".repeat(64),
+        safe_next_step: "Odśwież bieżący kontekst."
       }).success
     ).toBe(true);
     expect(

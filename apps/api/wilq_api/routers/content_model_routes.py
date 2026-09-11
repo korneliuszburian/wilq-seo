@@ -7,14 +7,23 @@ from fastapi import APIRouter
 from apps.api.wilq_api.routers.content_codex_proposal import (
     register_content_revision_repair_route,
 )
+from apps.api.wilq_api.routers.content_delivery_identity import (
+    register_content_delivery_identity_routes,
+)
 from apps.api.wilq_api.routers.content_dev_draft_cleanup import (
     register_content_dev_draft_cleanup_route,
 )
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
 )
+from apps.api.wilq_api.routers.content_independent_review import (
+    register_content_independent_review_routes,
+)
 from apps.api.wilq_api.routers.content_initial_draft import (
     register_content_initial_draft_route,
+)
+from apps.api.wilq_api.routers.content_landing_hub_authorization import (
+    register_content_landing_hub_authorization_routes,
 )
 from apps.api.wilq_api.routers.content_new_page_brief import (
     register_content_new_page_brief_routes,
@@ -25,11 +34,20 @@ from apps.api.wilq_api.routers.content_official_source_lineage import (
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
 )
+from apps.api.wilq_api.routers.content_production_command import (
+    register_content_production_command_route,
+)
 from apps.api.wilq_api.routers.content_public_deployment import (
     register_content_public_deployment_routes,
 )
+from apps.api.wilq_api.routers.content_refresh_preparation import (
+    register_content_refresh_preparation_routes,
+)
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
+)
+from apps.api.wilq_api.routers.content_research_packet import (
+    register_content_research_packet_routes,
 )
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
@@ -42,6 +60,9 @@ from apps.api.wilq_api.routers.content_selected_workspace import (
 )
 from apps.api.wilq_api.routers.content_semantic_review import (
     register_content_semantic_review_routes,
+)
+from apps.api.wilq_api.routers.content_source_pack_binding import (
+    register_content_source_pack_binding_routes,
 )
 from apps.api.wilq_api.routers.content_target_discovery import (
     register_content_target_discovery_route,
@@ -58,17 +79,36 @@ def register_content_model_routes(
     router: APIRouter,
     *,
     snapshot_loader: ContentModelSnapshotLoader,
+    semantic_review_snapshot_loader: ContentModelSnapshotLoader | None = None,
 ) -> None:
+    review_snapshot_loader = (
+        snapshot_loader
+        if semantic_review_snapshot_loader is None
+        else semantic_review_snapshot_loader
+    )
     register_content_regulatory_source_review_routes(router)
+    register_content_delivery_identity_routes(router)
+    register_content_source_pack_binding_routes(router)
+    register_content_research_packet_routes(router)
+    register_content_landing_hub_authorization_routes(router)
+    register_content_production_command_route(router, snapshot_loader=snapshot_loader)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
-    register_content_official_source_lineage_route(router, snapshot_loader=snapshot_loader)
+    register_content_official_source_lineage_route(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
+    register_content_independent_review_routes(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_new_page_brief_routes(router)
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
+    register_content_refresh_preparation_routes(router)
     register_content_section_focus_routes(
         router,
         planning_workspace_loader=lambda work_item_id: (
@@ -76,7 +116,10 @@ def register_content_model_routes(
         ),
     )
     register_content_public_deployment_routes(router)
-    register_content_semantic_review_routes(router, snapshot_loader=snapshot_loader)
+    register_content_semantic_review_routes(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_target_discovery_route(router)
     register_content_target_mapping_route(router)
 

@@ -29,6 +29,10 @@ WORK_ITEM_ID = "content_work_item_bdo"
 SOURCE_URL = "https://www.ekologus.pl/bdo/"
 
 
+def _no_candidates(*_args, **_kwargs) -> list[object]:
+    return []
+
+
 def _full_revision() -> ContentDraftRevision:
     return ContentDraftRevision(
         schema_version="wilq_content_draft_revision_v2",
@@ -161,9 +165,13 @@ def test_document_workspace_projects_claim_ledger_onto_full_revision(
         evidence_ids=["ev_wp_bdo"],
         source_connectors=["wordpress_ekologus"],
     )
-    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(
+        workspace_module,
+        "build_content_decision_context",
+        lambda _id, **_kwargs: context,
+    )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
-    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
+    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", _no_candidates)
     monkeypatch.setattr(
         workspace_module,
         "content_workflow_store",
@@ -299,9 +307,13 @@ def test_document_workspace_route_projects_ledger_only_for_full_revision(
         )
         for work_item_id in revisions
     }
-    monkeypatch.setattr(workspace_module, "build_content_decision_context", lambda _id: context)
+    monkeypatch.setattr(
+        workspace_module,
+        "build_content_decision_context",
+        lambda _id, **_kwargs: context,
+    )
     monkeypatch.setattr(workspace_module, "read_content_inventory_material", lambda _url: material)
-    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", lambda _revision: [])
+    monkeypatch.setattr(workspace_module, "_regulatory_review_candidates", _no_candidates)
     monkeypatch.setattr(
         workspace_module,
         "content_workflow_store",
@@ -373,6 +385,19 @@ def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:
     ]
 
 
+def test_persisted_material_does_not_promote_summary_only_metadata() -> None:
+    item = ContentWorkItem(
+        id=WORK_ITEM_ID,
+        topic="BDO dla firm",
+        wordpress_content_summary="Utrwalone podsumowanie bez treści i struktury.",
+        wordpress_content_inventory_status="available",
+    )
+
+    material = workspace_module._persisted_material_from_item(item, url=SOURCE_URL)
+
+    assert material is None
+
+
 def test_document_workspace_projects_one_repair_action_after_human_changes() -> None:
     document = workspace_module.ContentDocumentWorkspaceDocument(
         status="needs_changes",
@@ -423,15 +448,19 @@ def test_document_workspace_uses_revision_service_binding_for_official_review_ca
     monkeypatch.setattr(
         workspace_module,
         "regulatory_content_coverage",
-        lambda *, service_card_id, source_facts: seen.update(
-            service_card_id=service_card_id, source_facts=source_facts
+        lambda *, service_card_id, canonical_path, source_facts: seen.update(
+            service_card_id=service_card_id,
+            canonical_path=canonical_path,
+            source_facts=source_facts,
         ) or coverage,
     )
     monkeypatch.setattr(
         workspace_module,
         "regulatory_review_candidates",
-        lambda *, service_card_id, coverage: [candidate]
-        if service_card_id == "ekologus_service_bdo_reporting" and coverage is not None
+        lambda *, service_card_id, canonical_path, coverage: [candidate]
+        if service_card_id == "ekologus_service_bdo_reporting"
+        and canonical_path is None
+        and coverage is not None
         else [],
     )
 
@@ -440,6 +469,50 @@ def test_document_workspace_uses_revision_service_binding_for_official_review_ca
     assert candidates == [candidate]
     assert seen == {
         "service_card_id": "ekologus_service_bdo_reporting",
+        "canonical_path": None,
+        "source_facts": ("fact",),
+    }
+
+
+def test_document_workspace_prefers_editorial_path_over_legacy_revision_service(
+    monkeypatch,
+) -> None:
+    candidate = SimpleNamespace(candidate_id="integrated_permit_candidate")
+    coverage = SimpleNamespace()
+    item = ContentWorkItem(
+        id="content_work_item_integrated_permit",
+        topic="Analiza pozwoleń zintegrowanych",
+        final_canonical_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
+        content_kind="editorial",
+    )
+    seen: dict[str, object] = {}
+    monkeypatch.setattr(workspace_module, "ekologus_source_facts", lambda: ("fact",))
+    monkeypatch.setattr(
+        workspace_module,
+        "regulatory_content_coverage",
+        lambda *, service_card_id, canonical_path, source_facts: seen.update(
+            service_card_id=service_card_id,
+            canonical_path=canonical_path,
+            source_facts=source_facts,
+        ) or coverage,
+    )
+    monkeypatch.setattr(
+        workspace_module,
+        "regulatory_review_candidates",
+        lambda *, service_card_id, canonical_path, coverage: [candidate]
+        if service_card_id is None
+        and canonical_path == "/analiza-pozwolen-zintegrowanych"
+        and coverage is not None
+        else [],
+    )
+
+    legacy_revision = SimpleNamespace(service_card_id="ekologus_service_operat_wodnoprawny")
+    candidates = workspace_module._regulatory_review_candidates(legacy_revision, item=item)
+
+    assert candidates == [candidate]
+    assert seen == {
+        "service_card_id": None,
+        "canonical_path": "/analiza-pozwolen-zintegrowanych",
         "source_facts": ("fact",),
     }
 

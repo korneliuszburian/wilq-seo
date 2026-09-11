@@ -862,7 +862,7 @@ def test_inventory_material_cache_reuses_read_only_wordpress_material(monkeypatc
     monkeypatch.setattr(catalog_module, "_inventory_material_cache", {})
     calls = 0
 
-    def read_once(_url):
+    def read_once(_url, **_kwargs):
         nonlocal calls
         calls += 1
         return SimpleNamespace(

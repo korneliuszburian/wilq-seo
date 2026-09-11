@@ -16,6 +16,7 @@ from wilq.content.workflow.contracts.contracts import (
     ContentProtectedContentUnit,
     ContentRepresentationAlignment,
 )
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
@@ -225,7 +226,7 @@ def _observed_scope(
 def _representation_alignment(
     section: ContentDraftRevisionSection,
 ) -> ContentRepresentationAlignment:
-    source_text = _normalized_text(section.body_markdown)
+    source_text = _normalized_text(_html_text(content_html_from_markdown(section.body_markdown)))
     html = section.content_html
     rendered_text = None if html is None else _normalized_text(_html_text(html))
     return ContentRepresentationAlignment(

@@ -1,0 +1,13 @@
+{
+  "contract": "wilku_content_uat_revision_manifest_v1",
+  "source_fixed_point": "0eada7073e637623ca2f24887f40c1908b7957cb",
+  "revision_ids": [
+    "content_revision_f4c23cfcd5b6449c83281545b4883e2c",
+    "content_revision_66f7eec3ec9646a5a8ed5327a44e3da8",
+    "content_revision_62ef7b61f6fd4a399a41d3ab33094fc9",
+    "content_revision_b14c7fc23fcc4907aadf24c431cc656a",
+    "content_revision_787c4e52b3f941f3a048a63355e8cf45"
+  ],
+  "human_review_required": true,
+  "publish_ready": false
+}

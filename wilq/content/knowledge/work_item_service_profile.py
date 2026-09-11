@@ -19,7 +19,9 @@ from wilq.content.knowledge.source_facts import ContentKnowledgeLifecycleStatus
 from wilq.content.operator_copy import unique
 from wilq.content.workflow.contracts.models import ContentWorkItem
 
-ContentWorkItemServiceProfileBindingStatus = Literal["not_evaluated", "bound", "unbound"]
+ContentWorkItemServiceProfileBindingStatus = Literal[
+    "not_evaluated", "not_required", "bound", "unbound"
+]
 ContentWorkItemServiceProfileDecisionStatus = Literal[
     "not_evaluated",
     "ready",
@@ -108,6 +110,24 @@ class ContentWorkItemServiceProfileContext(BaseModel):
             safe_next_step=safe_next_step,
         )
 
+    @classmethod
+    def not_required_for_editorial(cls) -> ContentWorkItemServiceProfileContext:
+        return cls(
+            binding_status="not_required",
+            decision_status="ready",
+            status_label="Karta usługi nie jest wymagana",
+            reason=(
+                "WordPress inventory klasyfikuje ten materiał jako treść redakcyjną; "
+                "WILQ nie przypisuje usługi na podstawie samego tematu."
+            ),
+            claim_policy_scope_label=(
+                "Treść redakcyjna używa claim ledgeru i źródeł dokumentu, "
+                "bez polityki twierdzeń konkretnej usługi."
+            ),
+            safe_next_step="Przygotuj brief redakcyjny z inventory, popytu i źródeł.",
+            minimum_cta_blocks=1,
+        )
+
 
 def build_content_work_item_service_profile_context(
     item: ContentWorkItem,
@@ -117,6 +137,8 @@ def build_content_work_item_service_profile_context(
     human_override_review_required: bool = False,
 ) -> ContentWorkItemServiceProfileContext:
     """Project one API-owned Service Profile decision for a selected work item."""
+    if item.content_kind == "editorial":
+        return ContentWorkItemServiceProfileContext.not_required_for_editorial()
     match = knowledge_match or match_content_knowledge_cards(item)
     service_card = match.service_card
     if service_card is None:

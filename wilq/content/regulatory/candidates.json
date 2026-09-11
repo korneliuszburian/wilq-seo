@@ -167,6 +167,252 @@
       "requirement_ids": ["environmental_post_implementation_analysis"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź art. 83: porównanie odnosi ustalenia raportu i decyzji do rzeczywistego oddziaływania, bez deklarowania automatycznego obowiązku analizy."
+    },
+    {
+      "candidate_id": "integrated_permit_oos_eli_2026_08_30_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2026/670/text.pdf",
+      "source_title": "ELI: aktualny tekst jednolity ustawy o udostępnianiu informacji o środowisku",
+      "observed_on": "2026-08-31",
+      "requirement_ids": ["integrated_permit_distinct_decisions", "integrated_permit_case_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębny cel decyzji środowiskowej i zakres oceny dla konkretnego przedsięwzięcia."
+    },
+    {
+      "candidate_id": "integrated_permit_pos_eli_2026_08_31_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text.pdf",
+      "source_title": "ELI: aktualny tekst jednolity Prawa ochrony środowiska",
+      "observed_on": "2026-08-31",
+      "requirement_ids": ["integrated_permit_initial_report", "integrated_permit_case_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź warunki raportu początkowego i nie przedstawiaj go jako automatycznego wymogu każdej instalacji."
+    },
+    {
+      "candidate_id": "integrated_permit_ekoportal_2026_08_30_r1",
+      "profile_id": "integrated_permit_editorial",
+      "profile_version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "source_url": "https://www.ekoportal.gov.pl/fileadmin/Ekoportal/Pozwolenia_zintegrowane/poradniki_branzowe/opracowania/Wytyczne_do_sporzadzania_wniosku_o_wydanie_PZ.pdf",
+      "source_title": "Ekoportal: wytyczne do sporządzania wniosku o pozwolenie zintegrowane",
+      "observed_on": "2026-08-30",
+      "requirement_ids": ["integrated_permit_initial_report"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź warunkowy charakter raportu początkowego i nie rozszerzaj źródła na zakres całej sprawy."
+    },
+    {
+      "candidate_id": "reach_scope_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/krajowe-centrum-informacyjne-do-spraw-reach-i-clp",
+      "source_title": "Biuro do spraw Substancji Chemicznych: Helpdesk REACH i CLP",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_clp_distinct_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębne podstawy i zakresy REACH oraz CLP bez rozszerzania obowiązków na każdą firmę używającą chemikaliów."
+    },
+    {
+      "candidate_id": "reach_registration_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/attachment/a52f83e0-0289-44ec-b04c-3ab168ea7c1d",
+      "source_title": "Gov.pl: Poradnik dotyczący rejestracji REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_registration_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź role, próg tonażowy i wyłączenia bez rozszerzania obowiązku rejestracji."
+    },
+    {
+      "candidate_id": "reach_authorisation_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/ankieta-dotyczaca-praktycznego-wdrazania-wnioskow-o-udzielenie-zezwolenia-rozporzadzenie-reach",
+      "source_title": "Biuro do spraw Substancji Chemicznych: udzielanie zezwoleń REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_authorisation_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź związek obowiązku z załącznikiem XIV i konkretnym zastosowaniem substancji."
+    },
+    {
+      "candidate_id": "reach_restrictions_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/ograniczenia-zalacznika-xvii-rozporzadzenia-reach-dla-niklu",
+      "source_title": "Biuro do spraw Substancji Chemicznych: warunki ograniczenia REACH",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_restriction_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że ograniczenie zależy od dokładnej pozycji załącznika XVII i warunków użycia lub obrotu."
+    },
+    {
+      "candidate_id": "reach_sds_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/wsse-gdansk/substancje-i-mieszaniny-chemiczne",
+      "source_title": "Gov.pl: substancje, mieszaniny i karty charakterystyki",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_sds_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź funkcję, przypadki przekazania i aktualność karty charakterystyki bez dopowiadania nieudokumentowanych triggerów."
+    },
+    {
+      "candidate_id": "clp_gov_pl_2026_09_01_r1",
+      "profile_id": "reach_clp_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "source_url": "https://www.gov.pl/web/chemikalia/clp",
+      "source_title": "Biuro do spraw Substancji Chemicznych: CLP",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["reach_clp_distinct_scope", "clp_classification_labelling"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź role, podstawę klasyfikacji zagrożeń oraz zasady oznakowania i pakowania bez mieszania ich z oceną narażenia."
+    },
+    {
+      "candidate_id": "ippc_pos_eli_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text/U/D20250647Lj.pdf",
+      "source_title": "ELI: Prawo ochrony środowiska — pozwolenia zintegrowane",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_initial_report_conditional"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź kwalifikację instalacji, warunkowy raport początkowy i rolę konkluzji BAT bez tworzenia uniwersalnej listy wymogów."
+    },
+    {
+      "candidate_id": "ippc_installations_gios_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://www.gov.pl/web/gios/instalacje-wymagajace-uzyskania-pozwolenia-zintegrowanego",
+      "source_title": "GIOŚ: Instalacje wymagające uzyskania pozwolenia zintegrowanego",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_installation_qualification"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że kwalifikacja zależy od konkretnej instalacji, jej rodzaju i skali."
+    },
+    {
+      "candidate_id": "ippc_bat_pos_eli_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/647/text/U/D20250647Lj.pdf",
+      "source_title": "ELI: Prawo ochrony środowiska — BREF i konkluzje BAT",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_bat_conclusions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź odrębne definicje dokumentu referencyjnego BAT i konkluzji BAT oraz ich rolę w pozwoleniu."
+    },
+    {
+      "candidate_id": "ippc_ied_context_gios_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://www.gov.pl/web/gios/instalacje-wymagajace-uzyskania-pozwolenia-zintegrowanego",
+      "source_title": "GIOŚ: IED i historyczne określenie IPPC",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź relację historycznego terminu IPPC do obowiązującego reżimu IED, bez opisywania polskiego wdrożenia zmian UE bez odrębnej podstawy."
+    },
+    {
+      "candidate_id": "ippc_ied_eurlex_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eur-lex.europa.eu/legal-content/PL/TXT/?uri=CELEX:32010L0075",
+      "source_title": "EUR-Lex: dyrektywa 2010/75/UE w sprawie emisji przemysłowych",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context", "ippc_bat_conclusions"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź relację historycznego terminu IPPC do aktualnego reżimu IED i nie przenoś automatycznie prawa UE na polską procedurę."
+    },
+    {
+      "candidate_id": "ippc_ied_amendment_eurlex_2026_09_01_r1",
+      "profile_id": "integrated_permit_ippc_editorial",
+      "profile_version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "source_url": "https://eur-lex.europa.eu/legal-content/PL/TXT/?uri=CELEX:32024L1785",
+      "source_title": "EUR-Lex: dyrektywa (UE) 2024/1785 zmieniająca IED",
+      "observed_on": "2026-09-01",
+      "requirement_ids": ["ippc_current_legal_context"],
+      "review_status": "review_required",
+      "safe_next_step": "Zweryfikuj krajowe wdrożenie przed opisaniem skutków zmian IED dla polskiej procedury."
+    },
+    {
+      "candidate_id": "green_deal_scope_commission_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://commission.europa.eu/strategy-and-policy/priorities-2019-2024/european-green-deal_en",
+      "source_title": "Komisja Europejska: The European Green Deal",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_strategy_scope"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź, że Zielony Ład jest agendą polityk UE, bez przekształcania go w pojedynczą ustawę lub powszechny obowiązek firmy."
+    },
+    {
+      "candidate_id": "green_deal_2040_target_commission_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://climate.ec.europa.eu/areas-action/climate-strategies-targets/2040-climate-target_en",
+      "source_title": "Komisja Europejska: cel klimatyczny UE na 2040 r.",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_eu_climate_targets"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź cele netto UE na 2030, 2040 i 2050 bez przypisywania ich jako bezpośredniego limitu każdej firmie."
+    },
+    {
+      "candidate_id": "green_deal_fit_for_55_consilium_2026_09_09_r1",
+      "profile_id": "european_green_deal_editorial",
+      "profile_version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "source_url": "https://commission.europa.eu/topics/climate-action/delivering-european-green-deal_en",
+      "source_title": "Komisja Europejska: wdrażanie Europejskiego Zielonego Ładu",
+      "observed_on": "2026-09-09",
+      "requirement_ids": ["green_deal_sectoral_implementation"],
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź sektorowe wdrożenie przez odrębne akty i zachowaj warunkowy zakres dla konkretnej działalności firmy."
     }
   ]
 }

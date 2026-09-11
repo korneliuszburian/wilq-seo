@@ -239,6 +239,272 @@
           ]
         }
       ]
+    },
+    {
+      "id": "integrated_permit_editorial",
+      "version": "2026-08-31-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/analiza-pozwolen-zintegrowanych"],
+      "official_source_hosts": ["eli.gov.pl", "www.ekoportal.gov.pl"],
+      "max_source_age_days": 730,
+      "requirements": [
+        {
+          "id": "integrated_permit_distinct_decisions",
+          "label": "odrębne role decyzji środowiskowej i pozwolenia zintegrowanego",
+          "reason": "Treść musi rozróżniać funkcję decyzji środowiskowej i pozwolenia zintegrowanego bez twierdzenia, że zawsze dotyczą albo nigdy nie dotyczą tego samego przedsięwzięcia.",
+          "document_assertions": [
+            {
+              "id": "distinct_decision_roles",
+              "label": "odrębność dokumentów",
+              "required_any_of": ["odrębne decyzje", "odrębne role", "nie są tym samym"]
+            }
+          ]
+        },
+        {
+          "id": "integrated_permit_initial_report",
+          "label": "warunkowy raport początkowy",
+          "reason": "Raport początkowy nie jest automatycznym wymaganiem każdej instalacji i nie może być mylony z raportem ooś.",
+          "document_assertions": [
+            {
+              "id": "initial_report_conditional",
+              "label": "warunkowy charakter raportu początkowego",
+              "required_any_of": [
+                "raport początkowy może być wymagany",
+                "raport początkowy jest wymagany, jeżeli",
+                "obowiązek raportu początkowego zależy"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "integrated_permit_case_scope",
+          "label": "zakres konkretnej instalacji i przedsięwzięcia",
+          "reason": "Treść nie może przesądzać obowiązku bez analizy konkretnej instalacji, przedsięwzięcia i dokumentacji.",
+          "document_assertions": [
+            {
+              "id": "case_specific_scope",
+              "label": "indywidualny zakres analizy",
+              "required_any_of": ["konkretnej instalacji", "konkretnego przedsięwzięcia", "analizy dokumentacji"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reach_clp_editorial",
+      "version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": [
+        "/obowiazki-przedsiebiorstw-w-zakresie-rozporzadzenia-reach-i-clp-ze-szczegolnym-uwzglednieniem-zmian-w-kartach-charakterystyki"
+      ],
+      "official_source_hosts": ["www.gov.pl"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "reach_clp_distinct_scope",
+          "label": "odrębny zakres REACH i CLP",
+          "reason": "Treść musi odróżniać procedury REACH od klasyfikacji, oznakowania i pakowania według CLP.",
+          "document_assertions": [
+            {
+              "id": "reach_scope_present",
+              "label": "zakres REACH",
+              "required_any_of": ["REACH"]
+            },
+            {
+              "id": "clp_scope_present",
+              "label": "zakres CLP",
+              "required_any_of": ["CLP"]
+            },
+            {
+              "id": "reach_clp_distinction",
+              "label": "odrębność zakresów REACH i CLP",
+              "required_any_of": ["odrębne", "różnią się", "REACH dotyczy", "CLP dotyczy"]
+            }
+          ]
+        },
+        {
+          "id": "reach_registration_scope",
+          "label": "zakres rejestracji REACH",
+          "reason": "Treść o rejestracji musi zachować rolę producenta lub importera, próg tonażowy i możliwość wyłączeń.",
+          "document_assertions": [
+            {
+              "id": "reach_registration_roles",
+              "label": "producent lub importer",
+              "required_any_of": ["producent", "importer"]
+            },
+            {
+              "id": "reach_registration_threshold",
+              "label": "próg jednej tony rocznie",
+              "required_any_of": ["jednej tony rocznie", "1 tony rocznie", "1 tona rocznie"]
+            },
+            {
+              "id": "reach_registration_exemptions",
+              "label": "warunkowe wyłączenia z rejestracji",
+              "required_any_of": ["mogą być częściowo lub całkowicie wyłączone", "wyłączenia z obowiązku rejestracji", "wyłączenia i zwolnienia", "nie każda substancja podlega rejestracji"]
+            }
+          ]
+        },
+        {
+          "id": "reach_authorisation_scope",
+          "label": "zezwolenia REACH",
+          "reason": "Treść musi wiązać zezwolenie z substancjami z wykazu udzielania zezwoleń i konkretnym zastosowaniem.",
+          "document_assertions": [
+            {
+              "id": "reach_authorisation_list",
+              "label": "wykaz udzielania zezwoleń",
+              "required_any_of": ["wykazie udzielania zezwoleń", "załączniku XIV", "Annex XIV"]
+            },
+            {
+              "id": "reach_authorisation_use",
+              "label": "konkretne zastosowanie substancji",
+              "required_any_of": ["konkretnego zastosowania", "określonego zastosowania", "stosowania substancji"]
+            }
+          ]
+        },
+        {
+          "id": "reach_restriction_scope",
+          "label": "ograniczenia REACH",
+          "reason": "Treść nie może sprowadzać ograniczenia do samej obecności substancji; znaczenie mają warunki produkcji, wprowadzania do obrotu lub użycia.",
+          "document_assertions": [
+            {
+              "id": "reach_restriction_conditions",
+              "label": "warunki ograniczenia",
+              "required_any_of": ["produkcji, wprowadzania do obrotu lub użycia", "wprowadzania do obrotu lub stosowania", "produkcję, obrót lub stosowanie"]
+            }
+          ]
+        },
+        {
+          "id": "reach_sds_scope",
+          "label": "karty charakterystyki i aktualizacje",
+          "reason": "Treść musi wyjaśniać funkcję karty charakterystyki, warunki jej dostarczenia i potrzebę sprawdzenia aktualnej wersji.",
+          "document_assertions": [
+            {
+              "id": "reach_sds_function",
+              "label": "funkcja karty charakterystyki",
+              "required_any_of": ["informacje o właściwościach", "informacje o zagrożeniach", "bezpiecznego stosowania", "kontroli narażenia"]
+            },
+            {
+              "id": "reach_sds_update",
+              "label": "aktualizacja karty charakterystyki",
+              "required_any_of": ["aktualna karta charakterystyki", "aktualną wersję karty", "aktualizacji karty charakterystyki", "wersję karty charakterystyki"]
+            }
+          ]
+        },
+        {
+          "id": "clp_classification_labelling",
+          "label": "klasyfikacja, oznakowanie i pakowanie CLP",
+          "reason": "Treść o CLP musi zachować odpowiedzialność dostawcy oraz odróżnić klasyfikację zagrożeń od oceny narażenia.",
+          "document_assertions": [
+            {
+              "id": "clp_supplier_classification",
+              "label": "klasyfikacja przez dostawcę",
+              "required_any_of": ["dostawc", "producent", "importer", "dalszy użytkownik", "dystrybutor"]
+            },
+            {
+              "id": "clp_hazard_classification",
+              "label": "klasyfikacja właściwości stwarzających zagrożenie",
+              "required_any_of": ["klasyfikacji zagrożeń", "właściwości stwarzających zagrożenie", "samoklasyfikacji", "samodzielnej klasyfikacji"]
+            },
+            {
+              "id": "clp_label_packaging",
+              "label": "oznakowanie i opakowanie",
+              "required_any_of": ["oznakowan", "etykiet", "opakowan"]
+            },
+            {
+              "id": "clp_exposure_distinction",
+              "label": "odrębność zagrożenia od narażenia i ryzyka",
+              "required_any_of": ["nie na prawdopodobieństwie narażenia", "nie jest oceną narażenia", "odrębna od oceny narażenia", "odrębnie od oceny ryzyka"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "integrated_permit_ippc_editorial",
+      "version": "2026-09-01-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/pozwolenie-zintegrowane-wymagania-i-procedury-ippc"],
+      "official_source_hosts": ["eli.gov.pl", "www.gov.pl", "eur-lex.europa.eu"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "ippc_current_legal_context",
+          "label": "aktualny kontekst pozwolenia zintegrowanego",
+          "reason": "IPPC jest nazwą historyczną; treść musi wskazać aktualne pozwolenie zintegrowane i reżim IED bez przenoszenia unijnych zmian wprost na polską procedurę.",
+          "document_assertions": [
+            {"id": "integrated_permit_present", "label": "pozwolenie zintegrowane", "required_any_of": ["pozwolenie zintegrowane"]},
+            {"id": "ippc_historical_term", "label": "historyczny termin IPPC", "required_any_of": ["historycznym terminem IPPC", "IPPC jest nazwą historyczną", "dawnej dyrektywy IPPC"]},
+            {"id": "ied_current_regime", "label": "aktualny reżim IED", "required_any_of": ["reżim IED", "dyrektywy IED", "dyrektywą 2010/75/UE", "dyrektywa 2010/75/UE"]}
+          ]
+        },
+        {
+          "id": "ippc_installation_qualification",
+          "label": "warunkowa kwalifikacja instalacji",
+          "reason": "Obowiązek zależy od rodzaju i skali instalacji oraz progów, a nie od samej nazwy branży.",
+          "document_assertions": [
+            {"id": "installation_case_scope", "label": "indywidualna kwalifikacja", "required_any_of": ["rodzaju i skali instalacji", "konkretnej instalacji", "prog"]}
+          ]
+        },
+        {
+          "id": "ippc_initial_report_conditional",
+          "label": "warunkowy raport początkowy",
+          "reason": "Raport początkowy nie jest uniwersalnym załącznikiem wniosku.",
+          "document_assertions": [
+            {"id": "initial_report_condition", "label": "warunek raportu początkowego", "required_any_of": ["raport początkowy może być wymagany", "raport początkowy jest wymagany, jeżeli", "obowiązek raportu początkowego zależy"]}
+          ]
+        },
+        {
+          "id": "ippc_bat_conclusions",
+          "label": "konkluzje BAT",
+          "reason": "Treść ma odróżniać BREF od konkluzji BAT stosowanych przy ustalaniu warunków pozwolenia.",
+          "document_assertions": [
+            {"id": "bref_present", "label": "dokumenty BREF", "required_any_of": ["BREF"]},
+            {"id": "bat_conclusions_present", "label": "konkluzje BAT", "required_any_of": ["konkluzje BAT"]},
+            {"id": "bref_bat_distinction", "label": "rozróżnienie BREF i konkluzji BAT", "required_any_of": ["BREF nie są konkluzjami BAT", "odróżnić BREF od konkluzji BAT", "BREF od konkluzji BAT"]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "european_green_deal_editorial",
+      "version": "2026-09-09-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/europejski-zielony-lad-co-to-takiego"],
+      "official_source_hosts": ["commission.europa.eu", "climate.ec.europa.eu", "www.consilium.europa.eu", "eur-lex.europa.eu"],
+      "max_source_age_days": 180,
+      "requirements": [
+        {
+          "id": "green_deal_strategy_scope",
+          "label": "strategiczny zakres Europejskiego Zielonego Ładu",
+          "reason": "Europejski Zielony Ład jest agendą i pakietem polityk UE, nie pojedynczą ustawą ani automatycznym obowiązkiem każdej firmy.",
+          "document_assertions": [
+            {"id": "strategy_or_policy_package", "label": "strategia lub pakiet polityk", "required_any_of": ["strategią UE", "pakietem polityk", "agendą polityczną"]},
+            {"id": "not_single_universal_obligation", "label": "brak uniwersalnego obowiązku", "required_any_of": ["nie jest jedną ustawą", "nie nakłada automatycznie obowiązków na każdą firmę", "nie oznacza jednego obowiązku dla każdej firmy"]}
+          ]
+        },
+        {
+          "id": "green_deal_eu_climate_targets",
+          "label": "wiążące cele klimatyczne UE",
+          "reason": "Treść musi oddzielić wiążące cele netto całej UE od indywidualnych limitów firm i uwzględnić aktualny cel 2040.",
+          "document_assertions": [
+            {"id": "eu_target_scope", "label": "zakres celu UE", "required_any_of": ["cel UE", "Cele UE", "całej UE", "Unii Europejskiej"]},
+            {"id": "target_2030", "label": "cel 2030", "required_any_of": ["co najmniej 55%", "co najmniej 55 proc."]},
+            {"id": "target_2040", "label": "cel 2040", "required_any_of": ["90%", "90 proc."]},
+            {"id": "target_2050", "label": "neutralność klimatyczna 2050", "required_any_of": ["neutralności klimatycznej do 2050", "neutralna klimatycznie do 2050"]},
+            {"id": "targets_1990_baseline", "label": "poziom bazowy 1990", "required_any_of": ["względem 1990 r.", "w porównaniu z poziomem z 1990 r."]},
+            {"id": "net_target_language", "label": "charakter netto", "required_any_of": ["emisji netto", "netto"]}
+          ]
+        },
+        {
+          "id": "green_deal_sectoral_implementation",
+          "label": "sektorowe wdrożenie polityki",
+          "reason": "Wpływ na przedsiębiorstwo zależy od odrębnych aktów, sektora i roli firmy; nie wolno obiecywać ani przypisywać powszechnego obowiązku liczenia śladu węglowego.",
+          "document_assertions": [
+            {"id": "sectoral_acts", "label": "odrębne akty sektorowe", "required_any_of": ["odrębne akty sektorowe", "konkretnych przepisów sektorowych", "Fit for 55"]},
+            {"id": "company_case_scope", "label": "indywidualny zakres firmy", "required_any_of": ["sektora i roli firmy", "konkretnej działalności", "zależy od działalności firmy"]}
+          ]
+        }
+      ]
     }
   ]
 }

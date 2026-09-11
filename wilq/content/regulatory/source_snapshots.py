@@ -14,8 +14,9 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.regulatory.policy import (
+    ContentRegulatoryProfile,
     ContentRegulatorySourceCandidate,
-    regulatory_content_profile,
+    regulatory_candidate_profile,
     regulatory_source_candidates,
 )
 from wilq.storage.local_state import state_db_path
@@ -228,6 +229,12 @@ def regulatory_source_snapshot_store() -> RegulatorySourceSnapshotStore:
     return RegulatorySourceSnapshotStore(state_db_path())
 
 
+def _candidate_profile(
+    candidate: ContentRegulatorySourceCandidate,
+) -> ContentRegulatoryProfile | None:
+    return regulatory_candidate_profile(candidate)
+
+
 def _reviewable_candidate(
     candidate_id: str,
     candidates: tuple[ContentRegulatorySourceCandidate, ...],
@@ -235,13 +242,15 @@ def _reviewable_candidate(
     candidate = next((item for item in candidates if item.candidate_id == candidate_id), None)
     if candidate is None:
         raise ValueError("Regulatory source candidate is no longer available.")
-    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    profile = _candidate_profile(candidate)
     if profile is None or profile.id != candidate.profile_id:
         raise ValueError("Regulatory source candidate has no matching profile.")
     hostname = urlsplit(candidate.source_url).hostname
+    path = urlsplit(candidate.source_url).path.rstrip("/")
     if (
         urlsplit(candidate.source_url).scheme != "https"
         or hostname not in profile.official_source_hosts
+        or (hostname == "eli.gov.pl" and path.endswith("/ogl"))
     ):
         raise ValueError("Regulatory source candidate is not an allowlisted official HTTPS source.")
     return candidate
@@ -274,7 +283,7 @@ def _require_exact_final_source_url(
 ) -> None:
     """Reject redirects so persisted lineage always names the fetched official URL."""
 
-    profile = regulatory_content_profile(service_card_id=candidate.service_card_ids[0])
+    profile = _candidate_profile(candidate)
     final = urlsplit(final_url)
     if (
         final.scheme != "https"
