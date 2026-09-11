@@ -22,6 +22,22 @@ def test_redaction_hides_token_like_values() -> None:
     assert redacted["normalized_page_path"] == "[REDACTED]"
 
 
+def test_redaction_preserves_digit_leading_execution_digests() -> None:
+    digest_fields = {
+        "expected_content_digest": "9" * 64,
+        "observed_content_digest": "8" * 64,
+        "expected_acf_digest": "7" * 64,
+        "observed_acf_digest": "6" * 64,
+        "expected_title_digest": "5" * 64,
+        "observed_title_digest": "4" * 64,
+        "verification_expected_digest": "3" * 64,
+        "verification_observed_digest": "2" * 64,
+        "source_acf_fields_digest": "1" * 64,
+    }
+
+    assert redact_mapping(digest_fields) == digest_fields
+
+
 def test_redaction_preserves_content_around_secrets_and_scans_credential_urls() -> None:
     redacted = redact_mapping(
         {

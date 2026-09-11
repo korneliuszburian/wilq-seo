@@ -9,6 +9,7 @@ import wilq.content.workflow.pipeline_steps.stage_activation as stage_activation
 import wilq.content.workflow.target.dev_draft_execution as dev_draft_execution
 from wilq.connectors.wordpress import client as wordpress_client
 from wilq.connectors.wordpress.client import (
+    WordPressDraftCreationProof,
     WordPressDraftPostReadback,
     WordPressDraftWriteError,
 )
@@ -116,6 +117,56 @@ def test_dev_draft_execution_marks_matching_content_readback_as_verified(
     assert result["execution_result"]["revision_binding"]["revision_id"] == "revision_test"
     assert [request.method for request in requests] == ["POST", "GET"]
     assert all("/posts" in request.url.path for request in requests)
+
+
+def test_dev_draft_execution_persists_acf_expected_and_observed_digests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _wordpress_env(monkeypatch)
+    payload = SimpleNamespace(
+        connector="wordpress_ekologus",
+        endpoint="pages",
+        authoring_mode="acf_flexible_content",
+        post_status="draft",
+        create_only=True,
+        publish_allowed=False,
+        update_allowed=False,
+        delete_allowed=False,
+        destructive_update_allowed=False,
+        title="Testowy szkic ACF",
+        content_html=None,
+        acf={"flexible-home": [{"acf_fc_layout": "hero", "heading": "Nowe"}]},
+    )
+    monkeypatch.setattr(dev_draft_execution, "_dev_draft_writes_enabled", lambda: True)
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "build_content_dev_draft_write_payload",
+        lambda _action: payload,
+    )
+    proof = WordPressDraftCreationProof(
+        "417",
+        expected_acf_digest="a" * 64,
+        observed_acf_digest="b" * 64,
+        expected_title_digest="c" * 64,
+        observed_title_digest="d" * 64,
+    )
+    monkeypatch.setattr(
+        dev_draft_execution,
+        "create_wordpress_acf_draft",
+        lambda *_args, **_kwargs: proof,
+    )
+
+    result, errors = dev_draft_execution.execute_content_target_draft_action(
+        _action(), binding=_binding()
+    )
+
+    assert errors == []
+    assert result is not None
+    receipt = result["execution_result"]
+    assert receipt["expected_acf_digest"] == "a" * 64
+    assert receipt["observed_acf_digest"] == "b" * 64
+    assert receipt["expected_title_digest"] == "c" * 64
+    assert receipt["observed_title_digest"] == "d" * 64
 
 
 def test_dev_draft_execution_blocks_mismatched_content_after_create(
@@ -632,6 +683,51 @@ def test_stage_readback_surfaces_verified_matching_content_digest(
     )
     assert result.expected_content_digest == result.content_digest
     assert result.blockers == []
+
+
+def test_stage_readback_surfaces_verified_acf_digest_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution = _created_execution("").model_copy(
+        update={
+            "payload": None,
+            "expected_acf_digest": "a" * 64,
+            "observed_acf_digest": wordpress_client._wordpress_draft_value_digest({}),
+        }
+    )
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id, *, endpoint="posts": _readback(""),
+    )
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "available"
+    assert result.expected_acf_digest == "a" * 64
+    assert result.verification_status == "verified"
+
+
+def test_stage_readback_blocks_title_digest_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+    expected_html = "<p>Oczekiwana treść.</p>"
+    execution = _created_execution(expected_html).model_copy(
+        update={"expected_title_digest": "a" * 64}
+    )
+    monkeypatch.setattr(
+        stage_activation,
+        "read_wordpress_draft_post",
+        lambda _post_id, *, endpoint="posts": _readback(expected_html),
+    )
+
+    result = stage_activation.wordpress_draft_readback(execution)
+
+    assert result is not None
+    assert result.status == "blocked"
+    assert result.observed_title_digest == result.title_digest
+    assert [blocker.code for blocker in result.blockers] == [
+        "wordpress_draft_title_mismatch"
+    ]
 
 
 def test_stage_readback_uses_persisted_execution_endpoint(

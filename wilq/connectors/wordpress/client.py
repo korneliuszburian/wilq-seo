@@ -116,6 +116,37 @@ class WordPressDraftPostReadback:
     edit_link: str = ""
 
 
+class WordPressDraftCreationProof(str):
+    """String-compatible draft ID carrying redacted create/readback digests."""
+
+    expected_content_digest: str | None
+    observed_content_digest: str | None
+    expected_acf_digest: str | None
+    observed_acf_digest: str | None
+    expected_title_digest: str | None
+    observed_title_digest: str | None
+
+    def __new__(
+        cls,
+        post_id: str,
+        *,
+        expected_content_digest: str | None = None,
+        observed_content_digest: str | None = None,
+        expected_acf_digest: str | None = None,
+        observed_acf_digest: str | None = None,
+        expected_title_digest: str | None = None,
+        observed_title_digest: str | None = None,
+    ) -> WordPressDraftCreationProof:
+        instance = str.__new__(cls, post_id)
+        instance.expected_content_digest = expected_content_digest
+        instance.observed_content_digest = observed_content_digest
+        instance.expected_acf_digest = expected_acf_digest
+        instance.observed_acf_digest = observed_acf_digest
+        instance.expected_title_digest = expected_title_digest
+        instance.observed_title_digest = observed_title_digest
+        return instance
+
+
 @dataclass(frozen=True)
 class WordPressDraftDiscardReadback:
     """Identity required to move one known dev draft to the WordPress trash.
@@ -210,7 +241,7 @@ class WordPressDraftVerificationError(WordPressDraftWriteError):
         expected_digest: str | None = None,
         observed_digest: str | None = None,
     ) -> None:
-        super().__init__(public_message)
+        super().__init__(public_message, external_write_attempted=True)
         self.post_id = post_id
         self.code = code
         self.expected_digest = expected_digest
@@ -1406,7 +1437,15 @@ def _verified_created_draft_post_id(
             expected_digest=expected_digest,
             observed_digest=observed_digest,
         )
-    return post_id
+    return WordPressDraftCreationProof(
+        post_id,
+        expected_content_digest=expected_digest if expected_content is not None else None,
+        observed_content_digest=observed_digest if expected_content is not None else None,
+        expected_acf_digest=expected_digest if expected_content is None else None,
+        observed_acf_digest=observed_digest if expected_content is None else None,
+        expected_title_digest=expected_title_digest,
+        observed_title_digest=observed_title_digest,
+    )
 
 
 def _draft_post_readback(
