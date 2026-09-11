@@ -55,6 +55,7 @@ ContentSemanticBlockerCode = Literal[
     "runtime_failed",
     "invalid_structured_output",
     "semantic_scope_mismatch",
+    "deterministic_quality_gate_failed",
     "persistence_failed",
     "review_conflict",
     "generation_in_progress",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from wilq.codex.app_server import (
@@ -18,6 +18,9 @@ from wilq.content.quality.semantic_inputs import (
     revision_evidence_ids as _revision_evidence_ids,
 )
 from wilq.content.quality.semantic_review_blockers import (
+    deterministic_quality_gate_for_snapshot as _deterministic_quality_gate_for_snapshot,
+)
+from wilq.content.quality.semantic_review_blockers import (
     missing_revision_blocker as _missing_revision_blocker,
 )
 from wilq.content.quality.semantic_review_blockers import (
@@ -27,7 +30,7 @@ from wilq.content.quality.semantic_review_blockers import (
     semantic_blocker_code as _semantic_blocker_code,
 )
 from wilq.content.quality.semantic_review_blockers import (
-    source_material_review_blocker as _source_material_review_blocker,
+    semantic_planning_input_blocker as _semantic_planning_input_blocker,
 )
 from wilq.content.quality.semantic_review_blockers import (
     storage_blocker as _storage_blocker,
@@ -357,23 +360,29 @@ def _prepare_inputs(
         snapshot,
         service_card_id=planning.proposal.service_card_id,
     )
-    if (
-        planning_result.planning_input is None
-        or planning_result.blockers
-        or planning_result.planning_input.planning_input_digest != revision.planning_input_digest
-    ):
-        blocker_codes = [item.code for item in planning_result.blockers]
-        blocker = (
-            _source_material_review_blocker(blocker_codes)
-            if "wordpress_material_review_required" in blocker_codes
-            else _planning_blocker(blocker_codes)
-        )
+    blocker = _semantic_planning_input_blocker(
+        planning_result, revision.planning_input_digest
+    )
+    if blocker is not None:
         return _blocked(snapshot, revision=revision, blockers=[blocker])
+    planning_input = cast(Any, planning_result.planning_input)
+    deterministic_blocker = _deterministic_quality_gate_for_snapshot(
+        snapshot=snapshot,
+        revision=revision,
+        planning_input=planning_input,
+        planning_proposal=planning.proposal,
+    )
+    if deterministic_blocker is not None:
+        return _blocked(
+            snapshot,
+            revision=revision,
+            blockers=[deterministic_blocker],
+        )
     if not store.write_ready():
         return _blocked(snapshot, revision=revision, blockers=[_storage_blocker()])
     return _SemanticInputs(
         revision=revision,
-        planning_input=planning_result.planning_input,
+        planning_input=planning_input,
         proposal=planning.proposal,
     )
 
