@@ -15,7 +15,7 @@ Czytaj w tej kolejności:
 1. `AGENTS.md` — stałe reguły, bezpieczeństwo, runtime i gotchas.
 2. `docs/CONTEXT.md` — słownik domeny i trwałe granice produktu.
 3. `docs/goals/001-goal.md` — aktywny cel pilota.
-4. `docs/current-cleanup-state.md` — aktualne seamy i zakończony cleanup.
+4. `docs/current-cleanup-state.md` — bieżąca nawigacja higieny repozytorium.
 5. `docs/dashboard-state.md` — prawda per route.
 6. `docs/PROGRESS.md` — najnowszy krótki dowód i luki.
 7. `PLANS.md` — aktualny długotrwały ExecPlan i decyzje.
