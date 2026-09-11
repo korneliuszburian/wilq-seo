@@ -31,6 +31,9 @@ from apps.api.wilq_api.routers.content_official_source_lineage import (
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
 )
+from apps.api.wilq_api.routers.content_production_command import (
+    register_content_production_command_route,
+)
 from apps.api.wilq_api.routers.content_public_deployment import (
     register_content_public_deployment_routes,
 )
@@ -80,6 +83,7 @@ def register_content_model_routes(
     register_content_source_pack_binding_routes(router)
     register_content_research_packet_routes(router)
     register_content_landing_hub_authorization_routes(router)
+    register_content_production_command_route(router, snapshot_loader=snapshot_loader)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)
