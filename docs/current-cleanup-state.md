@@ -14,8 +14,9 @@ nie drugi dziennik produktu ani źródło per-URL statusu.
 
 Ostatni stan cleanupu:
 
-- dirty checkout został zintegrowany z `origin/main` i zapisany w commitcie
-  `115407d9`; bieżąca gałąź jest czysta po synchronizacji Beads;
+- dirty checkout został zintegrowany z `origin/main`; validator hardening jest
+  w `115407d9`, a cleanup/navigation w `93069e76`; bieżąca gałąź jest czysta po
+  synchronizacji Beads;
 - niezarządzany Vite na `127.0.0.1:37621` został zatrzymany po potwierdzeniu,
   że canonical managed stack działa na API `8000` i dashboardzie `5173`;
 - worktrees z nie-scalonymi gałęziami są zachowane do osobnej decyzji; sama
