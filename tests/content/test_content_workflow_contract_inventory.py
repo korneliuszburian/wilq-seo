@@ -22,6 +22,11 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.new_page_proposal import ContentNewPagePlanningProposalWorkspace
+from wilq.content.quality.independent_review_contracts import (
+    ContentIndependentFindingDispositionResponse,
+    ContentIndependentReviewRunCollection,
+    ContentIndependentReviewRunResponse,
+)
 from wilq.content.quality.semantic_review_contracts import ContentSemanticReviewResponse
 from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalResponse,
@@ -251,6 +256,18 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
     ): ContentSemanticReviewResponse,
     (
+        "GET",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+    ): ContentIndependentReviewRunCollection,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+    ): ContentIndependentReviewRunResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews/{run_id}/findings/{finding_id}/disposition",
+    ): ContentIndependentFindingDispositionResponse,
+    (
         "POST",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/review",
     ): ContentDraftRevisionReviewResponse,
@@ -335,6 +352,7 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
                 "planning-proposal",
                 "semantic-review",
                 "fact-proposal",
+                "independent-reviews",
             )
         )
     }
@@ -354,6 +372,8 @@ def test_public_content_openapi_has_only_review_gated_model_entrypoints() -> Non
         "/api/content/work-items/{work_item_id}/initial-draft",
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
         "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/semantic-review",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews",
+        "/api/content/work-items/{work_item_id}/draft-revisions/{revision_id}/independent-reviews/{run_id}/findings/{finding_id}/disposition",
         "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
         "/api/content/regulatory-source-fact-proposals/{proposal_id}/review",
     }
