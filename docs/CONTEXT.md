@@ -1,22 +1,24 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-07-19.
+Stan bazowego dokumentu: 2026-07-19.
 
-Ten plik jest pierwszym recovery entrypointem po utracie kontekstu. Pokazuje
-docelowy produkt, aktualną prawdę, aktywny priorytet i granice. Nie jest
-changelogiem. Historia pozostaje w git, zamkniętych Beads i archiwach progress.
+Ten plik jest słownikiem domeny i historycznym recovery contextem, a nie
+bieżącym rejestrem stanu. Aktualny plan, counts, evidence i blokady są w
+`PLANS.md`, aktywnym Beadzie, WILQ API oraz `docs/content-status-214.csv`;
+nie dopisuj ich tutaj. Nie jest to changelog. Historia pozostaje w git,
+zamkniętych Beads i archiwach progress.
 
 ## Recovery
 
 Czytaj w tej kolejności:
 
 1. `AGENTS.md` — stałe reguły, bezpieczeństwo, runtime i gotchas.
-2. `docs/CONTEXT.md` — pełna bieżąca mapa produktu.
+2. `docs/CONTEXT.md` — słownik domeny i trwałe granice produktu.
 3. `docs/goals/001-goal.md` — aktywny cel pilota.
 4. `docs/current-cleanup-state.md` — aktualne seamy i zakończony cleanup.
 5. `docs/dashboard-state.md` — prawda per route.
 6. `docs/PROGRESS.md` — najnowszy krótki dowód i luki.
-7. `PLANS.md` — długotrwały ExecPlan i decyzje.
+7. `PLANS.md` — aktualny długotrwały ExecPlan i decyzje.
 8. `rtk bd prime` oraz `rtk bd ready --json` — operacyjny graf pracy.
 
 ## Czym jest WILQ / Better BDOS
@@ -39,6 +41,128 @@ operator WILQ musi jednocześnie:
    pracy po tygodniach;
 8. po wykonaniu otworzyć okno pomiaru i zaproponować wniosek bez automatycznego
    claimu sukcesu.
+
+## Język domeny Content Ops
+
+Poniższe terminy zostały rozstrzygnięte przez ownera 2026-08-18. Oddzielają
+gotowość treści od obserwowalności wyniku i stan produktu od diagnostyki
+harnessu.
+
+**Gotowość treści**:
+Stan, w którym nie istnieje nierozwiązany materialny brak mogący zmienić odbiorcę, usługę, argumentację, dowody, CTA, zgodność albo tożsamość strony.
+_Unikaj_: gotowość, ready bez nazwania wymiaru
+
+**Gotowość pomiarowa**:
+Stan, w którym podstawowa akcja odbiorcy ma wystarczająco dokładne i zweryfikowane powiązanie z obserwowalnym sygnałem wyniku.
+_Unikaj_: gotowość treści, skuteczność
+
+**Materialny brak**:
+Nierozstrzygnięta informacja, która może zmienić kwalifikowalny popyt, zakres treści, dopuszczalne twierdzenia, dowody, CTA, zgodność albo ryzyko duplikacji.
+_Unikaj_: dowolne puste pole, brak kontekstu bez wskazania wpływu
+
+**Rewizja wejścia**:
+Niezmienna wersja subjectu, odpowiedzi, źródeł, wiedzy, dowodów i celu użyta do określenia gotowości oraz zbudowania snapshotu generacji.
+_Unikaj_: bieżący kontekst, mutable session state
+
+**Aktualność wejścia**:
+Niezależny od stanu procesu wymiar mówiący, czy rewizje związane z wejściem nadal odpowiadają aktualnym źródłom i wiedzy.
+_Unikaj_: mnożenie stanów procesu przez warianty stale
+
+**Rebase sesji**:
+Jawne utworzenie nowej rewizji sesji względem aktualnych wejść, z zachowaniem historii i wyłącznie nadal ważnych odpowiedzi.
+_Unikaj_: mutacja snapshotu w miejscu, efekt uboczny odczytu
+
+**Podstawowa akcja odbiorcy**:
+Jedna nadrzędna akcja przypisana do konkretnej sesji i rewizji treści, związana z dokładnym CTA, destination, usługą lub etapem ścieżki oraz oczekiwanym rezultatem użytkownika.
+_Unikaj_: konwersja, gdy akcja nie jest jeszcze obserwowalną konwersją
+
+**Destination CTA**:
+Reviewowana, wersjonowana ścieżka docelowa podstawowej lub drugorzędnej akcji odbiorcy, powiązana z usługą i etapem ścieżki.
+_Unikaj_: dowolny URL z briefu, sam tekst CTA
+
+**Definicja konwersji**:
+Wersjonowane znaczenie obserwowanego zdarzenia, wiążące źródło pomiaru, warunek zakończenia działania i dokładną destination.
+_Unikaj_: sama nazwa eventu, każde kliknięcie
+
+**Intencja kontaktu**:
+Sygnał zamiaru rozpoczęcia kontaktu, taki jak kliknięcie `tel:` lub `mailto:`, który nie dowodzi zakończonego kontaktu ani kwalifikacji.
+_Unikaj_: lead, kwalifikowany lead, zakończona konwersja
+
+**Postęp ścieżki**:
+Przejście odbiorcy do kolejnego właściwego etapu, na przykład z materiału informacyjnego do strony usługi, bez twierdzenia o kontakcie.
+_Unikaj_: konwersja kontaktowa
+
+**Konwersja kontaktowa**:
+Obserwowalne zakończenie uzgodnionej akcji kontaktowej, takie jak potwierdzone wysłanie formularza, zakończona rezerwacja albo obserwowalne zestawienie połączenia.
+_Unikaj_: samo otwarcie formularza, kliknięcie telefonu lub maila
+
+**Decyzja kwalifikacyjna**:
+Append-only, reviewowalna decyzja nazwanego właściciela biznesowego o dopasowaniu kanonicznego zapytania do usługi, zapisana według wersjonowanych kryteriów.
+_Unikaj_: heurystyka modelu, sam event analityczny
+
+**Kanoniczne zapytanie**:
+Jedna wersjonowana tożsamość rzeczywistego kontaktu biznesowego używana do kwalifikacji i deduplikacji bez kopiowania zbędnego PII do kontekstu generacji.
+_Unikaj_: event GA4, każda wiadomość jako osobny lead
+
+**Kwalifikowany lead**:
+Kontakt posiadający jawną decyzję kwalifikacyjną; do ustanowienia autorytatywnego rejestru sygnał ten pozostaje niedostępny.
+_Unikaj_: formularz, telefon, GA4 key event, liczba kontaktów
+
+**Wektor wyniku treści**:
+Niestratny zestaw osobnych obserwacji widoczności, zaangażowania, postępu ścieżki, intencji kontaktu, konwersji kontaktowej i kwalifikowanych leadów.
+_Unikaj_: globalny measured success, pojedynczy magiczny score
+
+**Powiązanie czasowe**:
+Obserwacja zmiany metryki po wdrożeniu, która wiąże czas i evidence, lecz nie identyfikuje przyczyny.
+_Unikaj_: wpływ, efekt treści, spowodowała
+
+**Estymata przyczynowa warunkowa**:
+Wynik reviewowanego quasi-eksperymentu, którego interpretacja zależy od jawnych założeń identyfikacyjnych, znanych confounderów i analizy wrażliwości.
+_Unikaj_: bezwarunkowy efekt przyczynowy
+
+**Randomizowany eksperyment**:
+Zewnętrznie wykonany eksperyment z utrwalonym planem, exact treatment/control, reviewowalnym assignment i exposure oraz validity gate, który jako jedyny może wspierać ograniczony bezwarunkowy claim przyczynowy.
+_Unikaj_: sama etykieta A/B test, zwykłe pre/post
+
+**Treatment**:
+Dokładny, wersjonowany pakiet zmian poddany ocenie eksperymentalnej; wynik nie może być przypisany samemu tekstowi, jeżeli pakiet obejmował również CTA, layout, formularz albo kanał ruchu.
+_Unikaj_: rewizja tekstu, gdy ekspozycja obejmowała więcej zmian
+
+**Najgłębsza obserwowana klasa sygnału**:
+Neutralna informacja o najdalszym etapie ścieżki, dla którego istnieje obserwacja, bez twierdzenia o sukcesie ani przyczynowości.
+_Unikaj_: najwyższy sukces, osiągnięty wynik biznesowy
+
+**Wdrożenie atestowane przez człowieka**:
+Deklaracja publikacji wskazanej rewizji i URL, której zgodność publicznego body oraz CTA nie została technicznie potwierdzona.
+_Unikaj_: zweryfikowane wdrożenie, exact revision measurement
+
+**Zweryfikowane wdrożenie**:
+Reviewowalny dowód wiążący dokładną rewizję z canonical URL, publicznym body digest i zgodną destination podstawowego CTA.
+_Unikaj_: samo istnienie strony, ręcznie zaznaczona publikacja
+
+**Verifier wdrożenia**:
+Specyficzny dla targetu, autorytatywny odczyt i wersjonowana normalizacja, które potrafią porównać oczekiwane body, CTA i destination z obserwowanym wdrożeniem.
+_Unikaj_: generic HTML fallback, podobieństwo widocznego tekstu
+
+**Telemetryka Stop**:
+Ograniczona czasowo, sanitizowana diagnostyka działania harnessu, która nie uczestniczy w readiness ani prawdzie wykonania treści.
+_Unikaj_: ledger wykonań, audyt biznesowy
+
+**Wykonanie generacyjne**:
+Serwerowo posiadana próba wykonania określonego etapu pracy nad treścią, odrębna od eventów telemetrycznych harnessu.
+_Unikaj_: event Stop, sesja przygotowania treści
+
+**Zamówienie wykonania**:
+Niezmienna, serwerowo nadana tożsamość pracy wymaganej dla dokładnego snapshotu generacji, która może posiadać wiele kolejnych prób.
+_Unikaj_: próba wykonania, retry nadpisujące wcześniejszy run
+
+**Próba wykonania**:
+Jedno append-only podejście do realizacji zamówienia wykonania, posiadające własną tożsamość i prawo do co najwyżej jednego terminalnego wyniku.
+_Unikaj_: zamówienie wykonania, mutable run resetowany przy retry
+
+**Parzystość semantyczna klientów**:
+Codex i dashboard mają tę samą domenową władzę przez typowane komendy WILQ, choć różnią się sposobem prezentacji i chwilową dostępnością kontrolek.
+_Unikaj_: identyczny interfejs, dodatkowa władza ukryta w skillu lub React
 
 WILQ API jest mózgiem. Dashboard, Codex skills i ograniczony lokalny executor
 używają tych samych typed contracts. MCP może być adapterem, nigdy drugim

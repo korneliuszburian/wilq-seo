@@ -813,7 +813,7 @@ export const ContentTargetAuthoringSurfaceSchema = z.object({
   kind: z.enum(["acf_flexible_content", "wordpress_post_content"]),
   root_field: z.string().min(1),
   layouts: z.array(ContentTargetAuthoringLayoutSchema).default([]),
-  schema_status: z.enum(["available", "unavailable"]).default("unavailable"),
+  schema_status: z.enum(["available", "observed", "unavailable"]).default("unavailable"),
   schema_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   schema_source_ref: z.string().default(""),
   schema_reason: z.string().default(""),
