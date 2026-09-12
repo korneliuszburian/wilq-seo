@@ -104,7 +104,10 @@ async def latest_content_production_classification() -> ContentProductionClassif
 
 
 def _latest_content_production_classification() -> ContentProductionClassificationReadResult:
-    run = content_workflow_store().load_latest_production_classification_reference()
+    store = content_workflow_store()
+    run = store.load_latest_production_classification()
+    if run is None:
+        run = store.load_latest_production_classification_reference()
     return ContentProductionClassificationReadResult(
         status=_read_status(run),
         run=run,
@@ -123,27 +126,33 @@ async def content_production_classification_for_work_item(
 def _content_production_classification_for_work_item(
     work_item_id: str,
 ) -> ContentProductionClassificationProjectionReadResult:
-    projection = content_workflow_store().load_production_classification_reference_for_work_item(
-        work_item_id
-    )
+    store = content_workflow_store()
+    projection = store.load_production_classification_for_work_item(work_item_id)
+    if projection is not None:
+        return ContentProductionClassificationProjectionReadResult(
+            status="available",
+            projection=projection,
+        )
+
+    projection = store.load_production_classification_reference_for_work_item(work_item_id)
+    if projection is None:
+        return ContentProductionClassificationProjectionReadResult(
+            status="missing",
+            projection=None,
+        )
+
     return ContentProductionClassificationProjectionReadResult(
-        status=_read_status(projection),
+        status="historical_reference",
         projection=projection,
     )
 
 
-def _read_status(value: object | None) -> Literal[
+def _read_status(value: ContentProductionClassificationRun | None) -> Literal[
     "available", "historical_reference", "missing"
 ]:
     if value is None:
         return "missing"
-    if isinstance(value, ContentProductionClassificationRun):
-        is_historical = value.input.policy_id in HISTORICAL_PRODUCTION_POLICY_IDS
-    else:
-        is_historical = (
-            WAVE0_PRODUCTION_ACCEPTANCE_POLICY.authority_role == "historical_reference"
-        )
-    if is_historical:
+    if value.input.policy_id in HISTORICAL_PRODUCTION_POLICY_IDS:
         return "historical_reference"
     return "available"
 
