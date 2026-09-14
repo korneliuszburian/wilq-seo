@@ -132,6 +132,11 @@ def test_async_refresh_terminalizes_unexpected_vendor_exception(
     monkeypatch.setattr(refresh_module, "get_connector_refresh_run", lambda _run_id: queued_run)
     monkeypatch.setattr(
         refresh_module,
+        "transition_connector_refresh_run_if_current",
+        lambda _store, _expected, replacement: saved.append(replacement) or replacement,
+    )
+    monkeypatch.setattr(
+        refresh_module,
         "claim_queued_connector_refresh_run",
         lambda _store, run: saved.append(run) or run,
     )

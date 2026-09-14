@@ -20,6 +20,8 @@ from wilq.schemas import (
     ConnectorCoveredWindow,
     ConnectorQualityState,
     ConnectorRefreshMode,
+    ConnectorRefreshRecoveryReceipt,
+    ConnectorRefreshRecoveryRejectionCode,
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -30,9 +32,48 @@ from wilq.schemas import (
 from wilq.storage.connector_refresh_runs import (
     claim_queued_connector_refresh_run,
     enqueue_connector_refresh_run,
+    recover_running_connector_refresh_run,
+    transition_connector_refresh_run_if_current,
+)
+from wilq.storage.connector_refresh_runs import (
+    classify_connector_refresh_recovery_rejection as classify_storage_recovery_rejection,
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+_RECOVERY_REJECTION_LABELS = {
+    ConnectorRefreshRecoveryRejectionCode.snapshot_not_recoverable: (
+        "Snapshot odczytu nie spełnia warunków odzyskania."
+    ),
+    ConnectorRefreshRecoveryRejectionCode.current_process_claim: (
+        "Odczyt jest przypisany do bieżącego procesu."
+    ),
+    ConnectorRefreshRecoveryRejectionCode.started_in_current_process: (
+        "Odczyt rozpoczął się w bieżącym procesie."
+    ),
+    ConnectorRefreshRecoveryRejectionCode.snapshot_conflict: (
+        "Snapshot odczytu zmienił się przed odzyskaniem."
+    ),
+}
+
+
+def classify_connector_refresh_recovery_rejection(
+    run_id: str,
+    expected_run: ConnectorRefreshRun,
+) -> ConnectorRefreshRecoveryRejectionCode:
+    """Return a safe reason for rejecting one server-owned recovery proof."""
+    rejection = classify_storage_recovery_rejection(
+        local_state_store(),
+        run_id,
+        expected_run,
+    )
+    return rejection or ConnectorRefreshRecoveryRejectionCode.snapshot_conflict
+
+
+def connector_refresh_recovery_rejection_label(
+    code: ConnectorRefreshRecoveryRejectionCode,
+) -> str:
+    return _RECOVERY_REJECTION_LABELS[code]
 
 
 def _connector_settlement_state_and_caveats(
@@ -336,28 +377,33 @@ def _safe_refresh_result(
 def _persist_refresh_result(
     run: ConnectorRefreshRun,
     result: VendorReadResult,
-) -> ConnectorRefreshRun:
+) -> ConnectorRefreshRun | None:
     covered_window, settlement_state, quality_state = _quality_contract(
         run.connector_id, result.metric_summary
     )
-    saved_run = local_state_store().save_connector_refresh_run(
-        run.model_copy(
-            update={
-                "status": result.status,
-                "status_label": connector_refresh_status_label(result.status),
-                "completed_at": utc_now(),
-                "external_call_attempted": result.external_call_attempted,
-                "vendor_data_collected": result.vendor_data_collected,
-                "metrics_persisted": False,
-                "metric_summary": result.metric_summary,
-                "covered_window": covered_window,
-                "settlement_state": settlement_state,
-                "quality_state": quality_state,
-                "summary": result.summary,
-                "errors": result.errors,
-            }
-        )
+    terminal_run = run.model_copy(
+        update={
+            "status": result.status,
+            "status_label": connector_refresh_status_label(result.status),
+            "completed_at": utc_now(),
+            "external_call_attempted": result.external_call_attempted,
+            "vendor_data_collected": result.vendor_data_collected,
+            "metrics_persisted": False,
+            "metric_summary": result.metric_summary,
+            "covered_window": covered_window,
+            "settlement_state": settlement_state,
+            "quality_state": quality_state,
+            "summary": result.summary,
+            "errors": result.errors,
+        }
     )
+    saved_run = transition_connector_refresh_run_if_current(
+        local_state_store(),
+        run,
+        terminal_run,
+    )
+    if saved_run is None:
+        return None
     try:
         metric_store().save_connector_refresh_metrics(saved_run, detailed_facts=result.metric_facts)
     except Exception as error:
@@ -376,14 +422,43 @@ def _persist_refresh_result(
                 ],
             }
         )
-        return local_state_store().save_connector_refresh_run(failed_run)
-    return local_state_store().save_connector_refresh_run(
+        return transition_connector_refresh_run_if_current(
+            local_state_store(),
+            saved_run,
+            failed_run,
+        )
+    return transition_connector_refresh_run_if_current(
+        local_state_store(),
+        saved_run,
         saved_run.model_copy(
             update={
                 "metrics_persisted": True,
                 "status_label": connector_refresh_status_label(saved_run.status),
             }
-        )
+        ),
+    )
+
+
+def recover_connector_refresh_run(
+    run_id: str,
+    expected_run: ConnectorRefreshRun,
+) -> ConnectorRefreshRecoveryReceipt | None:
+    """Recover one caller-identified orphan without invoking any vendor."""
+    if expected_run.id != run_id:
+        return None
+    recovered = recover_running_connector_refresh_run(local_state_store(), expected_run)
+    if recovered is None:
+        return None
+    recovered_run, audit_event = recovered
+    return ConnectorRefreshRecoveryReceipt(
+        run=recovered_run,
+        audit_event_id=audit_event.id,
+        process_loss=True,
+        recovery_vendor_call_attempted=False,
+        interrupted_run_vendor_call_state="unverified",
+        retry_scheduled=False,
+        human_approval_recorded=False,
+        summary=recovered_run.summary,
     )
 
 

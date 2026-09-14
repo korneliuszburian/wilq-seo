@@ -62,6 +62,13 @@ class ConnectorRefreshStatus(StrEnum):
     failed = "failed"
 
 
+class ConnectorRefreshRecoveryRejectionCode(StrEnum):
+    snapshot_not_recoverable = "snapshot_not_recoverable"
+    current_process_claim = "current_process_claim"
+    started_in_current_process = "started_in_current_process"
+    snapshot_conflict = "snapshot_conflict"
+
+
 class ConnectorRefreshJobState(StrEnum):
     queued = "queued"
     running = "running"
@@ -345,6 +352,19 @@ class ConnectorRefreshRun(BaseModel):
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
+
+
+class ConnectorRefreshRecoveryReceipt(BaseModel):
+    """Typed readback for one server-owned process-loss recovery."""
+
+    run: ConnectorRefreshRun
+    audit_event_id: str
+    process_loss: bool = True
+    recovery_vendor_call_attempted: bool = False
+    interrupted_run_vendor_call_state: Literal["unverified"] = "unverified"
+    retry_scheduled: bool = False
+    human_approval_recorded: bool = False
+    summary: str
 
 
 def connector_refresh_run_status_label(run: ConnectorRefreshRun) -> str:

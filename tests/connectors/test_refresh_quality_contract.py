@@ -102,6 +102,11 @@ def test_async_persist_reuses_quality_contract_for_completed_vendor_read(monkeyp
 
     monkeypatch.setattr(refresh_module, "local_state_store", lambda: FakeLocalState())
     monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
+    monkeypatch.setattr(
+        refresh_module,
+        "transition_connector_refresh_run_if_current",
+        lambda _store, _expected, replacement: saved.append(replacement) or replacement,
+    )
     run = ConnectorRefreshRun(
         id="refresh_google_analytics_4_async",
         connector_id="google_analytics_4",
@@ -199,6 +204,11 @@ def test_async_refresh_transitions_keep_api_owned_status_labels(monkeypatch) -> 
     )
     monkeypatch.setattr(refresh_module, "metric_store", lambda: FakeMetricStore())
     monkeypatch.setattr(refresh_module, "get_connector_refresh_run", lambda _run_id: queued)
+    monkeypatch.setattr(
+        refresh_module,
+        "transition_connector_refresh_run_if_current",
+        lambda _store, _expected, replacement: saved.append(replacement) or replacement,
+    )
     monkeypatch.setattr(
         refresh_module,
         "get_connector_status",

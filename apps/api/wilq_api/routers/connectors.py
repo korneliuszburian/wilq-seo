@@ -5,14 +5,22 @@ from collections.abc import Callable
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from wilq.connectors.refresh import (
+    classify_connector_refresh_recovery_rejection,
     complete_queued_connector_refresh,
+    connector_refresh_recovery_rejection_label,
     get_connector_refresh_run,
     list_connector_refresh_runs,
     queue_connector_refresh,
+    recover_connector_refresh_run,
     run_connector_refresh,
 )
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
-from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshRun, ConnectorStatus
+from wilq.schemas import (
+    ConnectorRefreshRecoveryReceipt,
+    ConnectorRefreshRequest,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+)
 
 
 def create_connectors_router(clear_api_view_model_caches: Callable[[], None]) -> APIRouter:
@@ -32,6 +40,29 @@ def create_connectors_router(clear_api_view_model_caches: Callable[[], None]) ->
         if run is None:
             raise HTTPException(status_code=404, detail=f"Unknown connector refresh run: {run_id}")
         return run
+
+    @router.post(
+        "/api/connectors/refresh-runs/{run_id}/recover-process-loss",
+        response_model=ConnectorRefreshRecoveryReceipt,
+    )
+    def connector_refresh_run_recover_process_loss(
+        run_id: str,
+    ) -> ConnectorRefreshRecoveryReceipt:
+        current_run = get_connector_refresh_run(run_id)
+        if current_run is None:
+            raise HTTPException(status_code=404, detail=f"Unknown connector refresh run: {run_id}")
+        receipt = recover_connector_refresh_run(run_id, current_run)
+        if receipt is None:
+            rejection_code = classify_connector_refresh_recovery_rejection(run_id, current_run)
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": rejection_code.value,
+                    "label": connector_refresh_recovery_rejection_label(rejection_code),
+                },
+            )
+        clear_api_view_model_caches()
+        return receipt
 
     @router.get("/api/connectors/{connector}/status", response_model=ConnectorStatus)
     def connector_status_endpoint(connector: str) -> ConnectorStatus:
