@@ -137,6 +137,76 @@ def test_inventory_catalog_uses_the_latest_wordpress_refresh_batch(monkeypatch):
     assert result.items[0].url == "https://www.ekologus.pl/current-page/"
 
 
+def test_latest_wordpress_refresh_uses_completion_time_not_storage_order(monkeypatch):
+    old = SimpleNamespace(
+        id="wordpress_old",
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        started_at=datetime(2026, 7, 20, 8, tzinfo=UTC),
+        completed_at=datetime(2026, 7, 20, 8, 1, tzinfo=UTC),
+        evidence_ids=["ev_wp_old"],
+    )
+    newest = SimpleNamespace(
+        id="wordpress_newest",
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        started_at=datetime(2026, 7, 20, 9, tzinfo=UTC),
+        completed_at=datetime(2026, 7, 20, 9, 1, tzinfo=UTC),
+        evidence_ids=["ev_wp_newest"],
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [old, newest]
+        ),
+    )
+
+    assert catalog_module.latest_wordpress_vendor_read_evidence_ids() == ("ev_wp_newest",)
+
+
+def test_inventory_coverage_uses_latest_wordpress_refresh(monkeypatch):
+    old = SimpleNamespace(
+        evidence_ids=[],
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        completed_at=datetime(2026, 7, 20, 8, 1, tzinfo=UTC),
+        metric_summary={"inventory_coverage_status": "partial"},
+    )
+    newest = SimpleNamespace(
+        evidence_ids=[],
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        completed_at=datetime(2026, 7, 20, 9, 1, tzinfo=UTC),
+        metric_summary={
+            "inventory_coverage_status": "complete",
+            "sitemap_url_source_count": 1,
+            "sitemap_url_returned_count": 1,
+            "sitemap_url_limit": 10,
+            "sitemap_url_truncated": False,
+            "public_sitemap_url_source_count": 1,
+            "public_sitemap_url_returned_count": 1,
+            "public_sitemap_url_limit": 10,
+            "public_sitemap_url_truncated": False,
+        },
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [old, newest]
+        ),
+    )
+
+    monkeypatch.setattr(
+        catalog_module,
+        "metric_store",
+        lambda: SimpleNamespace(list_metric_facts=lambda *_args, **_kwargs: []),
+    )
+
+    assert catalog_module.build_content_inventory_catalog().coverage.status == "complete"
+
+
 def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
     page_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
     wordpress_row = SimpleNamespace(

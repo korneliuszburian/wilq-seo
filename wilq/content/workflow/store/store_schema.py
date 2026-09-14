@@ -141,6 +141,51 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_authoring_inventory_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      catalog_id TEXT NOT NULL,
+      current_work_item_id TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      catalog_snapshot_digest TEXT NOT NULL,
+      recorded_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (catalog_id, catalog_snapshot_digest)
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_authoring_inventory_receipts_no_update
+    BEFORE UPDATE ON content_authoring_inventory_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content authoring inventory receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_authoring_inventory_receipts_no_delete
+    BEFORE DELETE ON content_authoring_inventory_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content authoring inventory receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_authoring_inventory_receipts_no_replace
+    BEFORE INSERT ON content_authoring_inventory_receipts
+    WHEN EXISTS (
+      SELECT 1 FROM content_authoring_inventory_receipts
+      WHERE receipt_id = NEW.receipt_id
+         OR receipt_digest = NEW.receipt_digest
+         OR (
+           catalog_id = NEW.catalog_id
+           AND catalog_snapshot_digest = NEW.catalog_snapshot_digest
+         )
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content authoring inventory receipt snapshot is immutable');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_delivery_identity_bindings (
       binding_id TEXT PRIMARY KEY,
       binding_digest TEXT NOT NULL UNIQUE,
@@ -568,6 +613,18 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
     if ("index", "uq_refresh_preparation_authorization_context") not in objects:
         return False
     required_columns = {
+        "content_authoring_inventory_receipts": {
+            "receipt_id",
+            "receipt_digest",
+            "catalog_id",
+            "current_work_item_id",
+            "canonical_path",
+            "public_url",
+            "catalog_snapshot_digest",
+            "recorded_by",
+            "recorded_at",
+            "payload_json",
+        },
         "content_human_reviews": {"updated_at"},
         "content_new_page_revision_apply_claims": {"result_json"},
         "content_refresh_preparation_authorizations": {

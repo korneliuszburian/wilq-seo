@@ -91,6 +91,131 @@ class ContentProductionRowReceipt(_FrozenModel):
     lineage_defects_sha256: str | None = Field(default=None, pattern=_HEX64)
     usable_canonical_ledger_evidence_ids_sha256: str | None = Field(default=None, pattern=_HEX64)
 
+    @property
+    def binding_state(self) -> Literal["exact"]:
+        """Expose the legacy receipt as the exact binding variant."""
+
+        return "exact"
+
+
+class ContentProductionMissingRowReceipt(_FrozenModel):
+    binding_state: Literal["missing"]
+    missing_sources: tuple[
+        Literal[
+            "authoring_inventory_row",
+            "delivery_identity_binding",
+            "source_pack_binding",
+        ],
+        ...,
+    ] = Field(min_length=2, max_length=2)
+    content_status_row_sha256: str = Field(pattern=_HEX64)
+    wordpress_catalog_scope_sha256: str = Field(pattern=_HEX64)
+    catalog_lookup_outcome: Literal["exact_path_absent", "exact_path_present"]
+
+    @model_validator(mode="after")
+    def require_catalog_specific_source_gaps(self) -> Self:
+        expected = (
+            {"authoring_inventory_row", "source_pack_binding"}
+            if self.catalog_lookup_outcome == "exact_path_absent"
+            else {"delivery_identity_binding", "source_pack_binding"}
+        )
+        if set(self.missing_sources) != expected:
+            raise ValueError("Missing receipt source gaps do not match catalog lookup outcome.")
+        return self
+
+
+class ContentProductionRegisteredInventoryReceipt(_FrozenModel):
+    """A current material receipt that is deliberately short of delivery authority."""
+
+    binding_state: Literal["registered_current_inventory"]
+    schema_version: Literal["wilq_content_authoring_inventory_receipt_v1"]
+    receipt_id: str = Field(min_length=1)
+    receipt_digest: str = Field(pattern=_HEX64)
+    catalog_id: str = Field(min_length=1)
+    current_work_item_id: str = Field(min_length=1)
+    public_url: str = Field(min_length=1)
+    canonical_path: str = Field(min_length=1)
+    source_connector: str = Field(min_length=1)
+    collected_at: str = Field(min_length=1)
+    catalog_item_digest: str = Field(pattern=_HEX64)
+    catalog_snapshot_digest: str = Field(pattern=_HEX64)
+    evidence_id: str = Field(min_length=1)
+    catalog_snapshot_evidence_ids: tuple[str, ...] = Field(min_length=1)
+    inventory_complete: _ExactFalse
+    generation_allowed: _ExactFalse
+    delivery_identity_available: _ExactFalse
+    source_pack_available: _ExactFalse
+    missing_sources: tuple[
+        Literal["delivery_identity_binding", "source_pack_binding"], ...
+    ] = Field(min_length=2, max_length=2)
+
+    @model_validator(mode="after")
+    def require_pending_delivery_and_source_pack(self) -> Self:
+        if set(self.missing_sources) != {"delivery_identity_binding", "source_pack_binding"}:
+            raise ValueError("Registered inventory receipt must retain both downstream blockers.")
+        if self.evidence_id not in self.catalog_snapshot_evidence_ids:
+            raise ValueError(
+                "Registered inventory receipt evidence is outside its catalog snapshot."
+            )
+        payload = {
+            "schema_version": self.schema_version,
+            "status": self.binding_state,
+            "catalog_id": self.catalog_id,
+            "current_work_item_id": self.current_work_item_id,
+            "public_url": self.public_url,
+            "canonical_path": self.canonical_path,
+            "source_connector": self.source_connector,
+            "evidence_id": self.evidence_id,
+            "collected_at": self.model_dump(mode="json")["collected_at"],
+            "catalog_item_digest": self.catalog_item_digest,
+            "catalog_snapshot_digest": self.catalog_snapshot_digest,
+            "catalog_snapshot_evidence_ids": self.catalog_snapshot_evidence_ids,
+            "inventory_complete": self.inventory_complete,
+            "generation_allowed": self.generation_allowed,
+            "delivery_identity_available": self.delivery_identity_available,
+            "source_pack_available": self.source_pack_available,
+        }
+        digest = canonical_json_digest(payload)
+        if (
+            self.receipt_digest != digest
+            or self.receipt_id != f"content_authoring_inventory_{digest[:24]}"
+        ):
+            raise ValueError("Registered inventory receipt is not self-authenticating.")
+        return self
+
+
+def _normalize_row_receipt_for_model(value: object) -> object:
+    """Accept an additive exact discriminator without changing legacy JSON output."""
+
+    if isinstance(value, dict):
+        normalized = dict(value)
+        if normalized.get("binding_state") == "exact":
+            normalized.pop("binding_state")
+        if normalized.get("binding_state", "exact") == "exact":
+            for key in ("bound_mutation_audit_row_sha256", "draft_row_sha256"):
+                if isinstance(normalized.get(key), list):
+                    normalized[key] = tuple(normalized[key])
+        elif isinstance(normalized.get("missing_sources"), list):
+            normalized["missing_sources"] = tuple(normalized["missing_sources"])
+        if normalized.get("binding_state") == "registered_current_inventory" and isinstance(
+            normalized.get("catalog_snapshot_evidence_ids"), list
+        ):
+            normalized["catalog_snapshot_evidence_ids"] = tuple(
+                normalized["catalog_snapshot_evidence_ids"]
+            )
+        return normalized
+    return value
+
+
+_ContentProductionRowReceipt = Annotated[
+    (
+        ContentProductionRowReceipt
+        | ContentProductionMissingRowReceipt
+        | ContentProductionRegisteredInventoryReceipt
+    ),
+    BeforeValidator(_normalize_row_receipt_for_model),
+]
+
 
 class ContentProductionRetainedBinding(_FrozenModel):
     binding_basis: Literal["exact_normalized_path_with_retained_revision_state"]
@@ -101,6 +226,18 @@ class ContentProductionRetainedBinding(_FrozenModel):
     identity_reconciliation_status: Literal["fork", "retained_missing"]
     verified_draft_action_ids: tuple[str, ...] = ()
     verified_draft_post_ids: tuple[str, ...] = ()
+    must_not_regenerate: _ExactTrue
+
+
+class ContentProductionBlockedHistoricalProtection(_FrozenModel):
+    """Exact historical identity retained only to prohibit unsafe regeneration."""
+
+    historical_revision_id: str = Field(min_length=1)
+    historical_revision_digest: str = Field(pattern=_HEX64)
+    current_verification_outcome: Literal["drifted", "unavailable"]
+    current_verification_evidence_id: str = Field(min_length=1)
+    current_verification_connector: str = Field(min_length=1)
+    current_verification_checked_at: str = Field(min_length=1)
     must_not_regenerate: _ExactTrue
 
 
@@ -144,23 +281,89 @@ class ContentProductionClassificationRow(_FrozenModel):
     next_step_pl: str = Field(min_length=1)
     blockers: tuple[ContentProductionBlocker, ...] = ()
     retained_binding: ContentProductionRetainedBinding | None = None
+    blocked_historical_protection: ContentProductionBlockedHistoricalProtection | None = None
     verified_actions: tuple[ContentProductionVerifiedAction, ...] = ()
     verified_drafts: tuple[ContentProductionVerifiedDraft, ...] = ()
     primary_evidence_ids: tuple[str, ...] = Field(min_length=1)
     source_connectors: tuple[str, ...] = Field(min_length=1)
     lineage_evidence_ids: tuple[str, ...] = ()
     lineage_defects: tuple[ContentProductionEvidenceDefect, ...] = ()
-    source_receipt: ContentProductionRowReceipt
+    source_receipt: _ContentProductionRowReceipt
     source_packet_row_digest: str = Field(pattern=_HEX64)
+
+    @model_validator(mode="after")
+    def require_typed_blocker_for_blocked(self) -> Self:
+        if self.decision == "blocked" and not self.blockers:
+            raise ValueError("Blocked classification requires a typed blocker.")
+        return self
+
+    @model_validator(mode="after")
+    def require_missing_receipt_blocking_state(self) -> Self:
+        if isinstance(self.source_receipt, ContentProductionMissingRowReceipt) and (
+            self.decision != "blocked"
+            or self.generation_allowed is not False
+            or self.current_work_item_id is not None
+            or self.retained_work_item_id is not None
+            or self.revision_id is not None
+            or self.revision_digest is not None
+            or self.revision_approved
+            or self.revision_complete
+            or self.retained_binding is not None
+            or self.verified_actions
+            or self.verified_drafts
+        ):
+            raise ValueError("Missing source receipt cannot retain reusable state.")
+        return self
+
+    @model_validator(mode="after")
+    def require_registered_inventory_blocking_state(self) -> Self:
+        if not isinstance(self.source_receipt, ContentProductionRegisteredInventoryReceipt):
+            return self
+        if (
+            self.decision != "blocked"
+            or self.generation_allowed is not False
+            or self.current_work_item_id is None
+            or self.source_receipt.current_work_item_id != self.current_work_item_id
+            or self.source_receipt.canonical_path != self.canonical_path
+            or self.source_receipt.public_url != self.public_url
+            or self.source_receipt.source_connector not in self.source_connectors
+            or self.retained_work_item_id is not None
+            or self.revision_id is not None
+            or self.revision_digest is not None
+            or self.revision_approved
+            or self.revision_complete
+            or self.retained_binding is not None
+            or self.verified_actions
+            or self.verified_drafts
+        ):
+            raise ValueError("Registered inventory receipt cannot retain delivery state.")
+        return self
 
     @model_validator(mode="after")
     def require_exact_revision_action_draft_binding(self) -> Self:
         binding = self.retained_binding
+        historical_protection = self.blocked_historical_protection
         if self.decision == "reuse":
-            if not self.revision_approved or not self.revision_complete or binding is None:
+            if (
+                not self.revision_approved
+                or not self.revision_complete
+                or binding is None
+                or historical_protection is not None
+            ):
                 raise ValueError("Reuse classification requires an approved retained binding.")
         elif binding is not None or self.revision_approved:
             raise ValueError("Only reuse classification may retain an approved binding.")
+        if historical_protection is not None and self.decision != "blocked":
+            raise ValueError("Historical protection requires a blocked classification.")
+        if historical_protection is not None and (
+            self.revision_complete
+            or self.revision_id is not None
+            or self.revision_digest is not None
+            or self.retained_work_item_id is not None
+            or self.verified_actions
+            or self.verified_drafts
+        ):
+            raise ValueError("Historical protection must not retain reusable state.")
         if binding is not None and (
             binding.current_inventory_work_item_id != self.current_work_item_id
             or binding.retained_work_item_id != self.retained_work_item_id
@@ -320,7 +523,10 @@ class ContentProductionClassificationRun(_FrozenModel):
         ):
             raise ValueError("Judge receipt is not bound to the classification input.")
         _validate_typed_uniqueness(self.rows)
-        if self.run_digest != _classification_run_digest(self):
+        if self.run_digest != _classification_run_digest(self) and (
+            any(row.blocked_historical_protection is not None for row in self.rows)
+            or self.run_digest != _legacy_classification_run_digest(self)
+        ):
             raise ValueError("Classification run digest does not match the aggregate.")
         return self
 
@@ -383,6 +589,16 @@ class ContentProductionProtectedBindingPolicy(_FrozenModel):
     judge_identity_status: str = Field(min_length=1)
 
 
+class ContentProductionBlockedHistoricalProtectionPolicy(_FrozenModel):
+    canonical_path: str = Field(min_length=1)
+    historical_revision_id: str = Field(min_length=1)
+    historical_revision_digest: str = Field(pattern=_HEX64)
+    current_verification_outcome: Literal["drifted", "unavailable"]
+    current_verification_evidence_id: str = Field(min_length=1)
+    current_verification_connector: str = Field(min_length=1)
+    current_verification_checked_at: str = Field(min_length=1)
+
+
 class ContentProductionEvidenceDefectPolicy(_FrozenModel):
     evidence_id: str = Field(min_length=1)
     blocker_code: str = Field(min_length=1)
@@ -407,8 +623,9 @@ class ContentProductionAcceptancePolicy(_FrozenModel):
     expected_approved_revisions: int = Field(ge=0)
     freshness_connector_ids: tuple[str, ...]
     source_receipts: tuple[ContentProductionSourceReceiptPolicy, ...] = Field(min_length=1)
-    protected_binding: ContentProductionProtectedBindingPolicy
-    invalid_evidence: ContentProductionEvidenceDefectPolicy
+    protected_binding: ContentProductionProtectedBindingPolicy | None = None
+    blocked_historical_protection: ContentProductionBlockedHistoricalProtectionPolicy | None = None
+    invalid_evidence: ContentProductionEvidenceDefectPolicy | None = None
     public_origin: str = Field(min_length=1)
     primary_evidence_http_status: int = Field(ge=100, le=599)
     primary_evidence_metrics_asserted: bool
@@ -427,8 +644,15 @@ class ContentProductionAcceptancePolicy(_FrozenModel):
             "unmatched_classification",
         }.issubset(names):
             raise ValueError("Classification policy source receipts are incomplete.")
-        if self.protected_binding.canonical_path not in self.canonical_paths:
-            raise ValueError("Protected binding is outside the classification scope.")
+        protected_paths = tuple(
+            item.canonical_path
+            for item in (self.protected_binding, self.blocked_historical_protection)
+            if item is not None
+        )
+        if len(protected_paths) != 1:
+            raise ValueError("Classification policy requires one protected state.")
+        if protected_paths[0] not in self.canonical_paths:
+            raise ValueError("Protected state is outside the classification scope.")
         return self
 
 
@@ -526,6 +750,15 @@ def _build_run(
 
 def _classification_run_digest(run: ContentProductionClassificationRun) -> str:
     return canonical_json_digest(run.model_dump(mode="json", exclude={"audit", "run_digest"}))
+
+
+def _legacy_classification_run_digest(run: ContentProductionClassificationRun) -> str:
+    """Recompute the HEAD digest before the additive history-protection field existed."""
+
+    payload = run.model_dump(mode="json", exclude={"audit", "run_digest"})
+    for row in payload["rows"]:
+        row.pop("blocked_historical_protection", None)
+    return canonical_json_digest(payload)
 
 
 def _classification_authority_ids(
@@ -731,6 +964,8 @@ __all__ = [
     "ClassificationLookupBasis",
     "ContentProductionAcceptancePolicy",
     "ContentProductionAudit",
+    "ContentProductionBlockedHistoricalProtection",
+    "ContentProductionBlockedHistoricalProtectionPolicy",
     "ContentProductionBlocker",
     "ContentProductionClassificationCounts",
     "ContentProductionClassificationProjection",
@@ -741,6 +976,8 @@ __all__ = [
     "ContentProductionClassificationRun",
     "ContentProductionClassificationValidationError",
     "ContentProductionEvidenceDefectPolicy",
+    "ContentProductionMissingRowReceipt",
+    "ContentProductionRegisteredInventoryReceipt",
     "ContentProductionProtectedBindingPolicy",
     "ContentProductionSourceReceiptPolicy",
     "WAVE0_CANONICAL_PATHS",

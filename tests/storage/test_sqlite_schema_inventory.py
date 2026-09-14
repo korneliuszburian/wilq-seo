@@ -39,6 +39,7 @@ APPLICATION_SHA256 = "a" * 64
 SEED_SHA256 = "b" * 64
 EXPECTED_POST_S5_TABLES = frozenset(
     {
+        "content_authoring_inventory_receipts",
         "action_mutation_audits",
         "action_validation_states",
         "ads_strategy_reviews",
@@ -171,6 +172,40 @@ def _valid_inventory_payload(path: Path) -> dict[str, object]:
         application_sha256=APPLICATION_SHA256,
         seed_sha256=SEED_SHA256,
     ).model_dump(mode="python")
+
+
+def test_authoring_inventory_receipt_schema_hunk_is_exact(tmp_path: Path) -> None:
+    path = tmp_path / "authoring-inventory-schema.sqlite3"
+    ContentWorkflowStore(path).list_draft_revisions("schema-proof")
+
+    inventory = inspect_sqlite_schema(
+        path,
+        application_sha256=APPLICATION_SHA256,
+        seed_sha256=SEED_SHA256,
+    )
+    table = next(
+        item
+        for item in inventory.catalog.tables
+        if item.name == "content_authoring_inventory_receipts"
+    )
+
+    assert [column.name for column in table.columns] == [
+        "receipt_id",
+        "receipt_digest",
+        "catalog_id",
+        "current_work_item_id",
+        "canonical_path",
+        "public_url",
+        "catalog_snapshot_digest",
+        "recorded_by",
+        "recorded_at",
+        "payload_json",
+    ]
+    assert {
+        "content_authoring_inventory_receipts_no_delete",
+        "content_authoring_inventory_receipts_no_replace",
+        "content_authoring_inventory_receipts_no_update",
+    }.issubset({item.name for item in inventory.catalog.triggers})
 
 
 @pytest.mark.parametrize("invalid_size", ["4096", 4096.0, True, -1])

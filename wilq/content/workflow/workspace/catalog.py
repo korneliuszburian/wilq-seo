@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from hashlib import sha256
 from threading import Lock, RLock
 from time import monotonic
@@ -24,6 +24,11 @@ from wilq.content.canonical.urls import (
     content_is_safe_authoring_url,
     content_is_safe_public_url,
 )
+from wilq.content.workflow.workspace.journal_reconciliation import (
+    ContentInventoryJournalReconciliation,
+    build_content_inventory_journal_reconciliation,
+)
+from wilq.schemas import ConnectorRefreshRun
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -113,6 +118,7 @@ class ContentInventoryCatalogResponse(BaseModel):
         exclude=True,
     )
     coverage: ContentInventoryCoverage = Field(default_factory=ContentInventoryCoverage)
+    journal_reconciliation: ContentInventoryJournalReconciliation | None = None
 
 
 class ContentInventoryMaterialResponse(BaseModel):
@@ -243,7 +249,9 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             metrics_impressions=metrics_impressions,
         )
     items = sorted(rows.values(), key=lambda item: (item.path.casefold(), item.url))
-    return ContentInventoryCatalogResponse(
+    coverage = _inventory_coverage()
+    rest_content_objects = _authoring_rest_content_objects()
+    catalog = ContentInventoryCatalogResponse(
         total_count=len(items),
         ready_count=sum(
             item.material_status in {"content_summary", "content_and_structure"}
@@ -254,9 +262,14 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         items=items,
         source_connectors=sorted({item.source_connector for item in items}),
         evidence_ids=sorted({item.evidence_id for item in items}),
-        rest_content_objects=_authoring_rest_content_objects(),
-        coverage=_inventory_coverage(),
+        rest_content_objects=rest_content_objects,
+        coverage=coverage,
+        journal_reconciliation=build_content_inventory_journal_reconciliation(
+            items,
+            authoring_source_paths=(rest_object.url for rest_object in rest_content_objects),
+        ),
     )
+    return catalog
 
 
 def _latest_wordpress_inventory_facts() -> list[Any]:
@@ -310,14 +323,22 @@ def _authoring_rest_content_objects() -> list[ContentInventoryRestObject]:
     ]
 
 
-def _latest_completed_vendor_read(connector_id: str) -> Any | None:
-    return next(
-        (
-            run
-            for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id)
-            if run.mode.value == "vendor_read" and run.status.value == "completed"
-        ),
-        None,
+def _latest_completed_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:
+    completed_reads = [
+        run
+        for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id)
+        if run.mode.value == "vendor_read" and run.status.value == "completed"
+    ]
+    return (
+        max(
+            completed_reads,
+            key=lambda run: (
+                _refresh_run_recency(run),
+                str(getattr(run, "id", "")),
+            ),
+        )
+        if completed_reads
+        else None
     )
 
 
@@ -335,17 +356,7 @@ def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
 
 
 def _inventory_coverage() -> ContentInventoryCoverage:
-    runs = local_state_store().list_connector_refresh_runs(
-        connector_id="wordpress_ekologus"
-    )
-    latest = next(
-        (
-            run
-            for run in runs
-            if run.mode.value == "vendor_read" and run.status.value == "completed"
-        ),
-        None,
-    )
+    latest = _latest_completed_vendor_read("wordpress_ekologus")
     if latest is None:
         return ContentInventoryCoverage()
     summary = latest.metric_summary
@@ -703,22 +714,17 @@ def inventory_metric_facts(url: str, path: str) -> list[Any]:
     return list(result)
 
 
-def _latest_metric_refresh(connector_id: str) -> Any | None:
-    runs = local_state_store().list_connector_refresh_runs(connector_id=connector_id)
-    completed_reads = [
-        run
-        for run in runs
-        if run.mode.value == "vendor_read" and run.status.value == "completed"
-    ]
-    def recency(run: Any) -> datetime:
-        value = getattr(run, "completed_at", None) or getattr(run, "started_at", None)
-        return value if isinstance(value, datetime) else datetime.min
+def _latest_metric_refresh(connector_id: str) -> ConnectorRefreshRun | None:
+    return _latest_completed_vendor_read(connector_id)
 
-    return (
-        max(completed_reads, key=recency)
-        if completed_reads
-        else None
-    )
+
+def _refresh_run_recency(run: ConnectorRefreshRun) -> datetime:
+    value = getattr(run, "completed_at", None) or getattr(run, "started_at", None)
+    if not isinstance(value, datetime):
+        return datetime.min.replace(tzinfo=UTC)
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _restrict_to_latest_refresh_batch(

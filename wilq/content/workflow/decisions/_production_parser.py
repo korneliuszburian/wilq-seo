@@ -13,6 +13,8 @@ from wilq.content.workflow.decisions.production import (
     Classification,
     ContentProductionAcceptancePolicy,
     ContentProductionAudit,
+    ContentProductionBlockedHistoricalProtection,
+    ContentProductionBlockedHistoricalProtectionPolicy,
     ContentProductionBlocker,
     ContentProductionClassificationCounts,
     ContentProductionClassificationRow,
@@ -22,6 +24,8 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionFreshness,
     ContentProductionInputReceipt,
     ContentProductionJudgeReceipt,
+    ContentProductionMissingRowReceipt,
+    ContentProductionRegisteredInventoryReceipt,
     ContentProductionRetainedBinding,
     ContentProductionRowReceipt,
     ContentProductionSourceReceipt,
@@ -37,6 +41,9 @@ _ROW_DIGEST_ALGORITHM = (
     "sha256(canonical_json(source_packet_receipts); UTF-8, sorted keys, compact separators)"
 )
 _DECISION_DIGEST_ALGORITHM = "sha256(canonical_json(rows); UTF-8, sorted keys, compact separators)"
+_WORK_ITEM_ID_RE = re.compile(
+    r"(?:content_work_item_[a-z0-9_]+|work_[a-z0-9_]+|[a-z][a-z0-9_]*_work_item)\Z"
+)
 _SignedModel = TypeVar("_SignedModel", bound=BaseModel)
 
 
@@ -149,12 +156,15 @@ def _freshness(
     connector_ids = tuple(sorted(windows))
     if connector_ids != policy.freshness_connector_ids:
         _invalid("freshness_connector_scope_mismatch")
-    return ContentProductionFreshness(
+    freshness = ContentProductionFreshness(
         state=source.text(raw.get("state"), "freshness_state_invalid"),
         checked_at=source.text(raw.get("checked_at"), "freshness_time_invalid"),
         requires_refresh=source.boolean(raw.get("requires_refresh"), "freshness_flag_invalid"),
         connector_ids=connector_ids,
     )
+    if freshness.requires_refresh:
+        _invalid("freshness_requires_refresh")
+    return freshness
 
 
 def _rows(
@@ -186,22 +196,60 @@ def _row(
     public_url = source.text(raw.get("public_url"), "row_url_invalid")
     if public_url != expected_url:
         _invalid("canonical_url_mismatch")
-    if source.boolean(raw.get("generation_allowed"), "generation_flag_invalid"):
+    generation_allowed = source.boolean(raw.get("generation_allowed"), "generation_flag_invalid")
+    if generation_allowed:
         _invalid("generation_not_disabled")
     identity = source.require_object_member(raw, "work_item_identity")
     revision = source.require_object_member(raw, "revision")
     evidence = source.require_object_member(raw, "evidence")
     receipt_raw = source.require_object_member(raw, "source_packet_receipts")
+    evidence_ids = source.texts(evidence.get("evidence_ids"), "primary_evidence_invalid")
+    receipt = _row_receipt(source, receipt_raw, evidence, evidence_ids, policy)
     row_digest = source.text(raw.get("source_packet_row_digest"), "row_digest_invalid")
     if row_digest != canonical_json_digest(receipt_raw):
         _invalid("row_digest_mismatch")
+    decision = source.classification(raw.get("decision"))
+    typed_blockers = source.array(raw.get("typed_blockers", []), "blockers_invalid")
+    draft_and_action_state = source.require_object_member(raw, "draft_and_action_state")
+    action_values = source.array_member(
+        draft_and_action_state,
+        "verified_current_action_bindings",
+    )
+    draft_values = source.array_member(
+        draft_and_action_state,
+        "verified_current_draft_bindings",
+    )
+    current_work_item_id = source.work_item_id(
+        identity.get("current_inventory_work_item_id")
+    )
+    retained_work_item_id = source.work_item_id(identity.get("retained_work_item_id"))
+    retained_binding = raw.get("retained_revision_binding")
+    if isinstance(retained_binding, dict):
+        retained_binding_object = cast(dict[str, object], retained_binding)
+        source.work_item_id(retained_binding_object.get("current_inventory_work_item_id"))
+        source.work_item_id(retained_binding_object.get("retained_work_item_id"))
+    for action in action_values:
+        if isinstance(action, dict):
+            source.work_item_id(cast(dict[str, object], action).get("bound_work_item_id"))
+    _validate_missing_source_binding(
+        receipt=receipt,
+        decision=decision,
+        generation_allowed=generation_allowed,
+        identity=identity,
+        revision=revision,
+        evidence=evidence,
+        typed_blockers=typed_blockers,
+        action_values=action_values,
+        draft_values=draft_values,
+        retained_binding=retained_binding,
+    )
     row = ContentProductionClassificationRow(
         canonical_path=path,
         public_url=public_url,
-        decision=source.classification(raw.get("decision")),
-        generation_allowed=False,
-        current_work_item_id=source.optional_text(identity.get("current_inventory_work_item_id")),
-        retained_work_item_id=source.optional_text(identity.get("retained_work_item_id")),
+        decision=decision,
+        generation_allowed=generation_allowed,
+        current_work_item_id=current_work_item_id,
+        retained_work_item_id=retained_work_item_id,
         revision_id=source.optional_text(revision.get("revision_id")),
         revision_digest=source.optional_text(revision.get("digest")),
         revision_approved=source.boolean(revision.get("approved"), "revision_approval_invalid"),
@@ -210,7 +258,7 @@ def _row(
         next_step_pl=source.text(raw.get("next_step_pl"), "row_next_step_invalid"),
         blockers=tuple(
             source.model(ContentProductionBlocker, item)
-            for item in source.array(raw.get("typed_blockers", []), "blockers_invalid")
+            for item in typed_blockers
         ),
         retained_binding=(
             None
@@ -220,21 +268,23 @@ def _row(
                 raw["retained_revision_binding"],
             )
         ),
+        blocked_historical_protection=(
+            None
+            if raw.get("blocked_historical_protection") is None
+            else source.model(
+                ContentProductionBlockedHistoricalProtection,
+                raw["blocked_historical_protection"],
+            )
+        ),
         verified_actions=tuple(
             source.model(ContentProductionVerifiedAction, item)
-            for item in source.array_member(
-                source.require_object_member(raw, "draft_and_action_state"),
-                "verified_current_action_bindings",
-            )
+            for item in action_values
         ),
         verified_drafts=tuple(
             source.model(ContentProductionVerifiedDraft, item)
-            for item in source.array_member(
-                source.require_object_member(raw, "draft_and_action_state"),
-                "verified_current_draft_bindings",
-            )
+            for item in draft_values
         ),
-        primary_evidence_ids=source.texts(evidence.get("evidence_ids"), "primary_evidence_invalid"),
+        primary_evidence_ids=evidence_ids,
         source_connectors=source.texts(
             evidence.get("source_connectors"), "source_connectors_invalid"
         ),
@@ -245,7 +295,7 @@ def _row(
             source.model(ContentProductionEvidenceDefect, item)
             for item in source.array(evidence.get("lineage_defects", []), "lineage_defects_invalid")
         ),
-        source_receipt=_row_receipt(source, receipt_raw, evidence, policy),
+        source_receipt=receipt,
         source_packet_row_digest=row_digest,
     )
     return row
@@ -255,21 +305,106 @@ def _row_receipt(
     source: _StrictJson,
     item: dict[str, object],
     evidence: dict[str, object],
+    evidence_ids: tuple[str, ...],
     policy: ContentProductionAcceptancePolicy,
-) -> ContentProductionRowReceipt:
-    receipt = source.model(ContentProductionRowReceipt, item)
+) -> (
+    ContentProductionRowReceipt
+    | ContentProductionMissingRowReceipt
+    | ContentProductionRegisteredInventoryReceipt
+):
+    binding_state = item.get("binding_state", "exact")
+    if binding_state == "missing":
+        _validate_missing_receipt_sources(item)
+        return source.model(ContentProductionMissingRowReceipt, item)
+    if binding_state == "registered_current_inventory":
+        receipt = source.model(ContentProductionRegisteredInventoryReceipt, item)
+        _validate_registered_inventory_sources(item)
+        if receipt.evidence_id not in evidence_ids:
+            _invalid("registered_inventory_evidence_mismatch")
+        return receipt
+    if binding_state != "exact":
+        _invalid("row_receipt_binding_state_invalid")
+    exact_item = dict(item)
+    exact_item.pop("binding_state", None)
+    exact_receipt = source.model(ContentProductionRowReceipt, exact_item)
     expected = next(
         value
         for value in policy.source_receipts
-        if value.name == f"{receipt.classification_source}_classification"
+        if value.name == f"{exact_receipt.classification_source}_classification"
     )
     if (
-        receipt.classification_file_sha256 != expected.sha256
-        or receipt.classification_artifact_reference != expected.reference
-        or receipt.source_pack_id != evidence.get("source_pack_id")
+        exact_receipt.classification_file_sha256 != expected.sha256
+        or exact_receipt.classification_artifact_reference != expected.reference
+        or exact_receipt.source_pack_id != evidence.get("source_pack_id")
     ):
         _invalid("classifier_receipt_binding_mismatch")
-    return receipt
+    return exact_receipt
+
+
+def _validate_missing_receipt_sources(item: dict[str, object]) -> None:
+    outcome = item.get("catalog_lookup_outcome")
+    missing_sources = item.get("missing_sources")
+    if outcome not in {"exact_path_absent", "exact_path_present"}:
+        return
+    expected = (
+        {"authoring_inventory_row", "source_pack_binding"}
+        if outcome == "exact_path_absent"
+        else {"delivery_identity_binding", "source_pack_binding"}
+    )
+    if (
+        not isinstance(missing_sources, list)
+        or len(missing_sources) != len(expected)
+        or set(missing_sources) != expected
+    ):
+        _invalid("missing_source_binding_mismatch")
+
+
+def _validate_registered_inventory_sources(item: dict[str, object]) -> None:
+    missing_sources = item.get("missing_sources")
+    expected = {"delivery_identity_binding", "source_pack_binding"}
+    if (
+        not isinstance(missing_sources, list)
+        or len(missing_sources) != len(expected)
+        or set(missing_sources) != expected
+    ):
+        _invalid("registered_inventory_binding_mismatch")
+
+
+def _validate_missing_source_binding(
+    *,
+    receipt: (
+        ContentProductionRowReceipt
+        | ContentProductionMissingRowReceipt
+        | ContentProductionRegisteredInventoryReceipt
+    ),
+    decision: Classification,
+    generation_allowed: bool,
+    identity: dict[str, object],
+    revision: dict[str, object],
+    evidence: dict[str, object],
+    typed_blockers: list[object],
+    action_values: list[object],
+    draft_values: list[object],
+    retained_binding: object,
+) -> None:
+    if not isinstance(receipt, ContentProductionMissingRowReceipt):
+        return
+    if (
+        decision != "blocked"
+        or generation_allowed is not False
+        or not typed_blockers
+        or identity.get("current_inventory_work_item_id") is not None
+        or identity.get("retained_work_item_id") is not None
+        or revision.get("revision_id") is not None
+        or revision.get("digest") is not None
+        or revision.get("approved") is not False
+        or revision.get("complete") is not False
+        or retained_binding is not None
+        or action_values
+        or draft_values
+        or evidence.get("source_pack_id") is not None
+    ):
+        _invalid("missing_source_binding_mismatch")
 
 
 def _validate_packet_claims(
@@ -301,6 +436,10 @@ def _validate_evidence_defect(
 ) -> None:
     expected = policy.invalid_evidence
     defects = [defect for row in rows for defect in row.lineage_defects]
+    if expected is None:
+        if defects:
+            _invalid("invalid_evidence_used_as_proof")
+        return
     proof_ids = {
         item for row in rows for item in (*row.primary_evidence_ids, *row.lineage_evidence_ids)
     }
@@ -322,6 +461,19 @@ def _validate_protected_binding(
     rows: tuple[ContentProductionClassificationRow, ...],
 ) -> None:
     expected = policy.protected_binding
+    expected_history = policy.blocked_historical_protection
+    historical_rows = tuple(
+        item for item in rows if item.blocked_historical_protection is not None
+    )
+    if expected is None:
+        if expected_history is None:
+            _invalid("protected_state_missing")
+        if len(historical_rows) != 1:
+            _invalid("protected_history_scope_mismatch")
+        _validate_blocked_historical_protection(expected_history, rows)
+        return
+    if historical_rows:
+        _invalid("protected_history_unexpected")
     row = next((item for item in rows if item.canonical_path == expected.canonical_path), None)
     binding = None if row is None else row.retained_binding
     if row is None or binding is None:
@@ -337,6 +489,37 @@ def _validate_protected_binding(
         or binding.identity_reconciliation_status != expected.identity_status
     ):
         _invalid("protected_binding_drift")
+
+
+def _validate_blocked_historical_protection(
+    policy: ContentProductionBlockedHistoricalProtectionPolicy,
+    rows: tuple[ContentProductionClassificationRow, ...],
+) -> None:
+    row = next((item for item in rows if item.canonical_path == policy.canonical_path), None)
+    protection = None if row is None else row.blocked_historical_protection
+    if row is None or protection is None:
+        _invalid("protected_history_missing")
+    if (
+        row.decision != "blocked"
+        or row.retained_binding is not None
+        or row.retained_work_item_id is not None
+        or row.revision_id is not None
+        or row.revision_digest is not None
+        or row.revision_approved
+        or row.revision_complete
+        or row.verified_actions
+        or row.verified_drafts
+        or protection.historical_revision_id != policy.historical_revision_id
+        or protection.historical_revision_digest != policy.historical_revision_digest
+        or protection.current_verification_outcome != policy.current_verification_outcome
+        or protection.current_verification_evidence_id
+        != policy.current_verification_evidence_id
+        or protection.current_verification_connector
+        != policy.current_verification_connector
+        or protection.current_verification_checked_at
+        != policy.current_verification_checked_at
+    ):
+        _invalid("protected_history_drift")
 
 
 def _judge_receipt(
@@ -385,6 +568,29 @@ def _validate_judge_binding(
 ) -> None:
     expected = policy.protected_binding
     item = source.require_object_member(checks, policy.judge_protected_binding_check_name)
+    if expected is None:
+        expected_history = policy.blocked_historical_protection
+        if expected_history is None:
+            _invalid("judge_protected_state_missing")
+        if (
+            item.get("decision") != "blocked"
+            or item.get("historical_revision_id") != expected_history.historical_revision_id
+            or item.get("historical_revision_digest")
+            != expected_history.historical_revision_digest
+            or item.get("current_verification_outcome")
+            != expected_history.current_verification_outcome
+            or item.get("current_verification_evidence_id")
+            != expected_history.current_verification_evidence_id
+            or item.get("current_verification_connector")
+            != expected_history.current_verification_connector
+            or item.get("current_verification_checked_at")
+            != expected_history.current_verification_checked_at
+            or item.get("exact_historical_revision_identity") is not True
+            or item.get("current_reuse_allowed") is not False
+            or item.get("must_not_regenerate") is not True
+        ):
+            _invalid("judge_protected_history_drift")
+        return
     if (
         item.get("decision") != "reuse"
         or item.get("revision_id") != expected.revision_id
@@ -406,6 +612,7 @@ class _StrictJson:
             ("packet", "identity_validation", "quarantined_draft_paths"),
             ("packet", "coverage_validation", "missing_paths"),
             ("packet", "coverage_validation", "extra_paths"),
+            ("packet", "rows", "source_packet_receipts", "canonical_path"),
             ("judge", "checks", "canonical_keep_scope", "missing_paths"),
             ("judge", "checks", "canonical_keep_scope", "extra_paths"),
         }
@@ -611,6 +818,14 @@ class _StrictJson:
     @classmethod
     def optional_text(cls, value: object) -> str | None:
         return None if value is None else cls.text(value, "optional_text_invalid")
+
+    @staticmethod
+    def work_item_id(value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str) or _WORK_ITEM_ID_RE.fullmatch(value) is None:
+            _invalid("work_item_identity_invalid")
+        return value
 
     @classmethod
     def texts(cls, value: object, code: str) -> tuple[str, ...]:

@@ -32,6 +32,28 @@ EMBEDDED_RUNTIME_PROOF = (
     "tests/content/test_initial_draft_run.py",
     "tests/content/test_initial_draft_queue_gate.py",
 )
+INVENTORY_CLASSIFICATION_CONTRACT = (
+    "inventory-classification:exact-current-receipt-lineage-red->green"
+)
+INVENTORY_CLASSIFICATION_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_content_production_classification_boundaries.py::test_parser_accepts_signed_blocked_historical_protection_without_reuse",
+    "tests/content/test_content_production_classification_boundaries.py::test_persisted_head_payload_without_optional_history_remains_readable_without_tampering",
+    "tests/content/test_current_blocked_classification.py::test_current_builder_returns_sorted_57_row_all_blocked_run_with_history_protection",
+    "tests/content/test_inventory_catalog.py::test_inventory_catalog_uses_the_latest_wordpress_refresh_batch",
+    "tests/content/test_inventory_catalog.py::test_latest_wordpress_refresh_uses_completion_time_not_storage_order",
+    "tests/content/test_inventory_catalog.py::test_latest_metric_refresh_uses_completion_time_not_storage_order",
+    "tests/content/test_authoring_inventory_receipt.py::test_receipt_binds_full_current_catalog_material_not_just_url_or_work_item",
+    "tests/content/test_authoring_inventory_receipt.py::test_url_only_or_unscoped_evidence_cannot_register_current_inventory_receipt",
+    "tests/content/test_authoring_inventory_receipt_store.py::test_store_is_append_only_idempotent_and_keeps_distinct_current_snapshots",
+    "tests/content/test_authoring_inventory_receipt_store.py::test_store_conflicts_on_same_snapshot_with_different_receipt_payload",
+    "tests/content/test_current_inventory_reconciliation.py::test_reconcile_persists_only_material_keep_receipts_and_a_blocked_run",
+    "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_counts_only_exact_normalized_paths_and_never_mints_bindings",
+    "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_does_not_claim_complete_for_partial_canonical_journal",
+    "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_rejects_same_count_substituted_path",
+    "tests/storage/test_sqlite_schema_inventory.py::test_authoring_inventory_receipt_schema_hunk_is_exact",
+    "tests/content/test_production_registered_inventory_receipt.py::test_registered_inventory_receipt_rejects_a_forged_digest",
+)
 
 
 def _git(repo: Path, *args: str, input_text: str | None = None) -> None:
@@ -192,6 +214,33 @@ def test_changes_check_maps_embedded_runtime_policy_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [EMBEDDED_RUNTIME_PROOF]
+
+
+def test_changes_check_maps_inventory_classification_to_exact_focused_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/example.py",
+        message=(
+            f"feat: mapped inventory classification proof\n\n"
+            f"Change-contract: {INVENTORY_CLASSIFICATION_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    assert result == 0
+    assert calls == [INVENTORY_CLASSIFICATION_PROOF]
 
 
 @pytest.mark.parametrize("proof_ok, expected_returncode", [(True, 0), (False, 1)])

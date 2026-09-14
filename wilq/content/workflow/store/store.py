@@ -40,6 +40,9 @@ from wilq.content.workflow.documents.store_revision_review import record_draft_r
 from wilq.content.workflow.store.refresh_preparation_atomic import (
     assert_refresh_preparation_revision_current,
 )
+from wilq.content.workflow.store.store_authoring_inventory_receipt import (
+    ContentAuthoringInventoryReceiptStoreMixin,
+)
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
 )
@@ -612,6 +615,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
+    ContentAuthoringInventoryReceiptStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourcePackBindingStoreMixin,
     ContentResearchPacketStoreMixin,

@@ -8,6 +8,7 @@ from typing import Literal, cast
 
 from wilq.content.workflow.decisions.production import (
     ContentProductionAcceptancePolicy,
+    ContentProductionBlockedHistoricalProtectionPolicy,
     ContentProductionClassificationCounts,
     ContentProductionEvidenceDefectPolicy,
     ContentProductionProtectedBindingPolicy,
@@ -90,6 +91,119 @@ def build_inputs() -> SyntheticInputs:
         },
     }
     return resign(packet)
+
+
+def build_blocked_historical_protection_inputs() -> SyntheticInputs:
+    baseline = build_inputs()
+    packet = copy.deepcopy(baseline.packet)
+    rows = cast(list[object], packet["rows"])
+    blocked = cast(JsonObject, rows[0])
+    blocked["decision"] = "blocked"
+    blocked["typed_blockers"] = [
+        {
+            "code": "current_historical_revision_drift",
+            "owner": "content_owner_test",
+            "next_step_pl": "Wykonaj nową weryfikację rewizji.",
+            "sources": ["wordpress_readback"],
+            "blocks_initial_generation": True,
+        }
+    ]
+    identity = cast(JsonObject, blocked["work_item_identity"])
+    identity["retained_work_item_id"] = None
+    blocked["revision"] = {
+        "revision_id": None,
+        "digest": None,
+        "approved": False,
+        "complete": False,
+    }
+    blocked["retained_revision_binding"] = None
+    blocked["draft_and_action_state"] = {
+        "verified_current_action_bindings": [],
+        "verified_current_draft_bindings": [],
+    }
+    blocked["blocked_historical_protection"] = {
+        "historical_revision_id": "content_revision_historical_blocked",
+        "historical_revision_digest": "7" * 64,
+        "current_verification_outcome": "drifted",
+        "current_verification_evidence_id": "ev_current_historical_readback",
+        "current_verification_connector": "wordpress",
+        "current_verification_checked_at": "2026-08-30T10:02:00Z",
+        "must_not_regenerate": True,
+    }
+    packet["counts"] = {
+        **_counts(),
+        "reuse": 0,
+        "blocked": 2,
+        "verified_current_actions": 0,
+        "verified_current_drafts": 0,
+    }
+    policy = baseline.policy.model_copy(
+        update={
+            "protected_binding": None,
+            "blocked_historical_protection": ContentProductionBlockedHistoricalProtectionPolicy(
+                canonical_path=PATHS[0],
+                historical_revision_id="content_revision_historical_blocked",
+                historical_revision_digest="7" * 64,
+                current_verification_outcome="drifted",
+                current_verification_evidence_id="ev_current_historical_readback",
+                current_verification_connector="wordpress",
+                current_verification_checked_at="2026-08-30T10:02:00Z",
+            ),
+            "expected_counts": ContentProductionClassificationCounts(**packet["counts"]),
+            "expected_approved_revisions": 0,
+        }
+    )
+    return resign(packet, policy=policy, sync_policy_decision=True)
+
+
+def build_clean_current_all_blocked_inputs() -> SyntheticInputs:
+    baseline = build_blocked_historical_protection_inputs()
+    packet = copy.deepcopy(baseline.packet)
+    clean = cast(JsonObject, cast(list[object], packet["rows"])[1])
+    cast(JsonObject, clean["evidence"])["lineage_defects"] = []
+    clean["typed_blockers"] = [
+        {
+            "code": "current_source_evidence_gap",
+            "owner": "content_owner_test",
+            "next_step_pl": "Uzupełnij bieżące źródło dowodowe.",
+            "sources": ["ledger"],
+            "blocks_initial_generation": True,
+        }
+    ]
+    policy = baseline.policy.model_copy(update={"invalid_evidence": None})
+    return resign(packet, policy=policy, sync_policy_decision=True)
+
+
+def build_missing_source_binding_inputs() -> SyntheticInputs:
+    baseline = build_inputs()
+    packet = copy.deepcopy(baseline.packet)
+    missing = cast(JsonObject, cast(list[object], packet["rows"])[1])
+    identity = cast(JsonObject, missing["work_item_identity"])
+    identity["current_inventory_work_item_id"] = None
+    evidence = cast(JsonObject, missing["evidence"])
+    evidence.pop("source_pack_id", None)
+    missing["source_packet_receipts"] = {
+        "binding_state": "missing",
+        "missing_sources": ["authoring_inventory_row", "source_pack_binding"],
+        "content_status_row_sha256": "c" * 64,
+        "wordpress_catalog_scope_sha256": "d" * 64,
+        "catalog_lookup_outcome": "exact_path_absent",
+    }
+    return resign(packet, policy=baseline.policy, sync_policy_decision=True)
+
+
+def build_present_source_binding_inputs() -> SyntheticInputs:
+    baseline = build_missing_source_binding_inputs()
+    packet = copy.deepcopy(baseline.packet)
+    present = cast(JsonObject, cast(list[object], packet["rows"])[1])
+    present["source_packet_receipts"] = {
+        "binding_state": "missing",
+        "missing_sources": ["delivery_identity_binding", "source_pack_binding"],
+        "content_status_row_sha256": "c" * 64,
+        "wordpress_catalog_scope_sha256": "d" * 64,
+        "catalog_lookup_outcome": "exact_path_present",
+    }
+    return resign(packet, policy=baseline.policy, sync_policy_decision=True)
 
 
 def resign(
@@ -331,9 +445,35 @@ def _policy(
 
 
 def _judge(packet_sha: str, decision_digest: str, protected: JsonObject) -> JsonObject:
-    binding = cast(JsonObject, protected["retained_revision_binding"])
-    action_ids = cast(list[object], binding["verified_draft_action_ids"])
-    draft_post_ids = cast(list[object], binding["verified_draft_post_ids"])
+    historical_protection = protected.get("blocked_historical_protection")
+    if historical_protection is not None:
+        history = cast(JsonObject, historical_protection)
+        protected_check = {
+            "decision": "blocked",
+            "historical_revision_id": history["historical_revision_id"],
+            "historical_revision_digest": history["historical_revision_digest"],
+            "current_verification_outcome": history["current_verification_outcome"],
+            "current_verification_evidence_id": history["current_verification_evidence_id"],
+            "current_verification_connector": history["current_verification_connector"],
+            "current_verification_checked_at": history["current_verification_checked_at"],
+            "exact_historical_revision_identity": True,
+            "current_reuse_allowed": False,
+            "must_not_regenerate": True,
+        }
+    else:
+        binding = cast(JsonObject, protected["retained_revision_binding"])
+        action_ids = cast(list[object], binding["verified_draft_action_ids"])
+        draft_post_ids = cast(list[object], binding["verified_draft_post_ids"])
+        protected_check = {
+            "decision": "reuse",
+            "revision_id": binding["retained_revision_id"],
+            "revision_digest": binding["retained_revision_digest"],
+            "action_id": action_ids[0],
+            "draft_post_id": draft_post_ids[0],
+            "exact_revision_action_draft_binding": True,
+            "current_retained_work_item_status": "fork_explicitly_unresolved",
+            "must_not_regenerate": True,
+        }
     return {
         "schema_version": "synthetic_judge_v1",
         "reviewer_role": "independent_judge",
@@ -348,15 +488,6 @@ def _judge(packet_sha: str, decision_digest: str, protected: JsonObject) -> Json
             "source_row_receipts_exact": True,
             "absolute_temp_path_count": 0,
             "raw_vendor_payload_count": 0,
-            "protected": {
-                "decision": "reuse",
-                "revision_id": binding["retained_revision_id"],
-                "revision_digest": binding["retained_revision_digest"],
-                "action_id": action_ids[0],
-                "draft_post_id": draft_post_ids[0],
-                "exact_revision_action_draft_binding": True,
-                "current_retained_work_item_status": "fork_explicitly_unresolved",
-                "must_not_regenerate": True,
-            },
+            "protected": protected_check,
         },
     }
