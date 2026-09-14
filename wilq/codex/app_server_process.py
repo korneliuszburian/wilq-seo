@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from wilq.codex.model_policy import configured_codex_runtime_selection
+from wilq.codex.model_policy import embedded_codex_runtime_selection
 from wilq.codex.runtime_status import codex_auth_path
 
 _PROCESS_ENV_NAMES = frozenset(
@@ -95,13 +95,13 @@ class _IsolatedCodexRuntime:
 
 
 def prepare_codex_app_server_launch(root: Path) -> CodexAppServerLaunch:
-    """Build one isolated launch from the project-pinned model policy."""
+    """Build one isolated launch from WILQ's embedded model policy."""
 
-    selection = configured_codex_runtime_selection()
+    selection = embedded_codex_runtime_selection()
     if selection is None:
         raise CodexAppServerProcessFailure(
             "codex_model_policy_invalid",
-            "Konfiguracja modelu WILQ musi wskazywać gpt-5.6-terra z wysiłkiem max.",
+            "Wbudowana polityka app-servera WILQ musi wskazywać gpt-5.6-terra z wysiłkiem max.",
         )
     runtime = _prepare_isolated_runtime(root)
     return CodexAppServerLaunch(

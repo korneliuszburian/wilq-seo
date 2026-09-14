@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from pytest import MonkeyPatch
 
-from wilq.codex import app_server, model_policy
+from wilq.codex import model_policy
 from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     StdioCodexAppServerClient,
@@ -243,7 +243,7 @@ def test_structured_turn_classifies_protocol_failures(
         'model = "gpt-5.6-terra"\nmodel_reasoning_effort = "high"\n',
     ],
 )
-def test_invalid_project_model_policy_blocks_before_starting_codex(
+def test_invalid_owner_project_model_policy_does_not_change_embedded_selection(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
     project_config: str,
@@ -252,20 +252,16 @@ def test_invalid_project_model_policy_blocks_before_starting_codex(
     config_path.write_text(project_config, encoding="utf-8")
     monkeypatch.setattr(model_policy, "_PROJECT_CODEX_CONFIG_PATH", config_path)
 
-    async def unexpected_spawn(*args: object, **kwargs: object) -> None:
-        del args, kwargs
-        raise AssertionError("invalid project policy must not start Codex")
+    assert model_policy.configured_codex_runtime_selection() is None
+    embedded = model_policy.embedded_codex_runtime_selection()
+    assert embedded is not None
+    assert embedded.model == "gpt-5.6-terra"
+    assert embedded.model_reasoning_effort == "max"
 
-    monkeypatch.setattr(app_server.asyncio, "create_subprocess_exec", unexpected_spawn)
 
-    result = StdioCodexAppServerClient(timeout_seconds=5).run_structured_turn(
-        CodexAppServerStructuredTurnRequest(
-            instruction="Return the constrained object.",
-            application_context="application",
-            untrusted_context="untrusted",
-            output_schema={"type": "object"},
-        )
-    )
+def test_embedded_policy_fails_closed_when_pinned_constant_is_unsupported(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(model_policy, "_CONTENT_RUNTIME_MODEL", "gpt-5.6-sol")
 
-    assert result.status == "failed"
-    assert [blocker.code for blocker in result.blockers] == ["codex_model_policy_invalid"]
+    assert model_policy.embedded_codex_runtime_selection() is None

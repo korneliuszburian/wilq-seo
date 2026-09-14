@@ -21,6 +21,17 @@ KNOWN_PROOF = (
     "tests/api_contracts/test_connector_refresh_recovery_contract.py",
 )
 GATE_PROOF = ("scripts/test.sh", "tests/scripts/test_changes_check.py")
+EMBEDDED_RUNTIME_CONTRACT = (
+    "embedded-runtime-policy:terra-max-fail-closed-red->green"
+)
+EMBEDDED_RUNTIME_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_codex_app_server_transport.py",
+    "tests/content/test_new_page_initial_draft.py",
+    "tests/storage/test_codex_runs.py",
+    "tests/content/test_initial_draft_run.py",
+    "tests/content/test_initial_draft_queue_gate.py",
+)
 
 
 def _git(repo: Path, *args: str, input_text: str | None = None) -> None:
@@ -154,6 +165,33 @@ def test_changes_check_accepts_explicit_ref_with_injected_cli_gate_proof(
 
     assert result == 0
     assert calls == [GATE_PROOF]
+
+
+def test_changes_check_maps_embedded_runtime_policy_to_exact_focused_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/example.py",
+        message=(
+            f"feat: mapped embedded runtime proof\n\n"
+            f"Change-contract: {EMBEDDED_RUNTIME_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    assert result == 0
+    assert calls == [EMBEDDED_RUNTIME_PROOF]
 
 
 @pytest.mark.parametrize("proof_ok, expected_returncode", [(True, 0), (False, 1)])

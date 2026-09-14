@@ -58,6 +58,17 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/connectors/test_connector_refresh_recovery.py",
         "tests/api_contracts/test_connector_refresh_recovery_contract.py",
     ),
+    (
+        "embedded-runtime-policy",
+        "terra-max-fail-closed",
+    ): (
+        "scripts/test.sh",
+        "tests/content/test_codex_app_server_transport.py",
+        "tests/content/test_new_page_initial_draft.py",
+        "tests/storage/test_codex_runs.py",
+        "tests/content/test_initial_draft_run.py",
+        "tests/content/test_initial_draft_queue_gate.py",
+    ),
 }
 
 

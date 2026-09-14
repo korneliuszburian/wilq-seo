@@ -14,6 +14,7 @@ from wilq.codex.app_server import (
 from wilq.content.drafts.initial_draft_persistence import InitialDraftPrePersistenceGuardError
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftClaimContext,
+    InitialDraftRuntimePolicyError,
     claim_initial_draft_run,
     effective_initial_draft_deadline,
     initial_draft_context_digest_for_proposal,
@@ -242,21 +243,38 @@ def submit_initial_draft_to_queue(
     planning_input_digest = proposal.planning_input_digest
     if proposal_id is None or planning_input_digest is None:
         return initial_draft_not_started_response(work_item_id, proposal)
-    claim = claim_initial_draft_run(
-        local_state_store(),
-        work_item_id=work_item_id,
-        proposal_id=proposal_id,
-        planning_digest=proposal.planning_digest,
-        planning_input_digest=planning_input_digest,
-        evidence_ids=list(getattr(proposal, "evidence_ids", [])),
-        source_material_ids=list(getattr(proposal, "source_material_ids", [])),
-        timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
-        context_digest=snapshot_initial_draft_context_digest(snapshot, proposal),
-        expected_base_revision_id=getattr(
-            snapshot.revision_workspace.latest_revision, "revision_id", None
-        ),
-        current_context=lambda: _current_initial_draft_claim_context(snapshot_loader, work_item_id),
-    )
+    try:
+        claim = claim_initial_draft_run(
+            local_state_store(),
+            work_item_id=work_item_id,
+            proposal_id=proposal_id,
+            planning_digest=proposal.planning_digest,
+            planning_input_digest=planning_input_digest,
+            evidence_ids=list(getattr(proposal, "evidence_ids", [])),
+            source_material_ids=list(getattr(proposal, "source_material_ids", [])),
+            timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
+            context_digest=snapshot_initial_draft_context_digest(snapshot, proposal),
+            expected_base_revision_id=getattr(
+                snapshot.revision_workspace.latest_revision, "revision_id", None
+            ),
+            current_context=lambda: _current_initial_draft_claim_context(
+                snapshot_loader, work_item_id
+            ),
+        )
+    except InitialDraftRuntimePolicyError as error:
+        blocker = ContentInitialDraftBlocker(
+            code=error.code,
+            label="Runtime Codexa jest niedostępny",
+            reason=error.safe_message,
+            next_step="Sprawdź przypiętą politykę embedded Codex runtime i spróbuj ponownie.",
+        )
+        return ContentInitialDraftResponse(
+            status="blocked",
+            work_item_id=work_item_id,
+            proposal_id=proposal_id,
+            blockers=[blocker],
+            safe_next_step=blocker.next_step,
+        )
     if claim.run is None:
         return ContentInitialDraftResponse(
             status="blocked",

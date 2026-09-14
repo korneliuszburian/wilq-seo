@@ -8,8 +8,12 @@ from types import SimpleNamespace
 import pytest
 
 from apps.api.wilq_api.routers import content_initial_draft
-from wilq.codex.app_server import StdioCodexAppServerClient
-from wilq.content.drafts import initial_draft_queue
+from wilq.codex.app_server import (
+    CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnResult,
+    StdioCodexAppServerClient,
+)
+from wilq.content.drafts import initial_draft_queue, initial_draft_run
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
@@ -155,6 +159,81 @@ def test_initial_draft_queue_claim_is_durable_and_exact(tmp_path, monkeypatch) -
     assert runs[0].proposal_id == "proposal-1"
     assert runs[0].planning_digest == "a" * 64
     assert runs[0].planning_input_digest == "b" * 64
+
+
+def test_unsupported_embedded_runtime_blocks_before_reusing_started_claim(
+    tmp_path, monkeypatch
+) -> None:
+    class FakeClient(StdioCodexAppServerClient):
+        def __init__(self) -> None:
+            super().__init__()
+            self.turn_calls = 0
+
+        def run_structured_turn(
+            self, _request: CodexAppServerStructuredTurnRequest
+        ) -> CodexAppServerTurnResult:
+            self.turn_calls += 1
+            raise AssertionError("unsupported runtime must not call the model")
+
+    class FakeExecutor:
+        def __init__(self) -> None:
+            self.submit_calls = 0
+
+        def submit(self, *_args: object, **_kwargs: object) -> object:
+            self.submit_calls += 1
+            raise AssertionError("unsupported runtime must not submit a worker")
+
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+    snapshot = _snapshot(latest_revision=None)
+    proposal = snapshot.planning_workspace.proposal
+    existing = CodexRun(
+        id="existing-started-run",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        model="gpt-5.6-terra",
+        model_reasoning_effort="max",
+        prompt_digest="d" * 64,
+        prompt_template_id="content_initial_draft@v2",
+        used_endpoints=["/api/content/work-items/work/initial-draft"],
+        evidence_ids=["existing-evidence"],
+        source_material_ids=["existing-source"],
+        proposal_id=proposal.proposal_id,
+        planning_digest=proposal.planning_digest,
+        planning_input_digest=proposal.planning_input_digest,
+        initial_draft_context_digest=initial_draft_queue.snapshot_initial_draft_context_digest(
+            snapshot, proposal
+        ),
+    )
+    store.save_codex_run(existing)
+    before = store.list_codex_runs()
+    client = FakeClient()
+    executor = FakeExecutor()
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
+    monkeypatch.setattr(initial_draft_run, "embedded_codex_runtime_selection", lambda: None)
+
+    response = initial_draft_queue.submit_initial_draft_to_queue(
+        "work",
+        _request(),
+        client,
+        lambda _work_item_id: snapshot,
+        snapshot,
+        executor,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "runtime_blocked"
+    assert response.blockers[0].reason == (
+        "Polityka osadzonego runtime Codex WILQ jest niedostępna lub nieobsługiwana."
+    )
+    assert "WILQ embedded Codex runtime policy is unavailable or unsupported." not in (
+        response.blockers[0].reason
+    )
+    assert executor.submit_calls == 0
+    assert client.turn_calls == 0
+    after = store.list_codex_runs()
+    assert [run.id for run in after] == [existing.id]
+    assert after == before
 
 
 def test_authorized_refresh_queue_claim_has_one_exact_context_and_submission(

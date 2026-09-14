@@ -16,6 +16,8 @@ _SAFE_MODEL_VALUE_LENGTH = 200
 _PROJECT_CODEX_CONFIG_PATH = Path(__file__).resolve().parents[2] / ".codex" / "config.toml"
 _CONTENT_RUNTIME_MODEL = "gpt-5.6-terra"
 _CONTENT_RUNTIME_REASONING_EFFORT = "max"
+_SUPPORTED_EMBEDDED_MODELS = frozenset({"gpt-5.6-terra"})
+_SUPPORTED_EMBEDDED_REASONING_EFFORTS = frozenset({"max"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,11 +29,10 @@ class CodexRuntimeSelection:
 
 
 def configured_codex_runtime_selection() -> CodexRuntimeSelection | None:
-    """Return the exact project-pinned selection or fail closed.
+    """Return the owner project selection, or ``None`` when it is invalid.
 
-    The app-server receives an isolated ``CODEX_HOME`` that contains only the
-    operator login. Model selection must therefore come from the tracked WILQ
-    configuration rather than the operator's global Codex preferences.
+    This is a separate configuration-read contract. Embedded WILQ app-server
+    launches use ``embedded_codex_runtime_selection`` instead of this value.
     """
 
     config = _project_codex_config()
@@ -44,6 +45,19 @@ def configured_codex_runtime_selection() -> CodexRuntimeSelection | None:
     return CodexRuntimeSelection(
         model=model,
         model_reasoning_effort=model_reasoning_effort,
+    )
+
+
+def embedded_codex_runtime_selection() -> CodexRuntimeSelection | None:
+    """Return the WILQ-owned app-server policy, independent of owner config."""
+
+    if _CONTENT_RUNTIME_MODEL not in _SUPPORTED_EMBEDDED_MODELS:
+        return None
+    if _CONTENT_RUNTIME_REASONING_EFFORT not in _SUPPORTED_EMBEDDED_REASONING_EFFORTS:
+        return None
+    return CodexRuntimeSelection(
+        model=_CONTENT_RUNTIME_MODEL,
+        model_reasoning_effort=_CONTENT_RUNTIME_REASONING_EFFORT,
     )
 
 
@@ -79,4 +93,5 @@ __all__ = [
     "configured_codex_model",
     "configured_codex_reasoning_effort",
     "configured_codex_runtime_selection",
+    "embedded_codex_runtime_selection",
 ]

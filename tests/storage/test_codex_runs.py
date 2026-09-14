@@ -4,9 +4,14 @@ import json
 from datetime import UTC, datetime
 from hashlib import sha256
 
+import pytest
+
 from wilq.codex.model_policy import CodexRuntimeSelection
 from wilq.content.drafts import initial_draft_run
-from wilq.content.drafts.initial_draft_run import _InitialDraftRunMetadata
+from wilq.content.drafts.initial_draft_run import (
+    InitialDraftRuntimePolicyError,
+    _InitialDraftRunMetadata,
+)
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -98,7 +103,7 @@ def test_codex_run_history_keyset_paginates_equal_timestamps_without_gaps(
 def test_initial_draft_run_records_exact_prompt_policy_and_materials(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
         initial_draft_run,
-        "configured_codex_runtime_selection",
+        "embedded_codex_runtime_selection",
         lambda: CodexRuntimeSelection(
             model="gpt-5.6-terra",
             model_reasoning_effort="max",
@@ -123,6 +128,27 @@ def test_initial_draft_run_records_exact_prompt_policy_and_materials(tmp_path, m
     assert run.prompt_template_id == "content_initial_draft@v2"
     assert run.prompt_digest == sha256(prompt.encode("utf-8")).hexdigest()
     assert run.source_material_ids == ["source_material_bdo"]
+
+
+def test_unsupported_embedded_runtime_blocks_before_started_run_persistence(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(initial_draft_run, "embedded_codex_runtime_selection", lambda: None)
+    store = LocalStateStore(tmp_path / "state.sqlite3")
+
+    with pytest.raises(InitialDraftRuntimePolicyError) as error:
+        initial_draft_run.start_initial_draft_run(
+            store,
+            work_item_id="content_work_item_bdo",
+            evidence_ids=["ev_content_trace"],
+            source_material_ids=["source_material_bdo"],
+            proposal_id="content_planning_proposal_bdo",
+            planning_input_digest="b" * 64,
+            planning_digest="c" * 64,
+        )
+
+    assert error.value.code == "runtime_blocked"
+    assert store.list_codex_runs() == []
 
 
 def test_initial_draft_enrichment_redacts_before_fallback_store() -> None:

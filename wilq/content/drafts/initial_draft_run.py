@@ -11,7 +11,7 @@ from hashlib import sha256
 from typing import Literal
 from uuid import uuid4
 
-from wilq.codex.model_policy import configured_codex_runtime_selection
+from wilq.codex.model_policy import embedded_codex_runtime_selection
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
@@ -29,6 +29,11 @@ from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
 from wilq.storage.local_state_runs import supports_run_transaction
+
+
+class InitialDraftRuntimePolicyError(RuntimeError):
+    code: Literal["runtime_blocked"] = "runtime_blocked"
+    safe_message = "Polityka osadzonego runtime Codex WILQ jest niedostępna lub nieobsługiwana."
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,7 +123,9 @@ def _initial_draft_run_metadata(prompt: str | None = None) -> _InitialDraftRunMe
     safety = assess_codex_prompt(effective_prompt, dry_run=False)
     if not safety.allowed:
         raise ValueError(f"Unsafe initial draft prompt: {safety.reason}")
-    selection = configured_codex_runtime_selection()
+    selection = embedded_codex_runtime_selection()
+    if selection is None:
+        raise InitialDraftRuntimePolicyError(InitialDraftRuntimePolicyError.safe_message)
     return _InitialDraftRunMetadata(
         model=selection.model if selection is not None else None,
         model_reasoning_effort=(
@@ -409,6 +416,7 @@ def claim_initial_draft_run(
     current_context: Callable[[], InitialDraftClaimContext | None],
 ) -> InitialDraftClaim:
     endpoint = f"/api/content/work-items/{work_item_id}/initial-draft"
+    metadata = _initial_draft_run_metadata()
     run_store.status()
     preflight_context = _current_context_matches_claim(
         current_context,
@@ -463,7 +471,6 @@ def claim_initial_draft_run(
                 if _expire_claim_if_needed(connection, run, row["payload_json"]):
                     continue
                 return InitialDraftClaim(run=run, newly_claimed=False)
-        metadata = _initial_draft_run_metadata()
         run = CodexRun(
             id=f"codex_content_initial_draft_{uuid4().hex}",
             skill="wilq-content-operator",
@@ -607,6 +614,7 @@ def safe_initial_draft_run_error(blocker: ContentInitialDraftBlocker) -> str:
 
 
 __all__ = [
+    "InitialDraftRuntimePolicyError",
     "finish_initial_draft_run",
     "claim_initial_draft_run",
     "InitialDraftClaim",

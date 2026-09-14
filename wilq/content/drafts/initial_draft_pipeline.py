@@ -19,6 +19,7 @@ from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.initial_draft_run import (
+    InitialDraftRuntimePolicyError,
     finish_initial_draft_run,
     safe_initial_draft_run_error,
     start_initial_draft_run,
@@ -73,7 +74,7 @@ class InitialDraftResponseBuilder(Protocol):
         *,
         status: Literal["blocked", "failed", "conflict"],
         blocker: ContentInitialDraftBlocker,
-        run: CodexRun,
+        run: CodexRun | None,
         runtime: ContentCodexRuntimeTrace,
     ) -> ContentInitialDraftResponse: ...
 
@@ -126,7 +127,10 @@ def generate_initial_draft(
     try:
         turn_request = inputs.turn_request()
     except Exception:
-        run = _start_run(inputs, run_store, prompt=None)
+        try:
+            run = _start_run(inputs, run_store, prompt=None)
+        except InitialDraftRuntimePolicyError as error:
+            return _runtime_policy_blocked_response(inputs, error)
         inputs.terminal_hook(run_store, run, status="failed", error="runtime_failed")
         return inputs.response(
             status="failed",
@@ -135,7 +139,10 @@ def generate_initial_draft(
             runtime=ContentCodexRuntimeTrace(status="failed"),
         )
 
-    run = _start_run(inputs, run_store, prompt=turn_request.instruction)
+    try:
+        run = _start_run(inputs, run_store, prompt=turn_request.instruction)
+    except InitialDraftRuntimePolicyError as error:
+        return _runtime_policy_blocked_response(inputs, error)
     execution = inputs.execute_turn(
         turn_request=turn_request,
         client=client,
@@ -243,6 +250,26 @@ def _runtime_failure_blocker(goal: InitialDraftTurnGoal) -> ContentInitialDraftB
         label=copy.label,
         reason=copy.reason,
         next_step=copy.next_step,
+    )
+
+
+def _runtime_policy_blocked_response(
+    inputs: InitialDraftPipelineInputs,
+    error: InitialDraftRuntimePolicyError,
+) -> ContentInitialDraftResponse:
+    blocker = ContentInitialDraftBlocker(
+        code=error.code,
+        label="Runtime Codexa jest niedostępny",
+        reason=error.safe_message,
+        next_step="Sprawdź przypiętą politykę embedded Codex runtime i spróbuj ponownie.",
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=inputs.run.work_item_id,
+        proposal_id=inputs.run.proposal_id,
+        runtime=ContentCodexRuntimeTrace(status="not_started"),
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
     )
 
 
