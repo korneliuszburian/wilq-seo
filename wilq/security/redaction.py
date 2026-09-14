@@ -146,6 +146,14 @@ SAFE_IDENTIFIER_KEYS = {
     "inventory_evidence_digest",
     "registry_digest",
     "context_digest",
+    "current_disposition_snapshot_digest",
+    "current_disposition_action_payload_digest",
+    "delivery_identity_authority_snapshot_digest",
+    "delivery_identity_authority_action_payload_digest",
+    "source_fact_authority_snapshot_digest",
+    "source_fact_authority_action_payload_digest",
+    "research_promotion_snapshot_digest",
+    "research_promotion_action_payload_digest",
     "source_fact_registry_digest",
     "fresh_context_digest",
     "foundation_id",
@@ -284,6 +292,14 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "inventory_evidence_digest",
     "registry_digest",
     "context_digest",
+    "current_disposition_snapshot_digest",
+    "current_disposition_action_payload_digest",
+    "delivery_identity_authority_snapshot_digest",
+    "delivery_identity_authority_action_payload_digest",
+    "source_fact_authority_snapshot_digest",
+    "source_fact_authority_action_payload_digest",
+    "research_promotion_snapshot_digest",
+    "research_promotion_action_payload_digest",
     "source_fact_registry_digest",
     "fresh_context_digest",
 }
@@ -320,6 +336,14 @@ def is_secret_key(key: str) -> bool:
     return bool(SECRET_KEY_RE.search(key))
 
 
+def _is_unallowlisted_digest_key(key: Any) -> bool:
+    return (
+        isinstance(key, str)
+        and "digest" in key.casefold()
+        and key not in SAFE_DIGEST_IDENTIFIER_KEYS
+    )
+
+
 def redact_value(value: Any) -> Any:
     if value is None:
         return None
@@ -341,7 +365,11 @@ def _looks_like_env_name(value: str) -> bool:
 
 
 def _looks_like_safe_trace_identifier(value: str) -> bool:
-    if re.match(r"^(?:sk-|gho_|ya29\.)", value, re.IGNORECASE):
+    if SAFE_HEX_DIGEST_RE.fullmatch(value) or re.match(
+        r"^(?:sk-|gho_|ya29\.|secret|token|password|credential|api[_-]?key)",
+        value,
+        re.IGNORECASE,
+    ):
         return False
     return bool(SAFE_TRACE_VALUE_RE.fullmatch(value) or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value))
 
@@ -372,6 +400,8 @@ def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
             redacted[key] = value
         elif is_secret_key(key):
             redacted[key] = "[REDACTED]" if value else value
+        elif _is_unallowlisted_digest_key(key):
+            redacted[key] = None if value is None else "[REDACTED]"
         elif key in CONTENT_TEXT_KEYS and isinstance(value, str):
             # Long alphanumeric runs are common in legitimate content (IDs,
             # product names, and technical examples). Credential-bearing URLs
@@ -383,6 +413,14 @@ def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _redact_safe_identifier_value(key: str, value: Any) -> Any:
+    if key in SAFE_DIGEST_IDENTIFIER_KEYS:
+        return (
+            None
+            if value is None
+            else value
+            if isinstance(value, str) and SAFE_HEX_DIGEST_RE.fullmatch(value)
+            else "[REDACTED]"
+        )
     if key == "normalized_page_path":
         if value is None:
             return None
@@ -396,12 +434,6 @@ def _redact_safe_identifier_value(key: str, value: Any) -> Any:
         and isinstance(value, str)
         and SAFE_OPAQUE_IDENTIFIER_RE.fullmatch(value)
         and SAFE_OPAQUE_SECRET_RE.search(value) is None
-    ):
-        return value
-    if (
-        key in SAFE_DIGEST_IDENTIFIER_KEYS
-        and isinstance(value, str)
-        and SAFE_HEX_DIGEST_RE.fullmatch(value)
     ):
         return value
     if key == "source_url" and value in EXACT_PUBLIC_SOURCE_URL_ALLOWLIST:

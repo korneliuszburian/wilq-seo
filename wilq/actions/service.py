@@ -79,6 +79,7 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
+from wilq.actions.authority_audit_context import stamp_authority_audit_context
 from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
 from wilq.actions.content_refresh import (
     content_contract_label,
@@ -237,6 +238,10 @@ from wilq.actions.wordpress_preview import (
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.current_disposition_authority import (
+    CURRENT_DISPOSITION_MUTATION_ADAPTER,
+    execute_current_disposition_authority,
+)
 from wilq.content.workflow.store.store import (
     content_workflow_store as action_content_workflow_store,
 )
@@ -342,6 +347,7 @@ def record_action_review(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
         local_state_store().save_ads_strategy_review(
@@ -384,6 +390,7 @@ def preview_action(
         system_readiness_label=_system_readiness_label,
         preview_contract_label=_preview_contract_label,
     )
+    stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     return result
 
@@ -415,6 +422,7 @@ def confirm_action(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
         local_state_store().save_ads_target_guardrail_confirmation(
@@ -453,6 +461,7 @@ def impact_check_action(
         review_gate_labels=_review_gate_with_operator_labels,
     )
     _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     return result
 
@@ -486,13 +495,29 @@ def _apply_dependencies() -> ApplyDependencies:
         review_gate=_action_review_gate,
         wordpress_apply_capability=wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
-        execute_mutation_adapter=execute_supported_wordpress_mutation_adapter,
+        execute_mutation_adapter=_execute_supported_mutation_adapter,
         connector_status=get_connector_status,
         impact_status=_impact_status_from_event,
         wordpress_apply_claim=workflow_store.claim_wordpress_revision_apply,
         finish_wordpress_apply_claim=workflow_store.finish_wordpress_revision_apply_claim,
         status_label=_action_result_status_label,
         audit_event_label=_audit_event_with_operator_label,
+    )
+
+
+def _execute_supported_mutation_adapter(
+    action: ActionObject,
+    mutation_adapter: str,
+    wordpress_capability: Any = None,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    if mutation_adapter == CURRENT_DISPOSITION_MUTATION_ADAPTER:
+        return execute_current_disposition_authority(
+            action,
+            store=action_content_workflow_store(),
+            audit_events=action.audit_events,
+        )
+    return execute_supported_wordpress_mutation_adapter(
+        action, mutation_adapter, wordpress_capability
     )
 
 

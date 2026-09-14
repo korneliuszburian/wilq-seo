@@ -141,6 +141,63 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_current_disposition_proposals (
+      action_id TEXT PRIMARY KEY,
+      proposal_digest TEXT NOT NULL UNIQUE,
+      current_work_item_id TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_proposals_no_update
+    BEFORE UPDATE ON content_current_disposition_proposals
+    BEGIN SELECT RAISE(ABORT, 'current disposition proposals are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_proposals_no_replace
+    BEFORE INSERT ON content_current_disposition_proposals
+    WHEN EXISTS (
+      SELECT 1 FROM content_current_disposition_proposals
+      WHERE action_id = NEW.action_id OR proposal_digest = NEW.proposal_digest
+    )
+    BEGIN SELECT RAISE(ABORT, 'current disposition proposals are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_proposals_no_delete
+    BEFORE DELETE ON content_current_disposition_proposals
+    BEGIN SELECT RAISE(ABORT, 'current disposition proposals are append-only'); END
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_current_disposition_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      action_id TEXT NOT NULL UNIQUE,
+      current_work_item_id TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_receipts_no_update
+    BEFORE UPDATE ON content_current_disposition_receipts
+    BEGIN SELECT RAISE(ABORT, 'current disposition receipts are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_receipts_no_replace
+    BEFORE INSERT ON content_current_disposition_receipts
+    WHEN EXISTS (
+      SELECT 1 FROM content_current_disposition_receipts
+      WHERE receipt_id = NEW.receipt_id
+         OR receipt_digest = NEW.receipt_digest
+         OR action_id = NEW.action_id
+    )
+    BEGIN SELECT RAISE(ABORT, 'current disposition receipts are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_current_disposition_receipts_no_delete
+    BEFORE DELETE ON content_current_disposition_receipts
+    BEGIN SELECT RAISE(ABORT, 'current disposition receipts are append-only'); END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_authoring_inventory_receipts (
       receipt_id TEXT PRIMARY KEY,
       receipt_digest TEXT NOT NULL UNIQUE,

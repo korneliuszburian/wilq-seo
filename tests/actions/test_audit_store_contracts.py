@@ -131,6 +131,45 @@ def test_audit_details_for_operator_redacts_raw_contracts_and_labels_review_fiel
     assert details["nested"] == {"safe": "ok"}
 
 
+def test_audit_details_for_operator_keeps_only_canonical_digest_values() -> None:
+    valid_digest = "a" * 64
+
+    details = audit_store.audit_details_for_operator(
+        {
+            "content_digest": valid_digest,
+            "brief_digest": "A" * 64,
+            "planning_digest": f" {valid_digest}",
+            "service_digest": "g" * 64,
+            "unknown_digest": valid_digest,
+            "trusted_local_confirmation_grant_digest": valid_digest,
+            "payload-digest": valid_digest,
+            "nested": {
+                "prompt_digest": valid_digest,
+                "unallowlisted_digest": valid_digest,
+                "payload-digest": valid_digest,
+            },
+        },
+        string_list=lambda value: value if isinstance(value, list) else [],
+        review_summary_item=lambda item: item,
+        review_blocker_label=lambda item: item,
+    )
+
+    assert details == {
+        "content_digest": valid_digest,
+        "brief_digest": "[REDACTED]",
+        "planning_digest": "[REDACTED]",
+        "service_digest": "[REDACTED]",
+        "unknown_digest": "[REDACTED]",
+        "trusted_local_confirmation_grant_digest": "[REDACTED]",
+        "payload-digest": "[REDACTED]",
+        "nested": {
+            "prompt_digest": valid_digest,
+            "unallowlisted_digest": "[REDACTED]",
+            "payload-digest": "[REDACTED]",
+        },
+    }
+
+
 def test_audit_event_operator_projection_uses_store_owned_summary_and_labels() -> None:
     event = AuditEvent(
         id="audit_preview_test",

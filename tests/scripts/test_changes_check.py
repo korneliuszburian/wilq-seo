@@ -35,6 +35,9 @@ EMBEDDED_RUNTIME_PROOF = (
 INVENTORY_CLASSIFICATION_CONTRACT = (
     "inventory-classification:exact-current-receipt-lineage-red->green"
 )
+CURRENT_DISPOSITION_CONTRACT = (
+    "current-disposition:exact-persisted-authority-chain-red->green"
+)
 INVENTORY_CLASSIFICATION_PROOF = (
     "scripts/test.sh",
     "tests/content/test_content_production_classification_boundaries.py::test_parser_accepts_signed_blocked_historical_protection_without_reuse",
@@ -53,6 +56,13 @@ INVENTORY_CLASSIFICATION_PROOF = (
     "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_rejects_same_count_substituted_path",
     "tests/storage/test_sqlite_schema_inventory.py::test_authoring_inventory_receipt_schema_hunk_is_exact",
     "tests/content/test_production_registered_inventory_receipt.py::test_registered_inventory_receipt_rejects_a_forged_digest",
+)
+CURRENT_DISPOSITION_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_current_disposition_authority.py",
+    "tests/actions/test_audit_store_contracts.py::test_audit_details_for_operator_keeps_only_canonical_digest_values",
+    "tests/api_contracts/test_redaction_contracts.py",
+    "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
 )
 
 
@@ -241,6 +251,33 @@ def test_changes_check_maps_inventory_classification_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [INVENTORY_CLASSIFICATION_PROOF]
+
+
+def test_changes_check_maps_current_disposition_to_exact_focused_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/example.py",
+        message=(
+            "feat: mapped current disposition proof\n\n"
+            f"Change-contract: {CURRENT_DISPOSITION_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    assert result == 0
+    assert calls == [CURRENT_DISPOSITION_PROOF]
 
 
 @pytest.mark.parametrize("proof_ok, expected_returncode", [(True, 0), (False, 1)])

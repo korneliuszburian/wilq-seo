@@ -1,6 +1,89 @@
 from __future__ import annotations
 
+import pytest
+
 from wilq.security.redaction import redact_mapping
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "current_disposition_snapshot_digest",
+        "current_disposition_action_payload_digest",
+        "delivery_identity_authority_snapshot_digest",
+        "delivery_identity_authority_action_payload_digest",
+        "source_fact_authority_snapshot_digest",
+        "source_fact_authority_action_payload_digest",
+        "research_promotion_snapshot_digest",
+        "research_promotion_action_payload_digest",
+    ],
+)
+def test_redaction_preserves_known_authority_digests_only_for_exact_hex(
+    key: str,
+) -> None:
+    digest = "9" * 64
+
+    assert redact_mapping({key: digest})[key] == digest
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("unknown_authority_digest", "9" * 64),
+        ("current_disposition_snapshot_digest", "sk-" + "x" * 40),
+        (
+            "current_disposition_action_payload_digest",
+            "secret" + "x" * 40,  # pragma: allowlist secret
+        ),
+        ("trusted_local_confirmation_grant_digest", "9" * 64),
+        ("api_key_digest", "9" * 64),
+        ("token_digest", "9" * 64),
+    ],
+)
+def test_redaction_redacts_unknown_and_secret_digest_like_values(
+    key: str,
+    value: str,
+) -> None:
+    assert redact_mapping({key: value})[key] == "[REDACTED]"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "g" * 64,
+        "a" * 65,
+        "a" * 63 + " ",
+        "A" * 64,
+    ],
+)
+def test_redaction_redacts_noncanonical_allowlisted_digest_values(value: str) -> None:
+    key = "current_disposition_snapshot_digest"
+
+    assert redact_mapping({key: value})[key] == "[REDACTED]"
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["unknown_digest_suffix", "unapproved_digest_value"],
+)
+def test_redaction_redacts_unallowlisted_digest_keys_regardless_of_value(key: str) -> None:
+    assert redact_mapping({key: "safe-looking-lowercase-value"})[key] == "[REDACTED]"
+
+
+def test_redaction_applies_strict_digest_rules_to_nested_mappings() -> None:
+    redacted = redact_mapping(
+        {
+            "details": {
+                "current_disposition_snapshot_digest": "A" * 64,
+                "unknown_digest": "safe-looking-lowercase-value",
+            }
+        }
+    )
+
+    assert redacted["details"] == {
+        "current_disposition_snapshot_digest": "[REDACTED]",
+        "unknown_digest": "[REDACTED]",
+    }
 
 
 def test_redaction_hides_token_like_values() -> None:

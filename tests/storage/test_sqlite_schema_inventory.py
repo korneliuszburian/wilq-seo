@@ -52,6 +52,8 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "connector_refresh_runs",
         "content_draft_revision_reviews",
         "content_draft_revisions",
+        "content_current_disposition_proposals",
+        "content_current_disposition_receipts",
         "content_delivery_identity_bindings",
         "content_delivery_records",
         "content_human_reviews",
@@ -205,6 +207,40 @@ def test_authoring_inventory_receipt_schema_hunk_is_exact(tmp_path: Path) -> Non
         "content_authoring_inventory_receipts_no_delete",
         "content_authoring_inventory_receipts_no_replace",
         "content_authoring_inventory_receipts_no_update",
+    }.issubset({item.name for item in inventory.catalog.triggers})
+
+
+def test_current_disposition_schema_hunks_are_exact(tmp_path: Path) -> None:
+    path = tmp_path / "current-disposition-schema.sqlite3"
+    ContentWorkflowStore(path).list_draft_revisions("schema-proof")
+
+    inventory = inspect_sqlite_schema(
+        path,
+        application_sha256=APPLICATION_SHA256,
+        seed_sha256=SEED_SHA256,
+    )
+    tables = {item.name: item for item in inventory.catalog.tables}
+
+    assert [column.name for column in tables["content_current_disposition_proposals"].columns] == [
+        "action_id",
+        "proposal_digest",
+        "current_work_item_id",
+        "payload_json",
+    ]
+    assert [column.name for column in tables["content_current_disposition_receipts"].columns] == [
+        "receipt_id",
+        "receipt_digest",
+        "action_id",
+        "current_work_item_id",
+        "payload_json",
+    ]
+    assert {
+        "content_current_disposition_proposals_no_delete",
+        "content_current_disposition_proposals_no_replace",
+        "content_current_disposition_proposals_no_update",
+        "content_current_disposition_receipts_no_delete",
+        "content_current_disposition_receipts_no_replace",
+        "content_current_disposition_receipts_no_update",
     }.issubset({item.name for item in inventory.catalog.triggers})
 
 

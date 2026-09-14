@@ -46,6 +46,9 @@ from wilq.content.workflow.store.store_authoring_inventory_receipt import (
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
 )
+from wilq.content.workflow.store.store_current_disposition_authority import (
+    ContentCurrentDispositionAuthorityStoreMixin,
+)
 from wilq.content.workflow.store.store_delivery_identity import (
     ContentDeliveryIdentityStoreMixin,
 )
@@ -616,6 +619,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
+    ContentCurrentDispositionAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourcePackBindingStoreMixin,
     ContentResearchPacketStoreMixin,

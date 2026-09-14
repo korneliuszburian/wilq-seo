@@ -91,6 +91,16 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_authoring_inventory_receipt_schema_hunk_is_exact",
         "tests/content/test_production_registered_inventory_receipt.py::test_registered_inventory_receipt_rejects_a_forged_digest",
     ),
+    (
+        "current-disposition",
+        "exact-persisted-authority-chain",
+    ): (
+        "scripts/test.sh",
+        "tests/content/test_current_disposition_authority.py",
+        "tests/actions/test_audit_store_contracts.py::test_audit_details_for_operator_keeps_only_canonical_digest_values",
+        "tests/api_contracts/test_redaction_contracts.py",
+        "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
+    ),
 }
 
 

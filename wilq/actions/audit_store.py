@@ -17,6 +17,7 @@ from wilq.schemas import (
     ActionWordPressDraftApplyBlocker,
     AuditEvent,
 )
+from wilq.security.redaction import SAFE_DIGEST_IDENTIFIER_KEYS, SAFE_HEX_DIGEST_RE
 from wilq.storage.local_state import local_state_store
 
 _MAX_EVENTS_PER_ACTION = 10
@@ -120,11 +121,9 @@ def audit_details_for_operator(
 ) -> dict[str, Any]:
     operator_details: dict[str, Any] = {}
     for key, value in details.items():
-        if contains_raw_audit_contract_text(str(key)):
-            continue
-        clean_value = _audit_detail_value_for_operator(value)
-        if clean_value is not None:
-            operator_details[str(key)] = clean_value
+        entry = _audit_detail_entry_for_operator(key, value)
+        if entry is not None:
+            operator_details[entry[0]] = entry[1]
     checked_items = string_list(operator_details.get("checked_items"))
     if checked_items:
         operator_details["checked_items"] = [review_summary_item(item) for item in checked_items]
@@ -393,11 +392,9 @@ def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, dict):
         clean: dict[str, Any] = {}
         for key, item in value.items():
-            if contains_raw_audit_contract_text(str(key)):
-                continue
-            clean_item = _audit_detail_value_for_operator(item)
-            if clean_item is not None:
-                clean[str(key)] = clean_item
+            entry = _audit_detail_entry_for_operator(key, item)
+            if entry is not None:
+                clean[entry[0]] = entry[1]
         return clean or None
     if isinstance(value, list):
         clean_items = [
@@ -409,6 +406,20 @@ def _audit_detail_value_for_operator(value: Any) -> Any:
     if isinstance(value, str) and contains_raw_audit_contract_text(value):
         return None
     return value
+
+
+def _audit_detail_entry_for_operator(key: Any, value: Any) -> tuple[str, Any] | None:
+    key_text = str(key)
+    if key_text in SAFE_DIGEST_IDENTIFIER_KEYS:
+        if isinstance(value, str) and SAFE_HEX_DIGEST_RE.fullmatch(value):
+            return key_text, value
+        return (key_text, "[REDACTED]") if value is not None else None
+    if "digest" in key_text.casefold():
+        return (key_text, "[REDACTED]") if value is not None else None
+    if contains_raw_audit_contract_text(key_text):
+        return None
+    clean_value = _audit_detail_value_for_operator(value)
+    return (key_text, clean_value) if clean_value is not None else None
 
 
 def contains_raw_audit_contract_text(summary: str) -> bool:

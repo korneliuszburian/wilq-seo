@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
+from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSITION_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
@@ -80,7 +81,7 @@ def action_confirmation_blockers(
         blockers.append("preview_acknowledgement_required")
     if latest_preview is None:
         blockers.append("dry_run_preview_required")
-    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+    if _requires_approved_action_review(action) and not _has_approved_action_review(action):
         blockers.append("draft_action_review_required")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
@@ -106,9 +107,11 @@ def action_impact_check_blockers(
     blockers: list[str] = []
     if latest_confirmation is None:
         blockers.append("action_confirmation_required")
-    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+    if _requires_approved_action_review(action) and not _has_approved_action_review(action):
         blockers.append("draft_action_review_required")
-    if not action.metrics and not _is_content_dev_draft_action(action):
+    if not action.metrics and not (
+        _is_content_dev_draft_action(action) or _is_local_current_disposition_action(action)
+    ):
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
         blockers.append("evidence_ids_required")
@@ -147,7 +150,7 @@ def action_apply_preflight_blockers(
             if _is_content_dev_draft_action(action)
             else "Przed zapisem zmian wymagane jest sprawdzenie efektu."
         )
-    if _is_content_dev_draft_action(action) and not _has_approved_action_review(action):
+    if _requires_approved_action_review(action) and not _has_approved_action_review(action):
         blockers.append("Przed utworzeniem szkicu wymagany jest zatwierdzający review akcji.")
     if _is_content_dev_draft_action(action) and any(
         event.event_type in {"apply_succeeded", "action_apply_completed"}
@@ -162,7 +165,7 @@ def action_apply_preflight_blockers(
         blockers.append("Akcja nie ma trybu zapisu zmian w zewnętrznym systemie.")
     if not action.evidence_ids:
         blockers.append("Akcja nie może zapisać zmian bez dowodów źródłowych.")
-    if not connector_configured:
+    if not connector_configured and not _is_local_current_disposition_action(action):
         blockers.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
         blockers.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
@@ -229,6 +232,17 @@ def _is_content_dev_draft_action(action: ActionObject) -> bool:
         CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
         CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
     }
+
+
+def _is_local_current_disposition_action(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    )
+
+
+def _requires_approved_action_review(action: ActionObject) -> bool:
+    return _is_content_dev_draft_action(action) or _is_local_current_disposition_action(action)
 
 
 def _has_approved_action_review(action: ActionObject) -> bool:

@@ -35,6 +35,10 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.current_disposition_authority import (
+    CURRENT_DISPOSITION_ACTION_TYPE,
+    validate_current_disposition_action_payload,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -74,6 +78,11 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
 
     if payload_connector is not None and payload_connector != connector_id:
         errors.append(wrong("Akcja", "źródło danych nie zgadza się z akcją"))
+
+    if action_type == CURRENT_DISPOSITION_ACTION_TYPE:
+        if connector_id != "wordpress_ekologus":
+            errors.append(wrong("Disposition treści", "wymaga lokalnego seamu Ekologus"))
+        return [*errors, *validate_current_disposition_action_payload(payload)]
 
     if action_type in INTERNAL_ACTION_TYPES:
         required_env = payload.get("required_env")
