@@ -54,6 +54,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_draft_revisions",
         "content_current_disposition_proposals",
         "content_current_disposition_receipts",
+        "content_delivery_identity_authority_proposals",
         "content_delivery_identity_bindings",
         "content_delivery_records",
         "content_human_reviews",
@@ -241,6 +242,39 @@ def test_current_disposition_schema_hunks_are_exact(tmp_path: Path) -> None:
         "content_current_disposition_receipts_no_delete",
         "content_current_disposition_receipts_no_replace",
         "content_current_disposition_receipts_no_update",
+    }.issubset({item.name for item in inventory.catalog.triggers})
+
+
+def test_delivery_identity_authority_schema_hunks_are_exact(tmp_path: Path) -> None:
+    path = tmp_path / "delivery-identity-authority-schema.sqlite3"
+    ContentWorkflowStore(path).list_draft_revisions("schema-proof")
+
+    inventory = inspect_sqlite_schema(
+        path,
+        application_sha256=APPLICATION_SHA256,
+        seed_sha256=SEED_SHA256,
+    )
+    tables = {item.name: item for item in inventory.catalog.tables}
+
+    assert [
+        column.name for column in tables["content_delivery_identity_authority_proposals"].columns
+    ] == [
+        "action_id",
+        "proposal_digest",
+        "current_disposition_receipt_id",
+        "inventory_receipt_id",
+        "payload_json",
+    ]
+    assert {
+        "content_delivery_identity_authority_proposals_no_delete",
+        "content_delivery_identity_authority_proposals_no_replace",
+        "content_delivery_identity_authority_proposals_no_update",
+        "content_delivery_identity_bindings_no_delete",
+        "content_delivery_identity_bindings_no_replace",
+        "content_delivery_identity_bindings_no_update",
+        "content_delivery_records_no_delete",
+        "content_delivery_records_no_replace",
+        "content_delivery_records_no_update",
     }.issubset({item.name for item in inventory.catalog.triggers})
 
 

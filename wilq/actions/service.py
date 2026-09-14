@@ -242,6 +242,10 @@ from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
     execute_current_disposition_authority,
 )
+from wilq.content.workflow.delivery_identity_authority import (
+    DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
+    execute_delivery_identity_authority,
+)
 from wilq.content.workflow.store.store import (
     content_workflow_store as action_content_workflow_store,
 )
@@ -485,6 +489,7 @@ def apply_action(
         result.mutation_audit.workspace_id = result.audit_event.workspace_id
         result.mutation_audit.trust_level = result.audit_event.trust_level
         result.mutation_audit.submitted_actor_label = submitted_actor_label
+    stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit_pair(result.audit_event, result.mutation_audit)
     return result
 
@@ -512,6 +517,12 @@ def _execute_supported_mutation_adapter(
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if mutation_adapter == CURRENT_DISPOSITION_MUTATION_ADAPTER:
         return execute_current_disposition_authority(
+            action,
+            store=action_content_workflow_store(),
+            audit_events=action.audit_events,
+        )
+    if mutation_adapter == DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER:
+        return execute_delivery_identity_authority(
             action,
             store=action_content_workflow_store(),
             audit_events=action.audit_events,

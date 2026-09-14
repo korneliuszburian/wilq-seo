@@ -101,6 +101,17 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/api_contracts/test_redaction_contracts.py",
         "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
     ),
+    (
+        "delivery-identity",
+        "exact-registered-receipt-authority",
+    ): (
+        "scripts/test.sh",
+        "tests/content/test_delivery_identity_authority.py",
+        "tests/content/test_delivery_identity_binding.py",
+        "tests/content/test_delivery_identity_api.py",
+        "tests/storage/test_sqlite_schema_inventory.py::test_delivery_identity_authority_schema_hunks_are_exact",
+        "tests/api_contracts/test_redaction_contracts.py",
+    ),
 }
 
 

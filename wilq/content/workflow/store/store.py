@@ -52,6 +52,9 @@ from wilq.content.workflow.store.store_current_disposition_authority import (
 from wilq.content.workflow.store.store_delivery_identity import (
     ContentDeliveryIdentityStoreMixin,
 )
+from wilq.content.workflow.store.store_delivery_identity_authority import (
+    ContentDeliveryIdentityAuthorityStoreMixin,
+)
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
@@ -620,6 +623,7 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
     ContentCurrentDispositionAuthorityStoreMixin,
+    ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourcePackBindingStoreMixin,
     ContentResearchPacketStoreMixin,

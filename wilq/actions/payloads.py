@@ -39,6 +39,10 @@ from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     validate_current_disposition_action_payload,
 )
+from wilq.content.workflow.delivery_identity_authority import (
+    DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+    validate_delivery_identity_authority_action_payload,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -83,6 +87,11 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         if connector_id != "wordpress_ekologus":
             errors.append(wrong("Disposition treści", "wymaga lokalnego seamu Ekologus"))
         return [*errors, *validate_current_disposition_action_payload(payload)]
+
+    if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
+        if connector_id != "wordpress_ekologus":
+            errors.append(wrong("Identity treści", "wymaga lokalnego seamu Ekologus"))
+        return [*errors, *validate_delivery_identity_authority_action_payload(payload)]
 
     if action_type in INTERNAL_ACTION_TYPES:
         required_env = payload.get("required_env")

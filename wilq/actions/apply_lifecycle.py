@@ -19,6 +19,9 @@ from wilq.actions.payload_readiness import (
     payload_preview_items,
 )
 from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSITION_ACTION_TYPE
+from wilq.content.workflow.delivery_identity_authority import (
+    DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+)
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
 from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
@@ -218,7 +221,8 @@ def _resolve_apply_capability(
     wordpress_apply_capability: WordPressApplyCapability,
 ) -> _ApplyCapability:
     if (
-        action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
+        action.payload.get("action_type")
+        in {CURRENT_DISPOSITION_ACTION_TYPE, DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE}
         and action.payload.get("local_authority_only") is True
     ):
         return _ApplyCapability(None, [], is_new_page=False)

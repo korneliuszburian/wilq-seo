@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+import wilq.content.workflow.decisions.production as production_module
+from apps.api.wilq_api.main import app
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from wilq.content.workflow.delivery_identity import (
     ContentDeliveryClassificationLookup,
@@ -17,8 +19,13 @@ from wilq.content.workflow.delivery_identity import (
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
 
-def _command(*, retained: bool, **updates: object) -> ContentDeliveryIdentityCommand:
-    run = exact_public_bdo_run()
+def _command(
+    *,
+    retained: bool,
+    run: production_module.ContentProductionClassificationRun | None = None,
+    **updates: object,
+) -> ContentDeliveryIdentityCommand:
+    run = exact_public_bdo_run() if run is None else run
     row = run.rows[0] if retained else run.rows[1]
     evidence = tuple(sorted(row.primary_evidence_ids[:1]))
     payload: dict[str, object] = {
@@ -39,6 +46,12 @@ def _command(*, retained: bool, **updates: object) -> ContentDeliveryIdentityCom
     }
     payload.update(updates)
     return ContentDeliveryIdentityCommand.model_validate(payload)
+
+
+def test_delivery_identity_api_has_no_caller_owned_write_route() -> None:
+    methods = app.openapi()["paths"].get("/api/content/delivery-identities", {})
+
+    assert "post" not in methods
 
 
 def test_store_records_exact_reconciled_and_typed_blocked_identity_states(
@@ -83,6 +96,84 @@ def test_store_records_exact_reconciled_and_typed_blocked_identity_states(
             connection.execute("UPDATE content_delivery_identity_bindings SET status = 'blocked'")
         with pytest.raises(sqlite3.IntegrityError):
             connection.execute("DELETE FROM content_delivery_records")
+
+
+def test_identity_current_projection_blocks_after_newer_classification_without_rebinding(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "state.sqlite3")
+    recorded_run = exact_public_bdo_run()
+    store.record_production_classification(recorded_run)
+    created = store.record_content_delivery_identity(
+        _command(retained=True, retained_work_item_id=None, retained_usage=None)
+    )
+
+    assert created.current.current_status == "exact_current"
+    newer_packet_sha = "a" * 64
+    newer_run = production_module._build_run(
+        input_receipt=recorded_run.input.model_copy(
+            update={"packet_sha256": newer_packet_sha}
+        ),
+        counts=recorded_run.counts,
+        freshness=recorded_run.freshness,
+        source_receipts=recorded_run.source_receipts,
+        judge_receipt=recorded_run.judge_receipt.model_copy(
+            update={"reviewed_packet_sha256": newer_packet_sha}
+        ),
+        rows=recorded_run.rows,
+        audit=recorded_run.audit.model_copy(
+            update={"recorded_at": datetime(2026, 9, 1, 10, 5, tzinfo=UTC)}
+        ),
+    )
+    store.record_production_classification(newer_run)
+
+    current = store.load_content_delivery_identity_record(created.binding.binding_id)
+    assert current is not None
+    assert current.binding == created.binding
+    assert current.binding.status == "exact_current"
+    assert current.current.current_status == "blocked"
+    assert current.current.current_blocker is not None
+    assert current.current.current_blocker.reason == "identity_classification_drift"
+
+
+def test_store_blocks_historical_classification_when_work_item_collides(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "historical-collision.sqlite3")
+    current = exact_public_bdo_run()
+    historical = production_module._build_run(
+        input_receipt=current.input.model_copy(
+            update={
+                "policy_id": "content_production_wave0_keep_packet_v1",
+                "policy_digest": production_module.canonical_json_digest(
+                    production_module.WAVE0_PRODUCTION_ACCEPTANCE_POLICY.model_dump(mode="json")
+                ),
+            }
+        ),
+        counts=current.counts,
+        freshness=current.freshness,
+        source_receipts=current.source_receipts,
+        judge_receipt=current.judge_receipt,
+        rows=current.rows,
+        audit=current.audit,
+    )
+    store.record_production_classification(historical)
+
+    result = store.record_content_delivery_identity(_command(retained=False, run=historical))
+
+    assert historical.input.policy_id == "content_production_wave0_keep_packet_v1"
+    assert result.binding.status == "blocked"
+    assert result.binding.status != "exact_current"
+    assert result.binding.blocker is not None
+    assert result.binding.blocker.seam == "classification_identity"
+    assert result.binding.blocker.reason == "classification_not_current"
+    assert result.delivery_record.content_state == "identity_blocked"
+    assert result.delivery_record.blocker_code == "classification_not_current"
+
+    with sqlite3.connect(store.path) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM content_delivery_identity_bindings WHERE status = 'exact_current'"
+        ).fetchone() == (0,)
 
 
 def test_identity_binding_fails_closed_without_fuzzy_or_latest_fallback(tmp_path: Path) -> None:
@@ -164,6 +255,94 @@ def test_same_logical_context_conflicts_when_identity_evidence_changes(tmp_path:
     assert conflict.status == "conflict"
     assert conflict.binding.binding_id == created.binding.binding_id
     assert conflict.binding.binding_digest == created.binding.binding_digest
+
+
+def test_identity_and_delivery_record_replacement_is_rejected(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "no-replace.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    created = store.record_content_delivery_identity(_command(retained=False))
+
+    with store._connect() as connection, pytest.raises(
+        sqlite3.IntegrityError, match="append-only"
+    ):
+        connection.execute(
+            "INSERT OR REPLACE INTO content_delivery_identity_bindings "
+            "(binding_id, binding_digest, canonical_path, public_url, current_work_item_id, "
+            "retained_work_item_id, classification_run_id, classification_run_digest, "
+            "classification_source_row_digest, inventory_evidence_digest, status, recorded_by, "
+            "recorded_at, payload_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                created.binding.binding_id,
+                created.binding.binding_digest,
+                created.binding.canonical_path,
+                created.binding.public_url,
+                created.binding.current_work_item_id,
+                created.binding.retained_work_item_id,
+                created.binding.classification_run_id,
+                created.binding.classification_run_digest,
+                created.binding.classification_source_row_digest,
+                created.binding.inventory_evidence_digest,
+                created.binding.status,
+                "replacement_actor",
+                created.binding.recorded_at.isoformat(),
+                created.binding.model_dump_json(),
+            ),
+        )
+
+    with store._connect() as connection, pytest.raises(
+        sqlite3.IntegrityError, match="append-only"
+    ):
+        connection.execute(
+            "INSERT OR REPLACE INTO content_delivery_records "
+            "(record_id, record_digest, binding_id, binding_digest, final_disposition, "
+            "content_state, delivery_status, robot_ready, blocker_code, payload_json) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                created.delivery_record.record_id,
+                created.delivery_record.record_digest,
+                created.delivery_record.binding_id,
+                created.delivery_record.binding_digest,
+                created.delivery_record.final_disposition,
+                created.delivery_record.content_state,
+                created.delivery_record.delivery_status,
+                0,
+                created.delivery_record.blocker_code,
+                created.delivery_record.model_dump_json(),
+            ),
+        )
+
+    unchanged = store.load_content_delivery_identity_record(created.binding.binding_id)
+    assert unchanged is not None
+    assert unchanged.binding == created.binding
+    assert unchanged.delivery_record == created.delivery_record
+
+
+def test_identity_record_rejects_a_classification_that_is_no_longer_latest(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "latest-classification.sqlite3")
+    recorded_run = exact_public_bdo_run()
+    store.record_production_classification(recorded_run)
+    newer_packet_sha = "a" * 64
+    newer_run = production_module._build_run(
+        input_receipt=recorded_run.input.model_copy(update={"packet_sha256": newer_packet_sha}),
+        counts=recorded_run.counts,
+        freshness=recorded_run.freshness,
+        source_receipts=recorded_run.source_receipts,
+        judge_receipt=recorded_run.judge_receipt.model_copy(
+            update={"reviewed_packet_sha256": newer_packet_sha}
+        ),
+        rows=recorded_run.rows,
+        audit=recorded_run.audit.model_copy(
+            update={"recorded_at": datetime(2026, 9, 11, 10, 5, tzinfo=UTC)}
+        ),
+    )
+    store.record_production_classification(newer_run)
+
+    result = store.record_content_delivery_identity(_command(retained=False, run=recorded_run))
+
+    assert result.binding.status == "blocked"
+    assert result.binding.blocker is not None
+    assert result.binding.blocker.reason == "classification_not_current"
+    assert result.delivery_record.content_state == "identity_blocked"
 
 
 def test_recorded_at_is_aware_and_normalized_to_utc() -> None:

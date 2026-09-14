@@ -3,20 +3,28 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import UTC, datetime
 from typing import cast
 
-from wilq.content.workflow.decisions.production import project_content_production_classification
+from wilq.content.workflow.decisions.production import (
+    ContentProductionClassificationRun,
+    project_content_production_classification,
+)
 from wilq.content.workflow.delivery_identity import (
     ContentDeliveryClassificationLookup,
     ContentDeliveryIdentityBinding,
     ContentDeliveryIdentityCommand,
+    ContentDeliveryIdentityCurrentProjection,
     ContentDeliveryIdentityRecordResult,
     ContentDeliveryRecord,
+    build_content_delivery_identity_current_projection,
     build_content_delivery_record,
     reconcile_content_delivery_identity,
 )
 from wilq.content.workflow.store.store_production_classification import (
+    HISTORICAL_PRODUCTION_POLICY_IDS,
     _classification_from_row,
+    load_latest_production_classification_from_connection,
 )
 from wilq.storage.model_json import model_json
 
@@ -54,6 +62,7 @@ class ContentDeliveryIdentityStoreMixin:
                     ),
                     binding=existing,
                     delivery_record=existing_record,
+                    current=_current_identity_projection(connection, existing),
                 )
             digest_row = connection.execute(
                 "SELECT * FROM content_delivery_identity_bindings WHERE binding_digest = ?",
@@ -65,6 +74,9 @@ class ContentDeliveryIdentityStoreMixin:
                     binding=binding_from_row(digest_row),
                     delivery_record=_delivery_record_for_binding(
                         connection, cast(str, digest_row["binding_id"])
+                    ),
+                    current=_current_identity_projection(
+                        connection, binding_from_row(digest_row)
                     ),
                 )
             connection.execute(
@@ -115,8 +127,9 @@ class ContentDeliveryIdentityStoreMixin:
                     model_json(delivery_record),
                 ),
             )
+            current = _current_identity_projection(connection, binding)
         return ContentDeliveryIdentityRecordResult(
-            status="created", binding=binding, delivery_record=delivery_record
+            status="created", binding=binding, delivery_record=delivery_record, current=current
         )
 
     def load_content_delivery_identity(
@@ -141,10 +154,12 @@ class ContentDeliveryIdentityStoreMixin:
                 return None
             binding = binding_from_row(row)
             delivery_record = _delivery_record_for_binding(connection, binding_id)
+            current = _current_identity_projection(connection, binding)
         return ContentDeliveryIdentityRecordResult(
             status="idempotent",
             binding=binding,
             delivery_record=delivery_record,
+            current=current,
         )
 
 
@@ -163,6 +178,11 @@ def _load_exact_classification_projection(
     if row is None:
         return ContentDeliveryClassificationLookup(row_status="run_missing")
     run = _classification_from_row(row)
+    if run.input.policy_id in HISTORICAL_PRODUCTION_POLICY_IDS:
+        return ContentDeliveryClassificationLookup(row_status="not_current")
+    latest = load_latest_production_classification_from_connection(connection)
+    if latest is None or latest.run_id != run.run_id:
+        return ContentDeliveryClassificationLookup(row_status="not_current")
     matches = [
         item for item in run.rows if item.current_work_item_id == command.current_work_item_id
     ]
@@ -173,6 +193,34 @@ def _load_exact_classification_projection(
     return ContentDeliveryClassificationLookup(
         row_status="exact",
         run=project_content_production_classification(run, matches[0]),
+    )
+
+
+def _current_identity_projection(
+    connection: sqlite3.Connection,
+    binding: ContentDeliveryIdentityBinding,
+) -> ContentDeliveryIdentityCurrentProjection:
+    latest = load_latest_production_classification_from_connection(connection)
+    return build_content_delivery_identity_current_projection(
+        binding,
+        _classification_lookup_for_binding(latest, binding),
+        assessed_at=datetime.now(UTC),
+    )
+
+
+def _classification_lookup_for_binding(
+    run: object | None,
+    binding: ContentDeliveryIdentityBinding,
+) -> ContentDeliveryClassificationLookup:
+    if run is None:
+        return ContentDeliveryClassificationLookup(row_status="run_missing")
+    current_run = cast(ContentProductionClassificationRun, run)
+    row = current_run.for_work_item(binding.current_work_item_id)
+    if row is None:
+        return ContentDeliveryClassificationLookup(row_status="missing")
+    return ContentDeliveryClassificationLookup(
+        row_status="exact",
+        run=project_content_production_classification(current_run, row),
     )
 
 

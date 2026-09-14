@@ -4,6 +4,11 @@ from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
 )
+from wilq.content.workflow.delivery_identity_authority import (
+    DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+    DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
+    DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -24,6 +29,38 @@ def mutation_apply_contract(
     mutation_adapter: str | None,
 ) -> ActionMutationApplyContract | None:
     action_type = action.payload.get("action_type")
+    if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
+        return ActionMutationApplyContract(
+            action_id=action.id,
+            action_type=action_type,
+            connector=action.connector,
+            allowed_operation="record_content_delivery_identity_binding",
+            draft_only=False,
+            publication_allowed=False,
+            destructive_allowed=False,
+            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
+            required_env_flags=[],
+            required_input_contracts=[
+                "delivery_identity_authority_snapshot_v1",
+                DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
+            ],
+            required_audit_events=[
+                "action_preview_generated",
+                "human_review_approved_for_prepare",
+                "action_apply_confirmed",
+                "action_impact_check_completed",
+            ],
+            blocked_outputs=[
+                "vendor_write",
+                "wordpress_publish",
+                "wordpress_draft",
+                "content_generation",
+            ],
+            operator_summary=(
+                "Ta akcja zapisuje wyłącznie lokalny exact identity binding z dwóch receiptów; "
+                "nie wywołuje vendora ani nie tworzy treści."
+            ),
+        )
     if action_type == CURRENT_DISPOSITION_ACTION_TYPE:
         return ActionMutationApplyContract(
             action_id=action.id,
@@ -162,6 +199,12 @@ def mutation_apply_contract(
 
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
+    if (
+        action.payload.get("action_type") == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER
     if (
         action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
         and action.payload.get("local_authority_only") is True

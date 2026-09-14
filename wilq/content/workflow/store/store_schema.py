@@ -198,6 +198,35 @@ _CONTENT_WORKFLOW_SCHEMA = (
     BEGIN SELECT RAISE(ABORT, 'current disposition receipts are append-only'); END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_delivery_identity_authority_proposals (
+      action_id TEXT PRIMARY KEY,
+      proposal_digest TEXT NOT NULL UNIQUE,
+      current_disposition_receipt_id TEXT NOT NULL,
+      inventory_receipt_id TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_authority_proposals_no_update
+    BEFORE UPDATE ON content_delivery_identity_authority_proposals
+    BEGIN SELECT RAISE(ABORT, 'delivery identity authority proposals are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_authority_proposals_no_replace
+    BEFORE INSERT ON content_delivery_identity_authority_proposals
+    WHEN EXISTS (
+      SELECT 1 FROM content_delivery_identity_authority_proposals
+      WHERE action_id = NEW.action_id
+         OR proposal_digest = NEW.proposal_digest
+    )
+    BEGIN SELECT RAISE(ABORT, 'delivery identity authority proposals are append-only'); END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_authority_proposals_no_delete
+    BEFORE DELETE ON content_delivery_identity_authority_proposals
+    BEGIN SELECT RAISE(ABORT, 'delivery identity authority proposals are append-only'); END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_authoring_inventory_receipts (
       receipt_id TEXT PRIMARY KEY,
       receipt_digest TEXT NOT NULL UNIQUE,
@@ -272,6 +301,18 @@ _CONTENT_WORKFLOW_SCHEMA = (
     """
     CREATE TRIGGER IF NOT EXISTS content_delivery_identity_bindings_no_delete
     BEFORE DELETE ON content_delivery_identity_bindings
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity bindings are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_bindings_no_replace
+    BEFORE INSERT ON content_delivery_identity_bindings
+    WHEN EXISTS (
+      SELECT 1 FROM content_delivery_identity_bindings
+      WHERE binding_id = NEW.binding_id
+         OR binding_digest = NEW.binding_digest
+    )
     BEGIN
       SELECT RAISE(ABORT, 'content delivery identity bindings are append-only');
     END
@@ -424,6 +465,19 @@ _CONTENT_WORKFLOW_SCHEMA = (
     """
     CREATE TRIGGER IF NOT EXISTS content_delivery_records_no_delete
     BEFORE DELETE ON content_delivery_records
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery records are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_records_no_replace
+    BEFORE INSERT ON content_delivery_records
+    WHEN EXISTS (
+      SELECT 1 FROM content_delivery_records
+      WHERE record_id = NEW.record_id
+         OR record_digest = NEW.record_digest
+         OR binding_id = NEW.binding_id
+    )
     BEGIN
       SELECT RAISE(ABORT, 'content delivery records are append-only');
     END
