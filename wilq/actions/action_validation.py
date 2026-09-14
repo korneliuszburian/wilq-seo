@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
@@ -35,7 +36,11 @@ def validate_action(
     elif (
         action.mode == ActionMode.apply
         and not connector.configured
-        and action.payload.get("action_type") != CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
+        and action.payload.get("action_type")
+        not in {
+            CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+        }
     ):
         errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
     errors.extend(validate_action_payload(action.connector, action.payload))

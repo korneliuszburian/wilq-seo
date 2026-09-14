@@ -9,6 +9,7 @@ from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSIT
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
+from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
@@ -192,7 +193,11 @@ def mutation_readiness_next_step(
 def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) -> bool:
     if (
         action.payload.get("action_type")
-        in {CURRENT_DISPOSITION_ACTION_TYPE, DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE}
+        in {
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            CURRENT_DISPOSITION_ACTION_TYPE,
+            DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+        }
         and action.payload.get("local_authority_only") is True
     ):
         return False

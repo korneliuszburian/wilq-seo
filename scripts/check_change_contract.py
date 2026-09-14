@@ -112,6 +112,17 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_delivery_identity_authority_schema_hunks_are_exact",
         "tests/api_contracts/test_redaction_contracts.py",
     ),
+    (
+        "source-fact-source-pack",
+        "exact-reviewed-row-consumption",
+    ): (
+        "scripts/test.sh",
+        "tests/content/test_source_fact_authority.py",
+        "tests/content/test_source_pack_binding.py",
+        "tests/content/test_source_pack_binding_api.py",
+        "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
+        "tests/api_contracts/test_redaction_contracts.py",
+    ),
 }
 
 

@@ -38,6 +38,9 @@ INVENTORY_CLASSIFICATION_CONTRACT = (
 CURRENT_DISPOSITION_CONTRACT = (
     "current-disposition:exact-persisted-authority-chain-red->green"
 )
+SOURCE_FACT_SOURCE_PACK_CONTRACT = (
+    "source-fact-source-pack:exact-reviewed-row-consumption-red->green"
+)
 INVENTORY_CLASSIFICATION_PROOF = (
     "scripts/test.sh",
     "tests/content/test_content_production_classification_boundaries.py::test_parser_accepts_signed_blocked_historical_protection_without_reuse",
@@ -63,6 +66,14 @@ CURRENT_DISPOSITION_PROOF = (
     "tests/actions/test_audit_store_contracts.py::test_audit_details_for_operator_keeps_only_canonical_digest_values",
     "tests/api_contracts/test_redaction_contracts.py",
     "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
+)
+SOURCE_FACT_SOURCE_PACK_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_source_fact_authority.py",
+    "tests/content/test_source_pack_binding.py",
+    "tests/content/test_source_pack_binding_api.py",
+    "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
+    "tests/api_contracts/test_redaction_contracts.py",
 )
 
 
@@ -278,6 +289,33 @@ def test_changes_check_maps_current_disposition_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [CURRENT_DISPOSITION_PROOF]
+
+
+def test_changes_check_maps_source_fact_source_pack_to_exact_focused_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/example.py",
+        message=(
+            "feat: mapped source fact source pack proof\n\n"
+            f"Change-contract: {SOURCE_FACT_SOURCE_PACK_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    assert result == 0
+    assert calls == [SOURCE_FACT_SOURCE_PACK_PROOF]
 
 
 @pytest.mark.parametrize("proof_ok, expected_returncode", [(True, 0), (False, 1)])

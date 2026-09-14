@@ -58,7 +58,22 @@ async def read_content_source_pack_prerequisites(
             detail="content_source_pack_prerequisites_identity_blocked",
         )
     try:
-        return build_content_source_pack_prerequisites(identity)
+        classification = await asyncio.to_thread(
+            content_workflow_store().load_production_classification_for_work_item,
+            identity.current_work_item_id,
+        )
+        authority_receipts = await asyncio.to_thread(
+            content_workflow_store().list_content_source_fact_authority_receipts,
+            identity_binding_id=identity.binding_id,
+            current_work_item_id=identity.current_work_item_id,
+        )
+        authority_receipt = authority_receipts[-1] if authority_receipts else None
+        return build_content_source_pack_prerequisites(
+            identity,
+            authority_receipt=authority_receipt,
+            authority_receipts=tuple(authority_receipts),
+            classification=classification,
+        )
     except ValidationError as exc:
         raise HTTPException(
             status_code=409,

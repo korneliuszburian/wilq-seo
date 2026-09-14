@@ -43,6 +43,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     validate_delivery_identity_authority_action_payload,
 )
+from wilq.content.workflow.source_fact_authority import (
+    SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+    validate_source_fact_authority_action_payload,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -70,6 +74,76 @@ SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE = (
 )
 
 
+_LOCAL_ACTION_VALIDATORS: dict[
+    str, tuple[str, Callable[[dict[str, Any]], list[str]]]
+] = {
+    SOURCE_FACT_AUTHORITY_ACTION_TYPE: (
+        "Authority źródeł",
+        validate_source_fact_authority_action_payload,
+    ),
+    CURRENT_DISPOSITION_ACTION_TYPE: (
+        "Disposition treści",
+        validate_current_disposition_action_payload,
+    ),
+    DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
+        "Identity treści",
+        validate_delivery_identity_authority_action_payload,
+    ),
+}
+
+
+def _validate_local_action_payload(
+    connector_id: str,
+    payload: dict[str, Any],
+    action_type: str,
+    errors: list[str],
+) -> list[str] | None:
+    validator_spec = _LOCAL_ACTION_VALIDATORS.get(action_type)
+    if validator_spec is None:
+        return None
+    label, validator = validator_spec
+    if connector_id != "wordpress_ekologus":
+        errors.append(wrong(label, "wymaga lokalnego seamu Ekologus"))
+    return [*errors, *validator(payload)]
+
+
+def _validate_internal_action_payload(
+    connector_id: str,
+    action_type: str,
+    payload: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    required_env = payload.get("required_env")
+    if action_type == "configure_connector" and not isinstance(required_env, list):
+        errors.append(missing("Konfiguracja źródła danych", "listy wymaganych ustawień"))
+    if action_type == "repair_google_ads_oauth":
+        if connector_id != "google_ads":
+            errors.append(wrong("Naprawa dostępu Google Ads", "dotyczy tylko Google Ads"))
+        if payload.get("oauth_scope") != "https://www.googleapis.com/auth/adwords":
+            errors.append(missing("Naprawa dostępu Google Ads", "zakresu dostępu Google Ads"))
+        if not isinstance(payload.get("oauth_client_json_path"), str):
+            errors.append(missing("Naprawa dostępu Google Ads", "lokalnej ścieżki klienta OAuth"))
+        if not isinstance(payload.get("helper_commands"), list):
+            errors.append(missing("Naprawa dostępu Google Ads", "instrukcji pomocniczych"))
+    if action_type == ADS_BUSINESS_CONTEXT_ACTION_TYPE:
+        if connector_id != "google_ads":
+            errors.append(wrong("Kontekst biznesowy Ads", "dotyczy tylko Google Ads"))
+        errors.extend(validate_ads_business_context_payload(payload))
+    if action_type == ADS_TARGET_CONFIRMATION_ACTION_TYPE:
+        if connector_id != "google_ads":
+            errors.append(wrong("Potwierdzenie celów Ads", "dotyczy tylko Google Ads"))
+        errors.extend(validate_ads_target_confirmation_payload(payload))
+    if action_type == ADS_STRATEGY_REVIEW_ACTION_TYPE:
+        if connector_id != "google_ads":
+            errors.append(wrong("Przegląd strategii Ads", "dotyczy tylko Google Ads"))
+        errors.extend(validate_ads_strategy_review_payload(payload))
+    if action_type == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
+        if connector_id != "google_ads":
+            errors.append(wrong("Dostęp do Keyword Plannera", "dotyczy tylko Google Ads"))
+        errors.extend(validate_keyword_planner_access_payload(payload))
+    return errors
+
+
 def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     action_type = payload.get("action_type")
@@ -83,48 +157,14 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
     if payload_connector is not None and payload_connector != connector_id:
         errors.append(wrong("Akcja", "źródło danych nie zgadza się z akcją"))
 
-    if action_type == CURRENT_DISPOSITION_ACTION_TYPE:
-        if connector_id != "wordpress_ekologus":
-            errors.append(wrong("Disposition treści", "wymaga lokalnego seamu Ekologus"))
-        return [*errors, *validate_current_disposition_action_payload(payload)]
-
-    if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
-        if connector_id != "wordpress_ekologus":
-            errors.append(wrong("Identity treści", "wymaga lokalnego seamu Ekologus"))
-        return [*errors, *validate_delivery_identity_authority_action_payload(payload)]
+    local_errors = _validate_local_action_payload(
+        connector_id, payload, action_type, errors
+    )
+    if local_errors is not None:
+        return local_errors
 
     if action_type in INTERNAL_ACTION_TYPES:
-        required_env = payload.get("required_env")
-        if action_type == "configure_connector" and not isinstance(required_env, list):
-            errors.append(missing("Konfiguracja źródła danych", "listy wymaganych ustawień"))
-        if action_type == "repair_google_ads_oauth":
-            if connector_id != "google_ads":
-                errors.append(wrong("Naprawa dostępu Google Ads", "dotyczy tylko Google Ads"))
-            if payload.get("oauth_scope") != "https://www.googleapis.com/auth/adwords":
-                errors.append(missing("Naprawa dostępu Google Ads", "zakresu dostępu Google Ads"))
-            if not isinstance(payload.get("oauth_client_json_path"), str):
-                errors.append(
-                    missing("Naprawa dostępu Google Ads", "lokalnej ścieżki klienta OAuth")
-                )
-            if not isinstance(payload.get("helper_commands"), list):
-                errors.append(missing("Naprawa dostępu Google Ads", "instrukcji pomocniczych"))
-        if action_type == ADS_BUSINESS_CONTEXT_ACTION_TYPE:
-            if connector_id != "google_ads":
-                errors.append(wrong("Kontekst biznesowy Ads", "dotyczy tylko Google Ads"))
-            errors.extend(validate_ads_business_context_payload(payload))
-        if action_type == ADS_TARGET_CONFIRMATION_ACTION_TYPE:
-            if connector_id != "google_ads":
-                errors.append(wrong("Potwierdzenie celów Ads", "dotyczy tylko Google Ads"))
-            errors.extend(validate_ads_target_confirmation_payload(payload))
-        if action_type == ADS_STRATEGY_REVIEW_ACTION_TYPE:
-            if connector_id != "google_ads":
-                errors.append(wrong("Przegląd strategii Ads", "dotyczy tylko Google Ads"))
-            errors.extend(validate_ads_strategy_review_payload(payload))
-        if action_type == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
-            if connector_id != "google_ads":
-                errors.append(wrong("Dostęp do Keyword Plannera", "dotyczy tylko Google Ads"))
-            errors.extend(validate_keyword_planner_access_payload(payload))
-        return errors
+        return [*errors, *_validate_internal_action_payload(connector_id, action_type, payload)]
 
     if connector is None:
         errors.append(wrong("Akcja", "źródło danych nie jest znane WILQ"))

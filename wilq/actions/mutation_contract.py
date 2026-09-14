@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from wilq.actions._mutation_contract_dispatch import (
+    mutation_apply_contract as _mutation_apply_contract,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
@@ -7,11 +10,13 @@ from wilq.content.workflow.current_disposition_authority import (
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
-    DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
+)
+from wilq.content.workflow.source_fact_authority import (
+    SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+    SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
 )
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
-    CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
 )
 from wilq.content.workflow.target.dev_draft_execution import CONTENT_DEV_DRAFT_MUTATION_ADAPTER
@@ -28,174 +33,7 @@ def mutation_apply_contract(
     action: ActionObject,
     mutation_adapter: str | None,
 ) -> ActionMutationApplyContract | None:
-    action_type = action.payload.get("action_type")
-    if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
-        return ActionMutationApplyContract(
-            action_id=action.id,
-            action_type=action_type,
-            connector=action.connector,
-            allowed_operation="record_content_delivery_identity_binding",
-            draft_only=False,
-            publication_allowed=False,
-            destructive_allowed=False,
-            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
-            required_env_flags=[],
-            required_input_contracts=[
-                "delivery_identity_authority_snapshot_v1",
-                DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
-            ],
-            required_audit_events=[
-                "action_preview_generated",
-                "human_review_approved_for_prepare",
-                "action_apply_confirmed",
-                "action_impact_check_completed",
-            ],
-            blocked_outputs=[
-                "vendor_write",
-                "wordpress_publish",
-                "wordpress_draft",
-                "content_generation",
-            ],
-            operator_summary=(
-                "Ta akcja zapisuje wyłącznie lokalny exact identity binding z dwóch receiptów; "
-                "nie wywołuje vendora ani nie tworzy treści."
-            ),
-        )
-    if action_type == CURRENT_DISPOSITION_ACTION_TYPE:
-        return ActionMutationApplyContract(
-            action_id=action.id,
-            action_type=action_type,
-            connector=action.connector,
-            allowed_operation="record_current_disposition_receipt",
-            draft_only=False,
-            publication_allowed=False,
-            destructive_allowed=False,
-            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
-            required_env_flags=[],
-            required_input_contracts=["current_disposition_snapshot_v1"],
-            required_audit_events=[
-                "action_preview_generated",
-                "human_review_approved_for_prepare",
-                "action_apply_confirmed",
-                "action_impact_check_completed",
-            ],
-            blocked_outputs=[
-                "vendor_write",
-                "wordpress_publish",
-                "wordpress_draft",
-                "content_generation",
-            ],
-            operator_summary=(
-                "Ta akcja zapisuje wyłącznie lokalny receipt bieżącej disposition exact URL-a; "
-                "nie wywołuje vendora ani nie tworzy treści."
-            ),
-        )
-    if action_type == CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE:
-        return ActionMutationApplyContract(
-            action_id=action.id,
-            action_type=action_type,
-            connector=action.connector,
-            allowed_operation="trash_wordpress_dev_draft",
-            draft_only=True,
-            publication_allowed=False,
-            destructive_allowed=False,
-            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
-            required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
-            required_input_contracts=[CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT],
-            required_audit_events=[
-                "action_preview_generated",
-                "human_review_*",
-                "action_apply_confirmed",
-                "action_impact_check_completed",
-            ],
-            blocked_outputs=[
-                "wordpress_publish",
-                "wordpress_update_existing_post",
-                "wordpress_force_delete_post",
-                "production_write",
-            ],
-            operator_summary=(
-                "Ta akcja przenosi wyłącznie jeden niezmieniony szkic dev do kosza. "
-                "Nie publikuje, nie aktualizuje ani nie usuwa obiektu trwale."
-            ),
-        )
-    if action_type in {
-        CONTENT_DEV_DRAFT_ACTION_TYPE,
-        CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
-    }:
-        contract_key = (
-            "content_new_page_dev_draft_action_v1"
-            if action_type == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE
-            else "content_dev_draft_action_v1"
-        )
-        return ActionMutationApplyContract(
-            action_id=action.id,
-            action_type=action_type,
-            connector=action.connector,
-            allowed_operation="create_wordpress_draft",
-            draft_only=True,
-            publication_allowed=False,
-            destructive_allowed=False,
-            adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
-            required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
-            required_input_contracts=[contract_key],
-            required_audit_events=[
-                "action_preview_generated",
-                "human_review_*",
-                "action_apply_confirmed",
-                "action_impact_check_completed",
-            ],
-            blocked_outputs=[
-                "wordpress_publish",
-                "wordpress_update_existing_post",
-                "wordpress_delete_post",
-                "production_write",
-                "bulk_delivery",
-            ],
-            operator_summary=(
-                "Ta akcja może utworzyć wyłącznie jeden nowy szkic na dev z "
-                "potwierdzonej, exact rewizji. Nie publikuje ani nie zmienia istniejącego obiektu."
-            ),
-        )
-    if action.id not in {
-        "act_apply_wordpress_draft_handoff",
-        "act_prepare_wordpress_draft_handoff",
-    }:
-        return None
-    action_type = action.payload.get("action_type")
-    required_input_contracts = [
-        value
-        for value in action.payload.get("required_input_contracts", [])
-        if isinstance(value, str)
-    ]
-    return ActionMutationApplyContract(
-        action_id=action.id,
-        action_type=action_type if isinstance(action_type, str) else "wordpress_draft_handoff",
-        connector=action.connector,
-        allowed_operation="create_wordpress_draft",
-        draft_only=True,
-        publication_allowed=False,
-        destructive_allowed=False,
-        adapter_status="implemented" if mutation_adapter is not None else "not_implemented",
-        required_env_flags=["WORDPRESS_EKOLOGUS_ALLOW_DRAFT_WRITES"],
-        required_input_contracts=required_input_contracts,
-        required_audit_events=[
-            "action_preview_generated",
-            "human_review_*",
-            "action_apply_confirmed",
-        ],
-        blocked_outputs=[
-            "wordpress_publish",
-            "wordpress_update_existing_post",
-            "wordpress_delete_post",
-            "production_publish_ready_claim",
-        ],
-        operator_summary=(
-            "Ten kontrakt może w przyszłości zapisać wyłącznie szkic WordPress. "
-            "Nie wolno publikować, aktualizować istniejącego wpisu ani omijać "
-            "preview, review, confirm i audytu ActionObject."
-        ),
-    )
+    return _mutation_apply_contract(action, mutation_adapter)
 
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
@@ -211,6 +49,12 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
         and action.connector == "wordpress_ekologus"
     ):
         return CURRENT_DISPOSITION_MUTATION_ADAPTER
+    if (
+        action.payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER
     if (
         action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
         and action.connector == "wordpress_ekologus"

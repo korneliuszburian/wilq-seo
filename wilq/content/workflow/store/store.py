@@ -109,6 +109,9 @@ from wilq.content.workflow.store.store_research_packet import (
 )
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
+from wilq.content.workflow.store.store_source_fact_authority import (
+    ContentSourceFactAuthorityStoreMixin,
+)
 from wilq.content.workflow.store.store_source_pack_binding import (
     ContentSourcePackBindingStoreMixin,
 )
@@ -625,6 +628,7 @@ class ContentWorkflowStore(
     ContentCurrentDispositionAuthorityStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
+    ContentSourceFactAuthorityStoreMixin,
     ContentSourcePackBindingStoreMixin,
     ContentResearchPacketStoreMixin,
     ContentLandingHubAuthorizationStoreMixin,

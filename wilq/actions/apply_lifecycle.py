@@ -23,6 +23,7 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
 from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
 from wilq.content.workflow.target.dev_draft_action import (
@@ -222,9 +223,14 @@ def _resolve_apply_capability(
 ) -> _ApplyCapability:
     if (
         action.payload.get("action_type")
-        in {CURRENT_DISPOSITION_ACTION_TYPE, DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE}
+        in {
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            CURRENT_DISPOSITION_ACTION_TYPE,
+            DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+        }
         and action.payload.get("local_authority_only") is True
     ):
+        # This append-only receipt has no WordPress or vendor mutation.
         return _ApplyCapability(None, [], is_new_page=False)
     if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
         binding, blockers = content_dev_draft_apply_binding(action, request)

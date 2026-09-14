@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ from tests.content.test_delivery_identity_binding import _command as identity_co
 from tests.content.test_source_pack_binding import _setup_store, _source_command
 
 
-def test_exact_source_pack_binding_record_and_read_routes(
+def test_source_pack_route_exposes_global_prerequisites_but_blocks_rowless_facts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -25,7 +26,8 @@ def test_exact_source_pack_binding_record_and_read_routes(
     )
     assert created.status_code == 201
     payload = created.json()
-    assert payload["binding"]["status"] == "exact_current"
+    assert payload["binding"]["status"] == "blocked"
+    assert payload["binding"]["blocker"]["reason"] == "source_fact_row_binding_missing"
     assert payload["binding"]["source_facts_digest"]
 
     readback = client.get(f"/api/content/source-pack-bindings/{payload['binding']['binding_id']}")
@@ -42,36 +44,34 @@ def test_exact_source_pack_binding_record_and_read_routes(
     assert (
         prerequisite_payload["current_work_item_id"] == payload["binding"]["current_work_item_id"]
     )
-    assert prerequisite_payload["approved_source_fact_ids"]
+    assert prerequisite_payload["row_authority_status"] == "missing"
+    assert prerequisite_payload["approved_source_fact_ids"] == []
+    assert prerequisite_payload["global_approved_source_fact_count"] > 0
     assert prerequisite_payload["source_fact_registry_receipt"]["registry_digest"]
     assert prerequisite_payload["fresh_context_digest"]
 
-    round_trip_payload = {
-        "source_pack_id": "source_pack_round_trip",
-        "source_pack_sha256": "b" * 64,
-        "identity_binding_id": prerequisite_payload["identity_binding_id"],
-        "identity_binding_digest": prerequisite_payload["identity_binding_digest"],
-        "current_work_item_id": prerequisite_payload["current_work_item_id"],
-        "source_fact_ids": prerequisite_payload["approved_source_fact_ids"][:2],
-        "evidence_ids": prerequisite_payload["fresh_context_attestation"]["evidence_ids"],
-        "fresh_context_digest": prerequisite_payload["fresh_context_digest"],
-        "source_fact_registry_receipt": prerequisite_payload["source_fact_registry_receipt"],
-        "fresh_context_attestation": prerequisite_payload["fresh_context_attestation"],
-        "recorded_by": "api_round_trip_test",
-        "recorded_at": prerequisite_payload["source_fact_registry_receipt"]["checked_at"],
-    }
+    round_trip_payload = _source_command(
+        identity,
+        source_pack_id="source_pack_round_trip",
+        source_pack_sha256="b" * 64,
+    ).model_dump(mode="json")
     round_trip = client.post("/api/content/source-pack-bindings", json=round_trip_payload)
     assert round_trip.status_code == 201
-    assert round_trip.json()["binding"]["status"] == "exact_current"
+    assert round_trip.json()["binding"]["status"] == "blocked"
+    assert (
+        round_trip.json()["binding"]["blocker"]["reason"]
+        == "source_fact_row_binding_missing"
+    )
 
     conflict_payload = {
         **round_trip_payload,
-        "source_fact_ids": [prerequisite_payload["approved_source_fact_ids"][0]],
+        "source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"],
     }
     conflict = client.post("/api/content/source-pack-bindings", json=conflict_payload)
-    assert conflict.status_code == 409
+    assert conflict.status_code == 201
     conflict_binding = conflict.json()["binding"]
     assert conflict_binding["status"] == "blocked"
+    assert conflict_binding["blocker"]["reason"] == "source_fact_row_binding_missing"
     assert (
         client.get(f"/api/content/source-pack-bindings/{conflict_binding['binding_id']}").json()[
             "binding"
@@ -100,3 +100,30 @@ def test_prerequisites_route_reports_blocked_identity(
 
     assert response.status_code == 409
     assert response.json() == {"detail": "content_source_pack_prerequisites_identity_blocked"}
+
+
+def test_missing_current_classification_blocks_prerequisites_and_pack_post(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    with sqlite3.connect(store.path) as connection:
+        connection.execute("DELETE FROM content_production_classifications")
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    prerequisites = client.get(
+        f"/api/content/source-pack-bindings/prerequisites/{identity.binding_id}"
+    )
+    assert prerequisites.status_code == 200
+    prerequisite_payload = prerequisites.json()
+    assert prerequisite_payload["row_authority_status"] == "blocked"
+    assert prerequisite_payload["row_authority_blocker_reason"] == "classification_current_missing"
+
+    created = client.post(
+        "/api/content/source-pack-bindings",
+        json=_source_command(identity).model_dump(mode="json"),
+    )
+    assert created.status_code == 201
+    assert created.json()["binding"]["status"] == "blocked"
+    assert created.json()["binding"]["blocker"]["reason"] == "classification_current_missing"

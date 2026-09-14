@@ -8,6 +8,7 @@ from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSIT
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
+from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
@@ -114,6 +115,7 @@ def action_impact_check_blockers(
         blockers.append("draft_action_review_required")
     if not action.metrics and not (
         _is_content_dev_draft_action(action)
+        or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
     ):
@@ -171,7 +173,8 @@ def action_apply_preflight_blockers(
     if not action.evidence_ids:
         blockers.append("Akcja nie może zapisać zmian bez dowodów źródłowych.")
     if not connector_configured and not (
-        _is_local_current_disposition_action(action)
+        _is_local_source_fact_authority_action(action)
+        or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
     ):
         blockers.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
@@ -242,6 +245,13 @@ def _is_content_dev_draft_action(action: ActionObject) -> bool:
     }
 
 
+def _is_local_source_fact_authority_action(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    )
+
+
 def _is_local_current_disposition_action(action: ActionObject) -> bool:
     return (
         action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
@@ -259,6 +269,7 @@ def _is_local_delivery_identity_authority_action(action: ActionObject) -> bool:
 def _requires_approved_action_review(action: ActionObject) -> bool:
     return (
         _is_content_dev_draft_action(action)
+        or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
     )

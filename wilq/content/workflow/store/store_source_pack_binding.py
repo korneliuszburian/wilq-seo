@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import cast
+from typing import Any, Protocol, cast
 from uuid import uuid4
 
 from wilq.content.workflow.source_pack_binding import (
@@ -22,6 +22,17 @@ from wilq.security.redaction import redact_mapping
 from wilq.storage.model_json import model_json
 
 
+class _AuthorityAwareStore(Protocol):
+    def load_production_classification_for_work_item(self, work_item_id: str) -> Any: ...
+
+    def load_content_source_fact_authority_receipt_for_identity(
+        self,
+        identity_binding_id: str,
+        current_work_item_id: str,
+        source_fact_ids: tuple[str, ...],
+    ) -> Any: ...
+
+
 class ContentSourcePackBindingStoreMixin:
     """Persist only validated, redacted source-pack receipts."""
 
@@ -32,90 +43,25 @@ class ContentSourcePackBindingStoreMixin:
         self,
         command: ContentSourcePackBindingCommand,
     ) -> ContentSourcePackBindingRecordResult:
-        """Reconcile one source pack against the exact S1 binding.
-
-        The lookup is deliberately by the caller-supplied S1 binding ID.  No
-        path, slug, source-pack ``latest`` row, or fuzzy work-item fallback is
-        consulted.
-        """
+        """Reconcile and append one source pack through exact read seams."""
 
         accepted = ContentSourcePackBindingCommand.model_validate_json(
             command.model_dump_json(), strict=True
-        )
-        accepted = accepted.model_copy(update={"recorded_at": utc_now()})
+        ).model_copy(update={"recorded_at": utc_now()})
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            identity_row = connection.execute(
-                """
-                SELECT * FROM content_delivery_identity_bindings
-                WHERE binding_id = ?
-                """,
-                (accepted.identity_binding_id,),
-            ).fetchone()
-            identity = None if identity_row is None else binding_from_row(identity_row)
-            prior_rows = connection.execute(
-                """
-                SELECT *
-                FROM content_source_pack_bindings
-                WHERE source_pack_id = ?
-                  AND identity_binding_id = ?
-                  AND current_work_item_id = ?
-                  AND status = 'exact_current'
-                ORDER BY rowid
-                """,
-                (
-                    accepted.source_pack_id,
-                    accepted.identity_binding_id,
-                    accepted.current_work_item_id,
-                ),
-            ).fetchall()
-            prior_bindings = tuple(_binding_from_source_pack_row(row) for row in prior_rows)
-            binding = reconcile_content_source_pack_binding(
-                accepted,
-                identity,
-                prior_pack_hashes=tuple(item.source_pack_sha256 for item in prior_bindings),
-                prior_source_fact_sets=tuple(item.source_fact_ids for item in prior_bindings),
-                prior_evidence_sets=tuple(item.evidence_ids for item in prior_bindings),
+            identity, classification, authority_receipt, prior_bindings = (
+                _load_source_pack_binding_context(connection, accepted, self)
             )
-            existing_row = connection.execute(
-                "SELECT * FROM content_source_pack_bindings WHERE binding_id = ?",
-                (binding.binding_id,),
-            ).fetchone()
-            if existing_row is not None:
-                existing = _binding_from_source_pack_row(existing_row)
-                if existing.binding_digest != binding.binding_digest:
-                    _record_source_pack_binding_conflict_audit(connection, binding, existing)
-                    return ContentSourcePackBindingRecordResult(
-                        status="conflict",
-                        binding=existing,
-                    )
-                return ContentSourcePackBindingRecordResult(
-                    status=(
-                        "idempotent"
-                        if existing.binding_digest == binding.binding_digest
-                        else "conflict"
-                    ),
-                    binding=existing,
-                )
-            digest_row = connection.execute(
-                "SELECT * FROM content_source_pack_bindings WHERE binding_digest = ?",
-                (binding.binding_digest,),
-            ).fetchone()
-            if digest_row is not None:
-                existing = _binding_from_source_pack_row(digest_row)
-                _record_source_pack_binding_conflict_audit(connection, binding, existing)
-                return ContentSourcePackBindingRecordResult(
-                    status="conflict",
-                    binding=existing,
-                )
-            _insert_source_pack_binding(connection, binding)
-            _record_source_pack_binding_audit(connection, binding)
-            if binding.blocker is not None and prior_bindings:
-                _record_source_pack_binding_conflict_audit(connection, binding, prior_bindings[0])
-        return ContentSourcePackBindingRecordResult(
-            status="conflict" if binding.blocker is not None and prior_bindings else "created",
-            binding=binding,
-        )
+            result = _record_source_pack_binding(
+                connection,
+                accepted,
+                identity=identity,
+                classification=classification,
+                authority_receipt=authority_receipt,
+                prior_bindings=prior_bindings,
+            )
+        return result
 
     def load_content_source_pack_binding(
         self,
@@ -127,6 +73,102 @@ class ContentSourcePackBindingStoreMixin:
                 (binding_id,),
             ).fetchone()
         return None if row is None else _binding_from_source_pack_row(row)
+
+
+def _load_source_pack_binding_context(
+    connection: sqlite3.Connection,
+    command: ContentSourcePackBindingCommand,
+    store: ContentSourcePackBindingStoreMixin,
+) -> tuple[Any, Any, Any, tuple[ContentSourcePackBinding, ...]]:
+    identity_row = connection.execute(
+        """
+        SELECT * FROM content_delivery_identity_bindings
+        WHERE binding_id = ?
+        """,
+        (command.identity_binding_id,),
+    ).fetchone()
+    identity = None if identity_row is None else binding_from_row(identity_row)
+    authority_store = cast(_AuthorityAwareStore, store)
+    classification = (
+        None
+        if identity is None
+        else authority_store.load_production_classification_for_work_item(
+            identity.current_work_item_id
+        )
+    )
+    authority_receipt = (
+        None
+        if identity is None
+        else authority_store.load_content_source_fact_authority_receipt_for_identity(
+            identity.binding_id,
+            identity.current_work_item_id,
+            command.source_fact_ids,
+        )
+    )
+    prior_rows = connection.execute(
+        """
+        SELECT *
+        FROM content_source_pack_bindings
+        WHERE source_pack_id = ?
+          AND identity_binding_id = ?
+          AND current_work_item_id = ?
+          AND status = 'exact_current'
+        ORDER BY rowid
+        """,
+        (
+            command.source_pack_id,
+            command.identity_binding_id,
+            command.current_work_item_id,
+        ),
+    ).fetchall()
+    prior_bindings = tuple(_binding_from_source_pack_row(row) for row in prior_rows)
+    return identity, classification, authority_receipt, prior_bindings
+
+
+def _record_source_pack_binding(
+    connection: sqlite3.Connection,
+    command: ContentSourcePackBindingCommand,
+    *,
+    identity: Any,
+    classification: Any,
+    authority_receipt: Any,
+    prior_bindings: tuple[ContentSourcePackBinding, ...],
+) -> ContentSourcePackBindingRecordResult:
+    binding = reconcile_content_source_pack_binding(
+        command,
+        identity,
+        authority_receipt=authority_receipt,
+        classification=classification,
+        prior_pack_hashes=tuple(item.source_pack_sha256 for item in prior_bindings),
+        prior_source_fact_sets=tuple(item.source_fact_ids for item in prior_bindings),
+        prior_evidence_sets=tuple(item.evidence_ids for item in prior_bindings),
+    )
+    existing_row = connection.execute(
+        "SELECT * FROM content_source_pack_bindings WHERE binding_id = ?",
+        (binding.binding_id,),
+    ).fetchone()
+    if existing_row is not None:
+        existing = _binding_from_source_pack_row(existing_row)
+        if existing.binding_digest != binding.binding_digest:
+            _record_source_pack_binding_conflict_audit(connection, binding, existing)
+            return ContentSourcePackBindingRecordResult(status="conflict", binding=existing)
+        return ContentSourcePackBindingRecordResult(status="idempotent", binding=existing)
+    digest_row = connection.execute(
+        "SELECT * FROM content_source_pack_bindings WHERE binding_digest = ?",
+        (binding.binding_digest,),
+    ).fetchone()
+    if digest_row is not None:
+        existing = _binding_from_source_pack_row(digest_row)
+        _record_source_pack_binding_conflict_audit(connection, binding, existing)
+        return ContentSourcePackBindingRecordResult(status="conflict", binding=existing)
+    _insert_source_pack_binding(connection, binding)
+    _record_source_pack_binding_audit(connection, binding)
+    if binding.blocker is not None and prior_bindings:
+        _record_source_pack_binding_conflict_audit(connection, binding, prior_bindings[0])
+    return ContentSourcePackBindingRecordResult(
+        status="conflict" if binding.blocker is not None and prior_bindings else "created",
+        binding=binding,
+    )
 
 
 def _binding_from_source_pack_row(row: sqlite3.Row) -> ContentSourcePackBinding:
@@ -176,7 +218,7 @@ def _insert_source_pack_binding(
     binding: ContentSourcePackBinding,
 ) -> None:
     redacted = ContentSourcePackBinding.model_validate(
-        redact_mapping(binding.model_dump(mode="json"))
+        redact_mapping(binding.model_dump(mode="json", exclude_unset=True))
     )
     connection.execute(
         """
@@ -201,7 +243,7 @@ def _insert_source_pack_binding(
             redacted.status,
             redacted.recorded_by,
             redacted.recorded_at.isoformat(),
-            model_json(redacted),
+            model_json(redacted.model_dump(mode="json", exclude_unset=True)),
         ),
     )
 

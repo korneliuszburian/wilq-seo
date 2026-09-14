@@ -79,6 +79,8 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_refresh_preparation_authorizations",
         "content_research_packets",
         "content_source_pack_bindings",
+        "content_source_fact_authority_proposals",
+        "content_source_fact_authority_receipts",
         "content_public_deployments",
         "content_public_source_reviews",
         "content_quality_reviews",
@@ -275,6 +277,47 @@ def test_delivery_identity_authority_schema_hunks_are_exact(tmp_path: Path) -> N
         "content_delivery_records_no_delete",
         "content_delivery_records_no_replace",
         "content_delivery_records_no_update",
+    }.issubset({item.name for item in inventory.catalog.triggers})
+
+
+def test_source_fact_authority_schema_hunks_are_exact(tmp_path: Path) -> None:
+    path = tmp_path / "source-fact-authority-schema.sqlite3"
+    ContentWorkflowStore(path).list_draft_revisions("schema-proof")
+
+    inventory = inspect_sqlite_schema(
+        path,
+        application_sha256=APPLICATION_SHA256,
+        seed_sha256=SEED_SHA256,
+    )
+    tables = {item.name: item for item in inventory.catalog.tables}
+
+    assert [
+        column.name for column in tables["content_source_fact_authority_proposals"].columns
+    ] == [
+        "action_id",
+        "proposal_digest",
+        "identity_binding_id",
+        "payload_json",
+    ]
+    assert [
+        column.name for column in tables["content_source_fact_authority_receipts"].columns
+    ] == [
+        "receipt_id",
+        "receipt_digest",
+        "action_id",
+        "action_payload_digest",
+        "identity_binding_id",
+        "current_work_item_id",
+        "payload_json",
+    ]
+    assert {
+        "content_source_fact_authority_proposals_no_delete",
+        "content_source_fact_authority_proposals_no_replace",
+        "content_source_fact_authority_proposals_no_update",
+        "content_source_fact_authority_receipts_no_delete",
+        "content_source_fact_authority_receipts_no_replace",
+        "content_source_fact_authority_receipts_no_update",
+        "content_source_pack_bindings_no_replace",
     }.issubset({item.name for item in inventory.catalog.triggers})
 
 

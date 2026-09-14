@@ -21,8 +21,13 @@ from wilq.content.workflow.source_pack_binding import (
     SERVICE_PROFILE_SOURCE_FACTS_EVIDENCE_ID,
     SOURCE_FACT_REGISTRY_ID,
     ContentSourceFactRegistryReceipt,
+    ContentSourcePackBinding,
     ContentSourcePackBindingCommand,
     ContentSourcePackContextAttestation,
+    ContentSourcePackPrerequisites,
+    build_content_source_pack_prerequisites,
+    content_source_pack_binding_digest,
+    content_source_pack_binding_logical_id,
     content_source_pack_context_digest,
     evidence_ids_digest,
     reconcile_content_source_pack_binding,
@@ -116,7 +121,7 @@ def _source_command(
     return ContentSourcePackBindingCommand.model_validate(payload)
 
 
-def test_store_records_exact_redacted_source_pack_and_is_idempotent(
+def test_store_records_row_authority_blocker_and_is_idempotent(
     tmp_path: Path,
 ) -> None:
     store, identity = _setup_store(tmp_path)
@@ -133,7 +138,9 @@ def test_store_records_exact_redacted_source_pack_and_is_idempotent(
     )
 
     assert created.status == "created"
-    assert created.binding.status == "exact_current"
+    assert created.binding.status == "blocked"
+    assert created.binding.blocker is not None
+    assert created.binding.blocker.reason == "source_fact_row_binding_missing"
     assert created.binding.source_facts_digest == source_fact_ids_digest(command.source_fact_ids)
     assert created.binding.evidence_ids_digest == evidence_ids_digest(command.evidence_ids)
     assert retry.status == "idempotent"
@@ -155,19 +162,19 @@ def test_store_records_exact_redacted_source_pack_and_is_idempotent(
         ).fetchone() == (1,)
 
 
-def test_source_pack_hash_mismatch_persists_typed_blocker(tmp_path: Path) -> None:
-    store, identity = _setup_store(tmp_path)
-    store.record_content_source_pack_binding(_source_command(identity))
+def test_source_pack_hash_mismatch_remains_typed_before_row_authority_check(tmp_path: Path) -> None:
+    _, identity = _setup_store(tmp_path)
 
-    mismatch = store.record_content_source_pack_binding(
-        _source_command(identity, source_pack_sha256="b" * 64)
+    mismatch = reconcile_content_source_pack_binding(
+        _source_command(identity, source_pack_sha256="b" * 64),
+        identity,
+        prior_pack_hashes=(SOURCE_PACK_HASH,),
+        now=RECORDED_AT,
     )
 
-    assert mismatch.status == "conflict"
-    assert mismatch.binding.status == "blocked"
-    assert mismatch.binding.blocker is not None
-    assert mismatch.binding.blocker.reason == "source_pack_hash_mismatch"
-    assert store.load_content_source_pack_binding(mismatch.binding.binding_id) == mismatch.binding
+    assert mismatch.status == "blocked"
+    assert mismatch.blocker is not None
+    assert mismatch.blocker.reason == "source_pack_hash_mismatch"
 
 
 def test_source_pack_rejects_unregistered_fact_and_zero_digest(tmp_path: Path) -> None:
@@ -237,6 +244,47 @@ def test_source_pack_rejects_unapproved_fact_and_registry_digest_mismatch(
     assert registry_mismatch.binding.blocker.reason == "source_fact_registry_mismatch"
 
 
+def test_source_pack_rejects_approved_foreign_fact_without_row_binding(
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    foreign = store.record_content_source_pack_binding(
+        _source_command(
+            identity,
+            source_fact_ids=("ekologus_public_consulting_outsourcing_offer_2026_07_01",),
+        )
+    )
+
+    assert foreign.binding.status == "blocked"
+    assert foreign.binding.blocker is not None
+    assert foreign.binding.blocker.reason == "source_fact_row_binding_missing"
+
+
+def test_row_authority_missing_rejects_selectable_facts_but_legacy_exact_receipt_reads(
+    tmp_path: Path,
+) -> None:
+    _, identity = _setup_store(tmp_path)
+    prerequisites = build_content_source_pack_prerequisites(identity, checked_at=RECORDED_AT)
+    with pytest.raises(ValidationError, match="row authority"):
+        ContentSourcePackPrerequisites.model_validate(
+            prerequisites.model_dump(mode="json")
+            | {"approved_source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"]}
+        )
+
+    blocked = reconcile_content_source_pack_binding(
+        _source_command(identity), identity, now=RECORDED_AT
+    )
+    payload = blocked.model_dump(mode="json")
+    payload.update({"status": "exact_current", "blocker": None})
+    payload["binding_digest"] = content_source_pack_binding_digest(payload)
+    payload["binding_id"] = (
+        f"content_source_pack_binding_{content_source_pack_binding_logical_id(payload)[:24]}"
+    )
+    legacy_exact = ContentSourcePackBinding.model_validate(payload)
+    assert legacy_exact.status == "exact_current"
+    assert legacy_exact.blocker is None
+
+
 def test_source_pack_rejects_secret_like_identifiers_before_persisting(
     tmp_path: Path,
 ) -> None:
@@ -270,7 +318,7 @@ def test_source_pack_preserves_valid_long_identifiers_after_redaction(
         _source_command(identity, source_pack_id=long_id)
     )
 
-    assert result.binding.status == "exact_current"
+    assert result.binding.status == "blocked"
     assert result.binding.source_pack_id == long_id
     assert store.load_content_source_pack_binding(result.binding.binding_id) == result.binding
 
@@ -366,11 +414,11 @@ def test_source_pack_uses_server_owned_recorded_at(tmp_path: Path) -> None:
 
     result = store.record_content_source_pack_binding(backdated)
 
-    assert result.binding.status == "exact_current"
+    assert result.binding.status == "blocked"
     assert result.binding.recorded_at > datetime.now(UTC) - timedelta(minutes=1)
 
 
-def test_source_pack_changed_fact_set_is_typed_conflict_and_audited(
+def test_distinct_global_fact_sets_remain_row_authority_blocked_and_audited(
     tmp_path: Path,
 ) -> None:
     store, identity = _setup_store(tmp_path)
@@ -383,10 +431,10 @@ def test_source_pack_changed_fact_set_is_typed_conflict_and_audited(
     )
 
     assert first.status == "created"
-    assert changed.status == "conflict"
+    assert changed.status == "created"
     assert changed.binding.status == "blocked"
     assert changed.binding.blocker is not None
-    assert changed.binding.blocker.reason == "source_facts_mismatch"
+    assert changed.binding.blocker.reason == "source_fact_row_binding_missing"
     assert store.load_content_source_pack_binding(changed.binding.binding_id) == changed.binding
     assert store.load_content_source_pack_binding(first.binding.binding_id) == first.binding
 
@@ -401,17 +449,9 @@ def test_source_pack_changed_fact_set_is_typed_conflict_and_audited(
     assert audit["details"]["adapter"] == "content_source_pack_binding_store"
     assert audit["details"]["trace"]["binding_digest"] == first.binding.binding_digest
     assert audit["details"]["external_write_attempted"] is False
-    with sqlite3.connect(store.path) as connection:
-        conflict_audit_rows = connection.execute(
-            "SELECT payload_json FROM audit_events WHERE id LIKE 'audit_source_pack_conflict_%'"
-        ).fetchall()
-    assert len(conflict_audit_rows) == 1
-    conflict_audit = json.loads(conflict_audit_rows[0][0])
-    assert conflict_audit["event_type"] == "content_source_pack_binding_conflict"
-    assert conflict_audit["details"]["external_write_attempted"] is False
 
 
-def test_blocked_source_receipt_does_not_prevent_corrected_exact_receipt(
+def test_blocked_source_receipts_preserve_more_specific_then_row_authority_blockers(
     tmp_path: Path,
 ) -> None:
     store, identity = _setup_store(tmp_path)
@@ -436,25 +476,28 @@ def test_blocked_source_receipt_does_not_prevent_corrected_exact_receipt(
 
     assert blocked.binding.status == "blocked"
     assert corrected.status == "created"
-    assert corrected.binding.status == "exact_current"
+    assert corrected.binding.status == "blocked"
+    assert corrected.binding.blocker is not None
+    assert corrected.binding.blocker.reason == "source_fact_row_binding_missing"
     assert store.load_content_source_pack_binding(corrected.binding.binding_id) == corrected.binding
     with sqlite3.connect(store.path) as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM content_source_pack_bindings WHERE status = 'blocked'"
-        ).fetchone() == (1,)
+        ).fetchone() == (2,)
         assert connection.execute(
             "SELECT COUNT(*) FROM content_source_pack_bindings WHERE status = 'exact_current'"
-        ).fetchone() == (1,)
+        ).fetchone() == (0,)
 
 
 def test_source_pack_context_attestation_mismatch_is_typed_blocker() -> None:
     run = exact_public_bdo_run()
     row = run.rows[1]
+    classification = project_content_production_classification(run, row)
     identity = reconcile_content_delivery_identity(
         identity_command(retained=False),
         ContentDeliveryClassificationLookup(
             row_status="exact",
-            run=project_content_production_classification(run, row),
+            run=classification,
         ),
     )
     command = _source_command(
@@ -464,7 +507,9 @@ def test_source_pack_context_attestation_mismatch_is_typed_blocker() -> None:
         ),
     )
 
-    blocked = reconcile_content_source_pack_binding(command, identity, now=RECORDED_AT)
+    blocked = reconcile_content_source_pack_binding(
+        command, identity, classification=classification, now=RECORDED_AT
+    )
 
     assert blocked.status == "blocked"
     assert blocked.blocker is not None
@@ -474,31 +519,37 @@ def test_source_pack_context_attestation_mismatch_is_typed_blocker() -> None:
 def test_source_pack_context_evidence_and_work_item_mismatches_fail_closed() -> None:
     run = exact_public_bdo_run()
     row = run.rows[1]
+    classification = project_content_production_classification(run, row)
     identity = reconcile_content_delivery_identity(
         identity_command(retained=False),
         ContentDeliveryClassificationLookup(
             row_status="exact",
-            run=project_content_production_classification(run, row),
+            run=classification,
         ),
     )
     command = _source_command(identity)
 
-    context_refresh = reconcile_content_source_pack_binding(command, identity, now=RECORDED_AT)
+    context_refresh = reconcile_content_source_pack_binding(
+        command, identity, classification=classification, now=RECORDED_AT
+    )
     evidence_mismatch = reconcile_content_source_pack_binding(
         command,
         identity,
+        classification=classification,
         prior_evidence_sets=(("ev_old",),),
         now=RECORDED_AT,
     )
     work_item_mismatch = reconcile_content_source_pack_binding(
         command.model_copy(update={"current_work_item_id": "other_work_item"}),
         identity,
+        classification=classification,
         now=RECORDED_AT,
     )
 
     assert evidence_mismatch.blocker is not None
     assert work_item_mismatch.blocker is not None
-    assert context_refresh.blocker is None
+    assert context_refresh.blocker is not None
+    assert context_refresh.blocker.reason == "source_fact_row_binding_missing"
     assert evidence_mismatch.blocker.reason == "evidence_set_mismatch"
     assert work_item_mismatch.blocker.reason == "work_item_mismatch"
 
@@ -545,6 +596,12 @@ def test_source_pack_tamper_and_sqlite_mutations_fail_closed(tmp_path: Path) -> 
             connection.execute("UPDATE content_source_pack_bindings SET status = 'blocked'")
         with pytest.raises(sqlite3.IntegrityError, match="append-only"):
             connection.execute("DELETE FROM content_source_pack_bindings")
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            connection.execute(
+                "INSERT OR REPLACE INTO content_source_pack_bindings "
+                "SELECT * FROM content_source_pack_bindings WHERE binding_id = ?",
+                (created.binding.binding_id,),
+            )
         connection.execute("DROP TRIGGER content_source_pack_bindings_no_update")
         payload_row = connection.execute(
             "SELECT payload_json FROM content_source_pack_bindings WHERE binding_id = ?",

@@ -246,6 +246,11 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
     execute_delivery_identity_authority,
 )
+from wilq.content.workflow.source_fact_authority import (
+    SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+    SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
+    execute_content_source_fact_authority,
+)
 from wilq.content.workflow.store.store import (
     content_workflow_store as action_content_workflow_store,
 )
@@ -515,6 +520,12 @@ def _execute_supported_mutation_adapter(
     mutation_adapter: str,
     wordpress_capability: Any = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    if mutation_adapter == SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER:
+        return execute_content_source_fact_authority(
+            action,
+            store=action_content_workflow_store(),
+            audit_events=action.audit_events,
+        )
     if mutation_adapter == CURRENT_DISPOSITION_MUTATION_ADAPTER:
         return execute_current_disposition_authority(
             action,
@@ -827,6 +838,14 @@ def _operator_audit_summary_text(summary: str) -> str:
 
 
 def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE:
+        snapshot = payload.get("source_fact_authority")
+        without_snapshot = {
+            key: value for key, value in payload.items() if key != "source_fact_authority"
+        }
+        enriched = payload_with_operator_labels(without_snapshot)
+        enriched["source_fact_authority"] = snapshot
+        return enriched
     return payload_with_operator_labels(payload)
 
 

@@ -72,6 +72,7 @@ from wilq.content.workflow.current_disposition_authority import load_current_dis
 from wilq.content.workflow.delivery_identity_authority import (
     load_delivery_identity_authority_action,
 )
+from wilq.content.workflow.source_fact_authority import load_content_source_fact_authority_action
 from wilq.content.workflow.target.dev_draft_action import load_content_target_draft_action
 from wilq.content.workflow.target.dev_draft_discard_action import (
     load_content_dev_draft_discard_action,
@@ -147,6 +148,7 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_new_page_draft_action(action_id)
         or load_delivery_identity_authority_action(action_id)
         or load_current_disposition_action(action_id)
+        or load_content_source_fact_authority_action(action_id)
         or _action_registry().get(action_id)
     )
 
