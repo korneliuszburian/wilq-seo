@@ -20,6 +20,9 @@ from wilq.actions.service import (
     validate_action,
 )
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
+from wilq.content.workflow.current_disposition_authority import (
+    CURRENT_DISPOSITION_ACTION_TYPE,
+)
 from wilq.evidence.registry import list_evidence_by_ids
 from wilq.schemas import (
     ActionApplyRequest,
@@ -458,6 +461,26 @@ def _apply_action_endpoint(
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    if (
+        action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "current_disposition_approval_required",
+                "status": "blocked",
+                "action_id": action.id,
+                "message": (
+                    "Bieżącą disposition można zatwierdzić wyłącznie przez "
+                    "kanoniczny endpoint current-disposition approval."
+                ),
+                "canonical_endpoint": (
+                    f"/api/content/current-disposition-authorities/{action.id}/approve"
+                ),
+                "external_write_attempted": False,
+            },
+        )
     result = apply_action(action, request)
     clear_api_view_model_caches()
     if not result.applied:

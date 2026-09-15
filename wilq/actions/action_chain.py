@@ -18,7 +18,11 @@ def revision_bound_action_chain[Binding](
     expected_binding: Binding | None = None,
 ) -> tuple[ActionChain | None, list[ActionWordPressDraftApplyBlocker]]:
     """Verify the complete, ordered, actor-bound ActionObject apply chain."""
-    latest_events = sorted(events, key=lambda event: event.created_at, reverse=True)
+    latest_events = sorted(
+        events,
+        key=lambda event: (event.created_at, event.id),
+        reverse=True,
+    )
     preview = _latest_event(latest_events, {"action_preview_generated"})
     review = next(
         (event for event in latest_events if event.event_type.startswith("human_review_")),

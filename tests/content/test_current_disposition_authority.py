@@ -630,8 +630,48 @@ def test_current_disposition_api_exposes_preview_and_read_only() -> None:
     read_methods = app.openapi()["paths"][
         "/api/content/current-disposition-authorities/{action_id}"
     ]
+    approve_methods = app.openapi()["paths"][
+        "/api/content/current-disposition-authorities/{action_id}/approve"
+    ]
 
     assert set(preview_methods) >= {"post"}
     assert "get" not in preview_methods
     assert set(read_methods) >= {"get"}
     assert "post" not in read_methods
+    assert set(approve_methods) >= {"post"}
+
+
+def test_current_disposition_latest_rejected_review_blocks_direct_apply(tmp_path) -> None:
+    store, action = _preview_action(tmp_path)
+    snapshot_digest = action.payload["current_disposition_authority"]["context_digest"]
+    payload_digest = current_disposition_action_payload_digest(action)
+    events = _lifecycle_events(action)
+    rejected = AuditEvent(
+        id="audit_latest_rejected",
+        action_id=action.id,
+        event_type="human_review_rejected",
+        actor="local_operator",
+        summary="rejected",
+        details={
+            "current_disposition_snapshot_digest": snapshot_digest,
+            "current_disposition_action_payload_digest": payload_digest,
+        },
+        created_at=events[-1].created_at + timedelta(seconds=1),
+    )
+    action.audit_events = [rejected, *events]
+    assert "draft_action_review_required" in action_confirmation_blockers(
+        action,
+        type("Request", (), {"preview_acknowledged": True})(),
+        events[0],
+        ads_target_blockers=lambda _request: [],
+    )
+
+    result, errors = execute_current_disposition_authority(
+        action,
+        store=store,
+        audit_events=action.audit_events,
+    )
+
+    assert result is None
+    assert errors == ["Current disposition audit chain is not valid."]
+    assert store.load_content_current_disposition_receipt(action.id) is None

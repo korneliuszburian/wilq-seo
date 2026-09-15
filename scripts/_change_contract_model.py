@@ -99,6 +99,12 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/api_contracts/test_redaction_contracts.py",
         "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
     ),
+    ("current-disposition", "server-owned-approval-command"): (
+        "scripts/test.sh",
+        "tests/content/test_current_disposition_authority.py",
+        "tests/content/test_current_disposition_approval.py",
+        "tests/scripts/test_changes_check.py",
+    ),
     ("current-disposition", "operator-decision-card"): (
         "pnpm",
         "--filter",
@@ -163,6 +169,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("content-review", "exact-packet-revision")
             else ("tests/dashboard/test_current_disposition_card_change_contract.py",)
             if key == ("current-disposition", "operator-decision-card")
+            else ("tests/content/test_current_disposition_approval_change_contract.py",)
+            if key == ("current-disposition", "server-owned-approval-command")
             else _test_selectors(proof)
         ),
         observer_paths=(
@@ -181,6 +189,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("content-review", "exact-packet-revision")
             else ("tests/dashboard/test_current_disposition_card_change_contract.py",)
             if key == ("current-disposition", "operator-decision-card")
+            else ("tests/content/test_current_disposition_approval_change_contract.py",)
+            if key == ("current-disposition", "server-owned-approval-command")
             else tuple(
                 dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof))
             )
@@ -191,6 +201,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("content-review", "exact-packet-revision"),
             ("current-disposition", "operator-decision-card"),
+            ("current-disposition", "server-owned-approval-command"),
         },
     )
     for key, proof in _PROOFS.items()

@@ -276,8 +276,20 @@ def _requires_approved_action_review(action: ActionObject) -> bool:
 
 
 def _has_approved_action_review(action: ActionObject) -> bool:
-    return any(
-        event.event_type == "human_review_approved_for_prepare" for event in action.audit_events
+    latest_review = next(
+        (
+            event
+            for event in sorted(
+                action.audit_events,
+                key=lambda event: (event.created_at, event.id),
+                reverse=True,
+            )
+            if event.event_type.startswith("human_review_")
+        ),
+        None,
+    )
+    return latest_review is not None and latest_review.event_type == (
+        "human_review_approved_for_prepare"
     )
 
 

@@ -46,6 +46,9 @@ CURRENT_DISPOSITION_CONTRACT = (
 SOURCE_FACT_SOURCE_PACK_CONTRACT = (
     "source-fact-source-pack:exact-reviewed-row-consumption-red->green"
 )
+CURRENT_DISPOSITION_APPROVAL_CONTRACT = (
+    "current-disposition:server-owned-approval-command-red->green"
+)
 CONTENT_REVIEW_CONTRACT = "content-review:exact-packet-revision-red->green"
 INVENTORY_CLASSIFICATION_PROOF = (
     "scripts/test.sh",
@@ -72,6 +75,12 @@ CURRENT_DISPOSITION_PROOF = (
     "tests/actions/test_audit_store_contracts.py::test_audit_details_for_operator_keeps_only_canonical_digest_values",
     "tests/api_contracts/test_redaction_contracts.py",
     "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
+)
+CURRENT_DISPOSITION_APPROVAL_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_current_disposition_authority.py",
+    "tests/content/test_current_disposition_approval.py",
+    "tests/scripts/test_changes_check.py",
 )
 SOURCE_FACT_SOURCE_PACK_PROOF = (
     "scripts/test.sh",
@@ -326,6 +335,184 @@ def test_changes_check_maps_current_disposition_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [CURRENT_DISPOSITION_PROOF]
+
+
+def test_changes_check_maps_server_owned_current_disposition_approval_to_backend_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/content/workflow/current_disposition_approval.py",
+        message=(
+            "feat: map current disposition approval proof\n\n"
+            f"Change-contract: {CURRENT_DISPOSITION_APPROVAL_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    descriptor = change_contract_model.MAPPINGS[
+        ("current-disposition", "server-owned-approval-command")
+    ]
+    assert result == 0
+    assert calls == [CURRENT_DISPOSITION_APPROVAL_PROOF]
+    assert descriptor.selectors == (
+        "tests/content/test_current_disposition_approval_change_contract.py",
+    )
+    assert descriptor.observer_paths == descriptor.selectors
+    assert descriptor.expectation == "red-green"
+    assert descriptor.allow_new_mapping is True
+
+
+def test_server_owned_current_disposition_approval_observer_is_red_then_green(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "counterfactual"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "current disposition approval observer")
+
+    observed_sources = (
+        "wilq/content/workflow/current_disposition_approval.py",
+        "apps/api/wilq_api/routers/content_current_disposition_authority.py",
+        "apps/api/wilq_api/routers/actions.py",
+        "wilq/actions/action_chain.py",
+        "scripts/_change_contract_observer.py",
+    )
+    for relative in observed_sources:
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("old implementation\n", encoding="utf-8")
+    reporter = repo / "scripts/trusted_test_report.py"
+    reporter.parent.mkdir(parents=True, exist_ok=True)
+    reporter.write_bytes((REPOSITORY_ROOT / "scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    for relative in observed_sources:
+        (repo / relative).write_text(
+            (REPOSITORY_ROOT / relative).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    observer_path = repo / "tests/content/test_current_disposition_approval_change_contract.py"
+    observer_path.parent.mkdir(parents=True, exist_ok=True)
+    observer_path.write_text(
+        (
+            REPOSITORY_ROOT
+            / "tests/content/test_current_disposition_approval_change_contract.py"
+        ).read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    mapping = repo / "scripts/_change_contract_model.py"
+    mapping.write_text(
+        "MAPPING = ('current-disposition', 'server-owned-approval-command')\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    descriptor = change_contract_model.MAPPINGS[
+        ("current-disposition", "server-owned-approval-command")
+    ]
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("current-disposition", "server-owned-approval-command"),
+    )
+
+    assert result.ok is True, result.reason
+    assert result.infrastructure is False
+    assert result.reason == "green"
+
+
+def test_allow_new_mapping_still_requires_candidate_mapping_presence(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "missing-candidate-mapping"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "missing candidate mapping")
+
+    source = repo / "value.py"
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    reporter = repo / "scripts/trusted_test_report.py"
+    reporter.parent.mkdir(parents=True, exist_ok=True)
+    reporter.write_bytes((REPOSITORY_ROOT / "scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    source.write_text("VALUE = 2\n", encoding="utf-8")
+    observer_file = repo / "tests/test_mapping.py"
+    observer_file.parent.mkdir(parents=True, exist_ok=True)
+    observer_file.write_text(
+        "from pathlib import Path\n\n"
+        "def test_candidate_source_is_new():\n"
+        "    assert 'VALUE = 2' in (Path(__file__).parents[1] / 'value.py').read_text()\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate without mapping")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    descriptor = change_contract_model.MappingDescriptor(
+        proof=(),
+        selectors=("tests/test_mapping.py",),
+        observer_paths=("tests/test_mapping.py",),
+        expectation="red-green",
+        mapping_path="scripts/_change_contract_model.py",
+        allow_new_mapping=True,
+    )
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("current-disposition", "server-owned-approval-command"),
+    )
+
+    assert result.ok is False
+    assert result.infrastructure is False
+    assert result.reason == "mapping-missing-candidate"
 
 
 def test_changes_check_maps_source_fact_source_pack_to_exact_focused_proof(

@@ -351,9 +351,7 @@ def counterfactual(
             candidate_presence = mapping_presence(
                 repository_root, candidate_commit, descriptor, mapping_key
             )
-            if parent_presence is True and candidate_presence is not True:
-                return CounterfactualResult(False, False, "mapping-missing-candidate")
-            if candidate_presence is False and not descriptor.allow_new_mapping:
+            if candidate_presence is not True:
                 return CounterfactualResult(False, False, "mapping-missing-candidate")
             if (
                 parent_presence is False

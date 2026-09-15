@@ -8,6 +8,7 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from wilq.actions.action_chain import revision_bound_action_chain
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.store.store_production_classification import (
     HISTORICAL_PRODUCTION_POLICY_IDS,
@@ -247,7 +248,11 @@ def current_disposition_action_payload_digest(action: ActionObject) -> str:
 
 
 def execute_current_disposition_authority(
-    action: ActionObject, *, store: Any, audit_events: list[AuditEvent]
+    action: ActionObject,
+    *,
+    store: Any,
+    audit_events: list[AuditEvent],
+    confirmed_by: str | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     proposal = store.load_content_current_disposition_proposal(action.id)
     if proposal is None:
@@ -255,39 +260,29 @@ def execute_current_disposition_authority(
     expected, blockers = _rebuild_current_disposition_action(store, proposal)
     if expected is None or blockers or action.payload != expected.payload:
         return None, ["Current disposition context changed before apply."]
-    required = (
-        "action_preview_generated",
-        "human_review_approved_for_prepare",
-        "action_apply_confirmed",
-        "action_impact_check_completed",
-    )
-    events = {event.event_type: event for event in audit_events if event.action_id == action.id}
-    if any(event_type not in events for event_type in required):
-        return None, ["Exact preview, approved review, confirmation and impact check are required."]
     snapshot = ContentCurrentDispositionSnapshot.model_validate(
         action.payload["current_disposition_authority"]
     )
     payload_digest = current_disposition_action_payload_digest(action)
-    chain = [events[event_type] for event_type in required]
-    if [event.event_type for event in sorted(chain, key=lambda event: event.created_at)] != list(
-        required
-    ):
-        return None, ["Current disposition audit chain is out of order."]
-    if any(
-        event.details.get("current_disposition_snapshot_digest") != snapshot.context_digest
-        or event.details.get("current_disposition_action_payload_digest") != payload_digest
-        for event in chain
-    ):
-        return None, ["Audit chain does not bind the exact current disposition snapshot."]
+    scoped_events = [event for event in audit_events if event.action_id == action.id]
+    chain, chain_blockers = revision_bound_action_chain(
+        scoped_events,
+        confirmed_by=confirmed_by or _confirmation_actor(scoped_events),
+        binding_from_event=_current_disposition_audit_binding,
+        expected_binding=(snapshot.context_digest, payload_digest),
+    )
+    if chain is None:
+        return None, [_current_disposition_chain_error(chain_blockers)]
+    preview, review, confirmation, impact = chain
     receipt = ContentCurrentDispositionReceipt.create(
         action=action,
         snapshot=snapshot,
-        preview_audit_id=chain[0].id,
-        review_audit_id=chain[1].id,
-        confirmation_audit_id=chain[2].id,
-        impact_audit_id=chain[3].id,
-        reviewed_by=chain[1].actor,
-        confirmed_by=chain[2].actor,
+        preview_audit_id=preview.id,
+        review_audit_id=review.id,
+        confirmation_audit_id=confirmation.id,
+        impact_audit_id=impact.id,
+        reviewed_by=review.actor,
+        confirmed_by=confirmation.actor,
     )
     status, stored = store.record_content_current_disposition_receipt(receipt)
     if status == "conflict":
@@ -300,6 +295,43 @@ def execute_current_disposition_authority(
         },
         [],
     )
+
+
+def _current_disposition_audit_binding(
+    event: AuditEvent,
+) -> tuple[str, str] | None:
+    snapshot = event.details.get("current_disposition_snapshot_digest")
+    payload = event.details.get("current_disposition_action_payload_digest")
+    if not isinstance(snapshot, str) or not isinstance(payload, str):
+        return None
+    return snapshot, payload
+
+
+def _confirmation_actor(events: list[AuditEvent]) -> str:
+    confirmations = sorted(
+        (
+            event
+            for event in events
+            if event.event_type
+            in {
+                "action_apply_confirmed",
+                "action_confirmation_blocked",
+                "action_apply_confirmation_blocked",
+            }
+        ),
+        key=lambda event: (event.created_at, event.id),
+        reverse=True,
+    )
+    return confirmations[0].actor if confirmations else ""
+
+
+def _current_disposition_chain_error(blockers: list[Any]) -> str:
+    code = blockers[0].code if blockers else ""
+    if code == "wordpress_action_chain_order_invalid":
+        return "Current disposition audit chain is out of order."
+    if code == "wordpress_action_chain_binding_mismatch":
+        return "Audit chain does not bind the exact current disposition snapshot."
+    return "Current disposition audit chain is not valid."
 
 
 def build_current_disposition_snapshot(
@@ -454,6 +486,10 @@ def _rebuild_current_disposition_action(
         return None, (blocker,)
 
     action = build_current_disposition_action(snapshot, attempt=proposal.attempt)
+    # The persisted proposal is the immutable identity of this ActionObject;
+    # rebuilding a read projection must not manufacture a new timestamp.
+    action.created_at = proposal.prepared_at
+    action.updated_at = proposal.prepared_at
     blockers: tuple[ContentCurrentDispositionBlocker, ...] = ()
     if snapshot.context_digest != proposal.prepared_snapshot_digest:
         blockers = (
