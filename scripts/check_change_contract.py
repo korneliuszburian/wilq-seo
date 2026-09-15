@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the declared proof contract for one commit without replaying RED."""
+"""Check a declared change contract at an immutable Git fixed point."""
 
 from __future__ import annotations
 
@@ -11,10 +11,35 @@ import sys
 from collections.abc import Callable
 from pathlib import Path, PurePosixPath
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts._change_contract_model import (
+    MAPPINGS as _MAPPINGS,
+)
+from scripts._change_contract_model import (
+    PROOFS as _PROOFS,
+)
+from scripts._change_contract_model import (
+    CounterfactualResult,
+    Expectation,
+    MappingDescriptor,
+    ProofCommand,
+)
+from scripts._change_contract_observer import counterfactual
+from scripts._change_contract_snapshot import (
+    INJECTION_ENVIRONMENT_KEYS,
+    git_environment,
+)
+
+_PROOF_MAPPINGS = _MAPPINGS
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+_REPORT_HELPER = REPOSITORY_ROOT / "scripts" / "trusted_test_report.py"
 _TOKEN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 _CONTRACT = re.compile(
-    rf"^(?P<check>{_TOKEN}):(?P<prediction>{_TOKEN})-red->green$"
+    rf"^(?P<check>{_TOKEN}):(?P<prediction>{_TOKEN})-"
+    rf"(?P<before>red|green)->(?P<after>red|green)$"
 )
 _RUNTIME_PREFIXES = ("apps/", "packages/", "wilq/")
 _RUNTIME_SOURCE_EXTENSIONS = frozenset(
@@ -36,94 +61,12 @@ _EXECUTABLE_GATE_SCRIPTS = frozenset(
         "scripts/quality.sh",
         "scripts/security.sh",
         "scripts/test.sh",
+        "scripts/trusted_test_report.py",
         "scripts/typecheck.sh",
         "scripts/verify.sh",
     }
 )
-ProofCommand = tuple[str, ...]
 ProofRunner = Callable[[ProofCommand], bool]
-_PROOFS: dict[tuple[str, str], ProofCommand] = {
-    (
-        "change-contract-gate",
-        "cli-acceptance",
-    ): (
-        "scripts/test.sh",
-        "tests/scripts/test_changes_check.py",
-    ),
-    (
-        "connector-refresh-recovery",
-        "bodyless-api-and-full-payload-cas",
-    ): (
-        "scripts/test.sh",
-        "tests/connectors/test_connector_refresh_recovery.py",
-        "tests/api_contracts/test_connector_refresh_recovery_contract.py",
-    ),
-    (
-        "embedded-runtime-policy",
-        "terra-max-fail-closed",
-    ): (
-        "scripts/test.sh",
-        "tests/content/test_codex_app_server_transport.py",
-        "tests/content/test_new_page_initial_draft.py",
-        "tests/storage/test_codex_runs.py",
-        "tests/content/test_initial_draft_run.py",
-        "tests/content/test_initial_draft_queue_gate.py",
-    ),
-    (
-        "inventory-classification",
-        "exact-current-receipt-lineage",
-    ): (
-        "scripts/test.sh",
-        "tests/content/test_content_production_classification_boundaries.py::test_parser_accepts_signed_blocked_historical_protection_without_reuse",
-        "tests/content/test_content_production_classification_boundaries.py::test_persisted_head_payload_without_optional_history_remains_readable_without_tampering",
-        "tests/content/test_current_blocked_classification.py::test_current_builder_returns_sorted_57_row_all_blocked_run_with_history_protection",
-        "tests/content/test_inventory_catalog.py::test_inventory_catalog_uses_the_latest_wordpress_refresh_batch",
-        "tests/content/test_inventory_catalog.py::test_latest_wordpress_refresh_uses_completion_time_not_storage_order",
-        "tests/content/test_inventory_catalog.py::test_latest_metric_refresh_uses_completion_time_not_storage_order",
-        "tests/content/test_authoring_inventory_receipt.py::test_receipt_binds_full_current_catalog_material_not_just_url_or_work_item",
-        "tests/content/test_authoring_inventory_receipt.py::test_url_only_or_unscoped_evidence_cannot_register_current_inventory_receipt",
-        "tests/content/test_authoring_inventory_receipt_store.py::test_store_is_append_only_idempotent_and_keeps_distinct_current_snapshots",
-        "tests/content/test_authoring_inventory_receipt_store.py::test_store_conflicts_on_same_snapshot_with_different_receipt_payload",
-        "tests/content/test_current_inventory_reconciliation.py::test_reconcile_persists_only_material_keep_receipts_and_a_blocked_run",
-        "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_counts_only_exact_normalized_paths_and_never_mints_bindings",
-        "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_does_not_claim_complete_for_partial_canonical_journal",
-        "tests/content/test_inventory_journal_reconciliation.py::test_reconciliation_rejects_same_count_substituted_path",
-        "tests/storage/test_sqlite_schema_inventory.py::test_authoring_inventory_receipt_schema_hunk_is_exact",
-        "tests/content/test_production_registered_inventory_receipt.py::test_registered_inventory_receipt_rejects_a_forged_digest",
-    ),
-    (
-        "current-disposition",
-        "exact-persisted-authority-chain",
-    ): (
-        "scripts/test.sh",
-        "tests/content/test_current_disposition_authority.py",
-        "tests/actions/test_audit_store_contracts.py::test_audit_details_for_operator_keeps_only_canonical_digest_values",
-        "tests/api_contracts/test_redaction_contracts.py",
-        "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
-    ),
-    (
-        "delivery-identity",
-        "exact-registered-receipt-authority",
-    ): (
-        "scripts/test.sh",
-        "tests/content/test_delivery_identity_authority.py",
-        "tests/content/test_delivery_identity_binding.py",
-        "tests/content/test_delivery_identity_api.py",
-        "tests/storage/test_sqlite_schema_inventory.py::test_delivery_identity_authority_schema_hunks_are_exact",
-        "tests/api_contracts/test_redaction_contracts.py",
-    ),
-    (
-        "source-fact-source-pack",
-        "exact-reviewed-row-consumption",
-    ): (
-        "scripts/test.sh",
-        "tests/content/test_source_fact_authority.py",
-        "tests/content/test_source_pack_binding.py",
-        "tests/content/test_source_pack_binding_api.py",
-        "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
-        "tests/api_contracts/test_redaction_contracts.py",
-    ),
-}
 
 
 def _git(
@@ -138,10 +81,24 @@ def _git(
         capture_output=True,
         text=True,
         input=input_text,
+        env=git_environment(),
+    )
+
+
+def _valid_ref(ref: str) -> bool:
+    return (
+        bool(ref)
+        and not ref.startswith("-")
+        and "\\" not in ref
+        and not any(character in ref for character in "\x00\r\n")
+        and ".." not in PurePosixPath(ref).parts
     )
 
 
 def _resolve_commit(repository_root: Path, ref: str) -> str | None:
+    if not _valid_ref(ref):
+        print(f"changes:check: invalid commit ref {ref!r}", file=sys.stderr)
+        return None
     result = _git(
         repository_root,
         "rev-parse",
@@ -149,10 +106,19 @@ def _resolve_commit(repository_root: Path, ref: str) -> str | None:
         "--end-of-options",
         f"{ref}^{{commit}}",
     )
-    if result.returncode != 0:
+    resolved = result.stdout.strip()
+    if result.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", resolved):
         print(f"changes:check: cannot resolve commit ref {ref!r}", file=sys.stderr)
         return None
-    return result.stdout.strip()
+    return resolved
+
+
+def _commit_parents(repository_root: Path, commit: str) -> list[str] | None:
+    result = _git(repository_root, "rev-list", "--parents", "-n", "1", commit)
+    fields = result.stdout.strip().split()
+    if result.returncode != 0 or not fields or fields[0] != commit:
+        return None
+    return fields[1:]
 
 
 def _changed_paths(repository_root: Path, commit: str) -> list[str] | None:
@@ -162,6 +128,7 @@ def _changed_paths(repository_root: Path, commit: str) -> list[str] | None:
         "--no-commit-id",
         "--name-only",
         "-r",
+        "-m",
         "--root",
         "-z",
         commit,
@@ -169,22 +136,23 @@ def _changed_paths(repository_root: Path, commit: str) -> list[str] | None:
     if result.returncode != 0:
         print(f"changes:check: cannot inspect commit {commit}", file=sys.stderr)
         return None
-    return [path for path in result.stdout.split("\0") if path]
+    return list(dict.fromkeys(path for path in result.stdout.split("\0") if path))
 
 
 def _is_harness_surface(path: str) -> bool:
-    normalized_path = path.replace("\\", "/")
-    path_parts = PurePosixPath(normalized_path).parts
-    if _NON_RUNTIME_PATH_PARTS.intersection(path_parts):
+    normalized = path.replace("\\", "/")
+    if _NON_RUNTIME_PATH_PARTS.intersection(PurePosixPath(normalized).parts):
         return False
-    if normalized_path.startswith((".github/workflows/", ".githooks/")):
+    if normalized.startswith((".github/workflows/", ".githooks/", "tests/scripts/")):
         return True
-    if PurePosixPath(normalized_path).name in _MANIFEST_NAMES:
+    if PurePosixPath(normalized).name in _MANIFEST_NAMES:
         return True
-    if normalized_path in _EXECUTABLE_GATE_SCRIPTS:
+    if normalized in _EXECUTABLE_GATE_SCRIPTS or normalized.startswith(
+        "scripts/_change_contract_"
+    ):
         return True
-    return normalized_path.startswith(_RUNTIME_PREFIXES) and PurePosixPath(
-        normalized_path
+    return normalized.startswith(_RUNTIME_PREFIXES) and PurePosixPath(
+        normalized
     ).suffix in _RUNTIME_SOURCE_EXTENSIONS
 
 
@@ -212,17 +180,21 @@ def _change_contract_values(repository_root: Path, commit: str) -> list[str] | N
 
 
 def _run_proof(command: ProofCommand) -> bool:
-    environment = os.environ.copy()
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in INJECTION_ENVIRONMENT_KEYS
+    }
     environment["UV_OFFLINE"] = "1"
+    environment["GIT_NO_REPLACE_OBJECTS"] = "1"
     executable = Path(command[0])
     if not executable.is_absolute():
-        repository_executable = (REPOSITORY_ROOT / executable).resolve()
-        if repository_executable.is_file():
-            executable = repository_executable
-    resolved_command = [str(executable), *command[1:]]
+        candidate = (REPOSITORY_ROOT / executable).resolve()
+        if candidate.is_file():
+            executable = candidate
     try:
         result = subprocess.run(
-            resolved_command,
+            [str(executable), *command[1:]],
             cwd=REPOSITORY_ROOT,
             check=False,
             env=environment,
@@ -232,63 +204,178 @@ def _run_proof(command: ProofCommand) -> bool:
     return result.returncode == 0
 
 
-def check_commit(
-    ref: str = "HEAD",
-    repository_root: Path = REPOSITORY_ROOT,
-    *,
-    proof_runner: ProofRunner | None = None,
+def _fixed_point(
+    repository_root: Path,
+    ref: str,
+    before_ref: str | None,
+) -> tuple[str, str | None] | None:
+    candidate = _resolve_commit(repository_root, ref)
+    if candidate is None:
+        return None
+    parents = _commit_parents(repository_root, candidate)
+    if parents is None:
+        print(f"changes:check: cannot inspect parents of {candidate}", file=sys.stderr)
+        return None
+    if before_ref is None:
+        if len(parents) > 1:
+            print(
+                "changes:check: merge commits require --before and a sole parent",
+                file=sys.stderr,
+            )
+            return None
+        return candidate, None
+    before = _resolve_commit(repository_root, before_ref)
+    if before is None:
+        return None
+    if candidate == before:
+        print("changes:check: candidate and --before are identical", file=sys.stderr)
+        return None
+    if len(parents) == 0:
+        print("changes:check: candidate root commit has no sole parent", file=sys.stderr)
+        return None
+    if len(parents) != 1:
+        print("changes:check: candidate merge commits are unsupported", file=sys.stderr)
+        return None
+    if parents[0] != before:
+        print("changes:check: --before is not the candidate's sole parent", file=sys.stderr)
+        return None
+    return candidate, before
+
+
+def _contract_expectation(match: re.Match[str]) -> Expectation | None:
+    transition = match.group("before"), match.group("after")
+    if transition == ("red", "green"):
+        return "red-green"
+    if transition == ("green", "green"):
+        return "unchanged-green"
+    return None
+
+
+def _legacy_result(
+    candidate: str,
+    key: tuple[str, str],
+    proof: ProofCommand,
+    proof_runner: ProofRunner | None,
 ) -> int:
-    commit = _resolve_commit(repository_root, ref)
-    if commit is None:
-        return 2
-    paths = _changed_paths(repository_root, commit)
-    if paths is None:
-        return 2
-    if not any(_is_harness_surface(path) for path in paths):
-        print(f"changes:check: {commit[:8]} is not a harness-surface commit")
-        return 0
-
-    values = _change_contract_values(repository_root, commit)
-    if values is None:
-        return 2
-    if len(values) != 1:
-        print(
-            f"changes:check: harness-surface commit {commit} requires exactly one "
-            "Change-contract trailer",
-            file=sys.stderr,
-        )
-        return 1
-
-    match = _CONTRACT.fullmatch(values[0])
-    if match is None:
-        print(
-            f"changes:check: malformed Change-contract trailer on commit {commit}",
-            file=sys.stderr,
-        )
-        return 1
-    contract = match.group("check"), match.group("prediction")
-    check, prediction = contract
-    proof = _PROOFS.get(contract)
-    if proof is None:
-        print(
-            f"changes:check: unknown proof mapping for {check}:{prediction} on commit {commit}; "
-            f"revert {commit} or add a repo-owned mapping",
-            file=sys.stderr,
-        )
-        return 1
     runner = _run_proof if proof_runner is None else proof_runner
     if not runner(proof):
         print(
-            f"changes:check: GREEN proof failed for harness-surface commit {commit}; "
-            f"declared RED was not executed; revert {commit}",
+            f"changes:check: GREEN proof failed for harness-surface commit {candidate}; "
+            f"declared RED was not executed; revert {candidate}",
             file=sys.stderr,
         )
         return 1
     print(
-        f"changes:check: {commit[:8]} GREEN proof passed for {check}:{prediction}; "
-        "declared RED was not executed"
+        f"changes:check: {candidate[:8]} GREEN proof passed for "
+        f"{key[0]}:{key[1]}; declared RED was not executed"
     )
     return 0
+
+
+def _observed_result(
+    repository_root: Path,
+    candidate: str,
+    before: str,
+    key: tuple[str, str],
+    descriptor: MappingDescriptor,
+) -> int:
+    result: CounterfactualResult = counterfactual(
+        repository_root,
+        candidate,
+        before,
+        descriptor,
+        key,
+        _REPORT_HELPER,
+    )
+    if result.ok:
+        outcome = (
+            "GREEN unchanged-green (observer unchanged)"
+            if descriptor.expectation == "unchanged-green"
+            else "GREEN after observed RED"
+        )
+        print(
+            f"changes:check: {candidate[:8]} {outcome} for "
+            f"{key[0]}:{key[1]} (before {before[:8]})"
+        )
+        return 0
+    if result.infrastructure:
+        print(
+            f"changes:check: {key[0]}:{key[1]} could not be verified: {result.reason}",
+            file=sys.stderr,
+        )
+        return 2
+    print(
+        f"changes:check: {key[0]}:{key[1]} contract failed: {result.reason}; "
+        f"revert {candidate} or repair the candidate",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def check_commit(
+    ref: str = "HEAD",
+    repository_root: Path = REPOSITORY_ROOT,
+    *,
+    before: str | None = None,
+    proof_runner: ProofRunner | None = None,
+) -> int:
+    try:
+        repository_root = repository_root.resolve(strict=True)
+    except OSError:
+        print("changes:check: repository root is not readable", file=sys.stderr)
+        return 2
+    try:
+        fixed = _fixed_point(repository_root, ref, before)
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        print(f"changes:check: fixed-point inspection failed: {error}", file=sys.stderr)
+        return 2
+    if fixed is None:
+        return 2
+    candidate, before_commit = fixed
+    paths = _changed_paths(repository_root, candidate)
+    if paths is None:
+        return 2
+    if not any(_is_harness_surface(path) for path in paths):
+        print(f"changes:check: {candidate[:8]} is not a harness-surface commit")
+        return 0
+    values = _change_contract_values(repository_root, candidate)
+    if values is None:
+        return 2
+    if len(values) != 1:
+        print(
+            f"changes:check: harness-surface commit {candidate} requires exactly one "
+            "Change-contract trailer",
+            file=sys.stderr,
+        )
+        return 1
+    match = _CONTRACT.fullmatch(values[0])
+    if match is None:
+        print(
+            f"changes:check: malformed Change-contract trailer on commit {candidate}",
+            file=sys.stderr,
+        )
+        return 1
+    key = match.group("check"), match.group("prediction")
+    proof = _PROOFS.get(key)
+    descriptor = _MAPPINGS.get(key)
+    expectation = _contract_expectation(match)
+    if proof is None or descriptor is None:
+        print(
+            f"changes:check: unknown proof mapping for {key[0]}:{key[1]} on commit "
+            f"{candidate}; revert {candidate} or add a repo-owned mapping",
+            file=sys.stderr,
+        )
+        return 1
+    if expectation is None or descriptor.expectation != expectation:
+        print(
+            f"changes:check: contract expectation for {key[0]}:{key[1]} does not match "
+            "the trusted mapping",
+            file=sys.stderr,
+        )
+        return 1
+    if before_commit is None:
+        return _legacy_result(candidate, key, proof, proof_runner)
+    return _observed_result(repository_root, candidate, before_commit, key, descriptor)
 
 
 def main(argv: list[str]) -> int:
@@ -297,11 +384,20 @@ def main(argv: list[str]) -> int:
         "--repo-root",
         type=Path,
         default=REPOSITORY_ROOT,
-        help="metadata repository root to inspect; proofs use the canonical repository root",
+        help="Git object repository to inspect; execution uses trusted snapshots",
+    )
+    parser.add_argument(
+        "--before",
+        dest="before_ref",
+        help="the candidate's sole parent commit (required for observed RED->GREEN)",
     )
     parser.add_argument("commit_ref", nargs="?", default="HEAD")
     arguments = parser.parse_args(argv[1:])
-    return check_commit(arguments.commit_ref, arguments.repo_root)
+    return check_commit(
+        arguments.commit_ref,
+        arguments.repo_root,
+        before=arguments.before_ref,
+    )
 
 
 if __name__ == "__main__":

@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
+from scripts import _change_contract_observer as observer
+from scripts import _change_contract_snapshot as snapshot
 from scripts import check_change_contract
+from scripts._change_contract_model import TestCaseRecord as _TestCaseRecord
+from scripts._change_contract_model import TestReport as _TestReport
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CHECK_SCRIPT = REPOSITORY_ROOT / "scripts/check_change_contract.py"
@@ -418,3 +422,337 @@ def test_changes_check_rejects_an_invalid_commit_ref(tmp_path: Path) -> None:
     result = _run_cli(repo, "does-not-exist")
 
     assert result.returncode == 2
+def test_changes_check_observes_before_state_through_candidate_snapshot(
+    tmp_path: Path,
+) -> None:
+    """The candidate CLI must fix the old parser's real call-phase assertion RED."""
+
+    fixture = tmp_path / "fixture"
+    fixture.mkdir()
+    _git(fixture, "init", "--quiet")
+    _git(fixture, "config", "user.email", "tests@example.invalid")
+    _git(fixture, "config", "user.name", "change-contract before-state")
+    checker = fixture / "tools" / "check.py"
+    checker.parent.mkdir()
+    checker.write_text(
+        "import argparse\n"
+        "argparse.ArgumentParser().parse_args()\n",
+        encoding="utf-8",
+    )
+    _git(fixture, "add", ".")
+    _git(fixture, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=fixture,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    candidate_source = Path("scripts/check_change_contract.py").read_text(
+        encoding="utf-8"
+    )
+    candidate_source = candidate_source.replace(
+        "from scripts._change_contract_", "from _change_contract_"
+    )
+    checker.write_text(candidate_source, encoding="utf-8")
+    for module_name in (
+        "_change_contract_model.py",
+        "_change_contract_observer.py",
+        "_change_contract_snapshot.py",
+    ):
+        module_source = (Path("scripts") / module_name).read_text(encoding="utf-8")
+        module_source = module_source.replace(
+            "from scripts._change_contract_", "from _change_contract_"
+        )
+        (checker.parent / module_name).write_text(
+            module_source,
+            encoding="utf-8",
+        )
+    _git(fixture, "add", ".")
+    _git(
+        fixture,
+        "commit",
+        "--quiet",
+        "-m",
+        "fixture: upgrade checker outside harness surface",
+    )
+
+    result = subprocess.run(
+        [sys.executable, "tools/check.py", "HEAD", "--before", parent],
+        cwd=fixture,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_before_state_missing_parent_production_is_error_not_red(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "missing-production"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "change-contract missing production")
+    test_file = repo / "tests" / "test_missing.py"
+    test_file.parent.mkdir()
+    test_file.write_text(
+        "from missing_parent import VALUE\n\n"
+        "# (\"missing-production\", \"module\")\n"
+        "def test_value_is_fixed():\n"
+        "    assert VALUE == 2\n",
+        encoding="utf-8",
+    )
+    helper = repo / "scripts" / "trusted_test_report.py"
+    helper.parent.mkdir()
+    helper.write_bytes(Path("scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (repo / "missing_parent.py").write_text("VALUE = 2\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "fix")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    descriptor = check_change_contract.MappingDescriptor(
+        proof=(),
+        selectors=("tests/test_missing.py",),
+        observer_paths=("tests/test_missing.py",),
+        expectation="red-green",
+        mapping_path="tests/test_missing.py",
+    )
+    result = check_change_contract.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("missing-production", "module"),
+    )
+
+    assert result.infrastructure is True
+    assert result.reason == "collection-error"
+
+
+def test_git_object_environment_disables_replace_refs() -> None:
+    assert snapshot.git_environment()["GIT_NO_REPLACE_OBJECTS"] == "1"
+
+
+def test_absent_mapping_is_an_explicit_false(tmp_path: Path) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="README.md",
+        message="docs: mapping fixture",
+    )
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    descriptor = check_change_contract.MappingDescriptor(
+        proof=(),
+        selectors=("README.md",),
+        observer_paths=("README.md",),
+        expectation="red-green",
+    )
+
+    assert observer.mapping_presence(repo, commit, descriptor, ("missing", "mapping")) is False
+
+
+def test_report_red_requires_a_concrete_failed_assertion_record() -> None:
+    report = _TestReport(
+        pytest_status=1,
+        tests_collected=1,
+        collection_errors=0,
+        internal_errors=0,
+        setup_failures=0,
+        teardown_failures=0,
+        call_assertion_failures=1,
+        call_non_assertion_failures=0,
+        overflow=False,
+        cases=(_TestCaseRecord("tests/t.py::test_value", "call", "passed", False),),
+    )
+
+    assert observer.meaningful_red(report) is False
+
+
+def test_contained_claude_symlink_signature_binds_target_content(tmp_path: Path) -> None:
+    (tmp_path / "AGENTS.md").write_text("first\n", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").symlink_to("AGENTS.md")
+    before = snapshot.observer_signature(tmp_path, "CLAUDE.md")
+    (tmp_path / "AGENTS.md").write_text("second\n", encoding="utf-8")
+
+    assert snapshot.observer_signature(tmp_path, "CLAUDE.md") != before
+
+
+def test_counterfactual_uses_candidate_bound_reporter_for_both_snapshots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "candidate-reporter"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "change-contract candidate reporter")
+    test_file = repo / "tests" / "test_value.py"
+    test_file.parent.mkdir()
+    test_file.write_text(
+        "# (\"candidate-reporter\", \"test\")\n"
+        "def test_value():\n"
+        "    assert True\n",
+        encoding="utf-8",
+    )
+    helper = repo / "scripts" / "trusted_test_report.py"
+    helper.parent.mkdir()
+    helper.write_bytes(Path("scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (repo / "value.py").write_text("VALUE = 2\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    descriptor = check_change_contract.MappingDescriptor(
+        proof=(),
+        selectors=("tests/test_value.py",),
+        observer_paths=("tests/test_value.py",),
+        expectation="red-green",
+        mapping_path="tests/test_value.py",
+    )
+    red = _TestReport(
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        False,
+        (_TestCaseRecord("tests/test_value.py::test_value", "call", "failed", True),),
+    )
+    green = _TestReport(
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        False,
+        (_TestCaseRecord("tests/test_value.py::test_value", "call", "passed", False),),
+    )
+    reporter_calls: list[Path] = []
+
+    def fake_run_report(
+        _snapshot: Path,
+        _selectors: tuple[str, ...],
+        _temporary_root: Path,
+        reporter: Path,
+    ) -> _TestReport:
+        reporter_calls.append(reporter)
+        return red if len(reporter_calls) == 1 else green
+
+    monkeypatch.setattr(observer, "run_report", fake_run_report)
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("candidate-reporter", "test"),
+        helper=tmp_path / "dirty-live-helper.py",
+    )
+
+    assert result.ok is True
+    assert len(reporter_calls) == 2
+    assert reporter_calls[0] == reporter_calls[1]
+    assert reporter_calls[0].name == "trusted_test_report.py"
+    assert "candidate" in reporter_calls[0].parts
+
+
+def test_counterfactual_missing_snapshot_module_is_collection_error_not_live_green(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "import-isolation"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "change-contract import isolation")
+    test_file = repo / "tests" / "test_import.py"
+    test_file.parent.mkdir()
+    test_file.write_text(
+        "# (\"import-isolation\", \"test\")\n"
+        "import scripts.check_change_contract as checker\n\n"
+        "def test_import_does_not_escape_snapshot():\n"
+        "    assert hasattr(checker, \"_MAPPINGS\")\n",
+        encoding="utf-8",
+    )
+    helper = repo / "scripts" / "trusted_test_report.py"
+    helper.parent.mkdir()
+    helper.write_bytes(Path("scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    (repo / "value.py").write_text("VALUE = 2\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    descriptor = check_change_contract.MappingDescriptor(
+        proof=(),
+        selectors=("tests/test_import.py",),
+        observer_paths=("tests/test_import.py",),
+        expectation="red-green",
+        mapping_path="tests/test_import.py",
+    )
+
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("import-isolation", "test"),
+    )
+
+    assert result.ok is False
+    assert result.infrastructure is True
+    assert result.reason in {"collection-error", "internal-error", "pytest-error"}
