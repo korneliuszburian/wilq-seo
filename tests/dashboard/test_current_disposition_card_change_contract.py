@@ -13,8 +13,15 @@ def test_current_disposition_card_source_contract() -> None:
         'proposedFinalDisposition !== "keep"',
         '<article className="current-disposition-card" data-state={receipt.proposedFinalDisposition}>',
         "Czy zachowujemy tę stronę do dalszej aktualizacji?",
-        'href="#action-review"',
-        "Przejdź do zatwierdzenia",
+        "event.action_id !== action.id",
+        "!event.id.trim()",
+        "approveCurrentDisposition",
+        '<button',
+        'className="current-disposition-card__primary-action"',
+        "Zatwierdź kierunek",
+        "Kierunek zapisany",
     )
 
     assert all(fragment in source for fragment in required_fragments)
+    assert 'href="#action-review"' not in source
+    assert "Przejdź do zatwierdzenia" not in source

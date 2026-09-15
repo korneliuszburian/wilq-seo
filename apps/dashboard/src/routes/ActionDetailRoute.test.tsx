@@ -166,6 +166,154 @@ const nonKeepCurrentDispositionActionFixture: ActionObject = {
   }
 };
 
+const currentDispositionContextDigest = "c".repeat(64);
+const currentDispositionPayloadDigest = "d".repeat(64);
+const currentDispositionPreviewAuditId = "audit_current_disposition_preview";
+const currentDispositionReadyActionFixture: ActionObject = {
+  ...currentDispositionActionFixture,
+  id: "act_content_current_disposition_ready",
+  payload: {
+    ...currentDispositionActionFixture.payload,
+    current_disposition_authority: {
+      ...(currentDispositionActionFixture.payload.current_disposition_authority as Record<
+        string,
+        unknown
+      >),
+      context_digest: currentDispositionContextDigest
+    }
+  },
+  audit_events: [
+    {
+      id: currentDispositionPreviewAuditId,
+      action_id: "act_content_current_disposition_ready",
+      event_type: "action_preview_generated",
+      event_type_label: "Podgląd bieżącej disposition",
+      actor: "operator_local_dashboard",
+      created_at: "2026-09-15T12:00:00Z",
+      summary: "Exact preview bieżącej disposition.",
+      evidence_ids: [],
+      details: {
+        current_disposition_snapshot_digest: currentDispositionContextDigest,
+        current_disposition_action_payload_digest: currentDispositionPayloadDigest
+      },
+      redacted: true
+    }
+  ]
+};
+
+const currentDispositionCompetingPreviewActionFixture: ActionObject = {
+  ...currentDispositionReadyActionFixture,
+  id: "act_content_current_disposition_competing_previews",
+  audit_events: [
+    {
+      ...currentDispositionReadyActionFixture.audit_events[0],
+      id: "audit_current_disposition_preview_old",
+      action_id: "act_content_current_disposition_competing_previews"
+    },
+    {
+      ...currentDispositionReadyActionFixture.audit_events[0],
+      id: "audit_current_disposition_preview_foreign",
+      action_id: "act_content_current_disposition_competing_previews",
+      created_at: "2026-09-15T13:00:00Z",
+      details: {
+        current_disposition_snapshot_digest: "f".repeat(64),
+        current_disposition_action_payload_digest: "e".repeat(64)
+      }
+    },
+    {
+      ...currentDispositionReadyActionFixture.audit_events[0],
+      id: "audit_current_disposition_preview_new",
+      action_id: "act_content_current_disposition_competing_previews",
+      created_at: "2026-09-15T12:30:00Z",
+      details: {
+        current_disposition_snapshot_digest: currentDispositionContextDigest,
+        current_disposition_action_payload_digest: "a".repeat(64)
+      }
+    }
+  ]
+};
+
+function currentDispositionApprovalCurrentResponse(
+  action: ActionObject,
+  binding: {
+    previewAuditId?: string;
+    payloadDigest?: string;
+  } = {}
+) {
+  const authority = action.payload.current_disposition_authority as Record<string, unknown>;
+  const previewAuditId = binding.previewAuditId ?? currentDispositionPreviewAuditId;
+  const payloadDigest = binding.payloadDigest ?? currentDispositionPayloadDigest;
+  const receipt = {
+    receipt_id: "content_current_disposition_receipt_test",
+    receipt_digest: "e".repeat(64),
+    action_id: action.id,
+    action_payload_digest: payloadDigest,
+    authority_snapshot: {
+      schema_version: "wilq_current_disposition_snapshot_v1",
+      current_work_item_id: "content_work_item_bdo",
+      canonical_path: authority.canonical_path,
+      public_url: authority.public_url,
+      classification_run_id: "classification_run_test",
+      classification_run_digest: "1".repeat(64),
+      classification_decision_set_digest: "2".repeat(64),
+      classification_source_row_digest: "3".repeat(64),
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      proposed_final_disposition: "keep",
+      context_digest: currentDispositionContextDigest
+    },
+    preview_audit_id: previewAuditId,
+    review_audit_id: "audit_current_disposition_review",
+    confirmation_audit_id: "audit_current_disposition_confirmation",
+    impact_audit_id: "audit_current_disposition_impact",
+    reviewed_by: "operator_local_dashboard",
+    confirmed_by: "operator_local_dashboard"
+  };
+  return {
+    status: "current",
+    projection: {
+      status: "current",
+      action,
+      receipt,
+      blockers: [],
+      safe_next_step: "Przygotuj treść po zapisaniu kierunku."
+    },
+    action,
+    receipt,
+    blockers: [],
+    safe_next_step: "Przygotuj treść po zapisaniu kierunku.",
+    audit_ids: {
+      preview: previewAuditId,
+      receipt: receipt.receipt_id
+    },
+    external_write_attempted: false
+  };
+}
+
+function currentDispositionApprovalBlockedResponse() {
+  const blocker = {
+    seam: "receipt",
+    reason: "current_disposition_preview_mismatch",
+    evidence_ids: [],
+    next_step: "Odśwież preview bieżącej disposition."
+  };
+  return {
+    status: "blocked",
+    projection: {
+      status: "blocked",
+      action: null,
+      receipt: null,
+      blockers: [blocker],
+      safe_next_step: blocker.next_step
+    },
+    action: null,
+    receipt: null,
+    blockers: [blocker],
+    safe_next_step: blocker.next_step,
+    audit_ids: {},
+    external_write_attempted: false
+  };
+}
+
 const actionWithMutationAuditFixture: ActionObject = {
   ...actionFixture,
   id: "act_mutation_audit",
@@ -1603,6 +1751,8 @@ const contentActionFixture: ActionObject = {
 };
 
 let fetchMock: ReturnType<typeof vi.fn>;
+let currentDispositionApprovalResponse: Response | null = null;
+let currentDispositionReadback: ActionObject | null = null;
 
 function mockFetch() {
   fetchMock = vi.fn((input: RequestInfo | URL) => {
@@ -1615,6 +1765,21 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_content_current_disposition")) {
         return Promise.resolve(Response.json(currentDispositionActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_content_current_disposition_ready")) {
+        return Promise.resolve(
+          Response.json(currentDispositionReadback ?? currentDispositionReadyActionFixture)
+        );
+      }
+      if (url.endsWith("/api/actions/act_content_current_disposition_competing_previews")) {
+        return Promise.resolve(
+          Response.json(
+            currentDispositionReadback ?? currentDispositionCompetingPreviewActionFixture
+          )
+        );
+      }
+      if (url.endsWith("/approve") && currentDispositionApprovalResponse) {
+        return Promise.resolve(currentDispositionApprovalResponse);
       }
       if (url.endsWith("/api/actions/act_content_non_keep_disposition")) {
         return Promise.resolve(Response.json(nonKeepCurrentDispositionActionFixture));
@@ -1758,6 +1923,8 @@ describe("Action detail route", () => {
   let testQueryClient: QueryClient;
 
   beforeEach(() => {
+    currentDispositionApprovalResponse = null;
+    currentDispositionReadback = null;
     mockFetch();
     testQueryClient = createWilqQueryClient({
       defaultOptions: {
@@ -1849,10 +2016,8 @@ describe("Action detail route", () => {
     expect(
       screen.getByText("Zatwierdzenie nie zmienia ani nie publikuje niczego w WordPressie.")
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Przejdź do zatwierdzenia" })).toHaveAttribute(
-      "href",
-      "#action-review"
-    );
+    expect(screen.getByRole("button", { name: "Zatwierdź kierunek" })).toBeDisabled();
+    expect(screen.getByText(/brakuje aktualnego exact preview.*Odśwież stronę/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Nie — wróć do decyzji" })).toHaveAttribute(
       "href",
       "/content-workflow"
@@ -1866,6 +2031,136 @@ describe("Action detail route", () => {
     expect(details).toContainElement(
       screen.getByRole("heading", { name: currentDispositionActionFixture.title })
     );
+  });
+
+  it("posts one exact current-disposition approval and shows the readback", async () => {
+    currentDispositionApprovalResponse = Response.json(
+      currentDispositionApprovalCurrentResponse(currentDispositionReadyActionFixture)
+    );
+    currentDispositionReadback = currentDispositionReadyActionFixture;
+    const confirmMock = vi.fn(() => true);
+    vi.stubGlobal("confirm", confirmMock);
+    renderActionDetail("act_content_current_disposition_ready");
+
+    const button = await screen.findByRole("button", { name: "Zatwierdź kierunek" });
+    fireEvent.click(button);
+
+    await waitFor(() => expect(screen.getByText("Kierunek zapisany")).toBeInTheDocument());
+    const approvalCalls = fetchMock.mock.calls.filter(([input]) =>
+      new URL(String(input)).pathname.endsWith("/approve")
+    );
+    expect(approvalCalls).toHaveLength(1);
+    expect(new URL(String(approvalCalls[0]?.[0])).pathname).toBe(
+      "/api/content/current-disposition-authorities/act_content_current_disposition_ready/approve"
+    );
+    expect(JSON.parse(String(approvalCalls[0]?.[1]?.body))).toEqual({
+      expected_snapshot_digest: currentDispositionContextDigest,
+      expected_action_payload_digest: currentDispositionPayloadDigest,
+      expected_preview_audit_id: currentDispositionPreviewAuditId,
+      confirm: true,
+      notes:
+        "Potwierdzam zachowanie tej strony pod wskazanym adresem. WILQ nie zmienia WordPressa."
+    });
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.stringContaining("https://ekologus.pl/bdo")
+    );
+    await waitFor(() => {
+      const actionReadCalls = fetchMock.mock.calls.filter(([input]) =>
+        new URL(String(input)).pathname.endsWith(
+          "/api/actions/act_content_current_disposition_ready"
+        )
+      );
+      expect(actionReadCalls.length).toBeGreaterThanOrEqual(2);
+      const approvalIndex = fetchMock.mock.calls.findIndex(([input]) =>
+        new URL(String(input)).pathname.endsWith("/approve")
+      );
+      expect(
+        fetchMock.mock.calls.slice(approvalIndex + 1).some(([input]) =>
+          new URL(String(input)).pathname.endsWith(
+            "/api/actions/act_content_current_disposition_ready"
+          )
+        )
+      ).toBe(true);
+    });
+  });
+
+  it("chooses the newest exact preview and ignores a newer foreign snapshot", async () => {
+    const selectedPreview = {
+      previewAuditId: "audit_current_disposition_preview_new",
+      payloadDigest: "a".repeat(64)
+    };
+    const approvalResponse = currentDispositionApprovalCurrentResponse(
+      currentDispositionCompetingPreviewActionFixture,
+      selectedPreview
+    );
+    currentDispositionApprovalResponse = Response.json(approvalResponse);
+    currentDispositionReadback = currentDispositionCompetingPreviewActionFixture;
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    renderActionDetail("act_content_current_disposition_competing_previews");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Zatwierdź kierunek" }));
+
+    await waitFor(() => expect(screen.getByText("Kierunek zapisany")).toBeInTheDocument());
+    const approvalCall = fetchMock.mock.calls.find(([input]) =>
+      new URL(String(input)).pathname.endsWith("/approve")
+    );
+    const requestBody = JSON.parse(String(approvalCall?.[1]?.body));
+    expect(requestBody).toMatchObject({
+      expected_preview_audit_id: selectedPreview.previewAuditId,
+      expected_action_payload_digest: selectedPreview.payloadDigest
+    });
+    expect(approvalResponse.receipt).toMatchObject({
+      preview_audit_id: requestBody.expected_preview_audit_id,
+      action_payload_digest: requestBody.expected_action_payload_digest
+    });
+    expect(approvalResponse.projection.receipt).toEqual(approvalResponse.receipt);
+    expect(
+      currentDispositionReadback.audit_events.find(
+        (event) => event.id === requestBody.expected_preview_audit_id
+      )?.details
+    ).toMatchObject({
+      current_disposition_snapshot_digest: requestBody.expected_snapshot_digest,
+      current_disposition_action_payload_digest: requestBody.expected_action_payload_digest
+    });
+  });
+
+  it("does not post when the operator cancels confirmation", async () => {
+    const confirmMock = vi.fn(() => false);
+    vi.stubGlobal("confirm", confirmMock);
+    renderActionDetail("act_content_current_disposition_ready");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Zatwierdź kierunek" }));
+
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls.filter(([input]) => new URL(String(input)).pathname.endsWith("/approve"))).toHaveLength(0);
+  });
+
+  it("shows a Polish reload blocker for a typed approval conflict", async () => {
+    currentDispositionApprovalResponse = new Response(
+      JSON.stringify(currentDispositionApprovalBlockedResponse()),
+      { status: 409, headers: { "Content-Type": "application/json" } }
+    );
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    renderActionDetail("act_content_current_disposition_ready");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Zatwierdź kierunek" }));
+
+    expect(
+      await screen.findByText(
+        "Stan strony zmienił się przed zapisem. Odśwież stronę i wykonaj zatwierdzenie ponownie."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("disables approval when the exact preview audit binding is missing", async () => {
+    renderActionDetail("act_content_current_disposition");
+
+    const button = await screen.findByRole("button", { name: "Zatwierdź kierunek" });
+    expect(button).toBeDisabled();
+    expect(
+      screen.getByText(/brakuje aktualnego exact preview.*Odśwież stronę/i)
+    ).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([input]) => new URL(String(input)).pathname.endsWith("/approve"))).toHaveLength(0);
   });
 
   it("falls back to generic action details for a non-keep disposition", async () => {

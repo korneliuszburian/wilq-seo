@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import {
+  approveCurrentDisposition,
   type ActionObject,
   type Evidence,
   getEvidenceById,
@@ -29,14 +30,63 @@ import {
 } from "./DetailPanelsSections/Shared";
 import { TechnicalDetailsPanel } from "./DetailPanelsSections/TechnicalSection";
 
+const HEX_64 = /^[0-9a-f]{64}$/;
+
+type CurrentDispositionPreview = {
+  auditId: string;
+  payloadDigest: string;
+};
+
 type CurrentDispositionReceipt = {
   publicUrl: string;
   canonicalPath: string;
   proposedFinalDisposition: "keep";
+  contextDigest: string | null;
+  latestPreview: CurrentDispositionPreview | null;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function digestFromUnknown(value: unknown): string | null {
+  return typeof value === "string" && HEX_64.test(value) ? value : null;
+}
+
+function latestExactCurrentDispositionPreview(
+  action: ActionObject,
+  contextDigest: string | null
+): CurrentDispositionPreview | null {
+  if (!contextDigest) return null;
+
+  const previews = action.audit_events.filter((event) => {
+    if (event.event_type !== "action_preview_generated") return false;
+    if (event.action_id !== action.id || !event.id.trim()) return false;
+    if (!isRecord(event.details)) return false;
+    return (
+      event.details.current_disposition_snapshot_digest === contextDigest &&
+      digestFromUnknown(event.details.current_disposition_action_payload_digest) !== null
+    );
+  });
+
+  let latest = previews[0];
+  for (const event of previews.slice(1)) {
+    const latestTime = latest ? Date.parse(latest.created_at) : Number.NaN;
+    const eventTime = Date.parse(event.created_at);
+    const eventIsNewer =
+      (Number.isFinite(eventTime) &&
+        (!Number.isFinite(latestTime) || eventTime > latestTime)) ||
+      ((!Number.isFinite(eventTime) || !Number.isFinite(latestTime)) &&
+        event.created_at > (latest?.created_at ?? "")) ||
+      (event.created_at === (latest?.created_at ?? "") && event.id > (latest?.id ?? ""));
+    if (eventIsNewer) latest = event;
+  }
+
+  if (!latest || !isRecord(latest.details)) return null;
+  const payloadDigest = digestFromUnknown(
+    latest.details.current_disposition_action_payload_digest
+  );
+  return payloadDigest ? { auditId: latest.id, payloadDigest } : null;
 }
 
 function getCurrentDispositionReceipt(action: ActionObject): CurrentDispositionReceipt | null {
@@ -69,11 +119,63 @@ function getCurrentDispositionReceipt(action: ActionObject): CurrentDispositionR
   return {
     publicUrl,
     canonicalPath,
-    proposedFinalDisposition
+    proposedFinalDisposition,
+    contextDigest: digestFromUnknown(authority.context_digest),
+    latestPreview: latestExactCurrentDispositionPreview(
+      action,
+      digestFromUnknown(authority.context_digest)
+    )
   };
 }
 
-function CurrentDispositionCard({ receipt }: { receipt: CurrentDispositionReceipt }) {
+function CurrentDispositionCard({
+  action,
+  receipt
+}: {
+  action: ActionObject;
+  receipt: CurrentDispositionReceipt;
+}) {
+  const queryClient = useQueryClient();
+  const approvalRequest =
+    receipt.contextDigest && receipt.latestPreview
+      ? {
+          expected_snapshot_digest: receipt.contextDigest,
+          expected_action_payload_digest: receipt.latestPreview.payloadDigest,
+          expected_preview_audit_id: receipt.latestPreview.auditId,
+          confirm: true as const,
+          notes:
+            "Potwierdzam zachowanie tej strony pod wskazanym adresem. WILQ nie zmienia WordPressa."
+        }
+      : null;
+  const approvalMutation = useMutation({
+    mutationFn: () => {
+      if (!approvalRequest) {
+        throw new Error("Brakuje aktualnego exact preview.");
+      }
+      return approveCurrentDisposition(action.id, approvalRequest);
+    },
+    onSuccess: (result) => {
+      if (result.status !== "current" || !result.receipt) return;
+      queryClient.setQueryData(["actions", action.id], result.action);
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
+      void queryClient.invalidateQueries({
+        queryKey: ["content-current-disposition", action.id]
+      });
+    }
+  });
+  const approvalResult = approvalMutation.data;
+  const directionSaved = approvalResult?.status === "current" && approvalResult.receipt !== null;
+  const approvalBlocked = approvalResult?.status === "blocked";
+
+  function handleApproval() {
+    if (!approvalRequest || approvalMutation.isPending || directionSaved) return;
+    const confirmed = window.confirm(
+      `Czy zapisać kierunek „zachowaj” dla produkcyjnego adresu ${receipt.publicUrl}?\n\n` +
+        "WILQ zapisze wyłącznie lokalny receipt. Nie zmieni ani nie opublikuje niczego w WordPressie."
+    );
+    if (confirmed) approvalMutation.mutate();
+  }
+
   return (
     <article className="current-disposition-card" data-state={receipt.proposedFinalDisposition}>
       <h1 className="current-disposition-card__title">
@@ -110,13 +212,40 @@ function CurrentDispositionCard({ receipt }: { receipt: CurrentDispositionReceip
           Zatwierdzenie nie zmienia ani nie publikuje niczego w WordPressie.
         </p>
       </div>
+      {directionSaved ? (
+        <p className="current-disposition-card__status" role="status">
+          Kierunek zapisany. Lokalny receipt został zapisany; WordPress pozostaje bez zmian.
+        </p>
+      ) : null}
+      {!approvalRequest ? (
+        <p className="current-disposition-card__blocker" role="alert">
+          Nie można zatwierdzić: brakuje aktualnego exact preview. Odśwież stronę i spróbuj
+          ponownie.
+        </p>
+      ) : null}
+      {approvalBlocked ? (
+        <p className="current-disposition-card__blocker" role="alert">
+          Stan strony zmienił się przed zapisem. Odśwież stronę i wykonaj zatwierdzenie ponownie.
+        </p>
+      ) : null}
+      {approvalMutation.error instanceof Error ? (
+        <p className="current-disposition-card__blocker" role="alert">
+          Nie zapisano kierunku. Odśwież stronę i spróbuj ponownie.
+        </p>
+      ) : null}
       <div className="current-disposition-card__actions">
-        <a
+        <button
+          type="button"
           className="current-disposition-card__primary-action"
-          href="#action-review"
+          onClick={handleApproval}
+          disabled={!approvalRequest || approvalMutation.isPending || directionSaved}
         >
-          Przejdź do zatwierdzenia
-        </a>
+          {directionSaved
+            ? "Kierunek zapisany"
+            : approvalMutation.isPending
+              ? "Zapisuję kierunek"
+              : "Zatwierdź kierunek"}
+        </button>
         <Link
           className="current-disposition-card__secondary-action"
           search={{
@@ -229,7 +358,7 @@ function ActionDetail({
     <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8">
       {currentDispositionReceipt ? (
         <>
-          <CurrentDispositionCard receipt={currentDispositionReceipt} />
+          <CurrentDispositionCard action={action} receipt={currentDispositionReceipt} />
           <details className="mt-6 rounded-md border border-line bg-white p-4">
             <summary className="cursor-pointer font-semibold text-ink">
               Szczegóły techniczne i etapy audytu

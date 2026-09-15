@@ -10,6 +10,8 @@ import {
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
+  ContentCurrentDispositionApprovalRequestSchema,
+  ContentCurrentDispositionApprovalResponseSchema,
   type ActionApplyRequest,
   type ActionApplyResult,
   type ActionConfirmRequest,
@@ -23,11 +25,13 @@ import {
   type ActionPreviewResult,
   type ActionReviewRequest,
   type ActionReviewResult,
-  type ActionValidationResult
+  type ActionValidationResult,
+  type ContentCurrentDispositionApprovalRequest,
+  type ContentCurrentDispositionApprovalResponse
 } from "@wilq/shared-schemas";
 import { z } from "zod";
 
-import { apiGet, apiPost, apiPostWithDetailConflict } from "./common";
+import { apiGet, apiPost, apiPostWithConflict, apiPostWithDetailConflict } from "./common";
 
 export function getActionMutationReadiness(
   actionId: string
@@ -108,5 +112,17 @@ export function applyAction(
     actionApiPath(actionId, "/apply"),
     ActionApplyResultSchema,
     ActionApplyRequestSchema.parse(request)
+  );
+}
+
+export function approveCurrentDisposition(
+  actionId: string,
+  request: ContentCurrentDispositionApprovalRequest
+): Promise<ContentCurrentDispositionApprovalResponse> {
+  return apiPostWithConflict(
+    `/api/content/current-disposition-authorities/${encodeURIComponent(actionId)}/approve`,
+    ContentCurrentDispositionApprovalResponseSchema,
+    ContentCurrentDispositionApprovalResponseSchema,
+    ContentCurrentDispositionApprovalRequestSchema.parse(request)
   );
 }
