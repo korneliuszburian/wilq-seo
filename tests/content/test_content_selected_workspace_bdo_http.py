@@ -85,7 +85,7 @@ def test_public_get_reuses_exact_bdo_binding_without_changing_current_identity(
     assert request.response.status_code == 200
     payload = request.response.json()
     assert payload["response_type"] == "content_selected_workspace"
-    assert payload["contract_version"] == "content_selected_workspace_v2"
+    assert payload["contract_version"] == "content_selected_workspace_v3"
     assert payload["status"] == "ready"
     assert payload["requested_work_item_id"] == binding.current_work_item_id
     assert payload["work_item_id"] == binding.current_work_item_id
@@ -160,6 +160,9 @@ class _RouteStore:
     def load_draft_revision_state(self, work_item_id: str) -> ContentDraftRevisionState:
         self.revision_calls.append(work_item_id)
         return self.states[work_item_id]
+
+    def load_content_delivery_identity_record(self, binding_id: str):
+        return None
 
 
 def _exact_revision_fixture(

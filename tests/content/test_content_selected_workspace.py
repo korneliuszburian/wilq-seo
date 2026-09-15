@@ -205,11 +205,18 @@ def test_selected_workspace_route_returns_typed_missing_selection(monkeypatch) -
     assert factory_calls == [store]
     assert response.model_dump(mode="json") == {
         "response_type": "content_selected_workspace",
-        "contract_version": "content_selected_workspace_v2",
+        "contract_version": "content_selected_workspace_v3",
         "status": "missing",
         "work_item_id": "content_work_item_missing",
         "requested_work_item_id": "content_work_item_missing",
         "production_decision": {"status": "missing"},
+        "identity_readiness": {
+            "status": "not_applicable",
+            "binding_id": None,
+            "reason_pl": "Brakuje bieżącej klasyfikacji do sprawdzenia tożsamości S1.",
+            "safe_next_step_pl": "Najpierw uzyskaj bieżącą klasyfikację dla tej strony.",
+            "generation_allowed": False,
+        },
         "operator_journey": journey.model_dump(mode="json"),
         "workspace": None,
         "reason": "Nie znaleziono istniejącej strony do odświeżenia pod tym dokładnym adresem.",

@@ -128,6 +128,11 @@ class _ContentProductionDecisionAvailable(_FrozenModel):
     run_id: str = Field(min_length=1)
     run_digest: str = Field(pattern=_HEX64)
     decision_set_digest: str = Field(pattern=_HEX64)
+    source_packet_row_digest: str | None = Field(
+        default=None,
+        pattern=_HEX64,
+        exclude=True,
+    )
     decision: Literal["reuse", "refresh", "write", "blocked"]
     generation_allowed: Literal[False]
     lookup_basis: ClassificationLookupBasis
@@ -259,6 +264,7 @@ def build_content_production_decision(
         "run_id": classification.run_id,
         "run_digest": classification.run_digest,
         "decision_set_digest": classification.decision_set_digest,
+        "source_packet_row_digest": row.source_packet_row_digest,
         "decision": row.decision,
         "generation_allowed": row.generation_allowed,
         "lookup_basis": lookup_basis,

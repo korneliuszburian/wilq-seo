@@ -232,10 +232,7 @@ def current_research_packet_blocker(
             packet.evidence_ids,
             "Bieżący server-owned context receipt różni się od packetu; odśwież packet.",
         )
-    if (
-        packet.preparation_receipt_id is None
-        or packet.preparation_receipt_digest is None
-    ):
+    if packet.preparation_receipt_id is None or packet.preparation_receipt_digest is None:
         return _blocker(
             "preparation_receipt",
             "preparation_receipt_missing",
@@ -292,7 +289,7 @@ def _revalidation_source_pack(
             packet.evidence_ids,
             "Przygotuj exact typed context receipt przed generowaniem.",
         )
-    latest_pack = _latest_source_pack_for_work_item(store, packet.current_work_item_id)
+    latest_pack = latest_source_pack_for_work_item(store, packet.current_work_item_id)
     if latest_pack is None:
         return _blocker(
             "source_pack_binding",
@@ -328,12 +325,17 @@ def _revalidation_source_pack(
     return source_pack
 
 
-def _latest_source_pack_for_work_item(
+def latest_source_pack_for_work_item(
     store: ResearchPacketPreparationStore,
     work_item_id: str,
 ) -> ContentSourcePackBinding | None:
     packs = store.list_content_source_pack_bindings(current_work_item_id=work_item_id)
     return max(packs, key=lambda item: (item.recorded_at, item.binding_id)) if packs else None
+
+
+# Keep the old internal name for existing callers while the public shared seam
+# owns the single newest-receipt policy.
+_latest_source_pack_for_work_item = latest_source_pack_for_work_item
 
 
 def _select_source_pack(
@@ -367,17 +369,17 @@ def _select_source_pack(
                 "Wskaż source-pack binding należący do bieżącego work itemu.",
             )
         return pack
-    packs = store.list_content_source_pack_bindings(current_work_item_id=work_item_id)
-    if not packs:
+    pack = latest_source_pack_for_work_item(store, work_item_id)
+    if pack is None:
         return _blocker(
             "source_pack_binding",
             "source_pack_binding_missing",
             (),
             "Zapisz exact current source-pack binding przed przygotowaniem planu.",
         )
-    # The newest relevant receipt owns the decision, including when it is blocked.
-    # Falling back to an older exact receipt would silently resurrect stale authority.
-    return max(packs, key=lambda item: (item.recorded_at, item.binding_id))
+    # The shared selector keeps the newest relevant receipt authoritative,
+    # including when that newest receipt is blocked.
+    return pack
 
 
 def _current_source_pack_blocker(
@@ -482,6 +484,17 @@ def _current_source_pack_blocker(
     return None
 
 
+def current_source_pack_blocker(
+    *,
+    store: ResearchPacketPreparationStore,
+    source_pack: ContentSourcePackBinding,
+    identity: ContentDeliveryIdentityBinding | None,
+) -> ContentResearchPacketBlocker | None:
+    """Revalidate one source-pack receipt for shared read-only consumers."""
+
+    return _current_source_pack_blocker(store, source_pack, identity)
+
+
 def _blocker(
     seam: ResearchPacketBlockerSeam,
     reason: ResearchPacketBlockerReason,
@@ -500,6 +513,8 @@ __all__ = [
     "ContentResearchPacketPreparationResult",
     "ResearchPacketPreparationStore",
     "build_server_owned_research_packet_command",
+    "current_source_pack_blocker",
     "current_research_packet_blocker",
+    "latest_source_pack_for_work_item",
     "prepare_content_research_packet",
 ]

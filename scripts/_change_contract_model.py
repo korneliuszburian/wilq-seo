@@ -130,6 +130,12 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
         "tests/api_contracts/test_redaction_contracts.py",
     ),
+    ("current-preparation", "exact-downstream-receipts"): (
+        "scripts/test.sh",
+        "tests/content/test_current_preparation_readiness.py",
+        "tests/content/test_refresh_preparation_authority.py::test_runtime_requires_exact_authorization_and_proposal_binding",
+        "tests/content/test_content_selected_workspace_production_decision.py::test_selected_workspace_rejects_mismatched_production_identity",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -171,12 +177,18 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "operator-decision-card")
             else ("tests/content/test_current_disposition_approval_change_contract.py",)
             if key == ("current-disposition", "server-owned-approval-command")
+            else ("tests/content/test_current_preparation_readiness_change_contract.py",)
+            if key == ("current-preparation", "exact-downstream-receipts")
             else _test_selectors(proof)
         ),
         observer_paths=(
-            ("tests/scripts/test_changes_check.py", "scripts/_change_contract_model.py",
-             "scripts/_change_contract_observer.py", "scripts/_change_contract_snapshot.py",
-             "scripts/trusted_test_report.py")
+            (
+                "tests/scripts/test_changes_check.py",
+                "scripts/_change_contract_model.py",
+                "scripts/_change_contract_observer.py",
+                "scripts/_change_contract_snapshot.py",
+                "scripts/trusted_test_report.py",
+            )
             if key == ("change-contract-gate", "observed-before-state")
             else ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
@@ -191,17 +203,19 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "operator-decision-card")
             else ("tests/content/test_current_disposition_approval_change_contract.py",)
             if key == ("current-disposition", "server-owned-approval-command")
-            else tuple(
-                dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof))
-            )
+            else ("tests/content/test_current_preparation_readiness_change_contract.py",)
+            if key == ("current-preparation", "exact-downstream-receipts")
+            else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
-        allow_new_mapping=key in {
+        allow_new_mapping=key
+        in {
             ("change-contract-gate", "observed-before-state"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("content-review", "exact-packet-revision"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
+            ("current-preparation", "exact-downstream-receipts"),
         },
     )
     for key, proof in _PROOFS.items()

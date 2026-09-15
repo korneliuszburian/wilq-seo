@@ -373,6 +373,115 @@ def test_changes_check_maps_server_owned_current_disposition_approval_to_backend
     assert descriptor.allow_new_mapping is True
 
 
+def test_changes_check_maps_current_preparation_to_focused_receipt_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/content/workflow/current_preparation_readiness.py",
+        message=(
+            "feat: map current preparation proof\n\n"
+            f"Change-contract: {CURRENT_PREPARATION_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=lambda command: calls.append(command) or True,
+    )
+
+    descriptor = change_contract_model.MAPPINGS[
+        ("current-preparation", "exact-downstream-receipts")
+    ]
+    assert result == 0
+    assert calls == [CURRENT_PREPARATION_PROOF]
+    assert descriptor.selectors == (
+        "tests/content/test_current_preparation_readiness_change_contract.py",
+    )
+    assert descriptor.expectation == "red-green"
+    assert descriptor.allow_new_mapping is True
+
+
+def test_current_preparation_observer_is_red_then_green(tmp_path: Path) -> None:
+    repo = tmp_path / "current-preparation-counterfactual"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "current preparation observer")
+
+    descriptor = change_contract_model.MAPPINGS[
+        ("current-preparation", "exact-downstream-receipts")
+    ]
+    target_sources = (
+        "wilq/content/workflow/current_preparation_readiness.py",
+        "wilq/content/workflow/current_preparation_readiness_contracts.py",
+        "wilq/content/workflow/current_preparation_readiness_support.py",
+        "wilq/content/workflow/refresh_preparation_resolution.py",
+        "wilq/content/workflow/research_packet_preparation.py",
+        "wilq/content/workflow/workspace/production_decision.py",
+        "wilq/content/workflow/workspace/selected_workspace.py",
+        "apps/api/wilq_api/routers/content_selected_workspace.py",
+    )
+    for relative in descriptor.observer_paths:
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# old observer\n", encoding="utf-8")
+    for relative in target_sources:
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("old implementation\n", encoding="utf-8")
+    reporter = repo / "scripts/trusted_test_report.py"
+    reporter.parent.mkdir(parents=True, exist_ok=True)
+    reporter.write_bytes((REPOSITORY_ROOT / "scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    for relative in descriptor.observer_paths:
+        source = REPOSITORY_ROOT / relative
+        destination = repo / relative
+        destination.write_bytes(source.read_bytes())
+    for relative in target_sources:
+        source = REPOSITORY_ROOT / relative
+        destination = repo / relative
+        destination.write_bytes(source.read_bytes())
+    mapping = repo / descriptor.mapping_path
+    mapping.parent.mkdir(parents=True, exist_ok=True)
+    mapping.write_text(
+        "MAPPING = ('current-preparation', 'exact-downstream-receipts')\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("current-preparation", "exact-downstream-receipts"),
+    )
+
+    assert result.ok is True, result.reason
+    assert result.infrastructure is False
+    assert result.reason == "green"
+
+
 def test_server_owned_current_disposition_approval_observer_is_red_then_green(
     tmp_path: Path,
 ) -> None:

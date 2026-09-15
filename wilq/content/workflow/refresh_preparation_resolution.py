@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftRequest
@@ -19,8 +19,17 @@ from wilq.content.workflow.content_kind_receipt import (
     build_editorial_content_kind_receipt,
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.current_preparation_readiness import (
+    ContentCurrentPreparationReadyForRefreshAuthorization,
+    CurrentPreparationReadinessStore,
+    resolve_current_preparation_readiness,
+)
 from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.production import (
+    ContentProductionClassificationRow,
+    ContentProductionClassificationRun,
+)
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
     ContentRefreshPreparationAuthorizationRequest,
@@ -61,6 +70,14 @@ def classified_refresh_context(
             "Otwórz bieżący work item wskazany przez klasyfikację przed przygotowaniem refresh.",
         )
     if row.decision != "refresh":
+        readiness = resolve_current_preparation_readiness(
+            cast(CurrentPreparationReadinessStore, store),
+            work_item_id,
+            run=run,
+            row=row,
+        )
+        if isinstance(readiness, ContentCurrentPreparationReadyForRefreshAuthorization):
+            return _classified_refresh_context(run, row, work_item_id)
         return blocker(
             "refresh_preparation_decision_not_refresh",
             "Klasyfikacja nie pozwala na autoryzację refresh",
@@ -69,6 +86,14 @@ def classified_refresh_context(
             row.next_step_pl,
             source_codes=[row.decision, *(item.code for item in row.blockers)],
         )
+    return _classified_refresh_context(run, row, work_item_id)
+
+
+def _classified_refresh_context(
+    run: ContentProductionClassificationRun,
+    row: ContentProductionClassificationRow,
+    work_item_id: str,
+) -> RefreshClassificationContext:
     return RefreshClassificationContext(
         run=run,
         row=row,
@@ -174,8 +199,7 @@ def _rebuild_service_preparation(
                 "Karta usługi nie ma kompletnej linii źródłowej",
                 "Wybrana karta musi być approved_current oraz mieć evidence, connector "
                 "i co najmniej jeden reviewed source fact albo source material ID.",
-                "Uzupełnij zatwierdzoną linię źródłową karty usługi przed przygotowaniem "
-                "refresh.",
+                "Uzupełnij zatwierdzoną linię źródłową karty usługi przed przygotowaniem refresh.",
             ),
         )
     result = build_content_planning_input(snapshot, service_card_id=service_card_id)
@@ -464,9 +488,7 @@ def authorization_request_mismatch(
     preview: ContentRefreshPreparationReadyToAuthorize | ContentRefreshPreparationAuthorized,
     request: ContentRefreshPreparationAuthorizationRequest,
 ) -> ContentRefreshPreparationBlocker | None:
-    comparisons: tuple[
-        tuple[str, str, ContentRefreshPreparationBlockerCode, str], ...
-    ] = (
+    comparisons: tuple[tuple[str, str, ContentRefreshPreparationBlockerCode, str], ...] = (
         (
             request.expected_production_classification_run_digest,
             preview.classification.classification_run_digest,
