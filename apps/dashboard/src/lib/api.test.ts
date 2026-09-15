@@ -4,6 +4,7 @@ import {
   applyAction,
   createContentNewPageFoundation,
   createContentNewPageInitialDraft,
+  getContentResearchPacket,
   reviewContentNewPageRevision,
   getActionMutationReadiness,
   getActionsMutationReadiness,
@@ -138,6 +139,84 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("rejects a research packet when its server digest does not verify", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      void url;
+      return new Response(JSON.stringify({
+      status: "found",
+      packet: {
+        schema_version: "wilq_content_research_packet_v1",
+        packet_id: "content_research_packet_digest_api",
+        packet_digest: "a".repeat(64),
+        status: "blocked",
+        source_pack_binding_id: "content_source_pack_current",
+        source_pack_binding_digest: "b".repeat(64),
+        identity_binding_id: "content_delivery_identity_current",
+        identity_binding_digest: "c".repeat(64),
+        current_work_item_id: "content_work_item_current",
+        preparation_receipt_id: null,
+        preparation_receipt_digest: null,
+        classification_source_row_digest: "",
+        canonical_path: "",
+        public_url: "",
+        final_disposition: "keep",
+        content_kind: "service",
+        intent: "",
+        query_cluster: [],
+        canonical_owner: "",
+        target_audience: "",
+        buyer_problem: "",
+        buyer_trigger: "",
+        approved_source_fact_ids: [],
+        blocked_claims: [],
+        evidence_ids: [],
+        source_fact_registry_digest: "",
+        source_facts_digest: "d".repeat(64),
+        evidence_ids_digest: "e".repeat(64),
+        freshness: [],
+        legal_source_requirements: [],
+        cta_destination: "",
+        internal_links: [],
+        context_receipt: null,
+        input_digest: "f".repeat(64),
+        blocker: {
+          seam: "preparation_receipt",
+          reason: "preparation_receipt_missing",
+          evidence_ids: [],
+          next_step_pl: "Przygotuj receipt."
+        },
+        recorded_by: "packet_test",
+        recorded_at: "2026-09-15T00:00:00Z"
+      },
+      current: {
+        status: "blocked",
+        packet_id: "content_research_packet_digest_api",
+        packet_digest: "a".repeat(64),
+        current_work_item_id: "content_work_item_current",
+        current_source_pack_binding_id: "content_source_pack_current",
+        current_source_pack_binding_digest: "b".repeat(64),
+        current_identity_binding_id: "content_delivery_identity_current",
+        current_identity_binding_digest: "c".repeat(64),
+        blocker: {
+          seam: "preparation_receipt",
+          reason: "preparation_receipt_missing",
+          evidence_ids: [],
+          next_step_pl: "Przygotuj receipt."
+        },
+        revalidated_at: "2026-09-15T00:00:00Z"
+      }
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getContentResearchPacket("digest/api")).rejects.toThrow(
+      "Research packet digest verification failed"
+    );
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).pathname).toBe(
+      "/api/content/research-packets/digest%2Fapi"
+    );
+  });
+
   it("binds a source review to the exact captured official snapshot", async () => {
     const snapshot = {
       status: "captured",

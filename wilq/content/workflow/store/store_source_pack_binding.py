@@ -74,6 +74,23 @@ class ContentSourcePackBindingStoreMixin:
             ).fetchone()
         return None if row is None else _binding_from_source_pack_row(row)
 
+    def list_content_source_pack_bindings(
+        self,
+        *,
+        current_work_item_id: str | None = None,
+    ) -> list[ContentSourcePackBinding]:
+        """Read immutable source-pack receipts for an exact work item."""
+
+        query = "SELECT * FROM content_source_pack_bindings"
+        parameters: tuple[object, ...] = ()
+        if current_work_item_id is not None:
+            query += " WHERE current_work_item_id = ?"
+            parameters = (current_work_item_id,)
+        query += " ORDER BY recorded_at ASC, binding_id ASC"
+        with self._connect() as connection:
+            rows = connection.execute(query, parameters).fetchall()
+        return [_binding_from_source_pack_row(row) for row in rows]
+
 
 def _load_source_pack_binding_context(
     connection: sqlite3.Connection,

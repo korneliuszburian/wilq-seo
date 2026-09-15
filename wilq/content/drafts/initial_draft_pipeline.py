@@ -18,6 +18,7 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftRuntimePolicyError,
     finish_initial_draft_run,
@@ -267,6 +268,7 @@ def _runtime_policy_blocked_response(
         status="blocked",
         work_item_id=inputs.run.work_item_id,
         proposal_id=inputs.run.proposal_id,
+        **initial_draft_packet_fields(proposal=inputs.proposal),
         runtime=ContentCodexRuntimeTrace(status="not_started"),
         blockers=[blocker],
         safe_next_step=blocker.next_step,

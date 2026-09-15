@@ -32,6 +32,7 @@ import {
   ContentPublicDeploymentConfirmationCommandSchema,
   ContentPublicDeploymentConfirmationResponseSchema,
   ContentPublicDeploymentReadResponseSchema,
+  ContentResearchPacketReadResultSchema,
   ContentRegulatorySourceFactProposalResponseSchema,
   ContentRegulatorySourceFactProposalReviewCommandSchema,
   ContentRegulatorySourceReviewCommandSchema,
@@ -91,6 +92,7 @@ import {
   type ContentPublicDeploymentConfirmationCommand,
   type ContentPublicDeploymentConfirmationResponse,
   type ContentPublicDeploymentReadResponse,
+  type ContentResearchPacketReadResult,
   type ContentRegulatorySourceFactProposalResponse,
   type ContentRegulatorySourceFactProposalReviewCommand,
   type ContentRegulatorySourceReview,
@@ -125,6 +127,7 @@ import {
   apiPost,
   apiPostWithConflict
 } from "./common";
+import { verifyContentResearchPacketDigest } from "@wilq/shared-schemas";
 
 export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
   return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
@@ -358,6 +361,19 @@ export function getContentWorkItemPlanningProposal(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-proposals`,
     ContentPlanningProposalResponseSchema
   );
+}
+
+export async function getContentResearchPacket(
+  packetId: string
+): Promise<ContentResearchPacketReadResult> {
+  const packet = await apiGet(
+    `/api/content/research-packets/${encodeURIComponent(packetId)}`,
+    ContentResearchPacketReadResultSchema
+  );
+  if (!(await verifyContentResearchPacketDigest(packet.packet))) {
+    throw new Error("Research packet digest verification failed");
+  }
+  return packet;
 }
 
 export function postContentWorkItemPlanningProposal(

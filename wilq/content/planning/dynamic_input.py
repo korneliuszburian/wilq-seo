@@ -64,6 +64,9 @@ from wilq.content.planning.internal_link_candidates import (
     ContentPlanningInternalLinkCandidate,
     load_content_internal_link_candidates,
 )
+from wilq.content.planning.packet_input_binding import (
+    bind_research_packet_to_planning_input,
+)
 from wilq.content.regulatory.planning import regulatory_planning_source_facts
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
@@ -106,6 +109,11 @@ class ContentPlanningInput(BaseModel):
     criteria_version: Literal["wilq_people_first_planning_v5"] = "wilq_people_first_planning_v5"
     inventory_mapping_policy: Literal["wilq_inventory_mapping_v7"] = "wilq_inventory_mapping_v7"
     planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     work_item_id: str = Field(min_length=1)
     goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
     final_canonical_url: str | None = None
@@ -142,6 +150,15 @@ class ContentPlanningInput(BaseModel):
     baseline_cta_direction: str = Field(min_length=1)
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
     required_cta_patterns: list[str] = Field(default_factory=list, max_length=4)
+
+    @model_validator(mode="after")
+    def require_research_packet_pair(self) -> ContentPlanningInput:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if self.goal == "new_page" and self.research_packet_id is not None:
+            raise ValueError("New-page planning cannot carry a research packet.")
+        return self
+
 
     @model_validator(mode="after")
     def require_nonblank_cta_patterns(self) -> ContentPlanningInput:
@@ -814,6 +831,7 @@ __all__ = [
     "ContentPlanningSourceAssessment",
     "build_content_planning_input",
     "build_new_page_planning_input",
+    "bind_research_packet_to_planning_input",
     "content_planning_inventory_digest",
     "content_planning_input_readiness",
     "content_planning_input_summary",

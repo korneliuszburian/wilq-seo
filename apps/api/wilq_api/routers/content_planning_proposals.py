@@ -11,6 +11,7 @@ from apps.api.wilq_api.routers.content_refresh_preparation_authority import (
 )
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.planning import planning_generation_queue
+from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal import (
     read_content_planning_proposal,
     with_current_planning_workspace,
@@ -24,6 +25,21 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.planning.route_packet_binding import (
+    authorized_refresh_generation_context as _authorized_refresh_generation_context,
+)
+from wilq.content.planning.route_packet_binding import (
+    legacy_unbound_packet_response as _legacy_unbound_packet_response,
+)
+from wilq.content.planning.route_packet_binding import (
+    packet_generation_guard as _packet_generation_guard_impl,
+)
+from wilq.content.planning.route_packet_binding import (
+    prepare_and_bind_research_packet as _prepare_and_bind_research_packet_impl,
+)
+from wilq.content.planning.route_packet_binding import (
+    store_has_source_pack_for_work_item as _store_has_source_pack_for_work_item,
+)
 from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.inventory_binding import (
@@ -36,11 +52,60 @@ from wilq.content.workflow.refresh_preparation import (
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationBinding,
     ContentRefreshPreparationBlocked,
+    refresh_preparation_bindings_match_authority,
 )
 from wilq.content.workflow.store.store import content_workflow_store
 
 ContentPlanningSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 ContentRefreshPreparationAuthorityFactory = Callable[[], ContentRefreshPreparationAuthority]
+
+
+def _prepare_and_bind_research_packet(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    planning_input: ContentPlanningInput,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> tuple[
+    ContentPlanningProposalResponse | JSONResponse | None,
+    ContentPlanningInput | None,
+    ContentPlanningProposalRequest,
+]:
+    result = _prepare_and_bind_research_packet_impl(
+        work_item_id=work_item_id,
+        request=request,
+        planning_input=planning_input,
+        snapshot=snapshot,
+        store=content_workflow_store(),
+    )
+    return (
+        None
+        if result.response is None
+        else JSONResponse(status_code=409, content=result.response.model_dump(mode="json")),
+        result.planning_input,
+        result.request,
+    )
+
+
+def _packet_generation_guard(
+    *,
+    request: ContentPlanningProposalRequest,
+    planning_input: ContentPlanningInput,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentPlanningProposalResponse | None:
+    return _packet_generation_guard_impl(
+        request=request,
+        planning_input=planning_input,
+        snapshot=snapshot,
+        store=content_workflow_store(),
+    )
+
+
+def store_has_source_pack_for_work_item(work_item_id: str) -> bool:
+    return _store_has_source_pack_for_work_item(
+        work_item_id,
+        store=content_workflow_store(),
+    )
 
 
 @dataclass(frozen=True)
@@ -301,10 +366,17 @@ def _authorized_refresh_planning_status(
     authority: ContentRefreshPreparationAuthority,
     store: ContentPlanningProposalStore,
 ) -> ContentPlanningProposalResponse | None:
+    authorization = content_workflow_store().load_refresh_preparation_authorization(
+        binding.authorization_id
+    )
     request = ContentPlanningProposalRequest(
         content_kind=binding.content_kind,
         service_card_id=binding.service_card_id,
-        expected_planning_input_digest=binding.planning_input_digest,
+        expected_planning_input_digest=(
+            binding.planning_input_digest
+            if authorization is None
+            else authorization.planning_input_digest
+        ),
         requested_by="status_read",
         refresh_preparation_authorization_id=binding.authorization_id,
         expected_refresh_preparation_authorization_digest=binding.authorization_digest,
@@ -316,6 +388,10 @@ def _authorized_refresh_planning_status(
     if not isinstance(resolution, RefreshPreparationRuntimeAuthorized):
         return _bound_refresh_status_block(work_item_id, binding)
     response = read_content_planning_proposal(snapshot=resolution.snapshot, store=store)
+    if response.refresh_preparation_binding is not None:
+        return response
+    if response.planning_input_digest != resolution.planning_input.planning_input_digest:
+        return _bound_refresh_status_block(work_item_id, binding)
     return response.model_copy(update={"refresh_preparation_binding": resolution.binding})
 
 
@@ -375,15 +451,43 @@ def _generate_content_work_item_planning_proposal(
         store=store,
     )
     if early_response is not None:
+        if (
+            early_response.proposal is not None
+            and early_response.proposal.research_packet_id is None
+            and store_has_source_pack_for_work_item(work_item_id)
+        ):
+            legacy = _legacy_unbound_packet_response(early_response)
+            return JSONResponse(status_code=409, content=legacy.model_dump(mode="json"))
         return early_response
     if planning_input is None:
         raise RuntimeError("Planning preparation returned no input or blocker.")
+    snapshot_for_packet = snapshot_loader(work_item_id)
+    packet_result = _prepare_and_bind_research_packet(
+        work_item_id=work_item_id,
+        request=request,
+        planning_input=planning_input,
+        snapshot=snapshot_for_packet,
+    )
+    if packet_result[0] is not None:
+        return packet_result[0]
+    planning_input, request = packet_result[1], packet_result[2]
+    if planning_input is None:
+        raise RuntimeError("Research packet preparation returned no planning input.")
+
+    def packet_guard() -> ContentPlanningProposalResponse | None:
+        return _packet_generation_guard(
+            request=request,
+            planning_input=planning_input,
+            snapshot=snapshot_loader(work_item_id),
+        )
+
     return planning_generation_queue.enqueue_planning_generation(
         planning_input=planning_input,
         work_item_id=work_item_id,
         request=request,
         snapshot_loader=snapshot_loader,
         store=store,
+        generation_guard=packet_guard,
     )
 
 
@@ -413,40 +517,12 @@ def _generate_authorized_refresh_planning_proposal(
         )
     )
     if existing_response is not None:
-        if _is_stale_mapping_response(existing_response):
-            response = _authorized_stale_mapping_reconciliation_block(
-                work_item_id=work_item_id,
-                content_kind=request.content_kind,
-                service_card_id=request.service_card_id,
-            )
-            return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
-        proposal = existing_response.proposal
-        if (
-            proposal is not None
-            and proposal.refresh_preparation_binding == initial_resolution.binding
-        ) or (
-            proposal is None
-            and existing_response.refresh_preparation_binding == initial_resolution.binding
-        ):
-            return existing_response
-        blocker = ContentPlanningProposalBlocker(
-            code="refresh_preparation_proposal_binding_mismatch",
-            label="Istniejący plan nie jest związany z autoryzacją refresh",
-            reason=(
-                "Dokładny input ma zapisany plan bez bieżącego authorization ID i "
-                "digesta; WILQ nie użyje go jako planu refresh."
-            ),
-            next_step="Odśwież kontekst i wygeneruj plan związany z bieżącą autoryzacją refresh.",
-        )
-        response = ContentPlanningProposalResponse(
-            status="blocked",
+        return _authorized_existing_refresh_response(
             work_item_id=work_item_id,
-            content_kind=request.content_kind,
-            service_card_id=request.service_card_id,
-            blockers=[blocker],
-            safe_next_step=blocker.next_step,
+            request=request,
+            response=existing_response,
+            binding=initial_resolution.binding,
         )
-        return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
     source_snapshot = existing_snapshot or snapshot
     planning_input, early_response = (
         planning_generation_queue.prepare_planning_generation_from_snapshot(
@@ -467,16 +543,27 @@ def _generate_authorized_refresh_planning_proposal(
             error=RuntimeError("Authorized refresh planning preparation returned no input."),
         )
 
-    def guard() -> ContentPlanningProposalResponse | None:
-        return authority.planning_block_response(
-            authority.resolve_planning(work_item_id, request), request
+    packet_result = _prepare_and_bind_research_packet(
+        work_item_id=work_item_id,
+        request=effective_request,
+        planning_input=planning_input,
+        snapshot=snapshot,
+    )
+    if packet_result[0] is not None:
+        return packet_result[0]
+    planning_input, effective_request = packet_result[1], packet_result[2]
+    if planning_input is None:
+        raise RuntimeError("Research packet preparation returned no planning input.")
+    packet_bound_refresh_binding, guard, current_snapshot = (
+        _authorized_refresh_generation_context(
+            work_item_id=work_item_id,
+            request=effective_request,
+            planning_input=planning_input,
+            snapshot=snapshot,
+            authority=authority,
+            initial_resolution=initial_resolution,
         )
-
-    def current_snapshot(_work_item_id: str) -> ContentWorkItemWorkflowSnapshotResponse:
-        current = authority.resolve_planning(work_item_id, request)
-        if not isinstance(current, RefreshPreparationRuntimeAuthorized):
-            raise RuntimeError("refresh_preparation_authority_changed")
-        return current.snapshot
+    )
 
     return planning_generation_queue.enqueue_planning_generation(
         planning_input=planning_input,
@@ -485,8 +572,61 @@ def _generate_authorized_refresh_planning_proposal(
         snapshot_loader=current_snapshot,
         store=store,
         generation_guard=guard,
-        refresh_preparation_binding=initial_resolution.binding,
+        refresh_preparation_binding=packet_bound_refresh_binding,
     )
+
+
+def _authorized_existing_refresh_response(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    response: ContentPlanningProposalResponse,
+    binding: ContentRefreshPreparationBinding,
+) -> ContentPlanningProposalResponse | JSONResponse:
+    if _is_stale_mapping_response(response):
+        blocked = _authorized_stale_mapping_reconciliation_block(
+            work_item_id=work_item_id,
+            content_kind=request.content_kind,
+            service_card_id=request.service_card_id,
+        )
+        return JSONResponse(status_code=409, content=blocked.model_dump(mode="json"))
+    proposal = response.proposal
+    same_binding = (
+        proposal is not None
+        and proposal.refresh_preparation_binding is not None
+        and refresh_preparation_bindings_match_authority(
+            proposal.refresh_preparation_binding, binding
+        )
+    ) or (
+        proposal is None
+        and response.refresh_preparation_binding is not None
+        and refresh_preparation_bindings_match_authority(
+            response.refresh_preparation_binding, binding
+        )
+    )
+    if same_binding:
+        if proposal is not None and proposal.research_packet_id is None:
+            legacy = _legacy_unbound_packet_response(response)
+            return JSONResponse(status_code=409, content=legacy.model_dump(mode="json"))
+        return response
+    blocker = ContentPlanningProposalBlocker(
+        code="refresh_preparation_proposal_binding_mismatch",
+        label="Istniejący plan nie jest związany z autoryzacją refresh",
+        reason=(
+            "Dokładny input ma zapisany plan bez bieżącego authorization ID i "
+            "digesta; WILQ nie użyje go jako planu refresh."
+        ),
+        next_step="Odśwież kontekst i wygeneruj plan związany z bieżącą autoryzacją refresh.",
+    )
+    blocked = ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+    return JSONResponse(status_code=409, content=blocked.model_dump(mode="json"))
 
 
 def _is_stale_mapping_response(response: ContentPlanningProposalResponse) -> bool:

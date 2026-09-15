@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.packet_model_projection import project_planning_input_for_packet
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.research_packet import ContentResearchPacket
 
 PROPOSAL_EDITORIAL_KEYS = frozenset(
     {
@@ -10,6 +12,8 @@ PROPOSAL_EDITORIAL_KEYS = frozenset(
         "planning_digest",
         "proposal_id",
         "planning_input_digest",
+        "research_packet_id",
+        "research_packet_digest",
         "final_canonical_url",
         "service_card_id",
         "service_label",
@@ -73,10 +77,16 @@ def compact_proposal(
 
 def compact_initial_draft_planning_input(
     planning_input: ContentPlanningInput,
+    packet: ContentResearchPacket | None = None,
 ) -> dict[str, object]:
     """Keep draft transport useful without replaying connector bookkeeping."""
 
-    payload = planning_input.model_dump(mode="json", exclude_none=True)
+    payload = (
+        project_planning_input_for_packet(planning_input, packet)
+        if packet is not None
+        else planning_input.model_dump(mode="json", exclude_none=True)
+    )
+    payload = {key: value for key, value in payload.items() if value is not None}
     assessments = payload.get("source_assessments")
     if isinstance(assessments, list):
         compact_assessments: list[object] = []

@@ -581,6 +581,23 @@ def refresh_preparation_binding_matches_content_identity(
     return binding.canonical_path == canonical_path
 
 
+def refresh_preparation_bindings_match_authority(
+    binding: ContentRefreshPreparationBinding,
+    authority_binding: ContentRefreshPreparationBinding,
+) -> bool:
+    """Compare a generated binding with its authority receipt identity.
+
+    Packet binding adds an exact packet-aware planning digest after refresh
+    authorization.  The authorization remains the authority for the original
+    unbound digest, while all other identity fields must remain byte-for-byte
+    equal.
+    """
+
+    return binding.model_copy(
+        update={"planning_input_digest": authority_binding.planning_input_digest}
+    ) == authority_binding
+
+
 __all__ = [
     "ContentRefreshPreparationAuthorization",
     "ContentRefreshPreparationAuthorizationConflictResponse",
@@ -606,4 +623,5 @@ __all__ = [
     "inventory_missing_blocker",
     "landing_hub_required_blocker",
     "refresh_preparation_binding_matches_content_identity",
+    "refresh_preparation_bindings_match_authority",
 ]

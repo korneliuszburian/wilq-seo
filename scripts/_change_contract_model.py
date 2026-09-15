@@ -115,6 +115,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
         "tests/api_contracts/test_redaction_contracts.py",
     ),
+    ("content-research-packet", "server-owned-exact-plan-draft"): (
+        "scripts/test.sh",
+        "tests/content/test_packet_plan_draft_binding.py",
+        "tests/content/test_packet_plan_draft_http.py",
+    ),
 }
 
 
@@ -125,16 +130,28 @@ def _test_selectors(proof: ProofCommand) -> tuple[str, ...]:
 _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
     key: MappingDescriptor(
         proof=proof,
-        selectors=_test_selectors(proof),
+        # Use a small parent-safe harness for the counterfactual: both fixed
+        # points can collect it, while the old POST surface fails in its call
+        # phase and the candidate's read-only surface passes.
+        selectors=(
+            ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
+            if key == ("content-research-packet", "server-owned-exact-plan-draft")
+            else _test_selectors(proof)
+        ),
         observer_paths=(
             ("tests/scripts/test_changes_check.py", "scripts/_change_contract_model.py",
              "scripts/_change_contract_observer.py", "scripts/_change_contract_snapshot.py",
              "scripts/trusted_test_report.py")
             if key == ("change-contract-gate", "observed-before-state")
+            else ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
+            if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else tuple(entry.split("::", 1)[0] for entry in _test_selectors(proof))
         ),
         expectation="red-green",
-        allow_new_mapping=key == ("change-contract-gate", "observed-before-state"),
+        allow_new_mapping=key in {
+            ("change-contract-gate", "observed-before-state"),
+            ("content-research-packet", "server-owned-exact-plan-draft"),
+        },
     )
     for key, proof in _PROOFS.items()
 }

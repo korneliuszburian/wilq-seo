@@ -20,7 +20,6 @@ from wilq.content.knowledge.work_item_service_profile import (
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
-    build_content_planning_input,
     content_planning_input_summary,
     planning_generation_blockers,
 )
@@ -57,10 +56,16 @@ from wilq.content.planning.generated_proposal_responses import (
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generated_proposal_turn import content_planning_turn_request
+from wilq.content.planning.generation_input import (
+    build_generation_input as _build_generation_input,
+)
 from wilq.content.planning.proposal_lineage import (
     canonicalize_regulatory_section_assertions,
     canonicalize_regulatory_section_evidence,
     planning_output_lineage_errors,
+)
+from wilq.content.planning.proposal_packet_binding import (
+    bind_research_packet as _bind_research_packet,
 )
 from wilq.content.planning.proposal_quality import (
     persisted_inventory_mapping_is_current,
@@ -138,6 +143,7 @@ def generate_content_planning_proposal(
         snapshot=snapshot,
         request=request,
         store=store,
+        require_research_packet=True,
     )
     if early_response is not None:
         return early_response
@@ -253,47 +259,23 @@ def _prepare_generation(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentPlanningProposalRequest,
     store: ContentPlanningProposalStore,
+    require_research_packet: bool = False,
 ) -> tuple[ContentPlanningInput | None, ContentPlanningProposalResponse | None]:
     if mismatch := _content_kind_mismatch_response(snapshot, request):
         return None, mismatch
-    if request.content_kind == "service" and request.service_card_id not in {
-        candidate.service_card_id
-        for candidate in snapshot.service_profile_context.service_candidates
-    }:
-        return None, _blocked_response(
-            snapshot.preflight.item.id,
-            content_kind=request.content_kind,
-            service_card_id=request.service_card_id,
-            planning_input_digest=None,
-            blockers=[
-                build_blocker(
-                    ContentPlanningProposalBlocker,
-                    code="unknown_service_card",
-                    label="Usługa nie należy do tego zadania",
-                    reason="Wybrana karta nie wynika z dokładnego dopasowania strony i wiedzy WILQ.",  # noqa: E501
-                    next_step="Wybierz jedną z usług pokazanych dla tej strony.",
-                )
-            ],
-        )
-    planning_snapshot = (
-        with_explicit_content_service_selection(snapshot, request.service_card_id)
-        if request.content_kind == "service" and request.service_card_id is not None
-        else snapshot
+    planning_input, planning_blockers, preparation_response = _build_generation_input(
+        snapshot,
+        request,
+        select_service=with_explicit_content_service_selection,
+        bind_packet=_bind_research_packet,
+        require_research_packet=require_research_packet,
     )
-    result = build_content_planning_input(
-        planning_snapshot,
-        service_card_id=request.service_card_id,
-    )
-    if result.planning_input is None:
-        return None, _blocked_from_input(
-            snapshot.preflight.item.id,
-            request.service_card_id,
-            result.blockers,
-            content_kind=request.content_kind,
-        )
-    planning_input = result.planning_input
+    if preparation_response is not None:
+        return None, preparation_response
+    if planning_input is None:
+        raise RuntimeError("Planning input preparation returned no input or blocker.")
     input_summary = content_planning_input_summary(planning_input)
-    generation_blockers = planning_generation_blockers(result.blockers)
+    generation_blockers = planning_generation_blockers(planning_blockers)
     if generation_blockers:
         return None, _blocked_from_input(
             planning_input.work_item_id,
@@ -310,6 +292,8 @@ def _prepare_generation(
             content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
+            research_packet_id=planning_input.research_packet_id,
+            research_packet_digest=planning_input.research_packet_digest,
             input_summary=input_summary,
             blockers=[_stale_input_blocker()],
             safe_next_step="Odśwież wejście i świadomie uruchom nową wersję planu.",
@@ -340,6 +324,8 @@ def _prepare_generation(
             content_kind=request.content_kind,
             service_card_id=request.service_card_id,
             planning_input_digest=planning_input.planning_input_digest,
+            research_packet_id=planning_input.research_packet_id,
+            research_packet_digest=planning_input.research_packet_digest,
             input_summary=input_summary,
             proposal=existing,
             refresh_preparation_binding=existing.refresh_preparation_binding,

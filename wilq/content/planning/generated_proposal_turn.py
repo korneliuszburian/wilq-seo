@@ -18,7 +18,12 @@ from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
 )
+from wilq.content.planning.packet_model_projection import (
+    current_research_packet_for_model,
+    project_planning_input_for_packet,
+)
 from wilq.content.regulatory import turn_context as regulatory_turn_context
+from wilq.content.workflow.research_packet import ContentResearchPacket
 
 # The persisted planning input is intentionally complete: its digest covers
 # every connector row and every lineage edge.  The model envelope is a
@@ -57,6 +62,7 @@ def _model_inventory_sections(sections: object) -> list[object]:
 
 def compact_planning_input_for_model(
     planning_input: ContentPlanningInput,
+    packet: ContentResearchPacket | None = None,
 ) -> tuple[dict[str, object], dict[str, int]]:
     """Build a bounded, lineage-preserving model view without changing the digest.
 
@@ -67,7 +73,12 @@ def compact_planning_input_for_model(
     so the model can still cite any allowed evidence id.
     """
 
-    payload = planning_input.model_dump(mode="json", exclude_none=True)
+    payload = (
+        project_planning_input_for_packet(planning_input, packet)
+        if packet is not None
+        else planning_input.model_dump(mode="json", exclude_none=True)
+    )
+    payload = {key: value for key, value in payload.items() if value is not None}
     inventory = payload.get("inventory")
     if isinstance(inventory, dict):
         inventory["sections"] = _model_inventory_sections(inventory.get("sections"))
@@ -103,11 +114,13 @@ def content_planning_turn_request(
     *,
     operator_hint: str,
 ) -> CodexAppServerStructuredTurnRequest:
+    packet = current_research_packet_for_model(planning_input)
     application_context = json.dumps(
         {
             "operation": "propose_content_plan",
             "work_item_id": planning_input.work_item_id,
             "planning_input_digest": planning_input.planning_input_digest,
+            "research_packet_binding": _research_packet_binding(planning_input),
             "content_kind": planning_input.content_kind,
             "service_card_id": planning_input.confirmed_service_card_id,
             "input_schema": planning_input.schema_name,
@@ -127,11 +140,12 @@ def content_planning_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
-    model_input, coverage = compact_planning_input_for_model(planning_input)
+    model_input, coverage = compact_planning_input_for_model(planning_input, packet)
     untrusted_context = json.dumps(
         {
             "planning_input": model_input,
             "planning_input_coverage": coverage,
+            "research_packet_binding": _research_packet_binding(planning_input),
             "operator_hint": operator_hint,
         },
         ensure_ascii=False,
@@ -144,6 +158,8 @@ def content_planning_turn_request(
         untrusted_context=untrusted_context,
         output_schema=content_planning_output_schema(planning_input),
     )
+
+
 
 
 def _planning_instruction(planning_input: ContentPlanningInput) -> str:
@@ -190,6 +206,18 @@ def _planning_instruction(planning_input: ContentPlanningInput) -> str:
             "safe_fallback_placements. "
         ),
     )
+
+
+def _research_packet_binding(planning_input: ContentPlanningInput) -> dict[str, str] | None:
+    if (
+        planning_input.research_packet_id is None
+        or planning_input.research_packet_digest is None
+    ):
+        return None
+    return {
+        "packet_id": planning_input.research_packet_id,
+        "packet_digest": planning_input.research_packet_digest,
+    }
 
 
 def _bind_planning_subject_schema(

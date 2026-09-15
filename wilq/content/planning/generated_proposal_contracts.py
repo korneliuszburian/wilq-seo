@@ -52,6 +52,9 @@ ContentPlanningProposalBlockerCode = Literal[
     "persistence_failed",
     "scope_not_current",
     "content_kind_mismatch",
+    "research_packet_missing",
+    "research_packet_blocked",
+    "research_packet_conflict",
 ]
 
 
@@ -114,6 +117,16 @@ class ContentPlanningProposalRequest(BaseModel):
     content_kind: PlanningContentKind = "service"
     service_card_id: str | None = Field(default=None, min_length=1)
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    expected_research_packet_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
+    source_pack_binding_id: str | None = Field(default=None, min_length=1)
+    expected_source_pack_binding_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     operator_hint: str = Field(default="", max_length=500)
     requested_by: str = Field(min_length=1)
     regenerate_stale_mapping: bool = False
@@ -141,6 +154,12 @@ class ContentPlanningProposalRequest(BaseModel):
             raise ValueError(
                 "Refresh preparation authorization ID and digest must be supplied together."
             )
+        if (self.research_packet_id is None) != (self.expected_research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if (self.source_pack_binding_id is None) != (
+            self.expected_source_pack_binding_digest is None
+        ):
+            raise ValueError("Source-pack binding ID and digest must be supplied together.")
         if self.refresh_preparation_authorization_id is not None:
             self.refresh_preparation_authorization_id = (
                 self.refresh_preparation_authorization_id.strip()
@@ -286,6 +305,11 @@ class ContentPlanningProposalResponse(BaseModel):
         default=None,
         pattern=r"^[0-9a-f]{64}$",
     )
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     input_summary: ContentPlanningInputSummary | None = None
     retry_after_seconds: int | None = Field(default=None, ge=0)
     proposal: ContentPlanningProposal | None = None
@@ -303,6 +327,7 @@ class ContentPlanningProposalResponse(BaseModel):
         self._require_input_summary()
         self._require_status_specific_payload()
         self._require_nested_proposal_identity()
+        self._require_research_packet_binding()
         self._require_refresh_preparation_binding()
         self._require_regulatory_lineage()
         self._require_planning_workspace()
@@ -339,6 +364,17 @@ class ContentPlanningProposalResponse(BaseModel):
             or self.proposal.planning_input_digest != self.planning_input_digest
         ):
             raise ValueError("Planning response must match the nested exact proposal.")
+
+    def _require_research_packet_binding(self) -> None:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if self.proposal is None:
+            return
+        if (
+            self.proposal.research_packet_id != self.research_packet_id
+            or self.proposal.research_packet_digest != self.research_packet_digest
+        ):
+            raise ValueError("Planning response research packet must match its proposal.")
 
     def _require_refresh_preparation_binding(self) -> None:
         binding = self.refresh_preparation_binding

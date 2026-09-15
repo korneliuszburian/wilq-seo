@@ -13,12 +13,13 @@ from wilq.codex.app_server import (
     CodexAppServerTurnResult,
     StdioCodexAppServerClient,
 )
-from wilq.content.drafts import initial_draft_queue, initial_draft_run
+from wilq.content.drafts import initial_draft_queue, initial_draft_run, initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
+from wilq.content.workflow.decisions.planning import ContentPlanningPageAssets
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
@@ -30,6 +31,8 @@ def _request() -> ContentInitialDraftRequest:
         expected_planning_digest="a" * 64,
         expected_planning_input_digest="b" * 64,
         requested_by="wilku",
+        research_packet_id="content_research_packet_current",
+        research_packet_digest="c" * 64,
     )
 
 
@@ -44,6 +47,8 @@ def _snapshot(
                 proposal_id="proposal-1",
                 planning_digest="a" * 64,
                 planning_input_digest="b" * 64,
+                research_packet_id="content_research_packet_current",
+                research_packet_digest="c" * 64,
             ),
         ),
         revision_workspace=SimpleNamespace(
@@ -51,6 +56,15 @@ def _snapshot(
             context_current=context_current,
         ),
     )
+
+
+def _legacy_snapshot(
+    *, latest_revision: object | None, context_current: bool = True
+) -> SimpleNamespace:
+    snapshot = _snapshot(latest_revision=latest_revision, context_current=context_current)
+    snapshot.planning_workspace.proposal.research_packet_id = None
+    snapshot.planning_workspace.proposal.research_packet_digest = None
+    return snapshot
 
 
 def test_existing_revision_never_enters_async_initial_draft_queue() -> None:
@@ -79,6 +93,78 @@ def test_stale_revision_can_enter_refresh_queue_without_overwriting_history() ->
         _snapshot(latest_revision=object(), context_current=False),
         _request(),
     ) is True
+
+
+def test_legacy_existing_page_without_packet_blocks_direct_before_model_or_persist(
+    monkeypatch,
+) -> None:
+    from tests.content.initial_draft_readability_fakes import prepared_inputs
+
+    prepared = prepared_inputs()
+    planning_input = prepared.planning_input.model_copy(
+        update={
+            "work_item_id": "content_work_item_legacy_packet",
+            "content_kind": "editorial",
+            "final_canonical_url": "https://www.ekologus.pl/legacy-packet/",
+            "query_portfolio": SimpleNamespace(evidence_ids=[]),
+        }
+    )
+    proposal = prepared.proposal.model_copy(
+        update={
+            "work_item_id": planning_input.work_item_id,
+            "content_kind": "editorial",
+            "goal": "refresh_existing",
+            "generation_status": "codex_generated",
+            "final_canonical_url": planning_input.final_canonical_url,
+            "cta_direction": "Skontaktuj się z ekspertem.",
+            "page_assets": ContentPlanningPageAssets(title="Strona legacy"),
+        }
+    )
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(section_map_current=True, proposal=proposal),
+        revision_workspace=SimpleNamespace(latest_revision=None, context_current=True),
+        structured_generation=SimpleNamespace(
+            structured_generation_result=SimpleNamespace(
+                contract=prepared.generation_contract,
+                blockers=[],
+            )
+        ),
+        preflight=SimpleNamespace(item=SimpleNamespace(id=planning_input.work_item_id)),
+    )
+
+    monkeypatch.setattr(
+        initial_full_draft,
+        "_current_planning_input",
+        lambda *_args: SimpleNamespace(planning_input=planning_input, blockers=[]),
+    )
+
+    def must_not_run(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("legacy unbound existing-page draft reached the model")
+
+    monkeypatch.setattr(initial_full_draft, "generate_initial_draft", must_not_run)
+
+    class EmptyWorkflowStore:
+        def list_content_source_pack_bindings(self, *, current_work_item_id: str) -> list[object]:
+            del current_work_item_id
+            return []
+
+    response = initial_full_draft.generate_initial_full_draft(
+        snapshot=snapshot,
+        request=ContentInitialDraftRequest(
+            expected_proposal_id=proposal.proposal_id,
+            expected_planning_digest=proposal.planning_digest,
+            expected_planning_input_digest=planning_input.planning_input_digest,
+            requested_by="wilku",
+        ),
+        client=SimpleNamespace(),
+        workflow_store=EmptyWorkflowStore(),
+        run_store=SimpleNamespace(),
+        context_digest="c" * 64,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "research_packet_missing"
+    assert "research packet" in response.blockers[0].reason.lower()
 
 
 def test_preflight_blocker_from_async_queue_is_persisted_for_status_read(monkeypatch) -> None:
@@ -159,6 +245,40 @@ def test_initial_draft_queue_claim_is_durable_and_exact(tmp_path, monkeypatch) -
     assert runs[0].proposal_id == "proposal-1"
     assert runs[0].planning_digest == "a" * 64
     assert runs[0].planning_input_digest == "b" * 64
+
+
+def test_legacy_existing_page_without_packet_blocks_queue_before_claim_or_worker(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    store = LocalStateStore(tmp_path / "legacy-packet-queue.sqlite3")
+    monkeypatch.setattr(initial_draft_queue, "local_state_store", lambda: store)
+
+    class NeverExecutor:
+        submit_calls = 0
+
+        def submit(self, *_args: object, **_kwargs: object) -> object:
+            self.submit_calls += 1
+            raise AssertionError("legacy unbound existing-page draft reached the worker")
+
+    executor = NeverExecutor()
+
+    response = initial_draft_queue.submit_initial_draft_to_queue(
+        "work",
+        _request().model_copy(
+            update={"research_packet_id": None, "research_packet_digest": None}
+        ),
+        StdioCodexAppServerClient(),
+        lambda _work_item_id: _legacy_snapshot(latest_revision=None),
+        _legacy_snapshot(latest_revision=None),
+        executor,
+    )
+
+    assert response.status == "blocked"
+    assert response.blockers[0].code == "research_packet_missing"
+    assert "research packet" in response.blockers[0].reason.lower()
+    assert executor.submit_calls == 0
+    assert store.list_codex_runs() == []
 
 
 def test_unsupported_embedded_runtime_blocks_before_reusing_started_claim(

@@ -11,6 +11,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
     ContentRefreshPreparationBinding,
     refresh_preparation_binding_matches_content_identity,
+    refresh_preparation_bindings_match_authority,
 )
 from wilq.content.workflow.store.store_content_kind_receipt import (
     assert_persisted_editorial_content_kind_receipt,
@@ -99,7 +100,9 @@ def _assert_refresh_preparation_current(
     ):
         raise RefreshPreparationAtomicityError("refresh_preparation_authorization_stale")
     authorization = _authorization_for_binding(connection, binding)
-    if authorization is None or authorization.binding != binding:
+    if authorization is None or not refresh_preparation_bindings_match_authority(
+        binding, authorization.binding
+    ):
         raise RefreshPreparationAtomicityError("refresh_preparation_authorization_stale")
     if authorization.content_kind == "editorial":
         try:

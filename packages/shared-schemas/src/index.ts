@@ -1,4 +1,5 @@
 export * from "./contentWorkflow";
+export * from "./content_research_packet";
 export * from "./content_initial_draft";
 export * from "./content_selected_workspace";
 export * from "./content_diagnostics";

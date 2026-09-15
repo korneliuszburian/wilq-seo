@@ -70,6 +70,28 @@ export const ContentKindSchema = z.enum([
 ]);
 export const ContentPlanningKindSchema = z.enum(["service", "editorial"]);
 
+export const ContentResearchPacketBindingSchema = z.strictObject({
+  research_packet_id: z.string().trim().min(1).nullable().optional(),
+  research_packet_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional()
+}).superRefine((binding, context) => {
+  if ((binding.research_packet_id == null) !== (binding.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Research packet ID and digest must be supplied together."
+    });
+  }
+});
+
+const contentResearchPacketBindingFields = {
+  research_packet_id: z.string().trim().min(1).nullable().optional(),
+  research_packet_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional()
+};
+
+const contentResearchPacketRequestBindingFields = {
+  research_packet_id: z.string().trim().min(1).nullable().optional(),
+  expected_research_packet_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional()
+};
+
 export const ContentWorkItemSchema = z.object({
   id: z.string(),
   topic: z.string(),
@@ -2744,6 +2766,7 @@ export const ContentDraftRevisionProposalMetadataSchema = z
       "persisted_full_document_and_declared_lineage"
     ]),
     semantic_review_required: z.literal(true),
+    ...contentResearchPacketBindingFields,
     refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional()
   })
   .superRefine((metadata, context) => {
@@ -2785,6 +2808,13 @@ export const ContentDraftRevisionProposalMetadataSchema = z
         code: z.ZodIssueCode.custom,
         path: ["selected_section_headings"],
         message: "proposal lineage must match exactly one selected component kind"
+      });
+    }
+    if ((metadata.research_packet_id == null) !== (metadata.research_packet_digest == null)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["research_packet_id"],
+        message: "Research packet ID and digest must be supplied together."
       });
     }
   });
@@ -2931,6 +2961,7 @@ export const ContentDraftRevisionSchema = z.object({
   draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
   planning_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  ...contentResearchPacketBindingFields,
   content_kind: ContentPlanningKindSchema.optional(),
   service_card_id: z.string().min(1).nullable().optional(),
   service_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
@@ -2965,6 +2996,30 @@ export const ContentDraftRevisionSchema = z.object({
 }).superRefine((revision, context) => {
   const refreshBinding = revision.refresh_preparation_binding;
   const metadataBinding = revision.proposal_metadata?.refresh_preparation_binding;
+  if ((revision.research_packet_id == null) !== (revision.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
+    });
+  }
+  if (revision.document_kind === "new_page" && revision.research_packet_id != null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "New-page revisions cannot carry a research packet."
+    });
+  }
+  if (revision.proposal_metadata && (
+    revision.proposal_metadata.research_packet_id !== revision.research_packet_id ||
+    revision.proposal_metadata.research_packet_digest !== revision.research_packet_digest
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["proposal_metadata"],
+      message: "Revision proposal metadata must carry the exact research packet binding."
+    });
+  }
   if (refreshBinding) {
     if (!refreshPreparationBindingMatchesIdentity(refreshBinding, {
       workItemId: revision.work_item_id,
@@ -4072,8 +4127,23 @@ export const ContentPlanningProposalSchema = z.object({
   source_material_ids: z.array(z.string()).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
-  created_at: z.string().nullable().optional()
+  created_at: z.string().nullable().optional(),
+  ...contentResearchPacketBindingFields
 }).superRefine((proposal, context) => {
+  if ((proposal.research_packet_id == null) !== (proposal.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
+    });
+  }
+  if (proposal.goal === "new_page" && proposal.research_packet_id != null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "New-page planning cannot carry a research packet."
+    });
+  }
   if (proposal.refresh_preparation_binding && !refreshPreparationBindingMatchesIdentity(
     proposal.refresh_preparation_binding,
     {
@@ -4175,6 +4245,7 @@ export const ContentPlanningProposalRequestSchema = z.strictObject({
   content_kind: ContentPlanningKindSchema.default("service"),
   service_card_id: z.string().min(1).nullable().optional(),
   expected_planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  ...contentResearchPacketRequestBindingFields,
   operator_hint: z.string().max(500).default(""),
   requested_by: z.string().min(1),
   regenerate_stale_mapping: z.boolean().default(false),
@@ -4201,6 +4272,13 @@ export const ContentPlanningProposalRequestSchema = z.strictObject({
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "A refresh preparation authorization cannot authorize plan regeneration."
+    });
+  }
+  if ((request.research_packet_id == null) !== (request.expected_research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
     });
   }
 });
@@ -4376,6 +4454,7 @@ export const ContentPlanningInputSummarySchema = z.object({
   final_canonical_url: z.string().min(1).nullable().optional(),
   proposed_ia_location: z.string().min(3).nullable().optional(),
   content_kind: ContentPlanningKindSchema.optional(),
+  ...contentResearchPacketBindingFields,
   service_label: z.string().min(1).nullable().optional(),
   inventory_status: z.enum(["available", "missing", "not_applicable"]),
   content_inventory_status: z.enum(["available", "missing", "not_applicable"]).optional(),
@@ -4473,6 +4552,13 @@ export const ContentPlanningInputSummarySchema = z.object({
     });
   }
   const goal = summary.goal ?? "refresh_existing";
+  if (goal === "new_page" && summary.research_packet_id != null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "New-page planning cannot carry a research packet."
+    });
+  }
   const inventoryStatuses = [
     summary.inventory_status,
     summary.content_inventory_status,
@@ -4624,6 +4710,7 @@ export const ContentPlanningProposalResponseSchema = z.object({
   content_kind: ContentPlanningKindSchema.optional(),
   service_card_id: z.string().nullable().optional(),
   planning_input_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  ...contentResearchPacketBindingFields,
   input_summary: ContentPlanningInputSummarySchema.nullable().optional(),
   retry_after_seconds: z.number().int().nonnegative().nullable().optional(),
   proposal: ContentPlanningProposalSchema.nullable().optional(),
@@ -4639,6 +4726,30 @@ export const ContentPlanningProposalResponseSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["input_summary"],
       message: "Planning input digest requires its exact input summary."
+    });
+  }
+  if ((response.research_packet_id == null) !== (response.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
+    });
+  }
+  if (response.input_summary?.goal === "new_page" && response.research_packet_id != null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "New-page planning cannot carry a research packet."
+    });
+  }
+  if (response.proposal && (
+    response.proposal.research_packet_id !== response.research_packet_id ||
+    response.proposal.research_packet_digest !== response.research_packet_digest
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["proposal"],
+      message: "Planning response must match the nested research packet binding."
     });
   }
   if (response.proposal && (

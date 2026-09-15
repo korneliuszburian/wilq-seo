@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
 from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
@@ -21,12 +21,17 @@ def approved_planning_source_facts(
     planning_input: ContentPlanningInput,
     *,
     include_official: bool,
+    allowed_source_fact_ids: Collection[str] | None = None,
 ) -> list[ContentSourceFact]:
+    allowed_packet_ids = (
+        None if allowed_source_fact_ids is None else set(allowed_source_fact_ids)
+    )
     allowed_ids = list(
         dict.fromkeys(
             source_fact_id
             for fact in planning_input.source_facts
             for source_fact_id in fact.source_fact_ids
+            if allowed_packet_ids is None or source_fact_id in allowed_packet_ids
         )
     )
     if not allowed_ids:
@@ -65,12 +70,15 @@ def select_source_fact_contexts_for_section(
 def approved_source_facts_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
+    *,
+    allowed_source_fact_ids: Collection[str] | None = None,
 ) -> list[dict[str, object]]:
     """Project approved planning facts onto their concrete draft targets."""
 
     approved_facts = approved_planning_source_facts(
         planning_input,
         include_official=True,
+        allowed_source_fact_ids=allowed_source_fact_ids,
     )
     rows: list[dict[str, object]] = []
     for section in draftable_planning_sections(proposal.sections):

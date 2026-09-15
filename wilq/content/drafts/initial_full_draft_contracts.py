@@ -75,6 +75,9 @@ ContentInitialDraftBlockerCode = Literal[
     "production_classification_digest_required",
     "stale_production_classification",
     "production_generation_disabled",
+    "research_packet_missing",
+    "research_packet_blocked",
+    "research_packet_conflict",
 ]
 CONTENT_INITIAL_DRAFT_BLOCKER_CODES = frozenset(
     str(code) for code in get_args(ContentInitialDraftBlockerCode)
@@ -102,6 +105,8 @@ class ContentInitialDraftRequest(BaseModel):
     expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     requested_by: str = Field(min_length=1)
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     refresh_preparation_authorization_id: str | None = Field(default=None, min_length=1)
     expected_refresh_preparation_authorization_digest: str | None = Field(
         default=None,
@@ -130,6 +135,8 @@ class ContentInitialDraftRequest(BaseModel):
             )
             if not self.refresh_preparation_authorization_id:
                 raise ValueError("Refresh preparation authorization ID cannot be blank.")
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
         return self
 
 
@@ -341,6 +348,8 @@ class ContentInitialDraftResponse(BaseModel):
     work_item_id: _NonBlankWireString
     proposal_id: str | None = None
     run_id: str | None = None
+    research_packet_id: str | None = None
+    research_packet_digest: str | None = None
     revision: ContentDraftRevision | None = None
     reuse_binding: ContentInitialDraftReuseBinding | None = None
     runtime: ContentCodexRuntimeTrace = Field(
@@ -352,6 +361,13 @@ class ContentInitialDraftResponse(BaseModel):
 
     @model_validator(mode="after")
     def require_status_payload(self) -> ContentInitialDraftResponse:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if self.revision is not None and (
+            self.revision.research_packet_id != self.research_packet_id
+            or self.revision.research_packet_digest != self.research_packet_digest
+        ):
+            raise ValueError("Initial draft packet binding must match its revision.")
         if self.status == "reused":
             binding = self.reuse_binding
             if (

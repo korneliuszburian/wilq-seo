@@ -63,6 +63,18 @@ _CONTENT_WORKFLOW_REQUIRED_COLUMNS = {
         "recorded_by",
         "recorded_at",
     },
+    "content_research_packet_preparation_receipts": {
+        "receipt_id",
+        "receipt_digest",
+        "identity_binding_id",
+        "identity_binding_digest",
+        "source_pack_binding_id",
+        "source_pack_binding_digest",
+        "current_work_item_id",
+        "input_digest",
+        "recorded_at",
+        "payload_json",
+    },
     "content_research_packets": {
         "packet_id",
         "packet_digest",

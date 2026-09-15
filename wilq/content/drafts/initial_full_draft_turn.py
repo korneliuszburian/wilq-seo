@@ -29,6 +29,7 @@ from wilq.content.planning.compact_projections import (
     compact_proposal,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.packet_model_projection import current_research_packet_for_model
 from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
@@ -41,6 +42,8 @@ def initial_full_draft_turn_request(
     proposal: ContentPlanningProposal,
     generation_contract: StructuredDraftGenerationContract,
 ) -> CodexAppServerStructuredTurnRequest:
+    packet = current_research_packet_for_model(planning_input)
+    allowed_source_fact_ids = None if packet is None else set(packet.approved_source_fact_ids)
     application_context = json.dumps(
         {
             "operation": "generate_initial_full_content_draft",
@@ -48,6 +51,7 @@ def initial_full_draft_turn_request(
             "proposal_id": proposal.proposal_id,
             "planning_digest": proposal.planning_digest,
             "planning_input_digest": planning_input.planning_input_digest,
+            "research_packet_binding": _research_packet_binding(planning_input, proposal),
             "service_card_id": planning_input.confirmed_service_card_id,
             "regulatory_document_assertions": (
                 regulatory_turn_context.regulatory_document_assertion_context(
@@ -69,11 +73,12 @@ def initial_full_draft_turn_request(
     )
     untrusted_context = json.dumps(
         {
-            "planning_input": compact_initial_draft_planning_input(planning_input),
+            "planning_input": compact_initial_draft_planning_input(planning_input, packet),
             "approved_planning_proposal": compact_proposal(
                 proposal,
                 draftable_sections_only=False,
             ),
+            "research_packet_binding": _research_packet_binding(planning_input, proposal),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
                 "included_section_ids": [
@@ -88,10 +93,12 @@ def initial_full_draft_turn_request(
             "approved_source_facts_by_section": approved_source_facts_by_section(
                 planning_input,
                 proposal,
+                allowed_source_fact_ids=allowed_source_fact_ids,
             ),
             "approved_regulatory_facts_by_section": _regulatory_facts_by_section(
                 planning_input,
                 proposal,
+                allowed_source_fact_ids=allowed_source_fact_ids,
             ),
         },
         ensure_ascii=False,
@@ -125,6 +132,7 @@ def regulatory_assertion_repair_turn_request(
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
     )
+
     section_repair_modes = regulatory_section_repair_modes(
         proposal,
         missing_assertion_codes,
@@ -134,6 +142,7 @@ def regulatory_assertion_repair_turn_request(
         set[str],
         {item["requirement_id"] for item in assertions},
     )
+    packet = current_research_packet_for_model(planning_input)
     source_facts = [
         {
             "summary": fact.extracted_fact,
@@ -142,6 +151,9 @@ def regulatory_assertion_repair_turn_request(
         for fact in regulatory_turn_context.approved_regulatory_source_facts(
             planning_input,
             requirement_ids,
+            allowed_source_fact_ids=(
+                None if packet is None else packet.approved_source_fact_ids
+            ),
         )
     ]
     return CodexAppServerStructuredTurnRequest(
@@ -183,6 +195,17 @@ def regulatory_assertion_repair_turn_request(
         ),
         output_schema=regulatory_assertion_repair_output_schema(section_ids),
     )
+
+
+def _research_packet_binding(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> dict[str, str] | None:
+    packet_id = planning_input.research_packet_id or proposal.research_packet_id
+    packet_digest = planning_input.research_packet_digest or proposal.research_packet_digest
+    if packet_id is None or packet_digest is None:
+        return None
+    return {"packet_id": packet_id, "packet_digest": packet_digest}
 
 
 def readability_repair_turn_request(
@@ -388,6 +411,8 @@ def _regulatory_draft_directive(
 def _regulatory_facts_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
+    *,
+    allowed_source_fact_ids: set[str] | None = None,
 ) -> list[dict[str, object]]:
     """Project reviewed official facts next to each regulated document target."""
 
@@ -399,6 +424,7 @@ def _regulatory_facts_by_section(
     approved_facts = regulatory_turn_context.approved_regulatory_source_facts(
         planning_input,
         requirement_ids,
+        allowed_source_fact_ids=allowed_source_fact_ids,
     )
     facts_by_requirement = {
         requirement_id: [

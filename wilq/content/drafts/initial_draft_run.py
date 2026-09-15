@@ -84,6 +84,8 @@ class ContentInitialDraftProposalContext:
     planning_digest: str
     planning_input_digest: str
     service_card_id: str | None
+    research_packet_id: str | None
+    research_packet_digest: str | None
     refresh_preparation_binding: ContentRefreshPreparationBinding | None
 
 
@@ -97,6 +99,8 @@ def initial_draft_proposal_context(
         planning_digest=proposal.planning_digest,
         planning_input_digest=proposal.planning_input_digest,
         service_card_id=getattr(proposal, "service_card_id", None),
+        research_packet_id=getattr(proposal, "research_packet_id", None),
+        research_packet_digest=getattr(proposal, "research_packet_digest", None),
         refresh_preparation_binding=getattr(proposal, "refresh_preparation_binding", None),
     )
 
@@ -113,6 +117,8 @@ def initial_draft_proposal_context_from_command(
         planning_digest=command.planning_digest,
         planning_input_digest=command.planning_input_digest,
         service_card_id=command.service_card_id,
+        research_packet_id=command.research_packet_id,
+        research_packet_digest=command.research_packet_digest,
         refresh_preparation_binding=command.refresh_preparation_binding,
     )
 
@@ -205,21 +211,23 @@ def initial_draft_context_digest(
     proposal_id: str,
     planning_digest: str,
     planning_input_digest: str,
+    research_packet_digest: str | None = None,
     refresh_preparation_authorization_digest: str | None = None,
 ) -> str:
-    payload = "\n".join(
-        (
-            base_revision_id or "",
-            draft_package_id or "",
-            draft_package_digest or "",
-            final_canonical_url or "",
-            service_card_id or "",
-            proposal_id,
-            planning_digest,
-            planning_input_digest,
-            refresh_preparation_authorization_digest or "",
-        )
-    )
+    values = [
+        base_revision_id or "",
+        draft_package_id or "",
+        draft_package_digest or "",
+        final_canonical_url or "",
+        service_card_id or "",
+        proposal_id,
+        planning_digest,
+        planning_input_digest,
+        refresh_preparation_authorization_digest or "",
+    ]
+    if research_packet_digest is not None:
+        values.append(research_packet_digest)
+    payload = "\n".join(values)
     return sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -240,6 +248,7 @@ def initial_draft_context_digest_for_proposal(
         proposal_id=proposal_context.proposal_id,
         planning_digest=proposal_context.planning_digest,
         planning_input_digest=proposal_context.planning_input_digest,
+        research_packet_digest=proposal_context.research_packet_digest,
         refresh_preparation_authorization_digest=(
             None
             if proposal_context.refresh_preparation_binding is None
@@ -255,6 +264,7 @@ def revision_matches_initial_draft_context(
     planning_digest: str,
     planning_input_digest: str,
     context_digest: str | None,
+    research_packet_digest: str | None = None,
     refresh_preparation_authorization_digest: str | None = None,
 ) -> bool:
     if context_digest is None:
@@ -266,6 +276,8 @@ def revision_matches_initial_draft_context(
     )
     if revision_authorization_digest != refresh_preparation_authorization_digest:
         return False
+    if revision.research_packet_digest != research_packet_digest:
+        return False
     return context_digest == initial_draft_context_digest_for_proposal(
         base_revision_id=revision.revision_id,
         draft_package_id=revision.draft_package_id,
@@ -275,6 +287,8 @@ def revision_matches_initial_draft_context(
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
+            research_packet_id=revision.research_packet_id,
+            research_packet_digest=revision.research_packet_digest,
             service_card_id=revision.service_card_id,
             refresh_preparation_binding=(
                 None
@@ -353,6 +367,7 @@ def _canonical_initial_draft_claim(
     planning_digest: str,
     planning_input_digest: str,
     context_digest: str,
+    research_packet_digest: str | None,
     expected_base_revision_id: str | None,
     context_current: bool,
 ) -> InitialDraftClaim | None:
@@ -373,6 +388,7 @@ def _canonical_initial_draft_claim(
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
             context_digest=context_digest,
+            research_packet_digest=research_packet_digest,
             refresh_preparation_authorization_digest=(
                 None
                 if canonical_revision.refresh_preparation_binding is None
@@ -412,6 +428,7 @@ def claim_initial_draft_run(
     source_material_ids: list[str] | None = None,
     timeout_seconds: float,
     context_digest: str,
+    research_packet_digest: str | None = None,
     expected_base_revision_id: str | None,
     current_context: Callable[[], InitialDraftClaimContext | None],
 ) -> InitialDraftClaim:
@@ -452,6 +469,7 @@ def claim_initial_draft_run(
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
             context_digest=context_digest,
+            research_packet_digest=research_packet_digest,
             expected_base_revision_id=expected_base_revision_id,
             context_current=observed_context.context_current,
         )
@@ -471,25 +489,17 @@ def claim_initial_draft_run(
                 if _expire_claim_if_needed(connection, run, row["payload_json"]):
                     continue
                 return InitialDraftClaim(run=run, newly_claimed=False)
-        run = CodexRun(
-            id=f"codex_content_initial_draft_{uuid4().hex}",
-            skill="wilq-content-operator",
-            hook="content_initial_full_draft",
-            source="wilq_api",
-            status="started",
-            model=metadata.model,
-            model_reasoning_effort=metadata.model_reasoning_effort,
-            prompt_digest=metadata.prompt_digest,
-            prompt_template_id=metadata.prompt_template_id,
-            used_endpoints=[endpoint],
-            evidence_ids=list(dict.fromkeys(evidence_ids)),
-            source_material_ids=list(dict.fromkeys(source_material_ids or [])),
+        run = _new_initial_draft_run(
+            endpoint=endpoint,
+            metadata=metadata,
+            evidence_ids=evidence_ids,
+            source_material_ids=source_material_ids,
             proposal_id=proposal_id,
             planning_digest=planning_digest,
             planning_input_digest=planning_input_digest,
-            initial_draft_context_digest=context_digest,
-            initial_draft_base_revision_id=expected_base_revision_id,
-            deadline_at=utc_now() + timedelta(seconds=timeout_seconds),
+            context_digest=context_digest,
+            expected_base_revision_id=expected_base_revision_id,
+            timeout_seconds=timeout_seconds,
         )
         connection.execute(
             "INSERT INTO codex_runs (id, started_at, payload_json) VALUES (?, ?, ?)",
@@ -500,6 +510,41 @@ def claim_initial_draft_run(
             ),
         )
         return InitialDraftClaim(run=run, newly_claimed=True)
+
+
+def _new_initial_draft_run(
+    *,
+    endpoint: str,
+    metadata: _InitialDraftRunMetadata,
+    evidence_ids: list[str],
+    source_material_ids: list[str] | None,
+    proposal_id: str,
+    planning_digest: str,
+    planning_input_digest: str,
+    context_digest: str,
+    expected_base_revision_id: str | None,
+    timeout_seconds: float,
+) -> CodexRun:
+    return CodexRun(
+        id=f"codex_content_initial_draft_{uuid4().hex}",
+        skill="wilq-content-operator",
+        hook="content_initial_full_draft",
+        source="wilq_api",
+        status="started",
+        model=metadata.model,
+        model_reasoning_effort=metadata.model_reasoning_effort,
+        prompt_digest=metadata.prompt_digest,
+        prompt_template_id=metadata.prompt_template_id,
+        used_endpoints=[endpoint],
+        evidence_ids=list(dict.fromkeys(evidence_ids)),
+        source_material_ids=list(dict.fromkeys(source_material_ids or [])),
+        proposal_id=proposal_id,
+        planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        initial_draft_context_digest=context_digest,
+        initial_draft_base_revision_id=expected_base_revision_id,
+        deadline_at=utc_now() + timedelta(seconds=timeout_seconds),
+    )
 
 
 def finish_initial_draft_run(

@@ -423,6 +423,45 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_research_packet_preparation_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      identity_binding_id TEXT NOT NULL,
+      identity_binding_digest TEXT NOT NULL,
+      source_pack_binding_id TEXT NOT NULL,
+      source_pack_binding_digest TEXT NOT NULL,
+      current_work_item_id TEXT NOT NULL,
+      input_digest TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packet_preparation_receipts_no_update
+    BEFORE UPDATE ON content_research_packet_preparation_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packet preparation receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packet_preparation_receipts_no_replace
+    BEFORE INSERT ON content_research_packet_preparation_receipts
+    WHEN EXISTS (
+      SELECT 1 FROM content_research_packet_preparation_receipts
+      WHERE receipt_id = NEW.receipt_id OR receipt_digest = NEW.receipt_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packet preparation receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_research_packet_preparation_receipts_no_delete
+    BEFORE DELETE ON content_research_packet_preparation_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content research packet preparation receipts are append-only');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_research_packets (
       packet_id TEXT PRIMARY KEY,
       packet_digest TEXT NOT NULL UNIQUE,

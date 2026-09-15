@@ -47,22 +47,7 @@ def build_initial_draft_revision_command(
     package = snapshot.draft_package.draft_package_result.draft_package
     if package is None:
         raise ValueError("Initial draft preflight passed without a draft package.")
-    sections = [
-        ContentDraftRevisionSection(
-            section_id=plan.section_id,
-            heading=plan.heading,
-            body_markdown=generated.body_markdown,
-            content_html=content_html_from_markdown(generated.body_markdown),
-            query_terms=plan.query_terms,
-            evidence_ids=plan.evidence_ids,
-            claim_ids=plan.claim_ids,
-            source_material_ids=sorted(set(plan.source_material_ids)),
-            knowledge_card_ids=sorted(set(plan.knowledge_card_ids)),
-        )
-        for plan, generated in zip(
-            draftable_planning_sections(proposal.sections), output.sections, strict=True
-        )
-    ]
+    sections = _revision_sections(proposal, output)
     return ContentDraftRevisionAppendCommand(
         schema_version="wilq_content_draft_revision_v2",
         work_item_id=planning_input.work_item_id,
@@ -71,6 +56,8 @@ def build_initial_draft_revision_command(
         draft_package_digest=content_draft_package_digest(package),
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input.planning_input_digest,
+        research_packet_id=planning_input.research_packet_id,
+        research_packet_digest=planning_input.research_packet_digest,
         content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
         service_digest=(
@@ -99,39 +86,76 @@ def build_initial_draft_revision_command(
         cta_blocks=_revision_ctas(proposal, output),
         internal_links=_revision_links(proposal, output),
         official_source_references=official_source_references_for_planning_input(planning_input),
-        proposal_metadata=ContentDraftRevisionProposalMetadata(
-            codex_run_id=run.id,
-            selected_section_headings=[item.heading for item in sections],
-            section_lineage=[
-                ContentDraftRevisionProposalSectionLineage(
-                    heading=item.heading,
-                    evidence_ids=item.evidence_ids,
-                    claim_ids=item.claim_ids,
-                    source_material_ids=item.source_material_ids,
-                    knowledge_card_ids=item.knowledge_card_ids,
-                )
-                for item in sections
-            ],
-            quality_verdict="ready_for_human_review",
-            quality_finding_codes=[
-                "semantic_review_required",
-                *(
-                    ["regulatory_draft_assurance_passed"]
-                    if regulatory_assurance is not None and regulatory_assurance.status == "passed"
-                    else []
-                ),
-            ],
-            regulatory_assurance_run_id=(
-                None if regulatory_assurance is None else regulatory_assurance.codex_run_id
-            ),
-            regulatory_assurance_criteria_version=(
-                None if regulatory_assurance is None else regulatory_assurance.criteria_version
-            ),
-            review_scope="persisted_full_document_and_declared_lineage",
-            refresh_preparation_binding=proposal.refresh_preparation_binding,
+        proposal_metadata=_revision_metadata(
+            proposal=proposal,
+            planning_input=planning_input,
+            sections=sections,
+            run=run,
+            regulatory_assurance=regulatory_assurance,
         ),
         refresh_preparation_binding=proposal.refresh_preparation_binding,
         created_by=request.requested_by,
+    )
+
+
+def _revision_sections(
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+) -> list[ContentDraftRevisionSection]:
+    return [
+        ContentDraftRevisionSection(
+            section_id=plan.section_id,
+            heading=plan.heading,
+            body_markdown=generated.body_markdown,
+            content_html=content_html_from_markdown(generated.body_markdown),
+            query_terms=plan.query_terms,
+            evidence_ids=plan.evidence_ids,
+            claim_ids=plan.claim_ids,
+            source_material_ids=sorted(set(plan.source_material_ids)),
+            knowledge_card_ids=sorted(set(plan.knowledge_card_ids)),
+        )
+        for plan, generated in zip(
+            draftable_planning_sections(proposal.sections), output.sections, strict=True
+        )
+    ]
+
+
+def _revision_metadata(
+    *,
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+    sections: list[ContentDraftRevisionSection],
+    run: CodexRun,
+    regulatory_assurance: ContentDraftAssuranceReceipt | None,
+) -> ContentDraftRevisionProposalMetadata:
+    quality_finding_codes = ["semantic_review_required"]
+    if regulatory_assurance is not None and regulatory_assurance.status == "passed":
+        quality_finding_codes.append("regulatory_draft_assurance_passed")
+    return ContentDraftRevisionProposalMetadata(
+        codex_run_id=run.id,
+        selected_section_headings=[item.heading for item in sections],
+        section_lineage=[
+            ContentDraftRevisionProposalSectionLineage(
+                heading=item.heading,
+                evidence_ids=item.evidence_ids,
+                claim_ids=item.claim_ids,
+                source_material_ids=item.source_material_ids,
+                knowledge_card_ids=item.knowledge_card_ids,
+            )
+            for item in sections
+        ],
+        quality_verdict="ready_for_human_review",
+        quality_finding_codes=quality_finding_codes,
+        regulatory_assurance_run_id=(
+            None if regulatory_assurance is None else regulatory_assurance.codex_run_id
+        ),
+        regulatory_assurance_criteria_version=(
+            None if regulatory_assurance is None else regulatory_assurance.criteria_version
+        ),
+        review_scope="persisted_full_document_and_declared_lineage",
+        research_packet_id=planning_input.research_packet_id,
+        research_packet_digest=planning_input.research_packet_digest,
+        refresh_preparation_binding=proposal.refresh_preparation_binding,
     )
 
 

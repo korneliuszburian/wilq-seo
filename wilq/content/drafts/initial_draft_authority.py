@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftApprovedReview,
     ContentInitialDraftBlocker,
@@ -122,6 +123,7 @@ def map_initial_draft_authority_response(
             status="reused",
             work_item_id=resolution.current_work_item_id,
             proposal_id=None,
+            **initial_draft_packet_fields(revision=revision),
             run_id=None,
             revision=revision,
             reuse_binding=binding,
@@ -135,6 +137,7 @@ def map_initial_draft_authority_response(
         status="conflict" if isinstance(resolution, InitialDraftAuthorityConflict) else "blocked",
         work_item_id=resolution.requested_work_item_id,
         proposal_id=None,
+        **initial_draft_packet_fields(),
         run_id=None,
         revision=None,
         reuse_binding=None,

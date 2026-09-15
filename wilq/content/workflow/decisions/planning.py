@@ -141,6 +141,11 @@ class ContentPlanningProposal(BaseModel):
         default=None,
         pattern=r"^[0-9a-f]{64}$",
     )
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     goal: Literal["refresh_existing", "new_page"] = "refresh_existing"
     content_kind: PlanningContentKind = "service"
     final_canonical_url: str | None = None
@@ -171,6 +176,10 @@ class ContentPlanningProposal(BaseModel):
     def require_nonblank_cta_patterns(self) -> ContentPlanningProposal:
         if any(not pattern.strip() for pattern in self.required_cta_patterns):
             raise ValueError("Required CTA patterns must be non-blank")
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if self.goal == "new_page" and self.research_packet_id is not None:
+            raise ValueError("New-page planning cannot carry a research packet.")
         return self
 
     internal_links: list[ContentPlanningInternalLink] = Field(default_factory=list)

@@ -25,6 +25,8 @@ export const ContentInitialDraftRequestSchema = z.strictObject({
   expected_planning_digest: Hex64Schema,
   expected_planning_input_digest: Hex64Schema,
   requested_by: NonBlankStringSchema,
+  research_packet_id: NonBlankStringSchema.nullable().optional(),
+  research_packet_digest: Hex64Schema.nullable().optional(),
   refresh_preparation_authorization_id: NonBlankStringSchema.nullable().optional(),
   expected_refresh_preparation_authorization_digest: Hex64Schema.nullable().optional()
 }).superRefine((request, context) => {
@@ -34,6 +36,13 @@ export const ContentInitialDraftRequestSchema = z.strictObject({
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Refresh preparation authorization ID and digest must be supplied together."
+    });
+  }
+  if ((request.research_packet_id == null) !== (request.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
     });
   }
 });
@@ -188,6 +197,8 @@ const ContentInitialDraftBaseShape = {
   work_item_id: NonBlankStringSchema,
   proposal_id: z.string().nullable(),
   run_id: z.string().nullable(),
+  research_packet_id: NonBlankStringSchema.nullable().optional(),
+  research_packet_digest: Hex64Schema.nullable().optional(),
   revision: StrictContentDraftRevisionSchema.nullable(),
   reuse_binding: ContentInitialDraftReuseBindingSchema.nullable(),
   runtime: StrictContentCodexRuntimeTraceSchema,
@@ -271,13 +282,26 @@ const ContentInitialDraftReusedResponseSchema = z.strictObject({
   }
 });
 
+const requireResearchPacketPair = (
+  response: { research_packet_id?: string | null; research_packet_digest?: string | null },
+  context: z.RefinementCtx
+): void => {
+  if ((response.research_packet_id == null) !== (response.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "Research packet ID and digest must be supplied together."
+    });
+  }
+};
+
 export const ContentInitialDraftGenerationResponseSchema = z.discriminatedUnion("status", [
   ContentInitialDraftCreatedResponseSchema,
   ContentInitialDraftGeneratingResponseSchema,
   ContentInitialDraftBlockedResponseSchema,
   ContentInitialDraftFailedResponseSchema,
   ContentInitialDraftConflictResponseSchema
-]);
+]).superRefine(requireResearchPacketPair);
 
 export const ContentWorkItemInitialDraftResponseSchema = z.discriminatedUnion("status", [
   ContentInitialDraftCreatedResponseSchema,
@@ -285,7 +309,7 @@ export const ContentWorkItemInitialDraftResponseSchema = z.discriminatedUnion("s
   ContentInitialDraftReusedResponseSchema,
   ContentInitialDraftBlockedResponseSchema,
   ContentInitialDraftFailedResponseSchema
-]);
+]).superRefine(requireResearchPacketPair);
 
 export const ContentInitialDraftResponseSchema = z.discriminatedUnion("status", [
   ContentInitialDraftCreatedResponseSchema,
@@ -294,7 +318,7 @@ export const ContentInitialDraftResponseSchema = z.discriminatedUnion("status", 
   ContentInitialDraftBlockedResponseSchema,
   ContentInitialDraftFailedResponseSchema,
   ContentInitialDraftConflictResponseSchema
-]);
+]).superRefine(requireResearchPacketPair);
 
 export type ContentInitialDraftRequest = z.infer<typeof ContentInitialDraftRequestSchema>;
 export type ContentInitialDraftReuseRequest = z.infer<

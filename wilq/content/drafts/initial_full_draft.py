@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal, cast
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -22,6 +22,7 @@ from wilq.content.drafts.initial_draft_pipeline import (
     InitialDraftRunMetadata,
     generate_initial_draft,
 )
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     initial_draft_context_digest_for_proposal,
@@ -56,6 +57,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBlocker,
     ContentPlanningInputBuildResult,
+    bind_research_packet_to_planning_input,
     build_content_planning_input,
 )
 from wilq.content.planning.generated_proposal import (
@@ -72,6 +74,7 @@ from wilq.content.workflow.documents.revisions import (
     content_draft_package_digest,
     validate_no_inline_link,
 )
+from wilq.content.workflow.research_packet_preparation import current_research_packet_blocker
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
 
@@ -175,7 +178,11 @@ def generate_initial_full_draft(
     run_id: str | None = None,
     context_digest: str | None = None,
 ) -> ContentInitialDraftResponse:
-    prepared = _prepare_inputs(snapshot, request)
+    planning = getattr(snapshot, "planning_workspace", None)
+    if planning is None or getattr(planning.proposal, "goal", "refresh_existing") == "new_page":
+        prepared = _prepare_inputs(snapshot, request)
+    else:
+        prepared = _prepare_inputs(snapshot, request, workflow_store=workflow_store)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
     if (proposal_id := prepared.proposal.proposal_id) is None:
@@ -245,6 +252,8 @@ def generate_initial_full_draft(
 def _prepare_inputs(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentInitialDraftRequest,
+    *,
+    workflow_store: InitialDraftRevisionStore | None = None,
 ) -> _InitialDraftInputs | ContentInitialDraftResponse:
     planning = snapshot.planning_workspace
     latest_revision = snapshot.revision_workspace.latest_revision
@@ -300,21 +309,15 @@ def _prepare_inputs(
     service_card_id = proposal.service_card_id
     if proposal.content_kind == "service" and service_card_id is None:
         return _planning_not_generated(snapshot, proposal)
-    planning_result = _current_planning_input(
-        snapshot,
-        proposal.content_kind,
-        service_card_id,
+    planning_input_or_response = _prepare_draft_planning_input(
+        snapshot=snapshot,
+        proposal=proposal,
+        service_card_id=service_card_id,
+        workflow_store=workflow_store,
     )
-    # A durable document requires stricter readiness than a reviewable plan.
-    draft_blockers = planning_result.blockers
-    if planning_result.planning_input is None or draft_blockers:
-        return _blocked_response(
-            snapshot,
-            proposal=proposal,
-            status="blocked",
-            blockers=[_planning_input_blocker(draft_blockers)],
-        )
-    planning_input = planning_result.planning_input
+    if isinstance(planning_input_or_response, ContentInitialDraftResponse):
+        return planning_input_or_response
+    planning_input = planning_input_or_response
     if planning_input.planning_input_digest != request.expected_planning_input_digest:
         return _blocked_response(
             snapshot,
@@ -327,6 +330,123 @@ def _prepare_inputs(
         proposal=proposal,
         planning_input=planning_input,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
+    )
+
+
+def _prepare_draft_planning_input(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    proposal: ContentPlanningProposal,
+    service_card_id: str | None,
+    workflow_store: InitialDraftRevisionStore | None,
+) -> ContentPlanningInput | ContentInitialDraftResponse:
+    planning_result = _current_planning_input(
+        snapshot,
+        proposal.content_kind,
+        service_card_id,
+    )
+    # A durable document requires stricter readiness than a reviewable plan.
+    if planning_result.planning_input is None or planning_result.blockers:
+        return _blocked_response(
+            snapshot,
+            proposal=proposal,
+            status="blocked",
+            blockers=[_planning_input_blocker(planning_result.blockers)],
+        )
+    planning_input = planning_result.planning_input
+    if workflow_store is None:
+        return planning_input
+    packet_blocker = _validate_research_packet(
+        snapshot=snapshot,
+        planning_input=planning_input,
+        proposal=proposal,
+        workflow_store=workflow_store,
+    )
+    if packet_blocker is not None:
+        return _blocked_response(
+            snapshot,
+            proposal=proposal,
+            status="blocked",
+            blockers=[packet_blocker],
+        )
+    return _planning_input_with_packet(workflow_store, proposal, planning_input)
+
+
+def _planning_input_with_packet(
+    workflow_store: InitialDraftRevisionStore,
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+) -> ContentPlanningInput:
+    if proposal.research_packet_id is None:
+        return planning_input
+    packet_loader = getattr(workflow_store, "load_content_research_packet", None)
+    packet = packet_loader(proposal.research_packet_id) if callable(packet_loader) else None
+    if packet is None:
+        return planning_input
+    return bind_research_packet_to_planning_input(planning_input, packet)
+
+
+def _validate_research_packet(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    workflow_store: InitialDraftRevisionStore,
+) -> ContentInitialDraftBlocker | None:
+    if proposal.goal == "new_page":
+        return None
+    if proposal.research_packet_id is None or proposal.research_packet_digest is None:
+        return _research_packet_blocker(
+            "research_packet_missing",
+            "Initial draft wymaga server-owned research packetu.",
+        )
+    loader = getattr(workflow_store, "load_content_research_packet", None)
+    if not callable(loader):
+        return _research_packet_blocker(
+            "research_packet_missing",
+            "Initial draft wymaga odczytanego research packetu.",
+        )
+    packet = loader(proposal.research_packet_id)
+    if packet is None or packet.packet_digest != proposal.research_packet_digest:
+        return _research_packet_blocker(
+            "research_packet_conflict",
+            "Research packet nie odpowiada digestowi exact planu.",
+        )
+    blocker = current_research_packet_blocker(
+        store=cast(Any, workflow_store),
+        packet=packet,
+        snapshot=snapshot,
+        planning_input=planning_input,
+    )
+    if blocker is not None:
+        code = {
+            "source_pack_binding_missing": "research_packet_missing",
+            "packet_conflict": "research_packet_conflict",
+        }.get(blocker.reason, "research_packet_blocked")
+        return _research_packet_blocker(
+            cast(
+                Literal[
+                    "research_packet_missing",
+                    "research_packet_blocked",
+                    "research_packet_conflict",
+                ],
+                code,
+            ),
+            blocker.next_step_pl,
+        )
+    return None
+
+
+def _research_packet_blocker(
+    code: Literal["research_packet_missing", "research_packet_blocked", "research_packet_conflict"],
+    next_step: str,
+) -> ContentInitialDraftBlocker:
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code=code,
+        label="Research packet nie jest aktualny",
+        reason=next_step,
+        next_step=next_step,
     )
 
 
@@ -500,6 +620,10 @@ def _execute_runtime(
             work_item_id=inputs.planning_input.work_item_id,
             proposal_id=inputs.proposal.proposal_id,
             run_id=run.id,
+            **initial_draft_packet_fields(
+                proposal=inputs.proposal,
+                planning_input=inputs.planning_input,
+            ),
             runtime=execution.trace,
             blockers=[execution.blocker],
             safe_next_step=execution.blocker.next_step,
@@ -552,6 +676,7 @@ def _blocked_response(
         status=status,
         work_item_id=snapshot.preflight.item.id,
         proposal_id=None if proposal is None else proposal.proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
         run_id=None if run is None else run.id,
         runtime=runtime or ContentCodexRuntimeTrace(status="not_started"),
         blockers=blockers,

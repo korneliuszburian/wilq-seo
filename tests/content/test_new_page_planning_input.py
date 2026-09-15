@@ -177,6 +177,11 @@ def test_new_page_planning_input_rejects_existing_page_identity_and_inventory(
                 }
             ],
         },
+        {
+            **payload,
+            "research_packet_id": "content_research_packet_forbidden",
+            "research_packet_digest": "f" * 64,
+        },
     ]
     refresh_payload = deepcopy(payload)
     refresh_payload.update(
@@ -245,6 +250,10 @@ def test_new_page_planning_input_summary_rejects_contradictory_work_kind(
                     "evidence_ids": ["ev_gsc_historyczne"],
                 }
             ]
+        },
+        {
+            "research_packet_id": "content_research_packet_forbidden",
+            "research_packet_digest": "f" * 64,
         },
     ):
         with pytest.raises(ValueError):

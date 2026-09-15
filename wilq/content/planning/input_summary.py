@@ -30,6 +30,11 @@ class ContentPlanningInputSummary(BaseModel):
     final_canonical_url: str | None = None
     proposed_ia_location: str | None = None
     content_kind: Literal["service", "editorial"] = "service"
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     service_label: str | None = None
     inventory_status: Literal["available", "missing", "not_applicable"]
     content_inventory_status: Literal["available", "missing", "not_applicable"]
@@ -63,6 +68,10 @@ class ContentPlanningInputSummary(BaseModel):
     @model_validator(mode="after")
     def require_complete_source_assessments(self) -> ContentPlanningInputSummary:
         validate_source_assessment_membership(self.source_assessments)
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Research packet ID and digest must be supplied together.")
+        if self.goal == "new_page" and self.research_packet_id is not None:
+            raise ValueError("New-page planning cannot carry a research packet.")
         if self.content_kind == "service" and not self.service_label:
             raise ValueError("Service planning summary requires a service label.")
         if self.content_kind == "editorial" and self.service_label is not None:
@@ -102,6 +111,8 @@ def content_planning_input_summary(planning_input: Any) -> ContentPlanningInputS
         final_canonical_url=planning_input.final_canonical_url,
         proposed_ia_location=planning_input.proposed_ia_location,
         content_kind=planning_input.content_kind,
+        research_packet_id=planning_input.research_packet_id,
+        research_packet_digest=planning_input.research_packet_digest,
         service_label=planning_input.service_label,
         inventory_status=planning_input.inventory.status,
         content_inventory_status=planning_input.inventory.content_status,

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.drafts import initial_draft_queue
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
@@ -23,7 +24,10 @@ from wilq.content.workflow.refresh_preparation import (
     ContentRefreshPreparationAuthority,
     RefreshPreparationRuntimeAuthorized,
 )
-from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+    refresh_preparation_bindings_match_authority,
+)
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -151,7 +155,15 @@ def read_authorized_refresh_initial_draft_status(
     )
     if existing is not None:
         return existing
-    if revision is not None and revision.refresh_preparation_binding != resolved.binding:
+    if (
+        revision is not None
+        and (
+            revision.refresh_preparation_binding is None
+            or not refresh_preparation_bindings_match_authority(
+                revision.refresh_preparation_binding, resolved.binding
+            )
+        )
+    ):
         return legacy_unbound_refresh_initial_draft_block(
             work_item_id,
             proposal_id=proposal.proposal_id,
@@ -180,6 +192,7 @@ def legacy_unbound_refresh_initial_draft_block(
         status="blocked",
         work_item_id=work_item_id,
         proposal_id=proposal_id,
+        **initial_draft_packet_fields(),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )
@@ -198,7 +211,10 @@ def existing_authorized_refresh_initial_draft_response(
     metadata = None if revision is None else revision.proposal_metadata
     if (
         revision is None
-        or revision.refresh_preparation_binding != binding
+        or revision.refresh_preparation_binding is None
+        or not refresh_preparation_bindings_match_authority(
+            revision.refresh_preparation_binding, binding
+        )
         or revision.planning_digest != proposal.planning_digest
         or revision.planning_input_digest != proposal.planning_input_digest
         or metadata is None
@@ -209,6 +225,7 @@ def existing_authorized_refresh_initial_draft_response(
         work_item_id=work_item_id,
         proposal_id=proposal.proposal_id,
         run_id=metadata.codex_run_id,
+        **initial_draft_packet_fields(proposal=proposal, revision=revision),
         revision=revision,
         safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
     )

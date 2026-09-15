@@ -154,6 +154,7 @@ class ContentSalesBrief(BaseModel):
     h2_direction: list[str] = Field(default_factory=list)
     faq_direction: list[str] = Field(default_factory=list)
     cta_direction: str
+    cta_destination: str | None = None
     internal_link_direction: list[str] = Field(default_factory=list)
     source_facts: list[ContentSalesBriefSourceFact] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)

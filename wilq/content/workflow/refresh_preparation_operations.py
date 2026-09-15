@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
 from typing import cast
 
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
@@ -22,10 +22,6 @@ from wilq.content.planning.generated_proposal_contracts import (
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.workflow.content_kind_receipt import content_kind_receipt_matches_context
 from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
-from wilq.content.workflow.decisions.planning import (
-    ContentPlanningProposal,
-    build_content_planning_workspace,
-)
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
     ContentRefreshPreparationAuthorizationConflictResponse,
@@ -42,6 +38,13 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     build_content_refresh_preparation_authorization,
 )
 from wilq.content.workflow.refresh_preparation_editorial import editorial_preview
+from wilq.content.workflow.refresh_preparation_initial_draft import (
+    authorized_planning_input_digest as _authorized_planning_input_digest,
+)
+from wilq.content.workflow.refresh_preparation_initial_draft import (
+    bind_initial_proposal,
+    proposal_binding_blocker,
+)
 from wilq.content.workflow.refresh_preparation_kind_guards import (
     no_receipt_content_kind_resolution,
     preview_content_kind_blocker,
@@ -373,9 +376,11 @@ def resolve_planning(
             authorization_on_unclassified_blocker(),
         )
     if request.refresh_preparation_authorization_id is None:
-        if (blocked := no_receipt_content_kind_resolution(
-            request.content_kind, work_item_id, content_kind_inventory_loader
-        )) is not None:
+        if (
+            blocked := no_receipt_content_kind_resolution(
+                request.content_kind, work_item_id, content_kind_inventory_loader
+            )
+        ) is not None:
             return blocked
         return unclassified_or_refresh_block(store, work_item_id)
     return resolve_authorized_context(
@@ -407,17 +412,21 @@ def resolve_initial_draft(
                 work_item_id,
                 authorization_on_unclassified_blocker(),
             )
-        if (blocked := no_receipt_content_kind_resolution(
-            "editorial", work_item_id, content_kind_inventory_loader
-        )) is not None:
+        if (
+            blocked := no_receipt_content_kind_resolution(
+                "editorial", work_item_id, content_kind_inventory_loader
+            )
+        ) is not None:
             return blocked
         return RefreshPreparationUnclassified(work_item_id)
     if isinstance(classified, ContentRefreshPreparationBlocker):
         return RefreshPreparationRuntimeBlocked(work_item_id, classified)
     if request.refresh_preparation_authorization_id is None:
-        if (blocked := no_receipt_content_kind_resolution(
-            "editorial", work_item_id, content_kind_inventory_loader
-        )) is not None:
+        if (
+            blocked := no_receipt_content_kind_resolution(
+                "editorial", work_item_id, content_kind_inventory_loader
+            )
+        ) is not None:
             return blocked
         return RefreshPreparationRuntimeBlocked(work_item_id, missing_authorization_blocker())
     proposal = proposal_store.latest(work_item_id)
@@ -432,49 +441,21 @@ def resolve_initial_draft(
     )
     if content_kind not in {"service", "editorial"}:
         return RefreshPreparationRuntimeBlocked(work_item_id, proposal_binding_blocker())
+    authority_planning_input_digest = _authorized_planning_input_digest(
+        store, request.refresh_preparation_authorization_id
+    )
     resolved = resolve_authorized_context(
         store=store,
         snapshot_loader=snapshot_loader,
         work_item_id=work_item_id,
         service_card_id=proposal.service_card_id,
         content_kind=content_kind,
-        planning_input_digest=proposal.planning_input_digest,
+        planning_input_digest=(authority_planning_input_digest or proposal.planning_input_digest),
         authorization_id=request.refresh_preparation_authorization_id,
         authorization_digest=request.expected_refresh_preparation_authorization_digest,
         content_kind_inventory_loader=content_kind_inventory_loader,
     )
     return bind_initial_proposal(resolved, proposal, request)
-
-
-def bind_initial_proposal(
-    resolved: RefreshPreparationRuntimeResolution,
-    proposal: ContentPlanningProposal,
-    request: ContentInitialDraftRequest,
-) -> RefreshPreparationRuntimeResolution:
-    if not isinstance(resolved, RefreshPreparationRuntimeAuthorized):
-        return resolved
-    if proposal.refresh_preparation_binding != resolved.binding:
-        return RefreshPreparationRuntimeBlocked(
-            resolved.work_item_id,
-            proposal_binding_blocker(),
-        )
-    if resolved.planning_input.planning_input_digest != request.expected_planning_input_digest:
-        return RefreshPreparationRuntimeBlocked(
-            resolved.work_item_id,
-            blocker(
-                "refresh_preparation_authorization_input_mismatch",
-                "Wejście planu zmieniło się po autoryzacji",
-                "Żądanie pełnego tekstu wskazuje inny planning_input_digest niż bieżący "
-                "autoryzowany snapshot.",
-                "Odśwież plan i uruchom draft dla bieżącego exact inputu.",
-            ),
-        )
-    return replace(
-        resolved,
-        snapshot=resolved.snapshot.model_copy(
-            update={"planning_workspace": build_content_planning_workspace(proposal, [])}
-        ),
-    )
 
 
 def resolve_authorized_context(
@@ -721,16 +702,6 @@ def authorization_on_unclassified_blocker() -> ContentRefreshPreparationBlocker:
     )
 
 
-def proposal_binding_blocker() -> ContentRefreshPreparationBlocker:
-    return blocker(
-        "refresh_preparation_proposal_binding_mismatch",
-        "Plan nie jest związany z autoryzacją refresh",
-        "Pełny tekst wymaga dokładnego wygenerowanego planu z tym samym "
-        "authorization ID i digestem.",
-        "Odśwież plan i użyj wersji wygenerowanej dla aktualnej autoryzacji refresh.",
-    )
-
-
 def input_mismatch_blocker() -> ContentRefreshPreparationBlocker:
     return blocker(
         "refresh_preparation_authorization_input_mismatch",
@@ -789,6 +760,10 @@ def initial_draft_block_response(
         status="conflict",
         work_item_id=resolution.work_item_id,
         proposal_id=request.expected_proposal_id,
+        **initial_draft_packet_fields(
+            research_packet_id=request.research_packet_id,
+            research_packet_digest=request.research_packet_digest,
+        ),
         blockers=[blocker_response],
         safe_next_step=blocker_response.next_step,
     )

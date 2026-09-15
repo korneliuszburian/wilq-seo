@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.workspace.api as workflow_api
+from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.content_initial_draft import register_content_initial_draft_route
 from apps.api.wilq_api.routers.content_planning_proposals import (
     register_content_planning_proposal_routes,
@@ -22,6 +23,7 @@ from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or
 from tests.content import dynamic_planning_test_support as planning_support
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
+from tests.content.test_delivery_identity_binding import _command as identity_command
 from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
 from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
@@ -29,6 +31,7 @@ from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     classification_counts,
 )
+from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityCommand
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.refresh_preparation import ContentRefreshPreparationAuthority
 from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
@@ -41,6 +44,11 @@ BDO_WORK_ITEM_ID = inventory_work_item_id(BDO_URL)
 BDO_SERVICE_CARD_ID = "ekologus_service_bdo_reporting"
 
 
+class _InlineExecutor:
+    def submit(self, fn: Any, /, *args: Any, **kwargs: Any) -> Any:
+        return fn(*args, **kwargs)
+
+
 def test_classified_refresh_generates_one_bound_plan_and_revision(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -49,7 +57,7 @@ def test_classified_refresh_generates_one_bound_plan_and_revision(
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
 
     authorization = _authorize(client)
     proposal = _generate_authorized_plan(client, authorization)
@@ -87,7 +95,7 @@ def test_refresh_initial_draft_status_is_not_masked_as_generation_disabled(
     _unused, runtime = configure_planning_harness(monkeypatch, tmp_path)
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
-    client = _app_client(_authority(store))
+    client = _app_client(_authority(store), monkeypatch)
 
     status = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft")
 
@@ -106,8 +114,9 @@ def test_post_model_classification_drift_persists_no_authorized_plan(
     run = _refresh_run()
     store.record_production_classification(run)
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
+    _seed_exact_current_packet(client, store)
     original_turn = runtime.run_structured_turn
 
     def drift_after_model(request: Any) -> Any:
@@ -132,11 +141,12 @@ def test_post_model_classification_drift_persists_no_authorized_plan(
             ],
         },
     )
+    bound_planning_input_digest = response.json()["planning_input_digest"]
     terminal = _wait_for_plan(client, response)
     queued = content_planning_proposal_store().queued_response(
         BDO_WORK_ITEM_ID,
         BDO_SERVICE_CARD_ID,
-        preview["planning_input_digest"],
+        bound_planning_input_digest,
     )
 
     assert terminal.status_code == 200
@@ -144,7 +154,7 @@ def test_post_model_classification_drift_persists_no_authorized_plan(
     assert terminal.json()["blockers"][0]["code"] == "refresh_preparation_authorization_stale"
     assert queued is not None
     assert queued.status == "blocked"
-    assert queued.planning_input_digest == preview["planning_input_digest"]
+    assert queued.planning_input_digest == bound_planning_input_digest
     assert queued.input_summary is not None
     assert queued.input_summary.model_dump(mode="json") == response.json()["input_summary"]
     assert queued.refresh_preparation_binding is not None
@@ -165,8 +175,9 @@ def test_worker_pre_model_refresh_drift_persists_bound_blocked_job(
     run = _refresh_run()
     store.record_production_classification(run)
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
+    _seed_exact_current_packet(client, store)
     preview = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/refresh-preparation",
         params={"service_card_id": BDO_SERVICE_CARD_ID},
@@ -194,10 +205,11 @@ def test_worker_pre_model_refresh_drift_persists_bound_blocked_job(
             ],
         },
     )
+    bound_planning_input_digest = response.json()["planning_input_digest"]
     queued_before_drift = content_planning_proposal_store().queued_response(
         BDO_WORK_ITEM_ID,
         BDO_SERVICE_CARD_ID,
-        preview["planning_input_digest"],
+        bound_planning_input_digest,
     )
 
     assert response.status_code == 200, response.text
@@ -210,13 +222,13 @@ def test_worker_pre_model_refresh_drift_persists_bound_blocked_job(
     queued = content_planning_proposal_store().queued_response(
         BDO_WORK_ITEM_ID,
         BDO_SERVICE_CARD_ID,
-        preview["planning_input_digest"],
+        bound_planning_input_digest,
     )
     status = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
 
     assert terminal.status == "blocked"
     assert terminal.blockers[0].code == "refresh_preparation_authorization_stale"
-    assert terminal.planning_input_digest == preview["planning_input_digest"]
+    assert terminal.planning_input_digest == bound_planning_input_digest
     assert terminal.input_summary == queued_before_drift.input_summary
     assert terminal.refresh_preparation_binding == queued_before_drift.refresh_preparation_binding
     assert queued == terminal
@@ -239,7 +251,7 @@ def test_post_model_draft_drift_persists_no_revision(
     run = _refresh_run()
     store.record_production_classification(run)
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
     proposal = _generate_authorized_plan(client, authorization)
     original_turn = runtime.run_structured_turn
@@ -272,7 +284,7 @@ def test_atomic_store_rejects_unbound_legacy_same_input_before_idempotence(
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
     _generate_authorized_plan(client, authorization)
     proposal = content_planning_proposal_store().latest(BDO_WORK_ITEM_ID)
@@ -295,7 +307,7 @@ def test_atomic_store_rejects_receipt_scalar_path_drift(
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
     _generate_authorized_plan(client, authorization)
     proposal = content_planning_proposal_store().latest(BDO_WORK_ITEM_ID)
@@ -324,7 +336,7 @@ def test_atomic_revision_append_rejects_unbound_refresh_child(
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
     authority = _authority(store)
-    client = _app_client(authority)
+    client = _app_client(authority, monkeypatch)
     authorization = _authorize(client)
     proposal = _generate_authorized_plan(client, authorization)
     _generate_authorized_initial_draft(client, proposal, authorization)
@@ -359,10 +371,23 @@ def test_atomic_revision_append_rejects_unbound_refresh_child(
 def _authority(store: object) -> ContentRefreshPreparationAuthority:
     def service_snapshot(work_item_id: str, service_card_id: str | None):
         baseline = snapshot_for_work_item_or_404(work_item_id)
-        return workflow_api.build_content_work_item_snapshot_response_from_selected_decision(
+        snapshot = workflow_api.build_content_work_item_snapshot_response_from_selected_decision(
             planning_support._synthetic_planning_decision(BDO_URL),  # noqa: SLF001
             freshness_assessment=baseline.freshness_assessment,
             service_card_id_override=service_card_id,
+        )
+        brief = snapshot.sales_brief.sales_brief_result.brief
+        if brief is None:
+            return snapshot
+        brief_result = snapshot.sales_brief.sales_brief_result.model_copy(
+            update={"brief": brief.model_copy(update={"cta_destination": "/kontakt/"})}
+        )
+        return snapshot.model_copy(
+            update={
+                "sales_brief": snapshot.sales_brief.model_copy(
+                    update={"sales_brief_result": brief_result}
+                )
+            }
         )
 
     return ContentRefreshPreparationAuthority(
@@ -381,7 +406,10 @@ def _authority(store: object) -> ContentRefreshPreparationAuthority:
     )
 
 
-def _app_client(authority: ContentRefreshPreparationAuthority) -> TestClient:
+def _app_client(
+    authority: ContentRefreshPreparationAuthority,
+    monkeypatch: pytest.MonkeyPatch,
+) -> TestClient:
     app = FastAPI()
     router = APIRouter()
     register_content_refresh_preparation_routes(router, authority_factory=lambda: authority)
@@ -399,7 +427,20 @@ def _app_client(authority: ContentRefreshPreparationAuthority) -> TestClient:
         ),
         refresh_authority_factory=lambda: authority,
     )
+    from apps.api.wilq_api.routers.content_source_fact_authority import (
+        register_content_source_fact_authority_routes,
+    )
+    from apps.api.wilq_api.routers.content_source_pack_binding import (
+        register_content_source_pack_binding_routes,
+    )
+
+    register_content_source_fact_authority_routes(router)
+    register_content_source_pack_binding_routes(router)
+    monkeypatch.setattr(
+        planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", _InlineExecutor()
+    )
     app.include_router(router)
+    app.include_router(create_actions_router(lambda: None))
     return TestClient(app)
 
 
@@ -436,10 +477,88 @@ def _authorize(client: TestClient) -> dict[str, str]:
     return cast(dict[str, str], authorized.json()["authorization"])
 
 
+def _seed_exact_current_packet(client: TestClient, store: object) -> None:
+    run = cast(Any, store).load_production_classification_for_work_item(BDO_WORK_ITEM_ID)
+    assert run is not None
+    identity_payload = identity_command(retained=True, run=exact_public_bdo_run()).model_dump(
+        mode="python"
+    )
+    identity_payload.update(
+        {
+            "classification_run_id": run.run_id,
+            "classification_run_digest": run.run_digest,
+            "classification_source_row_digest": run.row.source_packet_row_digest,
+            "retained_work_item_id": None,
+            "retained_usage": None,
+        }
+    )
+    identity = cast(Any, store).record_content_delivery_identity(
+        ContentDeliveryIdentityCommand.model_validate(identity_payload)
+    ).binding
+    _record_authority_source_pack(client, identity)
+
+
+def _record_authority_source_pack(client: TestClient, identity: Any) -> None:
+    preview = client.post(
+        "/api/content/source-fact-authority-reviews/preview",
+        json={
+            "identity_binding_id": identity.binding_id,
+            "proposed_source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"],
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    action_id = preview.json()["action"]["id"]
+    assert client.post(f"/api/actions/{action_id}/validate").json()["valid"] is True
+    assert client.post(f"/api/actions/{action_id}/preview", json={}).status_code == 200
+    assert client.post(
+        f"/api/actions/{action_id}/review",
+        json={"outcome": "approved_for_prepare", "reviewed_by": "wilku", "notes": "exact"},
+    ).status_code == 200
+    assert client.post(
+        f"/api/actions/{action_id}/confirm",
+        json={"confirmed_by": "wilku", "notes": "exact", "preview_acknowledged": True},
+    ).status_code == 200
+    assert client.post(
+        f"/api/actions/{action_id}/impact-check",
+        json={"checked_by": "wilku", "notes": "exact"},
+    ).status_code == 200
+    applied = client.post(
+        f"/api/actions/{action_id}/apply",
+        json={"confirm": True, "confirmed_by": "wilku"},
+    )
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["adapter_result"]["external_write_attempted"] is False
+    prerequisites = client.get(
+        f"/api/content/source-pack-bindings/prerequisites/{identity.binding_id}"
+    )
+    assert prerequisites.status_code == 200, prerequisites.text
+    payload = prerequisites.json()
+    source_pack = client.post(
+        "/api/content/source-pack-bindings",
+        json={
+            "source_pack_id": "source_pack_classified_refresh",
+            "source_pack_sha256": "a" * 64,
+            "identity_binding_id": payload["identity_binding_id"],
+            "identity_binding_digest": payload["identity_binding_digest"],
+            "current_work_item_id": payload["current_work_item_id"],
+            "source_fact_ids": payload["approved_source_fact_ids"],
+            "evidence_ids": payload["row_authority_evidence_ids"],
+            "fresh_context_digest": payload["fresh_context_digest"],
+            "source_fact_registry_receipt": payload["source_fact_registry_receipt"],
+            "fresh_context_attestation": payload["fresh_context_attestation"],
+            "recorded_by": "classified_refresh_test",
+            "recorded_at": payload["source_fact_registry_receipt"]["checked_at"],
+        },
+    )
+    assert source_pack.status_code == 201, source_pack.text
+    assert source_pack.json()["binding"]["status"] == "exact_current"
+
+
 def _generate_authorized_plan(
     client: TestClient,
     authorization: dict[str, str],
 ) -> dict[str, Any]:
+    _seed_exact_current_packet(client, content_workflow_store())
     preview = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/refresh-preparation",
         params={"service_card_id": BDO_SERVICE_CARD_ID},

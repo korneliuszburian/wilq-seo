@@ -81,6 +81,7 @@ class ContentWorkItemServiceProfileContext(BaseModel):
     review_action_label: str | None = None
     minimum_cta_blocks: int = Field(default=1, ge=1, le=4)
     cta_patterns: list[str] = Field(default_factory=list, max_length=4)
+    cta_destination: str | None = None
 
     @model_validator(mode="after")
     def require_nonblank_cta_patterns(self) -> ContentWorkItemServiceProfileContext:

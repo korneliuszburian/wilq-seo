@@ -28,6 +28,7 @@ from wilq.content.drafts.initial_draft_authority import (
     SubmitExpectation,
     map_initial_draft_authority_response,
 )
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     effective_initial_draft_deadline,
     initial_draft_context_digest_for_proposal,
@@ -242,6 +243,7 @@ def _submit_initial_draft(
         response = ContentInitialDraftResponse(
             status="conflict",
             work_item_id=work_item_id,
+            **initial_draft_packet_fields(),
             blockers=[
                 ContentInitialDraftBlocker(
                     code="refresh_preparation_decision_not_refresh",
@@ -326,12 +328,15 @@ def _queued_initial_draft_response(
     proposal_id: str | None,
     run_id: str,
     already_running: bool,
+    *,
+    proposal: ContentPlanningProposal | None = None,
 ) -> ContentInitialDraftResponse:
     return ContentInitialDraftResponse(
         status="generating",
         work_item_id=work_item_id,
         proposal_id=proposal_id,
         run_id=run_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[_generation_in_progress_blocker()],
         safe_next_step=(
             "Pełny tekst jest już przygotowywany; nie uruchamiaj drugiego."
@@ -345,6 +350,8 @@ def _initial_draft_queue_full_response(
     work_item_id: str,
     proposal_id: str | None,
     run_id: str,
+    *,
+    proposal: ContentPlanningProposal | None = None,
 ) -> ContentInitialDraftResponse:
     blocker = ContentInitialDraftBlocker(
         code="initial_draft_queue_full",
@@ -358,6 +365,7 @@ def _initial_draft_queue_full_response(
         work_item_id=work_item_id,
         proposal_id=proposal_id,
         run_id=run_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )
@@ -461,6 +469,7 @@ def _read_legacy_initial_draft_status(
             None if proposal is None else proposal.proposal_id,
             latest.id,
             False,
+            proposal=proposal,
         )
     canonical_run = (
         _canonical_revision_run(
@@ -477,6 +486,7 @@ def _read_legacy_initial_draft_status(
             work_item_id=work_item_id,
             proposal_id=proposal.proposal_id,
             run_id=canonical_run.id,
+            **initial_draft_packet_fields(proposal=proposal, revision=revision),
             revision=revision,
             safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
         )
@@ -491,6 +501,7 @@ def _read_legacy_initial_draft_status(
             work_item_id=work_item_id,
             proposal_id=proposal.proposal_id,
             run_id=latest.id,
+            **initial_draft_packet_fields(proposal=proposal, revision=revision),
             revision=revision,
             safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
         )
@@ -559,6 +570,7 @@ def _stale_initial_draft_response(
         status="blocked",
         work_item_id=work_item_id,
         proposal_id=proposal.proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )
@@ -639,6 +651,7 @@ def _canonical_revision_run(
         planning_digest=proposal.planning_digest,
         planning_input_digest=planning_input_digest,
         context_digest=context_digest,
+        research_packet_digest=getattr(proposal, "research_packet_digest", None),
         refresh_preparation_authorization_digest=(
             None
             if proposal.refresh_preparation_binding is None
@@ -728,6 +741,7 @@ def _terminal_initial_draft_response(
         work_item_id=work_item_id,
         proposal_id=None if proposal is None else proposal.proposal_id,
         run_id=run.id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )
@@ -756,6 +770,7 @@ def _initial_draft_not_started_response(
         status="blocked",
         work_item_id=work_item_id,
         proposal_id=None if proposal is None else proposal.proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )

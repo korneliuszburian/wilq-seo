@@ -284,6 +284,8 @@ def planning_generation_generating_response(
         content_kind=request.content_kind,
         service_card_id=request.service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
+        research_packet_id=planning_input.research_packet_id,
+        research_packet_digest=planning_input.research_packet_digest,
         input_summary=content_planning_input_summary(planning_input),
         runtime=ContentCodexRuntimeTrace(
             status="not_started", run_id=f"planning_generation_{uuid4().hex}"
@@ -305,6 +307,8 @@ def planning_generation_in_flight_response(
         work_item_id=work_item_id,
         content_kind=request.content_kind,
         service_card_id=request.service_card_id,
+        research_packet_id=result.research_packet_id,
+        research_packet_digest=result.research_packet_digest,
         runtime=active.runtime if active is not None else result.runtime,
         retry_after_seconds=5,
         blockers=[
@@ -347,6 +351,8 @@ def planning_generation_binding_conflict_response(
         work_item_id=work_item_id,
         content_kind=request.content_kind,
         service_card_id=request.service_card_id,
+        research_packet_id=existing.research_packet_id,
+        research_packet_digest=existing.research_packet_digest,
         runtime=existing.runtime,
         blockers=[blocker],
         safe_next_step=blocker.next_step,
@@ -588,6 +594,8 @@ def planning_generation_claim_binding_conflict_response(
         content_kind=response.content_kind,
         service_card_id=response.service_card_id,
         planning_input_digest=response.planning_input_digest,
+        research_packet_id=response.research_packet_id,
+        research_packet_digest=response.research_packet_digest,
         input_summary=response.input_summary,
         runtime=response.runtime,
         refresh_preparation_binding=response.refresh_preparation_binding,
@@ -611,6 +619,8 @@ def planning_generation_claim_stale_response(
         content_kind=response.content_kind,
         service_card_id=response.service_card_id,
         planning_input_digest=response.planning_input_digest,
+        research_packet_id=response.research_packet_id,
+        research_packet_digest=response.research_packet_digest,
         input_summary=response.input_summary,
         runtime=response.runtime,
         refresh_preparation_binding=response.refresh_preparation_binding,
@@ -634,6 +644,10 @@ def planning_generation_failure_response(
         content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest if input_summary is not None else None,
+        research_packet_id=(None if input_summary is None else input_summary.research_packet_id),
+        research_packet_digest=(
+            None if input_summary is None else input_summary.research_packet_digest
+        ),
         input_summary=input_summary,
         blockers=[
             ContentPlanningProposalBlocker(

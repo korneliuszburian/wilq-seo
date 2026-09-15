@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
@@ -12,7 +12,9 @@ from wilq.codex.app_server import (
     StdioCodexAppServerClient,
 )
 from wilq.content.drafts.initial_draft_persistence import InitialDraftPrePersistenceGuardError
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
+    InitialDraftClaim,
     InitialDraftClaimContext,
     InitialDraftRuntimePolicyError,
     claim_initial_draft_run,
@@ -30,6 +32,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
 from wilq.content.workflow.documents.codex_revision_commit import (
     current_initial_draft_context_guard,
 )
@@ -38,6 +41,8 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionWriteResult,
     content_draft_package_digest,
 )
+from wilq.content.workflow.research_packet import ContentResearchPacket
+from wilq.content.workflow.source_pack_binding import ContentSourcePackBinding
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
@@ -105,6 +110,33 @@ def can_queue_initial_draft(
         proposal.proposal_id == request.expected_proposal_id
         and proposal.planning_digest == request.expected_planning_digest
         and proposal.planning_input_digest == request.expected_planning_input_digest
+    )
+
+
+def _legacy_existing_page_packet_response(
+    work_item_id: str,
+    proposal: ContentPlanningProposal,
+) -> ContentInitialDraftResponse | None:
+    if getattr(proposal, "goal", "refresh_existing") == "new_page":
+        return None
+    if (
+        getattr(proposal, "research_packet_id", None) is not None
+        and getattr(proposal, "research_packet_digest", None) is not None
+    ):
+        return None
+    blocker = ContentInitialDraftBlocker(
+        code="research_packet_missing",
+        label="Brakuje aktualnego research packetu",
+        reason="Pełny tekst istniejącej strony wymaga exact current research packetu.",
+        next_step="Przygotuj exact current research packet i uruchom tekst ponownie.",
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=proposal.proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
     )
 
 
@@ -178,6 +210,42 @@ class _ContextCheckedWorkflowStore:
                 command, completed_codex_run=completed_codex_run
             )
 
+    def load_content_research_packet(self, packet_id: str) -> ContentResearchPacket | None:
+        return self._base.load_content_research_packet(packet_id)
+
+    def _load_content_research_packet_preparation_receipt(self, receipt_id: str) -> Any:
+        return self._base._load_content_research_packet_preparation_receipt(receipt_id)
+
+    def load_content_source_pack_binding(self, binding_id: str) -> ContentSourcePackBinding | None:
+        return self._base.load_content_source_pack_binding(binding_id)
+
+    def list_content_source_pack_bindings(
+        self, *, current_work_item_id: str | None = None
+    ) -> list[ContentSourcePackBinding]:
+        return self._base.list_content_source_pack_bindings(
+            current_work_item_id=current_work_item_id
+        )
+
+    def load_content_delivery_identity(
+        self, binding_id: str
+    ) -> ContentDeliveryIdentityBinding | None:
+        return self._base.load_content_delivery_identity(binding_id)
+
+    def load_production_classification_for_work_item(self, work_item_id: str) -> Any:
+        return self._base.load_production_classification_for_work_item(work_item_id)
+
+    def load_content_source_fact_authority_receipt_for_identity(
+        self,
+        identity_binding_id: str,
+        current_work_item_id: str,
+        source_fact_ids: tuple[str, ...],
+    ) -> Any:
+        return self._base.load_content_source_fact_authority_receipt_for_identity(
+            identity_binding_id,
+            current_work_item_id,
+            source_fact_ids,
+        )
+
     def _current_context_digest(self) -> str:
         snapshot = self._snapshot_loader(self._work_item_id)
         planning = snapshot.planning_workspace
@@ -213,29 +281,95 @@ def submit_initial_draft_to_queue(
     pre_generation_guard: InitialDraftGenerationGuard | None = None,
     pre_persistence_guard: InitialDraftGenerationGuard | None = None,
 ) -> ContentInitialDraftResponse:
+    prepared = _prepare_initial_draft_queue_claim(
+        work_item_id=work_item_id,
+        request=request,
+        client=client,
+        snapshot_loader=snapshot_loader,
+        stale_response=stale_response,
+        pre_generation_guard=pre_generation_guard,
+    )
+    if isinstance(prepared, ContentInitialDraftResponse):
+        return prepared
+    snapshot, proposal, claim = prepared
+    if claim.run is None:
+        return _stale_initial_draft_context_response(
+            work_item_id,
+            proposal.proposal_id,
+            proposal=proposal,
+        )
+    run_id = claim.run.id
+    if claim.canonical_revision is not None:
+        return ContentInitialDraftResponse(
+            status="created",
+            work_item_id=work_item_id,
+            proposal_id=proposal.proposal_id,
+            run_id=run_id,
+            **initial_draft_packet_fields(proposal=proposal, revision=claim.canonical_revision),
+            revision=claim.canonical_revision,
+            safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
+        )
+    if not claim.newly_claimed:
+        return queued_initial_draft_response(
+            work_item_id, proposal.proposal_id, run_id, True, proposal=proposal
+        )
+    try:
+        executor.submit(
+            run_queued_initial_draft,
+            work_item_id,
+            request,
+            client,
+            run_id,
+            snapshot_loader,
+            pre_generation_guard,
+            pre_persistence_guard,
+        )
+    except InitialDraftQueueFullError:
+        transition_initial_draft_run_if_status(
+            local_state_store(), claim.run, status="blocked", error="initial_draft_queue_full"
+        )
+        return initial_draft_queue_full_response(
+            work_item_id, proposal.proposal_id, run_id, proposal=proposal
+        )
+    return queued_initial_draft_response(
+        work_item_id, proposal.proposal_id, run_id, False, proposal=proposal
+    )
+
+
+def _prepare_initial_draft_queue_claim(
+    *,
+    work_item_id: str,
+    request: ContentInitialDraftRequest,
+    client: StdioCodexAppServerClient,
+    snapshot_loader: ContentInitialDraftSnapshotLoader,
+    stale_response: Callable[[str], ContentInitialDraftResponse] | None,
+    pre_generation_guard: InitialDraftGenerationGuard | None,
+) -> (
+    tuple[
+        ContentWorkItemWorkflowSnapshotResponse,
+        ContentPlanningProposal,
+        InitialDraftClaim,
+    ]
+    | ContentInitialDraftResponse
+):
     if pre_generation_guard is not None:
         guarded = pre_generation_guard()
         if guarded is not None:
             return guarded
     snapshot = snapshot_loader(work_item_id)
-    if not can_queue_initial_draft(snapshot, request, client):
-        if stale_response is not None:
-            return stale_response(work_item_id)
-        return ContentInitialDraftResponse(
-            status="blocked",
-            work_item_id=work_item_id,
-            proposal_id=request.expected_proposal_id,
-            blockers=[
-                ContentInitialDraftBlocker(
-                    code="stale_initial_draft_context",
-                    label="Nieaktualny kontekst szkicu",
-                    reason="Kontekst szkicu zmienił się przed uzyskaniem atomowego claimu.",
-                    next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
-                )
-            ],
-            safe_next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
-        )
     planning = snapshot.planning_workspace
+    if planning is not None:
+        packet_response = _legacy_existing_page_packet_response(work_item_id, planning.proposal)
+        if packet_response is not None:
+            return packet_response
+    if not can_queue_initial_draft(snapshot, request, client):
+        return _stale_initial_draft_context_response(
+            work_item_id,
+            request.expected_proposal_id,
+            stale_response=stale_response,
+            research_packet_id=request.research_packet_id,
+            research_packet_digest=request.research_packet_digest,
+        )
     if planning is None:
         raise RuntimeError("Initial draft queue requires a planning workspace.")
     proposal = planning.proposal
@@ -254,6 +388,7 @@ def submit_initial_draft_to_queue(
             source_material_ids=list(getattr(proposal, "source_material_ids", [])),
             timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
             context_digest=snapshot_initial_draft_context_digest(snapshot, proposal),
+            research_packet_digest=getattr(proposal, "research_packet_digest", None),
             expected_base_revision_id=getattr(
                 snapshot.revision_workspace.latest_revision, "revision_id", None
             ),
@@ -262,63 +397,77 @@ def submit_initial_draft_to_queue(
             ),
         )
     except InitialDraftRuntimePolicyError as error:
-        blocker = ContentInitialDraftBlocker(
-            code=error.code,
-            label="Runtime Codexa jest niedostępny",
-            reason=error.safe_message,
-            next_step="Sprawdź przypiętą politykę embedded Codex runtime i spróbuj ponownie.",
-        )
-        return ContentInitialDraftResponse(
-            status="blocked",
-            work_item_id=work_item_id,
-            proposal_id=proposal_id,
-            blockers=[blocker],
-            safe_next_step=blocker.next_step,
-        )
-    if claim.run is None:
-        return ContentInitialDraftResponse(
-            status="blocked",
-            work_item_id=work_item_id,
-            proposal_id=proposal_id,
-            blockers=[
-                ContentInitialDraftBlocker(
-                    code="stale_initial_draft_context",
-                    label="Nieaktualny kontekst szkicu",
-                    reason="Kontekst szkicu zmienił się przed uzyskaniem atomowego claimu.",
-                    next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
-                )
-            ],
-            safe_next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
-        )
-    run_id = claim.run.id
-    if claim.canonical_revision is not None:
-        return ContentInitialDraftResponse(
-            status="created",
-            work_item_id=work_item_id,
-            proposal_id=proposal.proposal_id,
-            run_id=run_id,
-            revision=claim.canonical_revision,
-            safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
-        )
-    if not claim.newly_claimed:
-        return queued_initial_draft_response(work_item_id, proposal_id, run_id, True)
-    try:
-        executor.submit(
-            run_queued_initial_draft,
+        return _runtime_policy_response(
             work_item_id,
-            request,
-            client,
-            run_id,
-            snapshot_loader,
-            pre_generation_guard,
-            pre_persistence_guard,
+            proposal_id,
+            proposal=proposal,
+            code=error.code,
+            reason=error.safe_message,
         )
-    except InitialDraftQueueFullError:
-        transition_initial_draft_run_if_status(
-            local_state_store(), claim.run, status="blocked", error="initial_draft_queue_full"
+    return snapshot, proposal, claim
+
+
+def _stale_initial_draft_context_response(
+    work_item_id: str,
+    proposal_id: str | None,
+    *,
+    proposal: ContentPlanningProposal | None = None,
+    research_packet_id: str | None = None,
+    research_packet_digest: str | None = None,
+    stale_response: Callable[[str], ContentInitialDraftResponse] | None = None,
+) -> ContentInitialDraftResponse:
+    if stale_response is not None:
+        response = stale_response(work_item_id)
+        return response.model_copy(
+            update=initial_draft_packet_fields(
+                proposal=proposal,
+                revision=response.revision,
+                research_packet_id=research_packet_id,
+                research_packet_digest=research_packet_digest,
+            )
         )
-        return initial_draft_queue_full_response(work_item_id, proposal_id, run_id)
-    return queued_initial_draft_response(work_item_id, proposal_id, run_id, False)
+    blocker = ContentInitialDraftBlocker(
+        code="stale_initial_draft_context",
+        label="Nieaktualny kontekst szkicu",
+        reason="Kontekst szkicu zmienił się przed uzyskaniem atomowego claimu.",
+        next_step="Odśwież bieżący kontekst przed ponownym uruchomieniem szkicu.",
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=proposal_id,
+        **initial_draft_packet_fields(
+            proposal=proposal,
+            research_packet_id=research_packet_id,
+            research_packet_digest=research_packet_digest,
+        ),
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+
+
+def _runtime_policy_response(
+    work_item_id: str,
+    proposal_id: str | None,
+    *,
+    proposal: ContentPlanningProposal | None = None,
+    code: Literal["runtime_blocked"],
+    reason: str,
+) -> ContentInitialDraftResponse:
+    blocker = ContentInitialDraftBlocker(
+        code=code,
+        label="Runtime Codexa jest niedostępny",
+        reason=reason,
+        next_step="Sprawdź przypiętą politykę embedded Codex runtime i spróbuj ponownie.",
+    )
+    return ContentInitialDraftResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        proposal_id=proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
 
 
 def _current_initial_draft_claim_context(
@@ -400,7 +549,12 @@ def run_queued_initial_draft(
 
 
 def queued_initial_draft_response(
-    work_item_id: str, proposal_id: str | None, run_id: str, already_running: bool
+    work_item_id: str,
+    proposal_id: str | None,
+    run_id: str,
+    already_running: bool,
+    *,
+    proposal: ContentPlanningProposal | None = None,
 ) -> ContentInitialDraftResponse:
     blocker = ContentInitialDraftBlocker(
         code="generation_in_progress",
@@ -415,6 +569,7 @@ def queued_initial_draft_response(
         work_item_id=work_item_id,
         proposal_id=proposal_id,
         run_id=run_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step="Pełny tekst jest już przygotowywany; nie uruchamiaj drugiego."
         if already_running
@@ -423,7 +578,11 @@ def queued_initial_draft_response(
 
 
 def initial_draft_queue_full_response(
-    work_item_id: str, proposal_id: str | None, run_id: str
+    work_item_id: str,
+    proposal_id: str | None,
+    run_id: str,
+    *,
+    proposal: ContentPlanningProposal | None = None,
 ) -> ContentInitialDraftResponse:
     blocker = ContentInitialDraftBlocker(
         code="initial_draft_queue_full",
@@ -437,6 +596,7 @@ def initial_draft_queue_full_response(
         work_item_id=work_item_id,
         proposal_id=proposal_id,
         run_id=run_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )
@@ -464,6 +624,7 @@ def initial_draft_not_started_response(
         status="blocked",
         work_item_id=work_item_id,
         proposal_id=None if proposal is None else proposal.proposal_id,
+        **initial_draft_packet_fields(proposal=proposal),
         blockers=[blocker],
         safe_next_step=blocker.next_step,
     )

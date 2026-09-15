@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Collection
+
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import ContentRegulatoryRequirement
@@ -20,10 +22,18 @@ def regulatory_document_assertion_context(
 def regulatory_facts_for_requirements(
     planning_input: ContentPlanningInput,
     requirement_ids: set[str] | None = None,
+    allowed_source_fact_ids: Collection[str] | None = None,
 ) -> list[ContentSourceFact]:
     """Return regulatory coverage facts bound to any requested requirement."""
 
-    facts = planning_input.regulatory_coverage.source_facts
+    allowed_ids = (
+        None if allowed_source_fact_ids is None else set(allowed_source_fact_ids)
+    )
+    facts = [
+        fact
+        for fact in planning_input.regulatory_coverage.source_facts
+        if allowed_ids is None or fact.source_id in allowed_ids
+    ]
     if requirement_ids is None:
         return list(facts)
     return [
@@ -36,12 +46,17 @@ def regulatory_facts_for_requirements(
 def approved_regulatory_source_facts(
     planning_input: ContentPlanningInput,
     requirement_ids: set[str] | None = None,
+    allowed_source_fact_ids: Collection[str] | None = None,
 ) -> list[ContentSourceFact]:
     """Return only reviewed official facts for the requested requirements."""
 
     return [
         fact
-        for fact in regulatory_facts_for_requirements(planning_input, requirement_ids)
+        for fact in regulatory_facts_for_requirements(
+            planning_input,
+            requirement_ids,
+            allowed_source_fact_ids,
+        )
         if fact.official_source and fact.review_status == "approved"
     ]
 

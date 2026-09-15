@@ -65,6 +65,8 @@ def _full_document_digest_payload(
             else command.new_page_document_identity.model_dump(mode="json")
         ),
         "planning_input_digest": command.planning_input_digest,
+        "research_packet_id": command.research_packet_id,
+        "research_packet_digest": command.research_packet_digest,
         "service_card_id": command.service_card_id,
         "service_digest": command.service_digest,
         "inventory_digest": command.inventory_digest,

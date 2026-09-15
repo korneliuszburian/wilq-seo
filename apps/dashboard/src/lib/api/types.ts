@@ -64,6 +64,7 @@ export type {
   ContentPlanningProposal,
   ContentPlanningProposalResponse,
   ContentPlanningWorkspace,
+  ContentResearchPacketReadResult,
   ContentServiceProfileResponse,
   ContentInventoryCatalogResponse,
   ContentOperatorContext,

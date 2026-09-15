@@ -6,6 +6,7 @@ from typing import Literal, Protocol
 
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
     safe_initial_draft_run_error,
@@ -125,6 +126,11 @@ def persist_initial_draft(
         work_item_id=planning_input.work_item_id,
         proposal_id=proposal.proposal_id,
         run_id=run.id,
+        **initial_draft_packet_fields(
+            proposal=proposal,
+            planning_input=planning_input,
+            revision=result.revision,
+        ),
         revision=result.revision,
         runtime=trace,
         safe_next_step="Przeczytaj pełną stronę i zapisz decyzję człowieka dla tej rewizji.",
@@ -173,12 +179,10 @@ def _append_revision(
                 code=error.code,
                 label="Autoryzacja refresh nie jest już aktualna",
                 reason=(
-                    "Atomowy zapis wykrył zmianę klasyfikacji, autoryzacji lub "
-                    "źródłowego inputu."
+                    "Atomowy zapis wykrył zmianę klasyfikacji, autoryzacji lub źródłowego inputu."
                 ),
                 next_step=(
-                    "Odśwież przygotowanie refresh i uruchom nową próbę dla "
-                    "bieżącego receipt."
+                    "Odśwież przygotowanie refresh i uruchom nową próbę dla bieżącego receipt."
                 ),
             ),
         )
@@ -243,6 +247,7 @@ def _finish_failure(
         work_item_id=snapshot.preflight.item.id,
         proposal_id=proposal.proposal_id,
         run_id=run.id,
+        **initial_draft_packet_fields(proposal=proposal),
         runtime=trace,
         blockers=[blocker],
         safe_next_step=blocker.next_step,

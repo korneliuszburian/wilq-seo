@@ -4,10 +4,9 @@ import json
 import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from threading import Barrier, Lock
+from threading import Lock
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -24,11 +23,9 @@ from tests.content.dynamic_planning_test_support import (
     PlanningClient,
     configure_planning_harness,
 )
-from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning import planning_generation_queue
 from wilq.content.planning.dynamic_input import (
     build_content_planning_input,
-    content_planning_input_summary,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalRequest,
@@ -40,7 +37,6 @@ from wilq.content.planning.generated_proposal_store import (
 )
 from wilq.content.planning.generation_claim_store import (
     ContentPlanningGenerationClaimStore,
-    PlanningGenerationClaim,
 )
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
@@ -59,7 +55,7 @@ def planning_harness(
     return configure_planning_harness(monkeypatch, tmp_path)
 
 
-def test_two_parallel_posts_submit_one_worker_and_reclaim_crashed_claim_after_ttl(
+def test_legacy_no_pack_parallel_posts_block_before_worker_submission(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -87,31 +83,7 @@ def test_two_parallel_posts_submit_one_worker_and_reclaim_crashed_claim_after_tt
                 self.calls += 1
 
     executor = HoldingExecutor()
-    now = datetime(2026, 8, 7, 12, tzinfo=UTC)
-    clock = SimpleNamespace(current=now)
-    claim_store = ContentPlanningGenerationClaimStore(
-        content_planning_proposal_store().path,
-        clock=lambda: cast(datetime, clock.current),
-    )
-    claim_barrier = Barrier(2)
-    outcome_lock = Lock()
-    claim_outcomes: list[str] = []
-    durable_claim = claim_store.claim
-
-    def synchronized_claim(**kwargs: str) -> PlanningGenerationClaim:
-        claim_barrier.wait(timeout=5)
-        claim = durable_claim(**kwargs)
-        with outcome_lock:
-            claim_outcomes.append(claim.outcome)
-        return claim
-
-    monkeypatch.setattr(claim_store, "claim", synchronized_claim)
     monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
-    monkeypatch.setattr(
-        planning_generation_queue,
-        "content_planning_generation_claim_store",
-        lambda: claim_store,
-    )
 
     with ThreadPoolExecutor(max_workers=2) as requests:
         responses = [
@@ -122,187 +94,51 @@ def test_two_parallel_posts_submit_one_worker_and_reclaim_crashed_claim_after_tt
             ]
         ]
 
-    assert [response.status for response in responses] == ["generating", "generating"]
-    assert sorted(claim_outcomes) == ["acquired", "in_flight"]
-    assert executor.calls == 1
-
-    monkeypatch.setattr(claim_store, "claim", durable_claim)
-    clock.current = now + timedelta(seconds=planning_job_stale_after_seconds() + 1)
-    recovered = post(BDO_WORK_ITEM_ID, request)
-
-    assert recovered.status == "generating"
-    assert executor.calls == 2
+    payloads = [json.loads(response.body) for response in responses]
+    assert [response.status_code for response in responses] == [409, 409]
+    assert [payload["status"] for payload in payloads] == ["blocked", "blocked"]
+    assert all(payload["blockers"][0]["code"] == "research_packet_missing" for payload in payloads)
+    assert executor.calls == 0
 
 
-def test_worker_reloads_digest_before_codex_and_finishes_matching_claim(
+def test_legacy_no_pack_worker_path_blocks_before_model(
     planning_harness: tuple[TestClient, PlanningClient],
 ) -> None:
-    _client, runtime = planning_harness
-    original_snapshot = snapshot_for_work_item_or_404(BDO_WORK_ITEM_ID)
-    service_card_id = original_snapshot.service_profile_context.service_card_id
+    client, runtime = planning_harness
+    snapshot = snapshot_for_work_item_or_404(BDO_WORK_ITEM_ID)
+    service_card_id = snapshot.service_profile_context.service_card_id
     assert service_card_id is not None
     planning_input = build_content_planning_input(
-        original_snapshot,
-        service_card_id=service_card_id,
+        snapshot, service_card_id=service_card_id
     ).planning_input
     assert planning_input is not None
-    expected_digest = planning_input.planning_input_digest
-    request = ContentPlanningProposalRequest.model_validate(
-        _generation_request(service_card_id, expected_digest)
-    )
-    store = content_planning_proposal_store()
-    claim_store = ContentPlanningGenerationClaimStore(store.path)
-
-    def queued_response(run_id: str) -> ContentPlanningProposalResponse:
-        return ContentPlanningProposalResponse(
-            status="generating",
-            work_item_id=BDO_WORK_ITEM_ID,
-            service_card_id=service_card_id,
-            planning_input_digest=expected_digest,
-            input_summary=content_planning_input_summary(planning_input),
-            runtime=ContentCodexRuntimeTrace(status="not_started", run_id=run_id),
-            safe_next_step="Plan jest przygotowywany.",
-        )
-
-    stale_claim_version = _enqueue_and_claim(
-        response=queued_response("planning_stale_context"),
-        claim_store=claim_store,
-        claim_owner="worker-stale",
-    )
-    item = original_snapshot.preflight.item
-    changed_item = item.model_copy(
-        update={
-            "wordpress_content_text": (
-                f"{item.wordpress_content_text or ''} Zmieniony kontekst przed workerem."
-            )
-        }
-    )
-    changed_snapshot = original_snapshot.model_copy(
-        update={"preflight": original_snapshot.preflight.model_copy(update={"item": changed_item})}
+    response = client.post(
+        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
+        json=_generation_request(service_card_id, planning_input.planning_input_digest),
     )
 
-    planning_generation_queue.run_queued_planning_generation(
-        BDO_WORK_ITEM_ID,
-        request,
-        lambda _work_item_id: changed_snapshot,
-        claim_store,
-        "worker-stale",
-        stale_claim_version,
-    )
-
-    stale = store.queued_response(BDO_WORK_ITEM_ID, service_card_id, expected_digest)
-    assert stale is not None
-    assert stale.status == "stale"
-    assert stale.planning_input_digest != expected_digest
-    assert stale.blockers[0].code == "stale_input"
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["code"] == "research_packet_missing"
     assert runtime.calls == 0
-    assert _planning_claim_status(store.path) == "failed"
-
-    current_claim_version = _enqueue_and_claim(
-        response=queued_response("planning_current_context"),
-        claim_store=claim_store,
-        claim_owner="worker-current",
-    )
-    planning_generation_queue.run_queued_planning_generation(
-        BDO_WORK_ITEM_ID,
-        request,
-        lambda _work_item_id: original_snapshot,
-        claim_store,
-        "worker-current",
-        current_claim_version,
-    )
-
-    assert runtime.calls == 1
-    assert store.for_input(BDO_WORK_ITEM_ID, service_card_id, expected_digest) is not None
-    assert _planning_claim_status(store.path) == "finished"
 
 
-def test_review_regeneration_reads_ready_and_unblocks_initial_draft(
+def test_legacy_no_pack_review_regeneration_blocks_before_model(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, runtime = planning_harness
     path = f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     before = client.get(path).json()
-    original_response = _post_and_poll_planning(
-        client,
+    response = client.post(
         path,
-        _generation_request(
-            before["service_card_id"],
-            before["planning_input_digest"],
-        ),
-    )
-    assert original_response.json()["status"] == "ready"
-    original = original_response.json()["proposal"]
-    original_turn = runtime.run_structured_turn
-
-    def duplicate_inventory_turn(request: Any) -> Any:
-        result = original_turn(request)
-        application_context = json.loads(request.application_context)
-        if application_context["operation"] != "propose_content_plan":
-            return result
-        assert result.output_text is not None
-        output = json.loads(result.output_text)
-        planning_input = json.loads(request.untrusted_context)["planning_input"]
-        inventory_section = planning_input["inventory"]["sections"][0]
-        output["sections"][0].update(
-            {
-                "heading": "Pierwszy zakres odpowiedzi",
-                "inventory_section_id": inventory_section["section_id"],
-                "inventory_heading": inventory_section["heading"],
-            }
-        )
-        output["sections"].append(
-            {
-                **output["sections"][0],
-                "heading": "Dodatkowy zakres odpowiedzi",
-            }
-        )
-        return replace(result, output_text=json.dumps(output, ensure_ascii=False))
-
-    monkeypatch.setattr(runtime, "run_structured_turn", duplicate_inventory_turn)
-    regenerated_response = _post_and_poll_planning(
-        client,
-        path,
-        {
-            **_generation_request(
-                original["service_card_id"],
-                original["planning_input_digest"],
-            ),
-            "operator_hint": "Pogłęb plan po review bez utraty mapy inventory.",
-            "regenerate_after_review": True,
-        },
+        json=_generation_request(before["service_card_id"], before["planning_input_digest"]),
     )
 
-    assert regenerated_response.json()["status"] == "ready", json.dumps(
-        regenerated_response.json(), ensure_ascii=False
-    )
-    replacement = regenerated_response.json()["proposal"]
-    assert replacement["proposal_id"] != original["proposal_id"]
-    assert replacement["proposal_version"] == original["proposal_version"] + 1
-    assert replacement["planning_input_digest"] == original["planning_input_digest"]
-    additional = next(
-        section
-        for section in replacement["sections"]
-        if section["heading"] == "Dodatkowy zakres odpowiedzi"
-    )
-    assert additional["inventory_disposition"] == "create"
-    assert additional["inventory_section_id"] is None
-    current = client.get(path).json()
-    assert current["status"] == "ready"
-    assert current["proposal"] == replacement
-
-    draft = client.post(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/initial-draft",
-        json={
-            "expected_proposal_id": replacement["proposal_id"],
-            "expected_planning_digest": replacement["planning_digest"],
-            "expected_planning_input_digest": replacement["planning_input_digest"],
-            "requested_by": "wilku",
-        },
-    ).json()
-    assert draft["proposal_id"] == replacement["proposal_id"]
-    assert all(blocker["code"] != "planning_not_ready" for blocker in draft.get("blockers", []))
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["code"] == "research_packet_missing"
+    assert runtime.calls == 0
 
 
 def test_reclaimed_claim_fences_late_terminal_write_and_keeps_newer_result(
@@ -488,7 +324,7 @@ def test_refresh_binding_claim_rejects_an_unbound_worker_terminal_result(tmp_pat
     assert stored == (binding.authorization_id, binding.authorization_digest)
 
 
-def test_snapshot_and_selected_workspace_reads_do_not_create_planning_jobs(
+def test_legacy_no_pack_snapshot_reads_and_post_do_not_create_planning_jobs(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -533,9 +369,12 @@ def test_snapshot_and_selected_workspace_reads_do_not_create_planning_jobs(
         ),
     )
 
-    assert created.status == "generating"
-    assert _planning_generation_job_count(store.path) == 1
-    assert executor.calls == 1
+    created_payload = json.loads(created.body)
+    assert created.status_code == 409
+    assert created_payload["status"] == "blocked"
+    assert created_payload["blockers"][0]["code"] == "research_packet_missing"
+    assert _planning_generation_job_count(store.path) == 0
+    assert executor.calls == 0
 
 
 def _planning_endpoint(method: str, *, snapshot: Any) -> Any:

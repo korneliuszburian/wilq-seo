@@ -77,6 +77,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_landing_hub_authorizations",
         "content_production_classifications",
         "content_refresh_preparation_authorizations",
+        "content_research_packet_preparation_receipts",
         "content_research_packets",
         "content_source_pack_bindings",
         "content_source_fact_authority_proposals",

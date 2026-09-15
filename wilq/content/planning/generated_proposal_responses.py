@@ -57,6 +57,8 @@ def runtime_failure_response(
         content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
         planning_input_digest=planning_input.planning_input_digest,
+        research_packet_id=planning_input.research_packet_id,
+        research_packet_digest=planning_input.research_packet_digest,
         input_summary=content_planning_input_summary(planning_input),
         runtime=(
             trace.model_copy(update={"run_id": run_id})
@@ -82,6 +84,10 @@ def blocked_from_input(
         content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
+        research_packet_id=(None if input_summary is None else input_summary.research_packet_id),
+        research_packet_digest=(
+            None if input_summary is None else input_summary.research_packet_digest
+        ),
         input_summary=input_summary,
         blockers=[
             build_blocker(
@@ -104,6 +110,8 @@ def blocked_response(
     blockers: list[ContentPlanningProposalBlocker],
     input_summary: ContentPlanningInputSummary | None = None,
     content_kind: Literal["service", "editorial"] = "service",
+    research_packet_id: str | None = None,
+    research_packet_digest: str | None = None,
 ) -> ContentPlanningProposalResponse:
     return ContentPlanningProposalResponse(
         status="blocked",
@@ -111,6 +119,16 @@ def blocked_response(
         content_kind=content_kind,
         service_card_id=service_card_id,
         planning_input_digest=planning_input_digest,
+        research_packet_id=(
+            research_packet_id
+            if research_packet_id is not None
+            else None if input_summary is None else input_summary.research_packet_id
+        ),
+        research_packet_digest=(
+            research_packet_digest
+            if research_packet_digest is not None
+            else None if input_summary is None else input_summary.research_packet_digest
+        ),
         input_summary=input_summary,
         blockers=blockers,
         safe_next_step=blockers[0].next_step,
