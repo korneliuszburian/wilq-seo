@@ -10,6 +10,9 @@ from apps.api.wilq_api.routers.content_codex_proposal import (
 from apps.api.wilq_api.routers.content_current_disposition_authority import (
     register_content_current_disposition_authority_routes,
 )
+from apps.api.wilq_api.routers.content_current_inventory_reconciliation import (
+    register_content_current_inventory_reconciliation_route,
+)
 from apps.api.wilq_api.routers.content_delivery_identity import (
     register_content_delivery_identity_routes,
 )
@@ -98,6 +101,7 @@ def register_content_model_routes(
     register_content_regulatory_source_review_routes(router)
     register_content_delivery_identity_routes(router)
     register_content_delivery_identity_authority_routes(router)
+    register_content_current_inventory_reconciliation_route(router)
     register_content_current_disposition_authority_routes(router)
     register_content_source_pack_binding_routes(router)
     register_content_source_fact_authority_routes(router)
