@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+@theme {
+  --color-ink: #17202a;
+  --color-line: #d9e2ec;
+  --color-surface: #f7f9fb;
+  --color-signal: #0f766e;
+  --color-risk: #b91c1c;
+  --color-wait: #a16207;
+  --color-action: #1d4ed8;
+}
+
 html {
   background: #f7f9fb;
   color: #17202a;
@@ -38,6 +48,84 @@ a {
 .wilq-hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgb(23 32 42 / 8%);
+}
+
+.current-disposition-card {
+  display: flow-root;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: calc(var(--spacing) * 4);
+  background: var(--color-white);
+  color: var(--color-ink);
+}
+
+.current-disposition-card__title {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: var(--font-weight-semibold);
+}
+
+.current-disposition-card__content {
+  display: grid;
+  gap: calc(var(--spacing) * 3);
+  margin-block-start: calc(var(--spacing) * 4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.current-disposition-card__content > *,
+.current-disposition-card__field > p {
+  margin: 0;
+}
+
+.current-disposition-card__label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.current-disposition-card__url {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-action);
+  text-decoration: underline;
+}
+
+.current-disposition-card__meta {
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+}
+
+.current-disposition-card__emphasis {
+  font-weight: var(--font-weight-medium);
+}
+
+.current-disposition-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--spacing) * 3);
+  margin-block-start: calc(var(--spacing) * 5);
+}
+
+.current-disposition-card__primary-action,
+.current-disposition-card__secondary-action {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.current-disposition-card__primary-action {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-md);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+  background: var(--color-ink);
+  color: var(--color-white);
+  text-decoration: none;
+}
+
+.current-disposition-card__secondary-action {
+  color: var(--color-action);
+  text-decoration: underline;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -135,6 +135,37 @@ const actionFixture: ActionObject = {
   audit_events: []
 };
 
+const currentDispositionActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_content_current_disposition",
+  title: "Potwierdź dalszy kierunek strony",
+  domain: "content",
+  connector: "wordpress_ekologus",
+  connector_label: "WordPress ekologus.pl",
+  payload: {
+    ...actionFixture.payload,
+    action_type: "content_current_disposition_receipt",
+    current_disposition_authority: {
+      public_url: "https://ekologus.pl/bdo",
+      canonical_path: "/bdo",
+      proposed_final_disposition: "keep"
+    }
+  }
+};
+
+const nonKeepCurrentDispositionActionFixture: ActionObject = {
+  ...currentDispositionActionFixture,
+  id: "act_content_non_keep_disposition",
+  payload: {
+    ...currentDispositionActionFixture.payload,
+    current_disposition_authority: {
+      public_url: "https://ekologus.pl/bdo",
+      canonical_path: "/bdo",
+      proposed_final_disposition: "redirect"
+    }
+  }
+};
+
 const actionWithMutationAuditFixture: ActionObject = {
   ...actionFixture,
   id: "act_mutation_audit",
@@ -1582,6 +1613,12 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_1")) {
         return Promise.resolve(Response.json(actionFixture));
       }
+      if (url.endsWith("/api/actions/act_content_current_disposition")) {
+        return Promise.resolve(Response.json(currentDispositionActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_content_non_keep_disposition")) {
+        return Promise.resolve(Response.json(nonKeepCurrentDispositionActionFixture));
+      }
       if (url.endsWith("/api/actions/act_capable_but_blocked")) {
         return Promise.resolve(Response.json({ ...actionFixture, id: "act_capable_but_blocked" }));
       }
@@ -1789,6 +1826,58 @@ describe("Action detail route", () => {
     expect(screen.queryByText("Kontrakt przyszłego apply")).not.toBeInTheDocument();
     expect(screen.queryByText("create_wordpress_draft")).not.toBeInTheDocument();
     expect(screen.getByText("Pokaż szczegóły przyszłego zapisu")).toBeInTheDocument();
+  });
+
+  it("renders a current-disposition receipt before technical action details", async () => {
+    renderActionDetail("act_content_current_disposition");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Czy zachowujemy tę stronę do dalszej aktualizacji?"
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "https://ekologus.pl/bdo" })).toHaveAttribute(
+      "href",
+      "https://ekologus.pl/bdo"
+    );
+    expect(screen.getByText("Ścieżka kanoniczna: /bdo")).toBeInTheDocument();
+    expect(screen.getByText("Zachowujemy obecny adres i przygotowujemy nową treść.")).toBeInTheDocument();
+    expect(screen.getByText("Od Ciebie / Wilka")).toBeInTheDocument();
+    expect(screen.getByText("Potwierdź, że strona ma zostać pod tym adresem.")).toBeInTheDocument();
+    expect(screen.getByText("Po zatwierdzeniu")).toBeInTheDocument();
+    expect(screen.getByText("WILQ zapisze kierunek dalszych prac. Tekst jeszcze nie powstał.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Zatwierdzenie nie zmienia ani nie publikuje niczego w WordPressie.")
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Przejdź do zatwierdzenia" })).toHaveAttribute(
+      "href",
+      "#action-review"
+    );
+    expect(screen.getByRole("link", { name: "Nie — wróć do decyzji" })).toHaveAttribute(
+      "href",
+      "/content-workflow"
+    );
+
+    const details = screen
+      .getByText("Szczegóły techniczne i etapy audytu")
+      .closest("details");
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute("open");
+    expect(details).toContainElement(
+      screen.getByRole("heading", { name: currentDispositionActionFixture.title })
+    );
+  });
+
+  it("falls back to generic action details for a non-keep disposition", async () => {
+    renderActionDetail("act_content_non_keep_disposition");
+
+    expect(await screen.findByText("Podgląd, review i walidacja")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Czy zachowujemy tę stronę do dalszej aktualizacji?"
+      })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Przejdź do zatwierdzenia" })).not.toBeInTheDocument();
   });
 
   it("keeps a capable adapter blocked until this exact apply request is ready", async () => {

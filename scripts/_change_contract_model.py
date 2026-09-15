@@ -99,6 +99,15 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/api_contracts/test_redaction_contracts.py",
         "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
     ),
+    ("current-disposition", "operator-decision-card"): (
+        "pnpm",
+        "--filter",
+        "@wilq/dashboard",
+        "exec",
+        "vitest",
+        "run",
+        "src/routes/ActionDetailRoute.test.tsx",
+    ),
     ("delivery-identity", "exact-registered-receipt-authority"): (
         "scripts/test.sh",
         "tests/content/test_delivery_identity_authority.py",
@@ -141,9 +150,9 @@ def _test_selectors(proof: ProofCommand) -> tuple[str, ...]:
 _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
     key: MappingDescriptor(
         proof=proof,
-        # Use a small parent-safe harness for the counterfactual: both fixed
-        # points can collect it, while the old POST surface fails in its call
-        # phase and the candidate's read-only surface passes.
+        # Use a small parent-safe harness for counterfactuals: changed test and
+        # resolver files are overlaid into the parent so the old implementation
+        # fails in its call phase while the candidate passes.
         selectors=(
             ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
@@ -152,6 +161,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "test_public_packet_bound_revision_reaches_semantic_and_independent_reviews",
             )
             if key == ("content-review", "exact-packet-revision")
+            else ("tests/dashboard/test_current_disposition_card_change_contract.py",)
+            if key == ("current-disposition", "operator-decision-card")
             else _test_selectors(proof)
         ),
         observer_paths=(
@@ -168,6 +179,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "wilq/content/quality/review_packet_binding.py",
             )
             if key == ("content-review", "exact-packet-revision")
+            else ("tests/dashboard/test_current_disposition_card_change_contract.py",)
+            if key == ("current-disposition", "operator-decision-card")
             else tuple(
                 dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof))
             )
@@ -177,6 +190,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("change-contract-gate", "observed-before-state"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("content-review", "exact-packet-revision"),
+            ("current-disposition", "operator-decision-card"),
         },
     )
     for key, proof in _PROOFS.items()

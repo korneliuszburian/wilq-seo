@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import {
@@ -27,6 +28,116 @@ import {
   type ActionMutationReadiness
 } from "./DetailPanelsSections/Shared";
 import { TechnicalDetailsPanel } from "./DetailPanelsSections/TechnicalSection";
+
+type CurrentDispositionReceipt = {
+  publicUrl: string;
+  canonicalPath: string;
+  proposedFinalDisposition: "keep";
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getCurrentDispositionReceipt(action: ActionObject): CurrentDispositionReceipt | null {
+  if (action.payload.action_type !== "content_current_disposition_receipt") return null;
+
+  const authority: unknown = action.payload.current_disposition_authority;
+  if (!isRecord(authority)) return null;
+
+  const publicUrl = authority.public_url;
+  const canonicalPath = authority.canonical_path;
+  const proposedFinalDisposition = authority.proposed_final_disposition;
+  if (
+    typeof publicUrl !== "string" ||
+    !publicUrl.trim() ||
+    typeof canonicalPath !== "string" ||
+    !canonicalPath.trim() ||
+    typeof proposedFinalDisposition !== "string" ||
+    proposedFinalDisposition !== "keep"
+  ) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(publicUrl);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") return null;
+  } catch {
+    return null;
+  }
+
+  return {
+    publicUrl,
+    canonicalPath,
+    proposedFinalDisposition
+  };
+}
+
+function CurrentDispositionCard({ receipt }: { receipt: CurrentDispositionReceipt }) {
+  return (
+    <article className="current-disposition-card" data-state={receipt.proposedFinalDisposition}>
+      <h1 className="current-disposition-card__title">
+        Czy zachowujemy tę stronę do dalszej aktualizacji?
+      </h1>
+      <div className="current-disposition-card__content">
+        <div className="current-disposition-card__field">
+          <div className="current-disposition-card__label">Adres strony</div>
+          <a
+            className="current-disposition-card__url"
+            href={receipt.publicUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {receipt.publicUrl}
+          </a>
+          <div className="current-disposition-card__meta">
+            Ścieżka kanoniczna: {receipt.canonicalPath}
+          </div>
+        </div>
+        <p>
+          <span className="current-disposition-card__label">Decyzja:</span>{" "}
+          Zachowujemy obecny adres i przygotowujemy nową treść.
+        </p>
+        <div className="current-disposition-card__field">
+          <div className="current-disposition-card__label">Od Ciebie / Wilka</div>
+          <p>Potwierdź, że strona ma zostać pod tym adresem.</p>
+        </div>
+        <div className="current-disposition-card__field">
+          <div className="current-disposition-card__label">Po zatwierdzeniu</div>
+          <p>WILQ zapisze kierunek dalszych prac. Tekst jeszcze nie powstał.</p>
+        </div>
+        <p className="current-disposition-card__emphasis">
+          Zatwierdzenie nie zmienia ani nie publikuje niczego w WordPressie.
+        </p>
+      </div>
+      <div className="current-disposition-card__actions">
+        <a
+          className="current-disposition-card__primary-action"
+          href="#action-review"
+        >
+          Przejdź do zatwierdzenia
+        </a>
+        <Link
+          className="current-disposition-card__secondary-action"
+          search={{
+            work_item_id: undefined,
+            section_heading: undefined,
+            planning_digest: undefined,
+            workspace: undefined,
+            text: undefined,
+            review: undefined,
+            browse: undefined,
+            new_page: undefined,
+            view: undefined
+          }}
+          to="/content-workflow"
+        >
+          Nie — wróć do decyzji
+        </Link>
+      </div>
+    </article>
+  );
+}
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
   const { action, mutationReadiness } = useActionDetailQueries(actionId);
@@ -71,9 +182,9 @@ function ActionDetail({
 }) {
   const visibleAuditEvents = action.audit_events.slice(0, 6);
   const hiddenAuditEventCount = Math.max(0, action.audit_events.length - visibleAuditEvents.length);
-
-  return (
-    <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8">
+  const currentDispositionReceipt = getCurrentDispositionReceipt(action);
+  const genericActionContent = (
+    <>
       <ActionOperatorDecisionHero
         action={action}
         mutationReadiness={mutationReadiness}
@@ -111,6 +222,24 @@ function ActionDetail({
           </pre>
         </TechnicalDetailsPanel>
       </section>
+    </>
+  );
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8">
+      {currentDispositionReceipt ? (
+        <>
+          <CurrentDispositionCard receipt={currentDispositionReceipt} />
+          <details className="mt-6 rounded-md border border-line bg-white p-4">
+            <summary className="cursor-pointer font-semibold text-ink">
+              Szczegóły techniczne i etapy audytu
+            </summary>
+            <div className="mt-4">{genericActionContent}</div>
+          </details>
+        </>
+      ) : (
+        genericActionContent
+      )}
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Dowody i audyt" />
         <div className="rounded-md border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-700">
