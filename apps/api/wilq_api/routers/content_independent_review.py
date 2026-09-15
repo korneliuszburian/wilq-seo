@@ -8,13 +8,16 @@ from fastapi.responses import JSONResponse
 from wilq.content.quality.independent_review_contracts import (
     ContentIndependentFindingDispositionRequest,
     ContentIndependentFindingDispositionResponse,
+    ContentIndependentReviewBlocker,
     ContentIndependentReviewRunCollection,
     ContentIndependentReviewRunResponse,
     ContentIndependentReviewRunSubmission,
 )
 from wilq.content.quality.independent_review_service import (
+    independent_review_binding_blocker,
     persist_independent_review_run,
     record_independent_finding_disposition,
+    resolve_independent_review_context,
 )
 from wilq.content.quality.independent_review_store import (
     IndependentReviewConflict,
@@ -51,14 +54,26 @@ def register_content_independent_review_routes(
             if storage_ready
             else []
         )
+        blockers = _independent_read_blockers(
+            snapshot_loader=snapshot_loader,
+            work_item_id=work_item_id,
+            revision_id=revision_id,
+            revision=revision,
+            storage_ready=storage_ready,
+        )
         return ContentIndependentReviewRunCollection(
             work_item_id=work_item_id,
             revision_id=revision_id,
             revision_digest=revision.content_digest,
+            research_packet_id=revision.research_packet_id,
+            research_packet_digest=revision.research_packet_digest,
             runs=runs,
+            blockers=blockers,
             storage_status="ready" if storage_ready else "activation_required",
             safe_next_step=(
-                "Rozlicz wszystkie role niezależnego review; wynik jest advisory "
+                blockers[0].next_step
+                if blockers
+                else "Rozlicz wszystkie role niezależnego review; wynik jest advisory "
                 "i nie publikuje treści."
                 if storage_ready
                 else "Aktywuj storage review w zatwierdzonym maintenance window."
@@ -75,39 +90,66 @@ def register_content_independent_review_routes(
         revision_id: str,
         request: ContentIndependentReviewRunSubmission,
     ) -> ContentIndependentReviewRunResponse | JSONResponse:
+        snapshot = snapshot_loader(work_item_id)
+        revision = snapshot.revision_workspace.latest_revision
+        packet_id = (
+            getattr(revision, "research_packet_id", None) or request.run.research_packet_id
+        )
+        packet_digest = (
+            getattr(revision, "research_packet_digest", None)
+            or request.run.research_packet_digest
+        )
         try:
             result = persist_independent_review_run(
-                snapshot=snapshot_loader(work_item_id),
+                snapshot=snapshot,
                 revision_id=revision_id,
                 expected_revision_digest=request.expected_revision_digest,
                 run=request.run,
                 store=content_independent_review_store(),
+                snapshot_loader=snapshot_loader,
             )
         except IndependentReviewConflict as error:
-            return JSONResponse(
-                status_code=409,
-                content={
-                    "status": "conflict",
-                    "work_item_id": work_item_id,
-                    "revision_id": revision_id,
-                    "revision_digest": request.expected_revision_digest,
-                    "safe_next_step": str(error),
-                },
+            return _independent_conflict_response(
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+                revision_digest=request.expected_revision_digest,
+                research_packet_id=packet_id,
+                research_packet_digest=packet_digest,
+                error=error,
             )
         except IndependentReviewStorageActivationRequired as error:
-            return JSONResponse(
-                status_code=409,
-                content={
-                    "status": "conflict",
-                    "work_item_id": work_item_id,
-                    "revision_id": revision_id,
-                    "revision_digest": request.expected_revision_digest,
-                    "safe_next_step": str(error),
-                },
+            return _independent_conflict_response(
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+                revision_digest=request.expected_revision_digest,
+                research_packet_id=packet_id,
+                research_packet_digest=packet_digest,
+                error=error,
             )
         return result
 
     _register_disposition_route(router, path + "/{run_id}/findings/{finding_id}/disposition")
+
+
+def _independent_read_blockers(
+    *,
+    snapshot_loader: IndependentReviewSnapshotLoader,
+    work_item_id: str,
+    revision_id: str,
+    revision: ContentDraftRevision,
+    storage_ready: bool,
+) -> list[ContentIndependentReviewBlocker]:
+    if not storage_ready:
+        return []
+    resolution = resolve_independent_review_context(
+        snapshot=snapshot_loader(work_item_id),
+        revision_id=revision_id,
+        expected_revision_digest=revision.content_digest,
+        snapshot_loader=snapshot_loader,
+    )
+    if resolution is None or resolution.blocker is None:
+        return []
+    return [independent_review_binding_blocker(resolution)]
 
 
 def _register_disposition_route(router: APIRouter, path: str) -> None:
@@ -179,6 +221,30 @@ def _current_revision(
             detail="Independent review requires current exact revision.",
         )
     return revision
+
+
+def _independent_conflict_response(
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+    research_packet_id: str | None,
+    research_packet_digest: str | None,
+    error: Exception,
+) -> JSONResponse:
+    raw_blocker = getattr(error, "blocker", None)
+    blockers = [raw_blocker] if isinstance(raw_blocker, ContentIndependentReviewBlocker) else []
+    payload = ContentIndependentReviewRunResponse(
+        status="conflict",
+        work_item_id=work_item_id,
+        revision_id=revision_id,
+        revision_digest=revision_digest,
+        research_packet_id=research_packet_id,
+        research_packet_digest=research_packet_digest,
+        blockers=blockers,
+        safe_next_step=str(error),
+    )
+    return JSONResponse(status_code=409, content=payload.model_dump(mode="json"))
 
 
 __all__ = ["register_content_independent_review_routes"]

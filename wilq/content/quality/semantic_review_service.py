@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Literal
 from uuid import uuid4
 
 from wilq.codex.app_server import (
@@ -11,6 +11,19 @@ from wilq.codex.app_server import (
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import build_content_planning_input
+from wilq.content.quality.review_packet_binding import (
+    ReviewSnapshotLoader,
+    resolve_content_review_inputs,
+)
+from wilq.content.quality.review_packet_binding import (
+    content_review_snapshot_is_packet_bound as _is_packet_bound_snapshot,
+)
+from wilq.content.quality.review_packet_binding import (
+    content_review_snapshot_packet_pair as _snapshot_packet_pair,
+)
+from wilq.content.quality.review_packet_binding import (
+    same_content_review_inputs as _same_review_inputs,
+)
 from wilq.content.quality.semantic_inputs import (
     SemanticInputs,
 )
@@ -21,25 +34,14 @@ from wilq.content.quality.semantic_review_blockers import (
     deterministic_quality_gate_for_snapshot as _deterministic_quality_gate_for_snapshot,
 )
 from wilq.content.quality.semantic_review_blockers import (
-    missing_revision_blocker as _missing_revision_blocker,
-)
-from wilq.content.quality.semantic_review_blockers import (
-    planning_blocker as _planning_blocker,
-)
-from wilq.content.quality.semantic_review_blockers import (
     semantic_blocker_code as _semantic_blocker_code,
-)
-from wilq.content.quality.semantic_review_blockers import (
-    semantic_planning_input_blocker as _semantic_planning_input_blocker,
 )
 from wilq.content.quality.semantic_review_blockers import (
     storage_blocker as _storage_blocker,
 )
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
-    ContentSemanticDimension,
     ContentSemanticFinding,
-    ContentSemanticFindingOutput,
     ContentSemanticReview,
     ContentSemanticReviewBlocker,
     ContentSemanticReviewModelOutput,
@@ -47,9 +49,16 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewResponse,
 )
 from wilq.content.quality.semantic_review_guards import (
-    readability_quality_issues,
-    regulatory_quality_issues,
-    repetition_quality_issues,
+    apply_deterministic_quality_guards as _apply_deterministic_quality_guards,
+)
+from wilq.content.quality.semantic_review_guards import (
+    review_scope_errors as _scope_errors,
+)
+from wilq.content.quality.semantic_review_packet import (
+    semantic_binding_blocker as _semantic_binding_blocker,
+)
+from wilq.content.quality.semantic_review_packet import (
+    semantic_review_response as _review_response,
 )
 from wilq.content.quality.semantic_review_runtime import (
     finish_semantic_run as _finish_run,
@@ -69,6 +78,7 @@ from wilq.content.workflow.documents.revisions import ContentDraftRevision
 from wilq.content.workflow.runtime.codex_run_lifecycle import (
     runtime_error,
 )
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
@@ -104,6 +114,8 @@ def read_content_semantic_review(
                 work_item_id=revision.work_item_id,
                 revision_id=revision_id,
                 revision_digest=historical.revision_digest,
+                research_packet_id=historical.research_packet_id,
+                research_packet_digest=historical.research_packet_digest,
                 review=historical,
                 run_id=historical.codex_run_id,
                 safe_next_step=(
@@ -129,7 +141,7 @@ def read_content_semantic_review(
         revision.content_digest,
     )
     if exact is not None:
-        return _review_response("ready", revision, exact)
+        return _read_exact_review(snapshot, revision_id, revision, exact, store)
     preflight = _prepare_inputs(
         snapshot,
         revision_id,
@@ -148,6 +160,8 @@ def read_content_semantic_review(
             work_item_id=revision.work_item_id,
             revision_id=revision.revision_id,
             revision_digest=revision.content_digest,
+            research_packet_id=revision.research_packet_id,
+            research_packet_digest=revision.research_packet_digest,
             safe_next_step="Uruchom advisory review dla dokładnej bieżącej wersji.",
         )
     return ContentSemanticReviewResponse(
@@ -155,6 +169,8 @@ def read_content_semantic_review(
         work_item_id=revision.work_item_id,
         revision_id=latest.revision_id,
         revision_digest=latest.revision_digest,
+        research_packet_id=latest.research_packet_id,
+        research_packet_digest=latest.research_packet_digest,
         review=latest,
         run_id=latest.codex_run_id,
         safe_next_step="Wersja zmieniła się; uruchom nowe review dla bieżącego digestu.",
@@ -170,8 +186,15 @@ def generate_content_semantic_review(
     store: ContentSemanticReviewStore,
     run_store: LocalStateStore,
     run_id: str | None = None,
+    snapshot_loader: ReviewSnapshotLoader | None = None,
 ) -> ContentSemanticReviewResponse:
-    prepared = _prepare_inputs(snapshot, revision_id, request, store)
+    prepared = _prepare_inputs(
+        snapshot,
+        revision_id,
+        request,
+        store,
+        snapshot_loader=snapshot_loader,
+    )
     if isinstance(prepared, ContentSemanticReviewResponse):
         return prepared
     existing = store.for_revision(
@@ -189,6 +212,41 @@ def generate_content_semantic_review(
     if isinstance(runtime, ContentSemanticReviewResponse):
         return runtime
     output, trace = runtime
+    revalidated = _prepare_inputs(
+        snapshot,
+        revision_id,
+        request,
+        store,
+        snapshot_loader=snapshot_loader,
+    )
+    if isinstance(revalidated, ContentSemanticReviewResponse):
+        blocker = revalidated.blockers[0]
+        return _finish_with_blocker(
+            snapshot,
+            prepared.revision,
+            run,
+            trace,
+            blocker,
+            run_store,
+            response_status="blocked",
+        )
+    if not _same_review_inputs(prepared, revalidated):
+        blocker = build_blocker(
+            ContentSemanticReviewBlocker,
+            code=_semantic_blocker_code("stale_content_context"),
+            label="Zmienił się kontekst treści",
+            reason="Planning input albo persisted proposal zmieniły się przed zapisem review.",
+            next_step="Odśwież workspace i uruchom review dla bieżącej wersji.",
+        )
+        return _finish_with_blocker(
+            snapshot,
+            prepared.revision,
+            run,
+            trace,
+            blocker,
+            run_store,
+            response_status="conflict",
+        )
     scope_errors = _scope_errors(prepared.revision, output)
     if scope_errors:
         return _scope_mismatch_response(
@@ -283,6 +341,8 @@ def _persist_review(
         work_item_id=stored.work_item_id,
         revision_id=stored.revision_id,
         revision_digest=stored.revision_digest,
+        research_packet_id=stored.research_packet_id,
+        research_packet_digest=stored.research_packet_digest,
         review=stored,
         run_id=stored.codex_run_id,
         runtime=trace,
@@ -295,82 +355,36 @@ def _prepare_inputs(
     revision_id: str,
     request: ContentSemanticReviewRequest,
     store: ContentSemanticReviewStore,
+    *,
+    snapshot_loader: ReviewSnapshotLoader | None = None,
 ) -> _SemanticInputs | ContentSemanticReviewResponse:
-    revision = snapshot.revision_workspace.latest_revision
-    if revision is None:
-        return _blocked(snapshot, blockers=[_missing_revision_blocker()])
-    if (
-        revision_id != revision.revision_id
-        or request.expected_revision_digest != revision.content_digest
-    ):
-        return _blocked(
-            snapshot,
-            revision=revision,
-            status="conflict",
-            blockers=[
-                build_blocker(
-                    ContentSemanticReviewBlocker,
-                    code=_semantic_blocker_code("stale_revision"),
-                    label="Wybrana wersja nie jest aktualna",
-                    reason="Revision ID albo digest zmienił się przed review.",
-                    next_step="Odśwież workspace i uruchom review bieżącej wersji.",
-                )
-            ],
-        )
-    if revision.schema_version != "wilq_content_draft_revision_v2":
-        return _blocked(
-            snapshot,
-            revision=revision,
-            blockers=[
-                build_blocker(
-                    ContentSemanticReviewBlocker,
-                    code=_semantic_blocker_code("legacy_revision"),
-                    label="Starsza wersja nie zawiera całej strony",
-                    reason="Review semantyczne wymaga rewizji v2 z page assets, FAQ i CTA.",
-                    next_step="Utwórz pełny dokument v2 przed review.",
-                )
-            ],
-        )
-    if not snapshot.revision_workspace.context_current:
-        return _blocked(
-            snapshot,
-            revision=revision,
-            blockers=[
-                build_blocker(
-                    ContentSemanticReviewBlocker,
-                    code=_semantic_blocker_code("stale_content_context"),
-                    label="Zmienił się kontekst treści",
-                    reason="Plan, inventory, usługa, wiedza albo metryki nie odpowiadają rewizji.",
-                    next_step="Zrebasuj dokument na aktualny planning input.",
-                )
-            ],
-        )
-    planning = snapshot.planning_workspace
-    if (
-        planning is None
-        or revision.planning_digest != planning.proposal.planning_digest
-        or revision.planning_input_digest != planning.proposal.planning_input_digest
-        or (
-            planning.proposal.content_kind == "service"
-            and planning.proposal.service_card_id is None
-        )
-    ):
-        return _blocked(snapshot, revision=revision, blockers=[_planning_blocker()])
-    planning_result = build_content_planning_input(
-        snapshot,
-        service_card_id=planning.proposal.service_card_id,
+    resolution = resolve_content_review_inputs(
+        snapshot=snapshot,
+        revision_id=revision_id,
+        expected_revision_digest=request.expected_revision_digest,
+        workflow_store=content_workflow_store(),
+        snapshot_loader=snapshot_loader,
+        planning_input_builder=build_content_planning_input,
     )
-    blocker = _semantic_planning_input_blocker(
-        planning_result, revision.planning_input_digest
-    )
-    if blocker is not None:
-        return _blocked(snapshot, revision=revision, blockers=[blocker])
-    planning_input = cast(Any, planning_result.planning_input)
+    if resolution.blocker is not None:
+        revision = snapshot.revision_workspace.latest_revision
+        return _blocked(
+            snapshot,
+            revision=revision,
+            status=("conflict" if resolution.blocker.code == "stale_revision" else "blocked"),
+            blockers=[_semantic_binding_blocker(resolution)],
+        )
+    inputs = resolution.inputs
+    if inputs is None:
+        raise RuntimeError("Review input resolver returned no exact context.")
+    revision = inputs.revision
+    planning_input = inputs.planning_input
+    planning_proposal = inputs.proposal
     deterministic_blocker = _deterministic_quality_gate_for_snapshot(
         snapshot=snapshot,
         revision=revision,
         planning_input=planning_input,
-        planning_proposal=planning.proposal,
+        planning_proposal=planning_proposal,
     )
     if deterministic_blocker is not None:
         return _blocked(
@@ -383,7 +397,27 @@ def _prepare_inputs(
     return _SemanticInputs(
         revision=revision,
         planning_input=planning_input,
-        proposal=planning.proposal,
+        proposal=planning_proposal,
+        review_inputs=inputs,
+    )
+
+
+def preflight_content_semantic_review(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision_id: str,
+    request: ContentSemanticReviewRequest,
+    store: ContentSemanticReviewStore,
+    snapshot_loader: ReviewSnapshotLoader | None = None,
+) -> _SemanticInputs | ContentSemanticReviewResponse:
+    """Validate review context without claiming a run or calling Codex."""
+
+    return _prepare_inputs(
+        snapshot,
+        revision_id,
+        request,
+        store,
+        snapshot_loader=snapshot_loader,
     )
 
 
@@ -482,135 +516,6 @@ def _execute(
         )
 
 
-def _apply_deterministic_quality_guards(
-    inputs: _SemanticInputs,
-    output: ContentSemanticReviewModelOutput,
-) -> ContentSemanticReviewModelOutput:
-    issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
-    if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
-        issues.append(
-            (
-                "conversion_clarity",
-                "cta_blocks",
-                "Brakuje wymaganych bloków CTA z zatwierdzonego planu.",
-                [],
-            )
-        )
-    section_bodies = {
-        str(section.section_id): section.body_markdown.strip().casefold()
-        for section in inputs.revision.sections
-    }
-    issues.extend(
-        regulatory_quality_issues(
-            revision=inputs.revision,
-            planning_input=inputs.planning_input,
-            proposal=inputs.proposal,
-        )
-    )
-    issues.extend((*issue, []) for issue in repetition_quality_issues(section_bodies))
-    issues.extend((*issue, []) for issue in readability_quality_issues(revision=inputs.revision))
-    grouped: dict[ContentSemanticDimension, tuple[list[str], list[str], list[str]]] = {}
-    for dimension, target, reason, evidence_ids in issues:
-        targets, reasons, grouped_evidence_ids = grouped.get(dimension, ([], [], []))
-        if target not in targets:
-            targets.append(target)
-        if reason not in reasons:
-            reasons.append(reason)
-        grouped_evidence_ids = list(dict.fromkeys([*grouped_evidence_ids, *evidence_ids]))
-        grouped[dimension] = (targets, reasons, grouped_evidence_ids)
-    existing = {finding.dimension for finding in output.findings}
-    dimensions = list(output.dimensions)
-    findings = list(output.findings)
-    changed = False
-    for dimension, (targets, reasons, evidence_ids) in grouped.items():
-        reason = " ".join(reasons)
-        if dimension in existing:
-            for index, finding in enumerate(findings):
-                if finding.dimension == dimension:
-                    findings[index] = finding.model_copy(
-                        update={
-                            "affected_targets": targets,
-                            "reason": reason,
-                            "instruction": "Popraw wskazany problem i uruchom review ponownie.",
-                            "evidence_ids": list(
-                                dict.fromkeys([*finding.evidence_ids, *evidence_ids])
-                            ),
-                        }
-                    )
-                    break
-            for index, assessment in enumerate(dimensions):
-                if assessment.dimension == dimension:
-                    dimensions[index] = assessment.model_copy(
-                        update={
-                            "status": "needs_changes",
-                            "affected_targets": targets,
-                            "reason": reason,
-                        }
-                    )
-                    changed = True
-                    break
-            continue
-        existing.add(dimension)
-        for index, assessment in enumerate(dimensions):
-            if assessment.dimension == dimension:
-                dimensions[index] = assessment.model_copy(
-                    update={
-                        "status": "needs_changes",
-                        "affected_targets": targets,
-                        "reason": reason,
-                    }
-                )
-                changed = True
-                break
-        findings.append(
-            ContentSemanticFindingOutput(
-                dimension=dimension,
-                severity=(
-                    "high" if dimension in {"conversion_clarity", "search_intent_fit"} else "medium"
-                ),
-                label="Automatyczna kontrola jakości",
-                reason=reason,
-                instruction="Popraw wskazany problem i uruchom review ponownie.",
-                affected_targets=targets,
-                evidence_ids=evidence_ids,
-            )
-        )
-    if not issues or not changed:
-        return output
-    return output.model_copy(update={"dimensions": dimensions, "findings": findings})
-
-
-def _scope_errors(
-    revision: ContentDraftRevision,
-    output: ContentSemanticReviewModelOutput,
-) -> list[str]:
-    allowed_targets = {
-        "page_assets",
-        "faq",
-        "cta_blocks",
-        "internal_links",
-        "whole_document",
-        *(str(item.section_id) for item in revision.sections),
-    }
-    allowed_evidence = set(_revision_evidence_ids(revision))
-    errors: list[str] = []
-    for dimension in output.dimensions:
-        if not set(dimension.affected_targets).issubset(allowed_targets):
-            errors.append(f"dimension_target:{dimension.dimension}")
-    finding_dimensions = {item.dimension for item in output.findings}
-    needs_change_dimensions = {
-        item.dimension for item in output.dimensions if item.status == "needs_changes"
-    }
-    if finding_dimensions != needs_change_dimensions:
-        errors.append("dimension_finding_consistency")
-    for finding in output.findings:
-        if not set(finding.affected_targets).issubset(allowed_targets):
-            errors.append(f"finding_target:{finding.dimension}")
-        if not set(finding.evidence_ids).issubset(allowed_evidence):
-            errors.append(f"finding_evidence:{finding.dimension}")
-    return list(dict.fromkeys(errors))
-
-
 def _build_review(
     inputs: _SemanticInputs,
     request: ContentSemanticReviewRequest,
@@ -631,6 +536,8 @@ def _build_review(
         work_item_id=inputs.revision.work_item_id,
         revision_id=inputs.revision.revision_id,
         revision_digest=inputs.revision.content_digest,
+        research_packet_id=inputs.revision.research_packet_id,
+        research_packet_digest=inputs.revision.research_packet_digest,
         codex_run_id=run.id,
         status=status,
         dimensions=output.dimensions,
@@ -794,20 +701,47 @@ def _finish_with_blocker(
     )
 
 
-def _review_response(
-    status: Literal["ready", "idempotent"],
+def _read_exact_review(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision_id: str,
     revision: ContentDraftRevision,
     review: ContentSemanticReview,
+    store: ContentSemanticReviewStore,
 ) -> ContentSemanticReviewResponse:
-    return ContentSemanticReviewResponse(
-        status=status,
-        work_item_id=revision.work_item_id,
-        revision_id=revision.revision_id,
-        revision_digest=revision.content_digest,
-        review=review,
-        run_id=review.codex_run_id,
-        safe_next_step=review.safe_next_step,
-    )
+    if _is_packet_bound_snapshot(snapshot):
+        preflight = _prepare_inputs(
+            snapshot,
+            revision_id,
+            ContentSemanticReviewRequest(
+                expected_revision_digest=revision.content_digest,
+                requested_by="WILQ read preflight",
+            ),
+            store,
+        )
+        if isinstance(preflight, ContentSemanticReviewResponse):
+            return preflight
+        review_packet_pair = (
+            review.research_packet_id,
+            review.research_packet_digest,
+        )
+        if review_packet_pair != _snapshot_packet_pair(snapshot):
+            return _blocked(
+                snapshot,
+                revision=revision,
+                blockers=[
+                    build_blocker(
+                        ContentSemanticReviewBlocker,
+                        code=_semantic_blocker_code("research_packet_conflict"),
+                        label="Review nie jest związany z exact packetem",
+                        reason=(
+                            "Zapisany review nie ma tego samego packet ID i digestu co "
+                            "bieżący packet. Historyczny wynik pozostaje niezmieniony."
+                        ),
+                        next_step="Utwórz nowe exact review dla bieżącego packetu.",
+                    )
+                ],
+            )
+    return _review_response("ready", revision, review)
 
 
 def _blocked(
@@ -824,6 +758,10 @@ def _blocked(
         work_item_id=snapshot.preflight.item.id,
         revision_id=None if revision is None else revision.revision_id,
         revision_digest=None if revision is None else revision.content_digest,
+        research_packet_id=(None if revision is None else revision.research_packet_id),
+        research_packet_digest=(
+            None if revision is None else revision.research_packet_digest
+        ),
         run_id=None if run is None else run.id,
         runtime=runtime or ContentCodexRuntimeTrace(status="not_started"),
         blockers=blockers,
@@ -831,4 +769,8 @@ def _blocked(
     )
 
 
-__all__ = ["generate_content_semantic_review", "read_content_semantic_review"]
+__all__ = [
+    "generate_content_semantic_review",
+    "preflight_content_semantic_review",
+    "read_content_semantic_review",
+]

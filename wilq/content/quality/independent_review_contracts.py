@@ -23,6 +23,17 @@ ContentIndependentDispositionStatus = Literal[
     "conflict",
     "child_revision_required",
 ]
+ContentIndependentReviewBlockerCode = Literal[
+    "missing_revision",
+    "stale_revision",
+    "legacy_revision",
+    "stale_content_context",
+    "missing_planning_input",
+    "planning_digest_mismatch",
+    "research_packet_missing",
+    "research_packet_blocked",
+    "research_packet_conflict",
+]
 
 INDEPENDENT_REVIEW_ROLES: tuple[ContentIndependentReviewRole, ...] = (
     "content_ux",
@@ -105,6 +116,8 @@ class ContentIndependentReviewRun(BaseModel):
     work_item_id: str = Field(min_length=1, max_length=240)
     revision_id: str = Field(min_length=1, max_length=240)
     revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    research_packet_id: str | None = Field(default=None, min_length=1, max_length=280)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     role: ContentIndependentReviewRole
     model_provider: Literal["opencode-go"]
     model_id: Literal["deepseek-v4.1-flash"]
@@ -124,6 +137,8 @@ class ContentIndependentReviewRun(BaseModel):
 
     @model_validator(mode="after")
     def require_exact_role_contract(self) -> ContentIndependentReviewRun:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Independent review packet ID and digest must be supplied together.")
         if ROLE_CRITERIA_VERSIONS[self.role] != self.criteria_version:
             raise ValueError("Independent review criteria must match its exact role.")
         if not self.evidence_ids or not self.source_connectors:
@@ -168,6 +183,16 @@ class ContentIndependentReviewRunSubmission(BaseModel):
         return self
 
 
+class ContentIndependentReviewBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: ContentIndependentReviewBlockerCode
+    label: str = Field(min_length=1, max_length=240)
+    reason: str = Field(min_length=1, max_length=1600)
+    next_step: str = Field(min_length=1, max_length=600)
+    source_codes: list[str] = Field(default_factory=list, max_length=64)
+
+
 class ContentIndependentFindingDispositionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -206,15 +231,27 @@ class ContentIndependentReviewRunResponse(BaseModel):
     work_item_id: str
     revision_id: str
     revision_digest: str
+    research_packet_id: str | None = Field(default=None, min_length=1, max_length=280)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     run: ContentIndependentReviewRun | None = None
+    blockers: list[ContentIndependentReviewBlocker] = Field(default_factory=list, max_length=8)
     safe_next_step: str = Field(min_length=1, max_length=600)
 
     @model_validator(mode="after")
     def require_run_for_success(self) -> ContentIndependentReviewRunResponse:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Independent review packet ID and digest must be supplied together.")
         if self.status in {"created", "idempotent"} and self.run is None:
             raise ValueError("Independent review success requires the persisted run.")
         if self.status == "conflict" and self.run is not None:
             raise ValueError("Independent review conflict cannot carry a run.")
+        if self.status != "conflict" and self.blockers:
+            raise ValueError("Only an independent-review conflict may carry blockers.")
+        if self.run is not None and (
+            self.research_packet_id != self.run.research_packet_id
+            or self.research_packet_digest != self.run.research_packet_digest
+        ):
+            raise ValueError("Independent review response must bind the exact packet.")
         return self
 
 
@@ -224,9 +261,24 @@ class ContentIndependentReviewRunCollection(BaseModel):
     work_item_id: str
     revision_id: str
     revision_digest: str
+    research_packet_id: str | None = Field(default=None, min_length=1, max_length=280)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     runs: list[ContentIndependentReviewRun] = Field(default_factory=list)
+    blockers: list[ContentIndependentReviewBlocker] = Field(default_factory=list, max_length=8)
     storage_status: Literal["ready", "activation_required"] = "ready"
     safe_next_step: str = Field(min_length=1, max_length=600)
+
+    @model_validator(mode="after")
+    def require_collection_packet_binding(self) -> ContentIndependentReviewRunCollection:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Independent review packet ID and digest must be supplied together.")
+        for run in self.runs:
+            if (
+                self.research_packet_id != run.research_packet_id
+                or self.research_packet_digest != run.research_packet_digest
+            ):
+                raise ValueError("Independent review collection must bind the exact packet.")
+        return self
 
 
 class ContentIndependentFindingDispositionResponse(BaseModel):
@@ -236,17 +288,29 @@ class ContentIndependentFindingDispositionResponse(BaseModel):
     work_item_id: str
     revision_id: str
     revision_digest: str
+    research_packet_id: str | None = Field(default=None, min_length=1, max_length=280)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     run: ContentIndependentReviewRun | None = None
+    blockers: list[ContentIndependentReviewBlocker] = Field(default_factory=list, max_length=8)
     finding_id: str
     requires_child_revision: bool = False
     safe_next_step: str = Field(min_length=1, max_length=600)
 
     @model_validator(mode="after")
     def require_run_for_disposition(self) -> ContentIndependentFindingDispositionResponse:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Independent review packet ID and digest must be supplied together.")
         if self.status != "conflict" and self.run is None:
             raise ValueError("Disposition result requires the current run.")
+        if self.status != "conflict" and self.blockers:
+            raise ValueError("Only an independent-review conflict may carry blockers.")
         if self.status == "child_revision_required" and not self.requires_child_revision:
             raise ValueError("Child-revision status requires its explicit flag.")
+        if self.run is not None and (
+            self.research_packet_id != self.run.research_packet_id
+            or self.research_packet_digest != self.run.research_packet_digest
+        ):
+            raise ValueError("Independent disposition response must bind the exact packet.")
         return self
 
 
@@ -259,6 +323,8 @@ __all__ = [
     "ContentIndependentReviewRunResponse",
     "ContentIndependentReviewRunCollection",
     "ContentIndependentReviewRunSubmission",
+    "ContentIndependentReviewBlocker",
+    "ContentIndependentReviewBlockerCode",
     "ContentIndependentReviewStatus",
     "ContentIndependentReviewWriteStatus",
     "ContentIndependentFindingDispositionRequest",

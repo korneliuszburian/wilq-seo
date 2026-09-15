@@ -5113,6 +5113,8 @@ export const ContentSemanticReviewSchema = z.object({
   work_item_id: z.string().min(1),
   revision_id: z.string().min(1),
   revision_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  research_packet_id: z.string().trim().min(1).nullable().optional(),
+  research_packet_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   criteria_version: z.literal("wilq_semantic_content_review_v1"),
   codex_run_id: z.string().min(1),
   status: z.enum(["reviewable", "needs_changes"]),
@@ -5127,6 +5129,13 @@ export const ContentSemanticReviewSchema = z.object({
   human_review_required: z.literal(true),
   action_object_created: z.literal(false)
 }).superRefine((review, context) => {
+  if ((review.research_packet_id == null) !== (review.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "semantic review packet ID and digest must be supplied together"
+    });
+  }
   const expectedDimensions = ContentSemanticDimensionSchema.options;
   if (
     review.dimensions.some(
@@ -5190,7 +5199,11 @@ export const ContentSemanticReviewBlockerCodeSchema = z.enum([
   "semantic_scope_mismatch",
   "persistence_failed",
   "review_conflict",
-  "generation_in_progress"
+  "generation_in_progress",
+  "planning_digest_mismatch",
+  "research_packet_missing",
+  "research_packet_blocked",
+  "research_packet_conflict"
 ]);
 
 export const ContentSemanticReviewBlockerSchema = z.object({
@@ -5216,6 +5229,8 @@ export const ContentSemanticReviewResponseSchema = z.object({
   work_item_id: z.string().min(1),
   revision_id: z.string().nullable().optional(),
   revision_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
+  research_packet_id: z.string().trim().min(1).nullable().optional(),
+  research_packet_digest: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
   review: ContentSemanticReviewSchema.nullable().optional(),
   run_id: z.string().nullable().optional(),
   runtime: ContentCodexRuntimeTraceSchema,
@@ -5225,6 +5240,13 @@ export const ContentSemanticReviewResponseSchema = z.object({
   human_review_required: z.literal(true),
   action_object_created: z.literal(false)
 }).superRefine((response, context) => {
+  if ((response.research_packet_id == null) !== (response.research_packet_digest == null)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["research_packet_id"],
+      message: "semantic response packet ID and digest must be supplied together"
+    });
+  }
   const readable = ["created", "idempotent", "ready", "stale"].includes(response.status);
   if (readable && (!response.review || response.blockers.length > 0)) {
     context.addIssue({
@@ -5249,7 +5271,9 @@ export const ContentSemanticReviewResponseSchema = z.object({
     (response.work_item_id !== response.review.work_item_id ||
       response.revision_id !== response.review.revision_id ||
       response.revision_digest !== response.review.revision_digest ||
-      response.run_id !== response.review.codex_run_id)
+      response.run_id !== response.review.codex_run_id ||
+      response.research_packet_id !== response.review.research_packet_id ||
+      response.research_packet_digest !== response.review.research_packet_digest)
   ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,

@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 from uuid import uuid4
 
-from wilq.content.quality.semantic_review_contracts import ContentSemanticReview
+from wilq.content.quality.review_packet_binding import (
+    ContentReviewBindingBlocker,
+    ContentReviewClaimToken,
+)
+from wilq.content.quality.semantic_review_contracts import (
+    ContentSemanticReview,
+    ContentSemanticReviewBlocker,
+)
 from wilq.content.workflow.documents.codex_revision_commit import (
     codex_completion_state,
     persist_codex_completion,
@@ -42,6 +50,378 @@ class SemanticReviewClaim:
     run: CodexRun | None = None
     review: ContentSemanticReview | None = None
     newly_claimed: bool = False
+    blocker: ContentSemanticReviewBlocker | None = None
+
+
+SemanticReviewClaimGuard = Callable[
+    [sqlite3.Connection], ContentSemanticReviewBlocker | None
+]
+
+
+def validate_content_review_claim_token(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken | None,
+) -> ContentReviewBindingBlocker | None:
+    if token is None:
+        return None
+    validators = (
+        _validate_claim_revision,
+        _validate_claim_proposal,
+        _validate_claim_packet,
+        _validate_claim_source_pack,
+        _validate_claim_identity,
+        _validate_claim_classification,
+        _validate_claim_source_facts,
+    )
+    for validator in validators:
+        blocker = validator(connection, token)
+        if blocker is not None:
+            return blocker
+    return None
+
+
+def _validate_claim_revision(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    row = _claim_json(
+        connection,
+        "SELECT payload_json FROM content_draft_revisions WHERE revision_id = ?",
+        (token.revision_id,),
+    )
+    expected = {
+        "work_item_id": token.work_item_id,
+        "revision_id": token.revision_id,
+        "content_digest": token.revision_digest,
+        "planning_digest": token.planning_digest,
+        "planning_input_digest": token.planning_input_digest,
+        "research_packet_id": token.packet_id,
+        "research_packet_digest": token.packet_digest,
+    }
+    if row is None or any(row.get(key) != value for key, value in expected.items()):
+        return _claim_blocker(
+            "stale_revision",
+            "Rewizja zmieniła się przed uruchomieniem review",
+            "Bieżąca rewizja nie odpowiada tokenowi preflight.",
+        )
+    return None
+
+
+def _validate_claim_proposal(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    row = _claim_json(
+        connection,
+        """
+        SELECT payload_json FROM content_planning_proposals
+        WHERE work_item_id = ? AND planning_input_digest = ?
+        ORDER BY proposal_version DESC LIMIT 1
+        """,
+        (token.work_item_id, token.planning_input_digest),
+    )
+    expected = {
+        "planning_digest": token.planning_digest,
+        "planning_input_digest": token.planning_input_digest,
+        "research_packet_id": token.packet_id,
+        "research_packet_digest": token.packet_digest,
+    }
+    if row is None or (
+        token.proposal_id is not None and row.get("proposal_id") != token.proposal_id
+    ) or any(row.get(key) != value for key, value in expected.items()):
+        return _claim_blocker(
+            "planning_digest_mismatch",
+            "Proposal zmienił się przed uruchomieniem review",
+            "Bieżący proposal nie odpowiada tokenowi preflight.",
+        )
+    return None
+
+
+def _validate_claim_packet(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    row = _claim_json(
+        connection,
+        "SELECT payload_json FROM content_research_packets WHERE packet_id = ?",
+        (token.packet_id,),
+    )
+    context = {} if row is None else row.get("context_receipt") or {}
+    expected = {
+        "packet_id": token.packet_id,
+        "packet_digest": token.packet_digest,
+        "status": "exact_current",
+        "current_work_item_id": token.work_item_id,
+        "source_pack_binding_id": token.source_pack_binding_id,
+        "source_pack_binding_digest": token.source_pack_binding_digest,
+        "identity_binding_id": token.identity_binding_id,
+        "identity_binding_digest": token.identity_binding_digest,
+        "source_fact_registry_digest": token.source_fact_registry_digest,
+        "source_facts_digest": token.source_facts_digest,
+    }
+    if row is None or any(row.get(key) != value for key, value in expected.items()) or (
+        token.current_packet_status not in {None, "current"}
+        or (
+            token.current_source_pack_binding_id is not None
+            and token.current_source_pack_binding_id != token.source_pack_binding_id
+        )
+        or (
+            token.current_source_pack_binding_digest is not None
+            and token.current_source_pack_binding_digest != token.source_pack_binding_digest
+        )
+        or (
+            token.current_identity_binding_id is not None
+            and token.current_identity_binding_id != token.identity_binding_id
+        )
+        or (
+            token.current_identity_binding_digest is not None
+            and token.current_identity_binding_digest != token.identity_binding_digest
+        )
+        or context.get("classification_run_id") != token.classification_run_id
+        or context.get("classification_run_digest") != token.classification_run_digest
+    ):
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Research packet nie jest aktualny",
+            "Bieżący packet nie odpowiada tokenowi preflight.",
+        )
+    return None
+
+
+def _validate_claim_source_pack(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    row = _claim_row(
+        connection,
+        """
+        SELECT binding_id, binding_digest, identity_binding_id,
+               identity_binding_digest, current_work_item_id, source_facts_digest,
+               payload_json, status
+        FROM content_source_pack_bindings WHERE binding_id = ?
+        """,
+        (token.source_pack_binding_id,),
+    )
+    latest = _claim_row(
+        connection,
+        """
+        SELECT binding_id, binding_digest, source_facts_digest
+        FROM content_source_pack_bindings
+        WHERE current_work_item_id = ?
+        ORDER BY recorded_at DESC, binding_id DESC LIMIT 1
+        """,
+        (token.work_item_id,),
+    )
+    expected = {
+        "binding_id": token.source_pack_binding_id,
+        "binding_digest": token.source_pack_binding_digest,
+        "identity_binding_id": token.identity_binding_id,
+        "identity_binding_digest": token.identity_binding_digest,
+        "current_work_item_id": token.work_item_id,
+        "status": "exact_current",
+    }
+    if (
+        row is None
+        or latest is None
+        or any(row.get(key) != value for key, value in expected.items())
+        or (
+        latest.get("binding_id")
+        != (token.current_source_pack_binding_id or token.source_pack_binding_id)
+        or latest.get("binding_digest")
+        != (token.current_source_pack_binding_digest or token.source_pack_binding_digest)
+        )
+    ):
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Source pack zmienił się przed uruchomieniem review",
+            "Latest source-pack binding nie odpowiada packet tokenowi.",
+        )
+    return None
+
+
+def _validate_claim_identity(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    row = _claim_row(
+        connection,
+        """
+        SELECT binding_id, binding_digest, current_work_item_id,
+               classification_run_id, classification_run_digest,
+               classification_source_row_digest, status
+        FROM content_delivery_identity_bindings WHERE binding_id = ?
+        """,
+        (token.identity_binding_id,),
+    )
+    latest = _claim_row(
+        connection,
+        """
+        SELECT binding_id, binding_digest FROM content_delivery_identity_bindings
+        WHERE current_work_item_id = ?
+        ORDER BY recorded_at DESC, binding_id DESC LIMIT 1
+        """,
+        (token.work_item_id,),
+    )
+    expected = {
+        "binding_id": token.identity_binding_id,
+        "binding_digest": token.identity_binding_digest,
+        "current_work_item_id": token.work_item_id,
+        "classification_run_id": token.classification_run_id,
+        "classification_run_digest": token.classification_run_digest,
+        "classification_source_row_digest": token.classification_source_row_digest,
+        "status": "exact_current",
+    }
+    if (
+        row is None
+        or latest is None
+        or any(row.get(key) != value for key, value in expected.items())
+        or (
+        latest.get("binding_id")
+        != (token.current_identity_binding_id or token.identity_binding_id)
+        or latest.get("binding_digest")
+        != (token.current_identity_binding_digest or token.identity_binding_digest)
+        )
+    ):
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Identity binding zmienił się przed uruchomieniem review",
+            "Latest delivery identity nie odpowiada packet tokenowi.",
+        )
+    return None
+
+
+def _validate_claim_classification(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    if token.classification_run_id is None:
+        return None
+    row = _claim_row(
+        connection,
+        """
+        SELECT run_id, run_digest, payload_json
+        FROM content_production_classifications WHERE run_id = ?
+        """,
+        (token.classification_run_id,),
+    )
+    latest = _claim_row(
+        connection,
+        """
+        SELECT run_id, run_digest FROM content_production_classifications
+        ORDER BY recorded_at DESC, rowid DESC LIMIT 1
+        """,
+        (),
+    )
+    if row is None or latest is None or row.get("run_digest") != token.classification_run_digest:
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Classification zmieniła się przed uruchomieniem review",
+            "Bieżąca klasyfikacja nie odpowiada context receipt packetu.",
+        )
+    rows = _json_value(row.get("payload_json"), "rows")
+    current = next(
+        (item for item in rows if item.get("current_work_item_id") == token.work_item_id),
+        None,
+    )
+    if latest.get("run_id") != token.classification_run_id or latest.get(
+        "run_digest"
+    ) != token.classification_run_digest or (
+        current is not None
+        and current.get("source_packet_row_digest") != token.classification_source_row_digest
+    ):
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Classification zmieniła się przed uruchomieniem review",
+            "Bieżący classification row nie odpowiada exact context receipt.",
+        )
+    return None
+
+
+def _validate_claim_source_facts(
+    connection: sqlite3.Connection,
+    token: ContentReviewClaimToken,
+) -> ContentReviewBindingBlocker | None:
+    if token.source_fact_receipt_id is None:
+        return None
+    row = _claim_row(
+        connection,
+        """
+        SELECT receipt_id, receipt_digest, payload_json
+        FROM content_source_fact_authority_receipts
+        WHERE receipt_id = ? AND identity_binding_id = ? AND current_work_item_id = ?
+        """,
+        (token.source_fact_receipt_id, token.identity_binding_id, token.work_item_id),
+    )
+    latest = _claim_row(
+        connection,
+        """
+        SELECT receipt_id, receipt_digest FROM content_source_fact_authority_receipts
+        WHERE identity_binding_id = ? AND current_work_item_id = ?
+        ORDER BY rowid DESC LIMIT 1
+        """,
+        (token.identity_binding_id, token.work_item_id),
+    )
+    payload = {} if row is None else _json_value(row.get("payload_json"))
+    snapshot = payload.get("authority_snapshot") or {}
+    if row is None or latest is None or (
+        row.get("receipt_digest") != token.source_fact_receipt_digest
+        or latest.get("receipt_id") != token.source_fact_receipt_id
+        or latest.get("receipt_digest") != token.source_fact_receipt_digest
+        or snapshot.get("context_digest") != token.source_fact_snapshot_digest
+        or snapshot.get("source_fact_provenance_digest") != token.source_fact_provenance_digest
+    ):
+        return _claim_blocker(
+            "research_packet_conflict",
+            "Source-fact authority zmieniła się przed uruchomieniem review",
+            "Latest source-fact receipt nie odpowiada exact context receipt.",
+        )
+    return None
+
+
+def _claim_row(
+    connection: sqlite3.Connection,
+    query: str,
+    parameters: tuple[object, ...],
+) -> dict[str, Any] | None:
+    try:
+        row = connection.execute(query, parameters).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    return None if row is None else dict(row)
+
+
+def _claim_json(
+    connection: sqlite3.Connection,
+    query: str,
+    parameters: tuple[object, ...],
+) -> dict[str, Any] | None:
+    row = _claim_row(connection, query, parameters)
+    return None if row is None else _json_value(row.get("payload_json"))
+
+
+def _json_value(payload: object, key: str | None = None) -> Any:
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except (TypeError, ValueError):
+            payload = None
+    if not isinstance(payload, dict):
+        return [] if key == "rows" else {}
+    value = payload if key is None else payload.get(key, [])
+    return value if isinstance(value, (dict, list)) else {}
+
+
+def _claim_blocker(
+    code: str,
+    label: str,
+    reason: str,
+) -> ContentReviewBindingBlocker:
+    return ContentReviewBindingBlocker(
+        code=code,
+        label=label,
+        reason=reason,
+        next_step="Odśwież workspace i uruchom review dla bieżącej exact rewizji.",
+    )
 
 
 def content_semantic_review_store() -> ContentSemanticReviewStore:
@@ -178,6 +558,7 @@ class ContentSemanticReviewStore:
         evidence_ids: list[str],
         planning_input_digest: str | None,
         timeout_seconds: float,
+        claim_guard: SemanticReviewClaimGuard | None = None,
     ) -> SemanticReviewClaim:
         """Atomically claim one active semantic run for an exact revision."""
         from wilq.storage.local_state import LocalStateStore
@@ -185,6 +566,10 @@ class ContentSemanticReviewStore:
         LocalStateStore(self.path).status()
         with self._write_connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            if claim_guard is not None:
+                blocker = claim_guard(connection)
+                if blocker is not None:
+                    return SemanticReviewClaim(blocker=blocker)
             review_row = _exact_review_row(
                 connection, work_item_id, revision_id, revision_digest
             )
@@ -348,4 +733,5 @@ __all__ = [
     "SemanticReviewClaim",
     "SemanticReviewStorageActivationRequired",
     "content_semantic_review_store",
+    "validate_content_review_claim_token",
 ]

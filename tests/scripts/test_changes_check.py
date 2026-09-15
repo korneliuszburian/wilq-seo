@@ -45,6 +45,7 @@ CURRENT_DISPOSITION_CONTRACT = (
 SOURCE_FACT_SOURCE_PACK_CONTRACT = (
     "source-fact-source-pack:exact-reviewed-row-consumption-red->green"
 )
+CONTENT_REVIEW_CONTRACT = "content-review:exact-packet-revision-red->green"
 INVENTORY_CLASSIFICATION_PROOF = (
     "scripts/test.sh",
     "tests/content/test_content_production_classification_boundaries.py::test_parser_accepts_signed_blocked_historical_protection_without_reuse",
@@ -78,6 +79,17 @@ SOURCE_FACT_SOURCE_PACK_PROOF = (
     "tests/content/test_source_pack_binding_api.py",
     "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
     "tests/api_contracts/test_redaction_contracts.py",
+)
+CONTENT_REVIEW_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_packet_bound_reviews.py",
+    "tests/content/test_packet_bound_review_public_api.py",
+    "tests/content/test_packet_bound_review_races.py",
+    "tests/content/test_semantic_review_refresh_binding.py",
+    "tests/content/test_semantic_content_review_api.py::test_existing_exact_review_wins_over_retry_preflight_and_polling",
+    "tests/content/test_independent_review_runs.py::test_api_records_run_and_critical_disposition",
+    "tests/content/test_revision_review_evidence.py",
+    "tests/content/test_semantic_review_polling_read_path.py",
 )
 
 
@@ -320,6 +332,33 @@ def test_changes_check_maps_source_fact_source_pack_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [SOURCE_FACT_SOURCE_PACK_PROOF]
+
+
+def test_changes_check_maps_content_review_to_exact_packet_revision_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="wilq/content/quality/review_packet_binding.py",
+        message=(
+            "feat: mapped content review proof\n\n"
+            f"Change-contract: {CONTENT_REVIEW_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    assert result == 0
+    assert calls == [CONTENT_REVIEW_PROOF]
 
 
 @pytest.mark.parametrize("proof_ok, expected_returncode", [(True, 0), (False, 1)])

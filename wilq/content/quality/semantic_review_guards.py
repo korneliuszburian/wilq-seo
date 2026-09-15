@@ -11,7 +11,12 @@ from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import revision_readability_issues
 from wilq.content.quality.section_heading_index import build_section_heading_index
-from wilq.content.quality.semantic_review_contracts import ContentSemanticDimension
+from wilq.content.quality.semantic_inputs import SemanticInputs
+from wilq.content.quality.semantic_review_contracts import (
+    ContentSemanticDimension,
+    ContentSemanticFindingOutput,
+    ContentSemanticReviewModelOutput,
+)
 from wilq.content.quality.working_note import contains_working_note
 from wilq.content.regulatory.policy import ContentRegulatoryRequirementCoverage
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -308,8 +313,143 @@ def repetition_quality_issues(
     return issues
 
 
+def apply_deterministic_quality_guards(
+    inputs: SemanticInputs,
+    output: ContentSemanticReviewModelOutput,
+) -> ContentSemanticReviewModelOutput:
+    """Add server-owned quality findings to an advisory model result."""
+
+    issues: list[tuple[ContentSemanticDimension, str, str, list[str]]] = []
+    if inputs.proposal.cta_blocks and not inputs.revision.cta_blocks:
+        issues.append(
+            (
+                "conversion_clarity",
+                "cta_blocks",
+                "Brakuje wymaganych bloków CTA z zatwierdzonego planu.",
+                [],
+            )
+        )
+    section_bodies = {
+        str(section.section_id): section.body_markdown.strip().casefold()
+        for section in inputs.revision.sections
+    }
+    issues.extend(
+        regulatory_quality_issues(
+            revision=inputs.revision,
+            planning_input=inputs.planning_input,
+            proposal=inputs.proposal,
+        )
+    )
+    issues.extend((*issue, []) for issue in repetition_quality_issues(section_bodies))
+    issues.extend((*issue, []) for issue in readability_quality_issues(revision=inputs.revision))
+    grouped: dict[ContentSemanticDimension, tuple[list[str], list[str], list[str]]] = {}
+    for dimension, target, reason, evidence_ids in issues:
+        targets, reasons, grouped_evidence_ids = grouped.get(dimension, ([], [], []))
+        if target not in targets:
+            targets.append(target)
+        if reason not in reasons:
+            reasons.append(reason)
+        grouped_evidence_ids = list(dict.fromkeys([*grouped_evidence_ids, *evidence_ids]))
+        grouped[dimension] = (targets, reasons, grouped_evidence_ids)
+    existing = {finding.dimension for finding in output.findings}
+    dimensions = list(output.dimensions)
+    findings = list(output.findings)
+    changed = False
+    for dimension, (targets, reasons, evidence_ids) in grouped.items():
+        reason = " ".join(reasons)
+        if dimension in existing:
+            for index, finding in enumerate(findings):
+                if finding.dimension == dimension:
+                    findings[index] = finding.model_copy(
+                        update={
+                            "affected_targets": targets,
+                            "reason": reason,
+                            "instruction": "Popraw wskazany problem i uruchom review ponownie.",
+                            "evidence_ids": list(
+                                dict.fromkeys([*finding.evidence_ids, *evidence_ids])
+                            ),
+                        }
+                    )
+                    break
+            for index, assessment in enumerate(dimensions):
+                if assessment.dimension == dimension:
+                    dimensions[index] = assessment.model_copy(
+                        update={
+                            "status": "needs_changes",
+                            "affected_targets": targets,
+                            "reason": reason,
+                        }
+                    )
+                    changed = True
+                    break
+            continue
+        existing.add(dimension)
+        for index, assessment in enumerate(dimensions):
+            if assessment.dimension == dimension:
+                dimensions[index] = assessment.model_copy(
+                    update={
+                        "status": "needs_changes",
+                        "affected_targets": targets,
+                        "reason": reason,
+                    }
+                )
+                changed = True
+                break
+        findings.append(
+            ContentSemanticFindingOutput(
+                dimension=dimension,
+                severity=(
+                    "high" if dimension in {"conversion_clarity", "search_intent_fit"} else "medium"
+                ),
+                label="Automatyczna kontrola jakości",
+                reason=reason,
+                instruction="Popraw wskazany problem i uruchom review ponownie.",
+                affected_targets=targets,
+                evidence_ids=evidence_ids,
+            )
+        )
+    if not issues or not changed:
+        return output
+    return output.model_copy(update={"dimensions": dimensions, "findings": findings})
+
+
+def review_scope_errors(
+    revision: ContentDraftRevision,
+    output: ContentSemanticReviewModelOutput,
+) -> list[str]:
+    """Reject model targets and evidence outside the exact revision."""
+
+    allowed_targets = {
+        "page_assets",
+        "faq",
+        "cta_blocks",
+        "internal_links",
+        "whole_document",
+        *(str(item.section_id) for item in revision.sections),
+    }
+    allowed_evidence = set(_revision_evidence_ids(revision))
+    errors: list[str] = []
+    for dimension in output.dimensions:
+        if not set(dimension.affected_targets).issubset(allowed_targets):
+            errors.append(f"dimension_target:{dimension.dimension}")
+    finding_dimensions = {item.dimension for item in output.findings}
+    needs_change_dimensions = {
+        item.dimension for item in output.dimensions if item.status == "needs_changes"
+    }
+    if finding_dimensions != needs_change_dimensions:
+        errors.append("dimension_finding_consistency")
+    for finding in output.findings:
+        if not set(finding.affected_targets).issubset(allowed_targets):
+            errors.append(f"finding_target:{finding.dimension}")
+        if not set(finding.evidence_ids).issubset(allowed_evidence):
+            errors.append(f"finding_evidence:{finding.dimension}")
+    return list(dict.fromkeys(errors))
+
+
 __all__ = [
+    "apply_deterministic_quality_guards",
     "regulatory_quality_issues",
     "repetition_quality_issues",
     "readability_quality_issues",
+    "review_scope_errors",
 ]

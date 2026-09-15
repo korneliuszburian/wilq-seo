@@ -59,6 +59,10 @@ ContentSemanticBlockerCode = Literal[
     "persistence_failed",
     "review_conflict",
     "generation_in_progress",
+    "planning_digest_mismatch",
+    "research_packet_missing",
+    "research_packet_blocked",
+    "research_packet_conflict",
 ]
 
 
@@ -143,6 +147,8 @@ class ContentSemanticReview(BaseModel):
     work_item_id: str = Field(min_length=1)
     revision_id: str = Field(min_length=1)
     revision_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     criteria_version: ContentSemanticCriteriaVersion = "wilq_semantic_content_review_v1"
     codex_run_id: str = Field(min_length=1)
     status: ContentSemanticStatus
@@ -162,6 +168,8 @@ class ContentSemanticReview(BaseModel):
 
     @model_validator(mode="after")
     def require_advisory_status(self) -> ContentSemanticReview:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Semantic review packet ID and digest must be supplied together.")
         finding_ids = [item.finding_id.strip() for item in self.findings]
         if len(finding_ids) != len(set(finding_ids)) or any(not item for item in finding_ids):
             raise ValueError("Semantic finding IDs must be visible and unique.")
@@ -188,6 +196,8 @@ class ContentSemanticReviewResponse(BaseModel):
     work_item_id: str = Field(min_length=1)
     revision_id: str | None = None
     revision_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     review: ContentSemanticReview | None = None
     run_id: str | None = None
     runtime: ContentCodexRuntimeTrace = Field(
@@ -201,6 +211,8 @@ class ContentSemanticReviewResponse(BaseModel):
 
     @model_validator(mode="after")
     def require_status_payload(self) -> ContentSemanticReviewResponse:
+        if (self.research_packet_id is None) != (self.research_packet_digest is None):
+            raise ValueError("Semantic review packet ID and digest must be supplied together.")
         if self.status in {"created", "idempotent", "ready", "stale"}:
             if self.review is None or self.blockers:
                 raise ValueError("Readable semantic-review status requires one review.")
@@ -217,6 +229,8 @@ class ContentSemanticReviewResponse(BaseModel):
             or self.revision_id != self.review.revision_id
             or self.revision_digest != self.review.revision_digest
             or self.run_id != self.review.codex_run_id
+            or self.research_packet_id != self.review.research_packet_id
+            or self.research_packet_digest != self.review.research_packet_digest
         ):
             raise ValueError("Semantic-review response must bind the exact embedded review.")
         return self

@@ -8,12 +8,14 @@ from fastapi.responses import JSONResponse
 from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
 from wilq.codex.app_server import StdioCodexAppServerClient
 from wilq.content.quality import semantic_review_queue
+from wilq.content.quality.review_packet_binding import content_review_snapshot_is_packet_bound
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
 )
 from wilq.content.quality.semantic_review_service import (
     generate_content_semantic_review,
+    preflight_content_semantic_review,
     read_content_semantic_review,
 )
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
@@ -36,11 +38,6 @@ def register_content_semantic_review_routes(
     def content_revision_semantic_review(
         work_item_id: str, revision_id: str
     ) -> ContentSemanticReviewResponse:
-        exact_review = semantic_review_queue.read_exact_review_without_snapshot(
-            work_item_id, revision_id
-        )
-        if exact_review is not None:
-            return exact_review
         latest_run = semantic_review_queue.latest_semantic_run(work_item_id, revision_id)
         if latest_run is not None and getattr(latest_run, "error", None) == "runtime_blocked":
             latest_run = None
@@ -53,17 +50,36 @@ def register_content_semantic_review_routes(
                 revision_id,
                 None if revision is None else revision.content_digest,
                 latest_run.id,
+                research_packet_id=(
+                    None if revision is None else getattr(revision, "research_packet_id", None)
+                ),
+                research_packet_digest=(
+                    None
+                    if revision is None
+                    else getattr(revision, "research_packet_digest", None)
+                ),
             )
+        exact_review = semantic_review_queue.read_exact_review_without_snapshot(
+            work_item_id, revision_id
+        )
+        if exact_review is not None:
+            return exact_review
         snapshot = snapshot_loader(work_item_id)
-        if latest_run is not None and latest_run.status in {"failed", "blocked"}:
-            revision = snapshot.revision_workspace.latest_revision
-            if revision is not None and revision.revision_id == revision_id:
-                return semantic_review_queue.terminal_run_response(
-                    work_item_id=work_item_id,
-                    revision_id=revision_id,
-                    revision_digest=revision.content_digest,
-                    run=latest_run,
-                )
+        revision = snapshot.revision_workspace.latest_revision
+        if (
+            latest_run is not None
+            and latest_run.status in {"failed", "blocked"}
+            and revision is not None
+            and revision.revision_id == revision_id
+        ):
+            return semantic_review_queue.terminal_run_response(
+                work_item_id=work_item_id,
+                revision_id=revision_id,
+                revision_digest=revision.content_digest,
+                run=latest_run,
+                research_packet_id=getattr(revision, "research_packet_id", None),
+                research_packet_digest=getattr(revision, "research_packet_digest", None),
+            )
         return read_content_semantic_review(
             snapshot=snapshot,
             revision_id=revision_id,
@@ -105,6 +121,7 @@ def register_content_semantic_review_routes(
             client=client,
             store=content_semantic_review_store(),
             run_store=local_state_store(),
+            snapshot_loader=snapshot_loader,
         )
         if result.status == "conflict":
             return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
@@ -122,8 +139,17 @@ def _handle_exact_semantic_post(
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> ContentSemanticReviewResponse | JSONResponse:
     review_store = content_semantic_review_store()
+    packet_bound = content_review_snapshot_is_packet_bound(snapshot)
     existing = review_store.for_revision(work_item_id, revision_id, revision.content_digest)
     if existing is not None:
+        if packet_bound:
+            checked = read_content_semantic_review(
+                snapshot=snapshot,
+                revision_id=revision_id,
+                store=review_store,
+            )
+            if checked.status in {"blocked", "failed", "conflict"}:
+                return JSONResponse(status_code=409, content=checked.model_dump(mode="json"))
         return semantic_review_queue.existing_review_response(
             work_item_id,
             revision_id,
@@ -139,7 +165,23 @@ def _handle_exact_semantic_post(
             client=client,
             store=review_store,
             run_store=local_state_store(),
+            snapshot_loader=snapshot_loader,
         )
+    if packet_bound:
+        preflight = preflight_content_semantic_review(
+            snapshot=snapshot,
+            revision_id=revision_id,
+            request=request,
+            store=review_store,
+            snapshot_loader=snapshot_loader,
+        )
+        if isinstance(preflight, ContentSemanticReviewResponse):
+            if preflight.status == "conflict":
+                return JSONResponse(
+                    status_code=409,
+                    content=preflight.model_dump(mode="json"),
+                )
+            return preflight
     return semantic_review_queue.queue_semantic_review(
         work_item_id=work_item_id,
         revision_id=revision_id,

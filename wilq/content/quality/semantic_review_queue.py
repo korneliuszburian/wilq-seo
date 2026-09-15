@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -15,6 +16,13 @@ from wilq.codex.app_server import (
     StdioCodexAppServerClient,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.quality.review_packet_binding import (
+    ContentReviewInputResolution,
+    claim_token_for_review_inputs,
+    content_review_revision_is_packet_bound,
+    content_review_snapshot_is_packet_bound,
+)
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticBlockerCode,
     ContentSemanticReview,
@@ -22,8 +30,21 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
 )
-from wilq.content.quality.semantic_review_service import generate_content_semantic_review
-from wilq.content.quality.semantic_review_store import content_semantic_review_store
+from wilq.content.quality.semantic_review_packet import (
+    semantic_binding_blocker,
+    semantic_claim_blocker_response,
+    semantic_inputs_match_revision,
+    semantic_queue_revalidation_response,
+)
+from wilq.content.quality.semantic_review_service import (
+    generate_content_semantic_review,
+    preflight_content_semantic_review,
+)
+from wilq.content.quality.semantic_review_store import (
+    SemanticReviewClaimGuard,
+    content_semantic_review_store,
+    validate_content_review_claim_token,
+)
 from wilq.content.quality.semantic_run_state import (
     effective_deadline,
     transition_codex_run_if_status,
@@ -129,6 +150,8 @@ def existing_review_response(
         work_item_id=work_item_id,
         revision_id=revision_id,
         revision_digest=revision_digest,
+        research_packet_id=review.research_packet_id,
+        research_packet_digest=review.research_packet_digest,
         review=review,
         run_id=review.codex_run_id,
         safe_next_step=review.safe_next_step,
@@ -146,8 +169,24 @@ def read_exact_review_without_snapshot(
     )
     if review is None:
         return None
+    # Packet-bound reviews must pass the current source-pack/identity/context
+    # projection before a read can claim that the review is ready.  The route
+    # will load the full snapshot and run the domain preflight when this fast
+    # path declines the result.
+    if content_review_revision_is_packet_bound(revision):
+        return None
+    try:
+        proposal = content_planning_proposal_store().latest(work_item_id)
+    except Exception:
+        return None
+    if content_review_revision_is_packet_bound(revision, proposal):
+        return None
     return existing_review_response(
-        work_item_id, revision_id, revision.content_digest, review, status="ready"
+        work_item_id,
+        revision_id,
+        revision.content_digest,
+        review,
+        status="ready",
     )
 
 
@@ -186,7 +225,22 @@ def queue_semantic_review(
     client: CodexAppServerClientProtocol,
     snapshot_loader: ContentSemanticSnapshotLoader,
 ) -> ContentSemanticReviewResponse:
-    claim = content_semantic_review_store().claim_run(
+    review_store = content_semantic_review_store()
+    claim_guard: SemanticReviewClaimGuard | None = None
+    if _is_packet_bound_revision(revision, snapshot_loader, work_item_id):
+        current_snapshot = snapshot_loader(work_item_id)
+        preflight = preflight_content_semantic_review(
+            snapshot=current_snapshot,
+            revision_id=revision_id,
+            request=request,
+            store=review_store,
+        )
+        if isinstance(preflight, ContentSemanticReviewResponse):
+            return preflight
+        if not semantic_inputs_match_revision(revision, preflight):
+            return semantic_queue_revalidation_response(revision, preflight)
+        claim_guard = _packet_claim_guard(preflight)
+    claim = review_store.claim_run(
         work_item_id=work_item_id,
         revision_id=revision_id,
         revision_digest=revision.content_digest,
@@ -196,15 +250,29 @@ def queue_semantic_review(
         evidence_ids=revision_evidence_ids(revision),
         planning_input_digest=revision.planning_input_digest,
         timeout_seconds=semantic_timeout_seconds(),
+        claim_guard=claim_guard,
     )
+    if claim.blocker is not None:
+        return semantic_claim_blocker_response(revision, claim.blocker)
     if claim.review is not None:
         return existing_review_response(
-            work_item_id, revision_id, revision.content_digest, claim.review, status="idempotent"
+            work_item_id,
+            revision_id,
+            revision.content_digest,
+            claim.review,
+            status="idempotent",
         )
     if claim.run is None:
         raise RuntimeError("semantic review claim did not return a run")
     if not claim.newly_claimed:
-        return generating_response(work_item_id, revision_id, revision.content_digest, claim.run.id)
+        return generating_response(
+            work_item_id,
+            revision_id,
+            revision.content_digest,
+            claim.run.id,
+            research_packet_id=getattr(revision, "research_packet_id", None),
+            research_packet_digest=getattr(revision, "research_packet_digest", None),
+        )
     _SEMANTIC_REVIEW_EXECUTOR.submit(
         run_queued_semantic_review,
         work_item_id,
@@ -214,17 +282,62 @@ def queue_semantic_review(
         claim.run.id,
         snapshot_loader,
     )
-    return generating_response(work_item_id, revision_id, revision.content_digest, claim.run.id)
+    return generating_response(
+        work_item_id,
+        revision_id,
+        revision.content_digest,
+        claim.run.id,
+        research_packet_id=getattr(revision, "research_packet_id", None),
+        research_packet_digest=getattr(revision, "research_packet_digest", None),
+    )
+
+
+def _is_packet_bound_revision(
+    revision: ContentDraftRevision,
+    snapshot_loader: ContentSemanticSnapshotLoader,
+    work_item_id: str,
+) -> bool:
+    """Keep the claim seam behind one fresh packet-bound preflight."""
+
+    if content_review_revision_is_packet_bound(revision):
+        return True
+    snapshot = snapshot_loader(work_item_id)
+    return content_review_snapshot_is_packet_bound(snapshot)
+
+
+def _packet_claim_guard(
+    initial: object,
+) -> SemanticReviewClaimGuard | None:
+    review_inputs = getattr(initial, "review_inputs", None)
+    token = None if review_inputs is None else claim_token_for_review_inputs(review_inputs)
+    if token is None:
+        return None
+
+    def guard(connection: sqlite3.Connection) -> ContentSemanticReviewBlocker | None:
+        blocker = validate_content_review_claim_token(connection, token)
+        if blocker is None:
+            return None
+        return semantic_binding_blocker(ContentReviewInputResolution(blocker=blocker))
+
+    return guard
 
 
 def generating_response(
-    work_item_id: str, revision_id: str, revision_digest: str | None, run_id: str
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str | None,
+    run_id: str,
+    *,
+    research_packet_id: str | None = None,
+    research_packet_digest: str | None = None,
 ) -> ContentSemanticReviewResponse:
     return ContentSemanticReviewResponse(
         status="generating",
         work_item_id=work_item_id,
         revision_id=revision_id,
         revision_digest=revision_digest,
+        research_packet_id=research_packet_id,
+        research_packet_digest=research_packet_digest,
         run_id=run_id,
         blockers=[
             ContentSemanticReviewBlocker(
@@ -250,7 +363,13 @@ def revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:
 
 
 def terminal_run_response(
-    *, work_item_id: str, revision_id: str, revision_digest: str, run: CodexRun
+    *,
+    work_item_id: str,
+    revision_id: str,
+    revision_digest: str,
+    run: CodexRun,
+    research_packet_id: str | None = None,
+    research_packet_digest: str | None = None,
 ) -> ContentSemanticReviewResponse:
     blocked = run.status == "blocked"
     code: ContentSemanticBlockerCode = "runtime_blocked" if blocked else "runtime_failed"
@@ -262,6 +381,8 @@ def terminal_run_response(
         work_item_id=work_item_id,
         revision_id=revision_id,
         revision_digest=revision_digest,
+        research_packet_id=research_packet_id,
+        research_packet_digest=research_packet_digest,
         run_id=run.id,
         runtime=ContentCodexRuntimeTrace(status=status),
         blockers=[
@@ -304,6 +425,7 @@ def run_queued_semantic_review(
             store=content_semantic_review_store(),
             run_store=local_state_store(),
             run_id=run_id,
+            snapshot_loader=snapshot_loader,
         )
         terminalize_queued_run_from_result(run_id, result)
     except Exception as error:

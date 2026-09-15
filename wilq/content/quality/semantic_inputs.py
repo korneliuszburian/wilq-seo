@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.quality.review_packet_binding import ContentReviewInputs
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
@@ -12,6 +13,7 @@ class SemanticInputs:
     revision: ContentDraftRevision
     planning_input: ContentPlanningInput
     proposal: ContentPlanningProposal
+    review_inputs: ContentReviewInputs | None = None
 
 
 def revision_evidence_ids(revision: ContentDraftRevision) -> list[str]:

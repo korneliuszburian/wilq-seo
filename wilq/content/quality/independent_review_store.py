@@ -24,7 +24,9 @@ class IndependentReviewStorageActivationRequired(RuntimeError):
 
 
 class IndependentReviewConflict(RuntimeError):
-    pass
+    def __init__(self, message: str, *, blocker: object | None = None) -> None:
+        super().__init__(message)
+        self.blocker = blocker
 
 
 class IndependentReviewNotFound(IndependentReviewConflict):
