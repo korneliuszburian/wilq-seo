@@ -168,7 +168,9 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "wilq/content/quality/review_packet_binding.py",
             )
             if key == ("content-review", "exact-packet-revision")
-            else tuple(entry.split("::", 1)[0] for entry in _test_selectors(proof))
+            else tuple(
+                dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof))
+            )
         ),
         expectation="red-green",
         allow_new_mapping=key in {

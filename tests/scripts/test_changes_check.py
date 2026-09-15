@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts import _change_contract_model as change_contract_model
 from scripts import _change_contract_observer as observer
 from scripts import _change_contract_snapshot as snapshot
 from scripts import check_change_contract
@@ -278,6 +279,26 @@ def test_changes_check_maps_inventory_classification_to_exact_focused_proof(
 
     assert result == 0
     assert calls == [INVENTORY_CLASSIFICATION_PROOF]
+
+
+def test_generic_mapping_observer_paths_are_unique_and_first_seen() -> None:
+    descriptor = change_contract_model.MAPPINGS[
+        ("inventory-classification", "exact-current-receipt-lineage")
+    ]
+
+    assert descriptor.selectors == INVENTORY_CLASSIFICATION_PROOF[1:]
+    assert descriptor.observer_paths == (
+        "tests/content/test_content_production_classification_boundaries.py",
+        "tests/content/test_current_blocked_classification.py",
+        "tests/content/test_inventory_catalog.py",
+        "tests/content/test_authoring_inventory_receipt.py",
+        "tests/content/test_authoring_inventory_receipt_store.py",
+        "tests/content/test_current_inventory_reconciliation.py",
+        "tests/content/test_inventory_journal_reconciliation.py",
+        "tests/storage/test_sqlite_schema_inventory.py",
+        "tests/content/test_production_registered_inventory_receipt.py",
+    )
+    assert len(descriptor.observer_paths) == len(set(descriptor.observer_paths))
 
 
 def test_changes_check_maps_current_disposition_to_exact_focused_proof(
