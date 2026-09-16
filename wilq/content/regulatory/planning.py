@@ -10,7 +10,14 @@ def regulatory_planning_source_facts(
     knowledge_card_ids: list[str],
     source_material_ids: list[str],
 ) -> list[ContentPlanningSourceFact]:
-    """Materialise exact official coverage into the model's source allowlist."""
+    """Materialise exact official coverage into the model's source allowlist.
+
+    Regulatory ``SourceFact`` records do not carry an approved material
+    binding.  Keep the compatibility argument for existing callers, but never
+    attach service-profile material IDs to an official fact by association.
+    """
+
+    del source_material_ids
 
     covered_by_fact = {
         source_fact_id: sorted(
@@ -30,7 +37,7 @@ def regulatory_planning_source_facts(
             evidence_ids=fact.evidence_ids,
             knowledge_card_ids=knowledge_card_ids,
             source_fact_ids=[fact.source_id],
-            source_material_ids=source_material_ids,
+            source_material_ids=[],
             regulatory_requirement_ids=covered_by_fact[fact.source_id],
         )
         for fact in coverage.source_facts

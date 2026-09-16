@@ -179,10 +179,13 @@ def generate_initial_full_draft(
     context_digest: str | None = None,
 ) -> ContentInitialDraftResponse:
     planning = getattr(snapshot, "planning_workspace", None)
-    if planning is None or getattr(planning.proposal, "goal", "refresh_existing") == "new_page":
-        prepared = _prepare_inputs(snapshot, request)
-    else:
+    if planning is not None and (
+        planning.proposal.research_packet_id is not None
+        or getattr(planning.proposal, "content_kind", "service") == "editorial"
+    ):
         prepared = _prepare_inputs(snapshot, request, workflow_store=workflow_store)
+    else:
+        prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
     if (proposal_id := prepared.proposal.proposal_id) is None:
@@ -354,7 +357,7 @@ def _prepare_draft_planning_input(
             blockers=[_planning_input_blocker(planning_result.blockers)],
         )
     planning_input = planning_result.planning_input
-    if workflow_store is None:
+    if workflow_store is None and proposal.content_kind != "editorial":
         return planning_input
     packet_blocker = _validate_research_packet(
         snapshot=snapshot,
@@ -383,7 +386,17 @@ def _planning_input_with_packet(
     packet = packet_loader(proposal.research_packet_id) if callable(packet_loader) else None
     if packet is None:
         return planning_input
-    return bind_research_packet_to_planning_input(planning_input, packet)
+    from wilq.content.knowledge.source_facts import ekologus_source_facts
+    from wilq.content.planning.source_pack_projection import (
+        project_selected_source_pack_facts,
+    )
+
+    projected_input = project_selected_source_pack_facts(
+        planning_input,
+        packet.approved_source_fact_ids,
+        ekologus_source_facts(),
+    )
+    return bind_research_packet_to_planning_input(projected_input, packet)
 
 
 def _validate_research_packet(
@@ -391,15 +404,29 @@ def _validate_research_packet(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
-    workflow_store: InitialDraftRevisionStore,
+    workflow_store: InitialDraftRevisionStore | None,
 ) -> ContentInitialDraftBlocker | None:
-    if proposal.goal == "new_page":
-        return None
     if proposal.research_packet_id is None or proposal.research_packet_digest is None:
-        return _research_packet_blocker(
-            "research_packet_missing",
-            "Initial draft wymaga server-owned research packetu.",
+        if proposal.content_kind == "editorial":
+            return _research_packet_blocker(
+                "research_packet_missing",
+                "Initial draft editorial wymaga server-owned research packetu.",
+            )
+        if workflow_store is None:
+            return None
+        list_source_packs = getattr(
+            workflow_store,
+            "list_content_source_pack_bindings",
+            None,
         )
+        if callable(list_source_packs) and list_source_packs(
+            current_work_item_id=planning_input.work_item_id
+        ):
+            return _research_packet_blocker(
+                "research_packet_missing",
+                "Initial draft wymaga server-owned research packetu.",
+            )
+        return None
     loader = getattr(workflow_store, "load_content_research_packet", None)
     if not callable(loader):
         return _research_packet_blocker(

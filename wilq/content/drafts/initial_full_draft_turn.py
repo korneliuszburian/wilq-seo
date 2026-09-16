@@ -24,12 +24,16 @@ from wilq.content.drafts.regulatory_repair import (
     regulatory_section_repair_modes,
 )
 from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_initial_draft_planning_input,
     compact_proposal,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.packet_model_projection import current_research_packet_for_model
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
@@ -43,6 +47,12 @@ def initial_full_draft_turn_request(
     generation_contract: StructuredDraftGenerationContract,
 ) -> CodexAppServerStructuredTurnRequest:
     packet = current_research_packet_for_model(planning_input)
+    if packet is not None:
+        planning_input = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
     allowed_source_fact_ids = None if packet is None else set(packet.approved_source_fact_ids)
     application_context = json.dumps(
         {
@@ -54,9 +64,7 @@ def initial_full_draft_turn_request(
             "research_packet_binding": _research_packet_binding(planning_input, proposal),
             "service_card_id": planning_input.confirmed_service_card_id,
             "regulatory_document_assertions": (
-                regulatory_turn_context.regulatory_document_assertion_context(
-                    planning_input
-                )
+                regulatory_turn_context.regulatory_document_assertion_context(planning_input)
             ),
             "scope_rules": {
                 "preserve_exact_document_structure": True,
@@ -129,6 +137,14 @@ def regulatory_assertion_repair_turn_request(
 ) -> CodexAppServerStructuredTurnRequest:
     """Make one bounded correction turn for deterministic regulatory omissions."""
 
+    packet = current_research_packet_for_model(planning_input)
+    if packet is not None:
+        planning_input = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
     )
@@ -142,7 +158,6 @@ def regulatory_assertion_repair_turn_request(
         set[str],
         {item["requirement_id"] for item in assertions},
     )
-    packet = current_research_packet_for_model(planning_input)
     source_facts = [
         {
             "summary": fact.extracted_fact,
@@ -151,9 +166,7 @@ def regulatory_assertion_repair_turn_request(
         for fact in regulatory_turn_context.approved_regulatory_source_facts(
             planning_input,
             requirement_ids,
-            allowed_source_fact_ids=(
-                None if packet is None else packet.approved_source_fact_ids
-            ),
+            allowed_source_fact_ids=(None if packet is None else packet.approved_source_fact_ids),
         )
     ]
     return CodexAppServerStructuredTurnRequest(

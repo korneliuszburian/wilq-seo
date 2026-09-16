@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, cast
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     bind_research_packet_to_planning_input,
@@ -13,6 +14,9 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
+)
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.research_packet import (
@@ -70,7 +74,27 @@ def bind_research_packet(
         )
     if packet is None:
         raise RuntimeError("Research packet binding returned no packet without a blocker.")
-    return bind_research_packet_to_planning_input(planning_input, packet), None
+    try:
+        projected_input = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+    except ValueError:
+        return None, _blocked_response(
+            planning_input=planning_input,
+            request=request,
+            packet=packet,
+            blocker=ContentResearchPacketBlocker(
+                seam="source_facts",
+                reason="source_fact_not_registered",
+                evidence_ids=packet.evidence_ids,
+                next_step_pl=(
+                    "Odśwież source-fact registry i source-pack względem bieżących faktów."
+                ),
+            ),
+        )
+    return bind_research_packet_to_planning_input(projected_input, packet), None
 
 
 def _packet_blocker(

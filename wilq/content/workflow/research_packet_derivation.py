@@ -14,6 +14,9 @@ from wilq.content.canonical.urls import (
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
@@ -54,8 +57,22 @@ def build_server_owned_research_packet_command(
             tuple(snapshot.preflight.item.evidence_ids),
             "Odśwież zaakceptowany brief przed packetem.",
         )
-    facts = _selected_facts(source_pack)
+    source_fact_registry = ekologus_source_facts()
+    facts = _selected_facts(source_pack, source_facts=source_fact_registry)
     if facts is None:
+        return _blocker(
+            "source_facts",
+            "source_fact_not_registered",
+            source_pack.evidence_ids,
+            "Odśwież source-fact registry i source-pack względem bieżących faktów.",
+        )
+    try:
+        projected_planning_input = project_selected_source_pack_facts(
+            planning_input,
+            source_pack.source_fact_ids,
+            source_fact_registry,
+        )
+    except ValueError:
         return _blocker(
             "source_facts",
             "source_fact_not_registered",
@@ -65,15 +82,15 @@ def build_server_owned_research_packet_command(
     evidence_ids = _packet_evidence_ids(
         source_pack=source_pack,
         identity=identity,
-        planning_input=planning_input,
+        planning_input=projected_planning_input,
         facts=facts,
         brief=brief,
     )
-    cta_destination = _cta_destination(snapshot, brief, planning_input)
-    internal_links = _internal_links(planning_input)
+    cta_destination = _cta_destination(snapshot, brief, projected_planning_input)
+    internal_links = _internal_links(projected_planning_input)
     context = _context_receipt(
         snapshot=snapshot,
-        planning_input=planning_input,
+        planning_input=projected_planning_input,
         source_pack=source_pack,
         identity=identity,
         facts=facts,
@@ -83,7 +100,7 @@ def build_server_owned_research_packet_command(
         **_evidence_partitions(
             source_pack=source_pack,
             identity=identity,
-            planning_input=planning_input,
+            planning_input=projected_planning_input,
             facts=facts,
             brief=brief,
         ),
@@ -96,18 +113,18 @@ def build_server_owned_research_packet_command(
         identity_binding_id=identity.binding_id,
         identity_binding_digest=identity.binding_digest,
         current_work_item_id=identity.current_work_item_id,
-        content_kind=planning_input.content_kind,
-        intent=planning_input.search_intent,
-        query_cluster=_query_cluster(planning_input),
+        content_kind=projected_planning_input.content_kind,
+        intent=projected_planning_input.search_intent,
+        query_cluster=_query_cluster(projected_planning_input),
         canonical_owner=identity.canonical_path,
-        target_audience=planning_input.target_reader,
-        buyer_problem=planning_input.buyer_problem,
-        buyer_trigger=planning_input.buyer_trigger,
+        target_audience=projected_planning_input.target_reader,
+        buyer_problem=projected_planning_input.buyer_problem,
+        buyer_trigger=projected_planning_input.buyer_trigger,
         approved_source_fact_ids=tuple(sorted(source_pack.source_fact_ids)),
         blocked_claims=blocked_claims,
         evidence_ids=evidence_ids,
         freshness=freshness,
-        legal_source_requirements=_legal_requirements(planning_input),
+        legal_source_requirements=_legal_requirements(projected_planning_input),
         cta_destination=cta_destination,
         internal_links=internal_links,
         context_receipt=context,
@@ -175,8 +192,15 @@ def _evidence_partitions(
     }
 
 
-def _selected_facts(source_pack: ContentSourcePackBinding) -> tuple[ContentSourceFact, ...] | None:
-    facts_by_id = {fact.source_id: fact for fact in ekologus_source_facts()}
+def _selected_facts(
+    source_pack: ContentSourcePackBinding,
+    *,
+    source_facts: tuple[ContentSourceFact, ...] | None = None,
+) -> tuple[ContentSourceFact, ...] | None:
+    facts_by_id = {
+        fact.source_id: fact
+        for fact in (ekologus_source_facts() if source_facts is None else source_facts)
+    }
     selected = tuple(facts_by_id.get(source_id) for source_id in source_pack.source_fact_ids)
     if any(fact is None for fact in selected):
         return None

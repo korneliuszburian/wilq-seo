@@ -149,6 +149,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_research_packet.py",
         "tests/content/test_packet_plan_draft_contracts.py",
         "tests/content/test_packet_plan_draft_http.py",
+        "tests/content/test_selected_source_pack_projection.py",
+        "tests/content/test_regulatory_planning_lineage.py",
+        "tests/content/test_initial_draft_editorial_packet_guard.py",
+        "tests/content/test_editorial_planning_pipeline.py",
     ),
     ("content-review", "exact-packet-revision"): (
         "scripts/test.sh",
@@ -183,6 +187,14 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "test_research_packet_cta_fallback_contract_is_exact_and_evidence_bound",
                 "tests/content/test_packet_plan_draft_change_contract.py::"
                 "test_research_packet_freshness_projection_contract_is_complete",
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_selected_source_pack_projection_is_exact_and_editorial_only",
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_bdo_profile_owns_the_editorial_canonical_path",
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_packet_context_partitions_use_the_projected_planning_input",
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_editorial_initial_draft_requires_a_current_research_packet",
             )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (

@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal, cast
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     bind_research_packet_to_planning_input,
@@ -17,6 +18,9 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.input_summary import content_planning_input_summary
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.refresh_preparation import (
     ContentRefreshPreparationAuthority,
@@ -62,9 +66,7 @@ def prepare_and_bind_research_packet(
             seam="source_pack_binding",
             reason="source_pack_binding_missing",
             evidence_ids=(),
-            next_step_pl=(
-                "Zapisz exact current source-pack binding przed przygotowaniem planu."
-            ),
+            next_step_pl=("Zapisz exact current source-pack binding przed przygotowaniem planu."),
         )
         return ContentResearchPacketRouteBinding(
             response=packet_blocked_response(
@@ -83,9 +85,13 @@ def prepare_and_bind_research_packet(
         source_pack_binding_id=request.source_pack_binding_id,
         expected_source_pack_binding_digest=request.expected_source_pack_binding_digest,
     )
-    if result.packet is not None and request.research_packet_id is not None and (
-        request.research_packet_id != result.packet.packet_id
-        or request.expected_research_packet_digest != result.packet.packet_digest
+    if (
+        result.packet is not None
+        and request.research_packet_id is not None
+        and (
+            request.research_packet_id != result.packet.packet_id
+            or request.expected_research_packet_digest != result.packet.packet_digest
+        )
     ):
         result = ContentResearchPacketPreparationResult.blocked_result(
             _packet_conflict_blocker(result),
@@ -103,7 +109,33 @@ def prepare_and_bind_research_packet(
             request=request,
         )
     packet = result.packet
-    bound_input = bind_research_packet_to_planning_input(planning_input, packet)
+    try:
+        projected_input = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+    except ValueError:
+        projection_blocker = ContentResearchPacketBlocker(
+            seam="source_facts",
+            reason="source_fact_not_registered",
+            evidence_ids=packet.evidence_ids,
+            next_step_pl=("Odśwież source-fact registry i source-pack względem bieżących faktów."),
+        )
+        return ContentResearchPacketRouteBinding(
+            response=packet_blocked_response(
+                work_item_id=work_item_id,
+                request=request,
+                planning_input=planning_input,
+                result=ContentResearchPacketPreparationResult.blocked_result(
+                    projection_blocker,
+                    packet=packet,
+                ),
+            ),
+            planning_input=None,
+            request=request,
+        )
+    bound_input = bind_research_packet_to_planning_input(projected_input, packet)
     bound_request = request.model_copy(
         update={
             "research_packet_id": packet.packet_id,

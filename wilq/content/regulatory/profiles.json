@@ -6,6 +6,9 @@
       "service_card_ids": [
         "ekologus_service_bdo_reporting"
       ],
+      "canonical_paths": [
+        "/bdo-co-musi-wiedziec-przedsiebiorca"
+      ],
       "official_source_hosts": [
         "bdo.mos.gov.pl"
       ],

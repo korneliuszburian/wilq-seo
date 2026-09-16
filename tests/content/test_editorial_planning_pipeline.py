@@ -118,8 +118,7 @@ def _assert_editorial_child_save(
         )
     )
     reviewed = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/draft-revisions/"
-        f"{revision['revision_id']}/review",
+        f"/api/content/work-items/{WORK_ITEM_ID}/draft-revisions/{revision['revision_id']}/review",
         json={
             "expected_revision_digest": revision["content_digest"],
             "reviewed_by": "wilku",
@@ -198,7 +197,7 @@ def _assert_v1_subject_compatibility(revision_payload: dict[str, Any]) -> None:
     assert is_current(v1_service, item_kind="ambiguous", service_id=service_id) is True
 
 
-def test_editorial_request_generates_persists_and_reads_without_service(
+def test_editorial_without_packet_is_blocked_before_generation(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
@@ -209,19 +208,6 @@ def test_editorial_request_generates_persists_and_reads_without_service(
     assert before.json()["content_kind"] == "editorial"
     assert before.json()["service_card_id"] is None
 
-    stale = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/planning-proposals",
-        json={
-            "content_kind": "editorial",
-            "service_card_id": None,
-            "expected_planning_input_digest": "0" * 64,
-            "requested_by": "wilku",
-        },
-    )
-    assert stale.status_code == 409
-    assert stale.json()["status"] == "stale"
-    assert stale.json()["content_kind"] == "editorial"
-
     response = client.post(
         f"/api/content/work-items/{WORK_ITEM_ID}/planning-proposals",
         json={
@@ -231,57 +217,16 @@ def test_editorial_request_generates_persists_and_reads_without_service(
             "requested_by": "wilku",
         },
     )
-    for _ in range(200):
-        if response.json().get("status") != "generating":
-            break
-        time.sleep(0.05)
-        response = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/planning-proposals")
-
-    assert response.status_code == 200
-    assert response.json()["status"] in {"ready", "idempotent"}, response.json().get("blockers")
-    assert response.json()["content_kind"] == "editorial"
-    assert response.json()["proposal"]["content_kind"] == "editorial"
-    assert response.json()["proposal"]["service_card_id"] is None
-    assert runtime.calls == 1
-
-    repeated = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/planning-proposals",
-        json={
-            "content_kind": "editorial",
-            "service_card_id": None,
-            "expected_planning_input_digest": before.json()["planning_input_digest"],
-            "requested_by": "wilku",
-        },
-    )
-    assert repeated.status_code == 200
-    assert repeated.json()["status"] == "idempotent"
-    assert repeated.json()["content_kind"] == "editorial"
-    assert runtime.calls == 1
-
-    proposal = response.json()["proposal"]
-    draft = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/initial-draft",
-        json={
-            "expected_proposal_id": proposal["proposal_id"],
-            "expected_planning_digest": proposal["planning_digest"],
-            "expected_planning_input_digest": proposal["planning_input_digest"],
-            "requested_by": "wilku",
-        },
-    )
-    for _ in range(200):
-        if draft.json().get("status") != "generating":
-            break
-        time.sleep(0.05)
-        draft = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/initial-draft")
-    assert draft.json()["status"] in {"created", "idempotent"}, draft.json()["blockers"][0][
-        "source_codes"
-    ]
-    assert draft.json()["revision"] is not None
-    _assert_v1_subject_compatibility(draft.json()["revision"])
-    _assert_editorial_child_save(client, monkeypatch, draft.json()["revision"])
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["content_kind"] == "editorial"
+    assert body["service_card_id"] is None
+    assert body["blockers"][0]["code"] == "research_packet_missing"
+    assert runtime.calls == 0
 
 
-def test_editorial_terminal_failure_preserves_content_kind(
+def test_editorial_packetless_failure_flag_never_reaches_model(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
@@ -304,6 +249,9 @@ def test_editorial_terminal_failure_preserves_content_kind(
         time.sleep(0.05)
         response = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/planning-proposals")
 
-    assert response.json()["status"] == "failed"
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
     assert response.json()["content_kind"] == "editorial"
     assert response.json()["service_card_id"] is None
+    assert response.json()["blockers"][0]["code"] == "research_packet_missing"
+    assert runtime.calls == 0

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.workflow.research_packet import ContentResearchPacket
 
 
@@ -12,7 +16,12 @@ def project_planning_input_for_packet(
 ) -> dict[str, object]:
     """Expose only source facts, queries and evidence authorized by the packet."""
 
-    payload = planning_input.model_dump(mode="json", warnings="none")
+    projected_input = project_selected_source_pack_facts(
+        planning_input,
+        packet.approved_source_fact_ids,
+        ekologus_source_facts(),
+    )
+    payload = projected_input.model_dump(mode="json", warnings="none")
     allowed_facts = set(packet.approved_source_fact_ids)
     allowed_evidence = set(packet.evidence_ids)
     payload["evidence_ids"] = sorted(
@@ -29,9 +38,7 @@ def project_planning_input_for_packet(
     payload["query_portfolio"] = _authorized_queries(
         payload.get("query_portfolio"), packet.query_cluster, allowed_evidence
     )
-    payload["claim_ledger"] = _authorized_claims(
-        payload.get("claim_ledger"), allowed_evidence
-    )
+    payload["claim_ledger"] = _authorized_claims(payload.get("claim_ledger"), allowed_evidence)
     payload["internal_link_candidates"] = _authorized_links(
         payload.get("internal_link_candidates"), packet, allowed_evidence
     )
@@ -71,9 +78,7 @@ def _authorized_source_facts(
     for raw in value:
         if not isinstance(raw, dict):
             continue
-        fact_ids = set(_string_list(raw.get("source_fact_ids"))) or {
-            str(raw.get("fact_id", ""))
-        }
+        fact_ids = set(_string_list(raw.get("source_fact_ids"))) or {str(raw.get("fact_id", ""))}
         authorized_fact_ids = sorted(fact_ids.intersection(allowed_facts))
         if not authorized_fact_ids:
             continue
@@ -106,11 +111,13 @@ def _authorized_provenance(
         for raw in value
         if isinstance(raw, dict)
         and str(raw.get("source_fact_id", "")) in allowed_facts
-        and (evidence_ids := [
-            evidence_id
-            for evidence_id in _string_list(raw.get("evidence_ids"))
-            if evidence_id in allowed_evidence
-        ])
+        and (
+            evidence_ids := [
+                evidence_id
+                for evidence_id in _string_list(raw.get("evidence_ids"))
+                if evidence_id in allowed_evidence
+            ]
+        )
     ]
 
 
@@ -124,11 +131,14 @@ def _authorized_queries(
     cluster = set(query_cluster)
     return {
         key: [
-            {**row, "evidence_ids": [
-                evidence_id
-                for evidence_id in _string_list(row.get("evidence_ids"))
-                if evidence_id in allowed_evidence
-            ]}
+            {
+                **row,
+                "evidence_ids": [
+                    evidence_id
+                    for evidence_id in _string_list(row.get("evidence_ids"))
+                    if evidence_id in allowed_evidence
+                ],
+            }
             for row in rows
             if isinstance(row, dict)
             and str(row.get("term", "")).strip() in cluster
@@ -224,11 +234,7 @@ def _trim_model_evidence_fields(
 
 
 def _trim_evidence_ids(value: object, allowed_evidence: set[str]) -> list[str]:
-    return [
-        evidence_id
-        for evidence_id in _string_list(value)
-        if evidence_id in allowed_evidence
-    ]
+    return [evidence_id for evidence_id in _string_list(value) if evidence_id in allowed_evidence]
 
 
 def _authorized_links(
@@ -288,11 +294,15 @@ def _restrict_regulatory_coverage(
         ]
     source_facts = coverage.get("source_facts")
     if isinstance(source_facts, list):
-        requirement_ids = {
-            str(row.get("requirement_id"))
-            for row in rows
-            if isinstance(row, dict) and row.get("requirement_id")
-        } if isinstance(rows, list) else set()
+        requirement_ids = (
+            {
+                str(row.get("requirement_id"))
+                for row in rows
+                if isinstance(row, dict) and row.get("requirement_id")
+            }
+            if isinstance(rows, list)
+            else set()
+        )
         coverage["source_facts"] = [
             {
                 **fact,

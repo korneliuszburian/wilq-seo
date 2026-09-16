@@ -10,11 +10,16 @@ from wilq.content.codex_turn import (
     require_all_object_properties,
     restrict_array_with_empty_placeholder,
 )
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_proposal,
     compact_semantic_review_planning_input,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.packet_model_projection import current_research_packet_for_model
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticReviewModelOutput,
@@ -94,6 +99,13 @@ def semantic_review_turn_request(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> CodexAppServerStructuredTurnRequest:
+    packet = current_research_packet_for_model(planning_input)
+    if packet is not None:
+        planning_input = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
     allowed_targets = _allowed_targets(revision)
     allowed_evidence_ids = _revision_evidence_ids(revision)
     application_context = json.dumps(

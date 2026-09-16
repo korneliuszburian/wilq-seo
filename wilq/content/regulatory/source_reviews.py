@@ -87,6 +87,18 @@ class ContentRegulatorySourceReview(BaseModel):
         # circular.
         from wilq.content.knowledge.source_facts import ContentSourceFact
 
+        canonical_paths = list(self.canonical_paths)
+        if not canonical_paths and self.profile_id == "bdo":
+            # The BDO profile explicitly owns one editorial canonical path.
+            # Existing accepted service-scoped reviews predate that binding;
+            # project them onto the profile-owned path without blessing empty
+            # canonical paths for any other profile.
+            from wilq.content.regulatory.policy import regulatory_content_profile
+
+            profile = regulatory_content_profile(service_card_id="ekologus_service_bdo_reporting")
+            if profile is not None and profile.version == self.profile_version:
+                canonical_paths = list(profile.canonical_paths)
+
         return ContentSourceFact(
             source_id=f"regulatory_source_fact_{self.review_id}",
             source_type="legal_update",
@@ -118,7 +130,7 @@ class ContentRegulatorySourceReview(BaseModel):
             regulatory_profile_version=self.profile_version,
             regulatory_requirement_ids=sorted(set(self.covered_requirement_ids)),
             applicable_service_card_ids=sorted(set(self.service_card_ids)),
-            applicable_canonical_paths=sorted(set(self.canonical_paths)),
+            applicable_canonical_paths=sorted(set(canonical_paths)),
         )
 
 
@@ -390,9 +402,7 @@ def _insert_review(
             review.candidate_id,
             review.decision,
             review.reviewed_at.isoformat(),
-            json.dumps(
-                review.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-            ),
+            json.dumps(review.model_dump(mode="json"), sort_keys=True, separators=(",", ":")),
         ),
     )
     row = connection.execute(
