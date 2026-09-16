@@ -635,6 +635,37 @@ def test_credential_like_fact_and_freshness_ids_are_rejected() -> None:
     assert redact_mapping({"source_id": token})["source_id"] == "[REDACTED]"
 
 
+@pytest.mark.parametrize(
+    ("source_id", "accepted"),
+    [
+        ("regulatory_source_fact_07ebeb26bccd4d75edaaae47", True),
+        ("sk-" + "a" * 24, False),
+        ("gho_" + "a" * 24, False),
+        ("ya29." + "a" * 24, False),
+        ("unknown_" + "a" * 32, False),
+    ],
+)
+def test_freshness_source_id_allows_only_known_long_identifier_prefixes(
+    source_id: str, accepted: bool
+) -> None:
+    if accepted:
+        freshness = ContentResearchPacketFreshness(
+            source_id=source_id,
+            evidence_ids=("ev_1",),
+            checked_at=datetime.now(UTC),
+            status="fresh",
+        )
+        assert freshness.source_id == source_id
+    else:
+        with pytest.raises(ValueError):
+            ContentResearchPacketFreshness(
+                source_id=source_id,
+                evidence_ids=("ev_1",),
+                checked_at=datetime.now(UTC),
+                status="fresh",
+            )
+
+
 def test_long_approved_fact_identifier_survives_redaction_boundary(tmp_path: Path) -> None:
     store, identity = _setup_store(tmp_path)
     command, _ = _packet_command(store, identity, legacy_exact=True)

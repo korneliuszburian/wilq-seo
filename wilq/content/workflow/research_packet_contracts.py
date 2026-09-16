@@ -39,6 +39,7 @@ _SAFE_TOKEN_PREFIXES = (
     "packet_",
     "post_",
     "proposal_",
+    "regulatory_source_fact_",
     "refresh_",
     "research_",
     "review_",

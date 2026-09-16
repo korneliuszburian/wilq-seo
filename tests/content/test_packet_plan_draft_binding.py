@@ -11,6 +11,7 @@ import apps.api.wilq_api.routers.content_planning_proposals as planning_route
 import wilq.content.drafts.initial_full_draft_turn as initial_full_draft_turn_module
 import wilq.content.planning.proposal_packet_binding as proposal_packet_binding
 import wilq.content.planning.route_packet_binding as route_packet_binding
+import wilq.content.workflow.research_packet_derivation as research_packet_derivation
 from tests.content.packet_plan_draft_fixtures import (
     build_packet_preparation_case,
     snapshot_without_cta,
@@ -25,6 +26,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftGenerationInput,
 )
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceProfileContext,
 )
@@ -150,6 +152,39 @@ def test_packet_command_derives_semantics_from_typed_planning_context(
     assert command.legal_source_requirements == ("none_identified",)
     assert command.context_receipt is not None
     assert command.context_receipt.brief_semantic_digest != "0" * 64
+
+
+def test_packet_derivation_accepts_approved_regulatory_source_fact_id(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    regulatory_source_fact_id = "regulatory_source_fact_07ebeb26bccd4d75edaaae47"
+    current_facts = ekologus_source_facts()
+    regulatory_fact = current_facts[0].model_copy(update={"source_id": regulatory_source_fact_id})
+    monkeypatch.setattr(
+        research_packet_derivation,
+        "ekologus_source_facts",
+        lambda: (*current_facts, regulatory_fact),
+    )
+    case.source_pack = case.source_pack.model_copy(
+        update={
+            "source_fact_ids": tuple(
+                sorted((*case.source_pack.source_fact_ids, regulatory_source_fact_id))
+            )
+        }
+    )
+
+    command = build_server_owned_research_packet_command(
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+        source_pack=case.source_pack,
+        identity=case.identity,
+        now=datetime.now(UTC),
+    )
+
+    assert not isinstance(command, ContentResearchPacketBlocker)
+    assert regulatory_source_fact_id in {item.source_id for item in command.freshness}
 
 
 def test_initial_draft_turn_carries_packet_binding(

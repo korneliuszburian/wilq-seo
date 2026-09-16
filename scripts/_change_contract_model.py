@@ -141,6 +141,7 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
+        "tests/content/test_research_packet.py",
         "tests/content/test_packet_plan_draft_http.py",
     ),
     ("content-review", "exact-packet-revision"): (
@@ -168,7 +169,10 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
         # resolver files are overlaid into the parent so the old implementation
         # fails in its call phase while the candidate passes.
         selectors=(
-            ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
+            (
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_research_packet_identifier_contract_keeps_regulatory_prefix_and_secret_guard",
+            )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (
                 "tests/content/test_packet_bound_reviews.py::"
