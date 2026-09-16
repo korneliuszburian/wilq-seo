@@ -26,6 +26,8 @@ from wilq.content.workflow.research_packet_contracts import (
 )
 from wilq.content.workflow.source_pack_binding import ContentSourcePackBinding
 
+_FRESHNESS_NON_SEMANTIC_FIELDS = frozenset({"checked_at", "state_label", "summary", "next_step"})
+
 
 def build_server_owned_research_packet_command(
     *,
@@ -269,10 +271,10 @@ def _context_receipt(
         regulatory_coverage_digest=_digest(planning_input.regulatory_coverage),
         freshness_digest=_digest(
             {
-                "assessment": snapshot.freshness_assessment,
+                "assessment": _freshness_semantic_projection(snapshot.freshness_assessment),
                 "source_facts": [
                     {"source_id": fact.source_id, "freshness_date": fact.freshness_date}
-                    for fact in facts
+                    for fact in sorted(facts, key=lambda item: item.source_id)
                 ],
                 "registry_checked_at": source_pack.source_fact_registry_receipt.checked_at,
             }
@@ -355,6 +357,26 @@ def _legal_requirements(planning_input: ContentPlanningInput) -> tuple[str, ...]
 
 def _digest(value: object) -> str:
     return canonical_json_digest(_jsonable(value))
+
+
+def _freshness_semantic_projection(value: object) -> object:
+    """Keep only freshness facts that can change packet validity.
+
+    ``checked_at`` records when this read was observed. ``state_label``,
+    ``summary``, and ``next_step`` are presentation copy; they must not make
+    an otherwise identical packet stale. Every other typed assessment field,
+    including connector refresh labels, coverage, and quality details, remains
+    binding so a stale or incomplete source still invalidates the packet.
+    """
+
+    payload = _jsonable(value)
+    if not isinstance(payload, dict):
+        return payload
+    return {
+        field: field_value
+        for field, field_value in payload.items()
+        if field not in _FRESHNESS_NON_SEMANTIC_FIELDS
+    }
 
 
 def _jsonable(value: object) -> object:

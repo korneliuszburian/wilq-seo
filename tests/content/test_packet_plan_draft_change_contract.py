@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 
@@ -51,3 +52,30 @@ def test_research_packet_cta_fallback_contract_is_exact_and_evidence_bound() -> 
     assert "set(evidence_ids).issubset(planning_evidence_ids)" in source
     assert "internal_link_candidates[0].target_url" not in source
     assert source.index(exact_count) < source.index(first_candidate)
+
+
+def test_research_packet_freshness_projection_contract_is_complete() -> None:
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "wilq/content/workflow/research_packet_derivation.py").read_text(
+        encoding="utf-8"
+    )
+
+    excluded_match = re.search(
+        r"_FRESHNESS_NON_SEMANTIC_FIELDS\s*=\s*frozenset\(\s*\{(?P<fields>[^}]*)\}",
+        source,
+        flags=re.DOTALL,
+    )
+    assert excluded_match is not None
+    excluded_fields = {
+        field.strip().strip("'\"")
+        for field in excluded_match.group("fields").split(",")
+        if field.strip()
+    }
+    assert excluded_fields == {"checked_at", "state_label", "summary", "next_step"}
+
+    projection_start = source.index("def _freshness_semantic_projection")
+    projection_end = source.index("\ndef _jsonable", projection_start)
+    projection = source[projection_start:projection_end]
+    assert "for field, field_value in payload.items()" in projection
+    assert "if field not in _FRESHNESS_NON_SEMANTIC_FIELDS" in projection
+    assert "for fact in sorted(facts, key=lambda item: item.source_id)" in source

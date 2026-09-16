@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
+import wilq.content.workflow.research_packet_derivation as research_packet_derivation
 from tests.content.initial_draft_authority_fakes import draft_review, draft_revision
 from tests.content.packet_plan_draft_fixtures import build_packet_preparation_case
 from tests.content.test_new_page_canonical_document import _exact_inputs
@@ -13,6 +15,7 @@ from wilq.content.drafts.initial_draft_authority import (
 )
 from wilq.content.drafts.initial_draft_queue import queued_initial_draft_response
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import bind_research_packet_to_planning_input
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.research_packet_current import revalidate_content_research_packet
@@ -20,6 +23,7 @@ from wilq.content.workflow.research_packet_preparation import (
     current_research_packet_blocker,
     prepare_content_research_packet,
 )
+from wilq.schemas import ConnectorCoveredWindow, ContentFreshnessAssessment
 
 
 def test_initial_draft_response_paths_share_exact_packet_binding() -> None:
@@ -67,8 +71,7 @@ def test_packet_derivation_does_not_promote_planning_assertion_evidence(
     assert "ev_planning_assertion_outside" not in prepared.packet.evidence_ids
     assert prepared.packet.context_receipt is not None
     assert (
-        "ev_planning_assertion_outside"
-        not in prepared.packet.context_receipt.planning_evidence_ids
+        "ev_planning_assertion_outside" not in prepared.packet.context_receipt.planning_evidence_ids
     )
 
 
@@ -128,6 +131,128 @@ def test_packet_revalidation_reuses_persisted_preparation_receipt(
     )
 
     assert blocker is None
+
+
+def test_packet_revalidation_ignores_observation_only_freshness_checked_at(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    case.snapshot.freshness_assessment = ContentFreshnessAssessment(
+        state="fresh",
+        checked_at=datetime(2026, 9, 16, 0, 0, tzinfo=UTC),
+        requires_refresh=False,
+        summary="Dane świeże.",
+        next_step="Można użyć danych.",
+    )
+    prepared = prepare_content_research_packet(
+        store=case.store,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+    assert prepared.packet is not None
+
+    case.snapshot.freshness_assessment = case.snapshot.freshness_assessment.model_copy(
+        update={
+            "checked_at": datetime(2026, 9, 16, 0, 1, tzinfo=UTC),
+            "state_label": "odświeżony opis",
+            "summary": "Inny tekst prezentacyjny.",
+            "next_step": "Inny krok prezentacyjny.",
+        }
+    )
+
+    blocker = current_research_packet_blocker(
+        store=case.store,
+        packet=prepared.packet,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+
+    assert blocker is None
+
+
+@pytest.mark.parametrize(
+    "freshness_update",
+    [
+        {"state": "stale"},
+        {"requires_refresh": True},
+        {"connector_labels_requiring_refresh": ["Google Search Console"]},
+        {
+            "connector_covered_windows": {
+                "google_search_console": ConnectorCoveredWindow(
+                    date_start="2026-09-01",
+                    date_end="2026-09-15",
+                    completeness="complete",
+                )
+            }
+        },
+    ],
+)
+def test_packet_revalidation_rejects_semantic_freshness_drift(
+    tmp_path: Path,
+    freshness_update: dict[str, object],
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    case.snapshot.freshness_assessment = ContentFreshnessAssessment(
+        state="fresh",
+        checked_at=datetime(2026, 9, 16, 0, 0, tzinfo=UTC),
+        requires_refresh=False,
+        summary="Dane świeże.",
+        next_step="Można użyć danych.",
+    )
+    prepared = prepare_content_research_packet(
+        store=case.store,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+    assert prepared.packet is not None
+
+    case.snapshot.freshness_assessment = case.snapshot.freshness_assessment.model_copy(
+        update=freshness_update
+    )
+    blocker = current_research_packet_blocker(
+        store=case.store,
+        packet=prepared.packet,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+
+    assert blocker is not None
+    assert blocker.reason == "context_receipt_mismatch"
+
+
+def test_packet_revalidation_rejects_source_fact_freshness_date_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    prepared = prepare_content_research_packet(
+        store=case.store,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+    assert prepared.packet is not None
+    source_fact_ids = set(case.source_pack.source_fact_ids)
+    changed_facts = tuple(
+        fact.model_copy(update={"freshness_date": "2099-01-01"})
+        if fact.source_id in source_fact_ids
+        else fact
+        for fact in ekologus_source_facts()
+    )
+    monkeypatch.setattr(
+        research_packet_derivation,
+        "ekologus_source_facts",
+        lambda: changed_facts,
+    )
+
+    blocker = current_research_packet_blocker(
+        store=case.store,
+        packet=prepared.packet,
+        snapshot=case.snapshot,
+        planning_input=case.planning_input,
+    )
+
+    assert blocker is not None
+    assert blocker.reason == "context_receipt_mismatch"
 
 
 def test_reused_revision_response_propagates_out_of_band_packet_binding() -> None:
