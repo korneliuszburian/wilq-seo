@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -32,6 +33,9 @@ from wilq.content.planning.proposal_quality import (
     persisted_inventory_mapping_is_current,
     proposal_quality_errors,
     remapped_proposal_projection,
+)
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
 )
 from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -221,7 +225,12 @@ def _packet_bound_refresh_input(
     if packet is None or packet.packet_digest != packet_digest:
         return None
     try:
-        bound = bind_research_packet_to_planning_input(planning_input, packet)
+        projected = project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+        bound = bind_research_packet_to_planning_input(projected, packet)
     except ValueError:
         return None
     return bound if bound.planning_input_digest == binding.planning_input_digest else None

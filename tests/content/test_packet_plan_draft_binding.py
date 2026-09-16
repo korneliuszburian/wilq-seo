@@ -10,6 +10,7 @@ import pytest
 import apps.api.wilq_api.routers.content_planning_proposals as planning_route
 import wilq.content.drafts.initial_full_draft_turn as initial_full_draft_turn_module
 import wilq.content.planning.proposal_packet_binding as proposal_packet_binding
+import wilq.content.planning.proposal_read as proposal_read
 import wilq.content.planning.route_packet_binding as route_packet_binding
 import wilq.content.workflow.research_packet_derivation as research_packet_derivation
 import wilq.content.workflow.research_packet_preparation as packet_preparation
@@ -22,6 +23,7 @@ from tests.content.test_research_packet import legacy_exact_source_pack_fixture
 from tests.content.test_source_pack_binding import _setup_store
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import ContentClaimLedgerEntry
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_turn_request
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
@@ -36,7 +38,10 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     bind_research_packet_to_planning_input,
 )
-from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalRequest
+from wilq.content.planning.generated_proposal_contracts import (
+    ContentPlanningProposalRequest,
+    ContentPlanningProposalResponse,
+)
 from wilq.content.planning.generated_proposal_turn import (
     compact_planning_input_for_model,
 )
@@ -51,6 +56,7 @@ from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
     ContentSearchDemandRow,
 )
+from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.research_packet import (
     ContentResearchPacketBlocker,
 )
@@ -327,6 +333,74 @@ def test_editorial_packet_plan_route_persists_exact_current_packet_from_contact_
     assert packet.internal_links[0].destination_path == "/kontakt"
     assert packet.internal_links[0].verification == "exact_verified"
     assert bound_request.expected_research_packet_digest == packet.packet_digest
+
+
+def test_refresh_reader_rebinds_projected_editorial_packet_to_exact_queued_job(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(case, [_contact_candidate(case)])
+    snapshot = snapshot_without_cta(case)
+    prepared = prepare_content_research_packet(
+        store=case.store,
+        snapshot=snapshot,
+        planning_input=planning_input,
+    )
+    assert prepared.packet is not None
+    projected = project_selected_source_pack_facts(
+        planning_input,
+        prepared.packet.approved_source_fact_ids,
+        ekologus_source_facts(),
+    )
+    bound_input = bind_research_packet_to_planning_input(projected, prepared.packet)
+    assert planning_input.planning_input_digest != bound_input.planning_input_digest
+    digest = "a" * 64
+    binding = ContentRefreshPreparationBinding(
+        authorization_id="content_refresh_preparation_authorization_" + digest[:24],
+        authorization_digest=digest,
+        classification_run_id="classification_current",
+        classification_run_digest="d" * 64,
+        decision_set_digest="e" * 64,
+        source_packet_row_digest="f" * 64,
+        current_work_item_id=case.identity.current_work_item_id,
+        canonical_path=case.identity.canonical_path,
+        public_url=case.identity.public_url,
+        content_kind="editorial",
+        planning_input_digest=bound_input.planning_input_digest,
+    )
+    authority_binding = binding.model_copy(
+        update={"planning_input_digest": planning_input.planning_input_digest}
+    )
+    queued = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=case.identity.current_work_item_id,
+        content_kind="editorial",
+        planning_input_digest=bound_input.planning_input_digest,
+        research_packet_id=prepared.packet.packet_id,
+        research_packet_digest=prepared.packet.packet_digest,
+        refresh_preparation_binding=binding,
+        runtime=ContentCodexRuntimeTrace(status="not_started", run_id="run-current"),
+        safe_next_step="Poczekaj na wynik.",
+    )
+
+    class ProposalStore:
+        def queued_subject_response(self, _work_item_id, _subject, planning_input_digest):
+            assert planning_input_digest == bound_input.planning_input_digest
+            return queued
+
+    result = proposal_read.read_content_planning_proposal_for_refresh_binding(
+        snapshot=snapshot,
+        planning_input=planning_input,
+        binding=binding,
+        authority_binding=authority_binding,
+        store=ProposalStore(),
+        workflow_store=case.store,
+    )
+
+    assert result.status == "generating"
+    assert result.planning_input_digest == bound_input.planning_input_digest
+    assert result.refresh_preparation_binding == binding
+    assert result.runtime.run_id == queued.runtime.run_id
 
 
 def test_editorial_packet_preparation_revalidates_against_projected_source_pack(

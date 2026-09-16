@@ -138,6 +138,14 @@ def test_packet_bound_refresh_status_reads_exact_projected_job() -> None:
     assert "store.queued_subject_response(" in reader
     assert "binding.planning_input_digest" in reader
     assert "store.for_subject_input(" in reader
+    helper_start = reader_end
+    helper_end = proposal_read.index("\ndef _refresh_binding_status_block(", helper_start)
+    helper = proposal_read[helper_start:helper_end]
+    assert "project_selected_source_pack_facts(" in helper
+    assert "bind_research_packet_to_planning_input(" in helper
+    projection_at = proposal_read.index("project_selected_source_pack_facts(", helper_start)
+    binding_at = proposal_read.index("bind_research_packet_to_planning_input(", helper_start)
+    assert helper_start < projection_at < binding_at < helper_end
 
     status_start = router.index("def _authorized_refresh_planning_status(")
     status_end = router.index("\ndef _bound_refresh_status_block(", status_start)
