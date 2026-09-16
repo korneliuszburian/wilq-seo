@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from wilq.content.drafts.draft_plan_preparation import (
     DraftPlanBlocked,
     PreparedDraftPlan,
@@ -104,6 +106,137 @@ def test_missing_or_mismatched_exact_input_digest_blocks_fail_closed() -> None:
         result = prepare_draft_plan(invalid_candidate, snapshot)
         assert isinstance(result, DraftPlanBlocked)
         assert result.blocker.code == "draft_plan_source_support_missing"
+
+
+def test_regulatory_target_reports_only_the_unmapped_requirement() -> None:
+    fact = ContentPlanningSourceFact(
+        fact_id="fact_requirement_a",
+        summary="Potwierdzony fakt dla wymagania A.",
+        source_connector="official_source",
+        evidence_ids=["ev_regulatory"],
+        source_fact_ids=["source_requirement_a"],
+        regulatory_requirement_ids=["requirement_a"],
+    )
+    candidate = _candidate(
+        ContentPlanningSection(
+            section_id="section_regulatory",
+            heading="Wymagania regulacyjne",
+            purpose="Odpowiedz na wymagania A i B.",
+            inventory_disposition="rewrite",
+            evidence_ids=["ev_regulatory"],
+            regulatory_requirement_ids=["requirement_a", "requirement_b"],
+        )
+    )
+
+    result = prepare_draft_plan(candidate, _source_snapshot(fact))
+
+    assert isinstance(result, DraftPlanBlocked)
+    assert result.blocker.source_codes == ["section_regulatory:requirement_b"]
+
+
+def test_prepared_source_fact_is_deep_immutable_snapshot() -> None:
+    source_fact = _source_fact()
+    plan = prepare_draft_plan(
+        _candidate(
+            ContentPlanningSection(
+                section_id="section_exact",
+                heading="Sekcja ze źródłem",
+                purpose="Wyjaśnij potwierdzony zakres.",
+                inventory_disposition="rewrite",
+                evidence_ids=["ev_source_fact"],
+                source_material_ids=["material_exact"],
+            )
+        ),
+        _source_snapshot(source_fact),
+    )
+    assert isinstance(plan, PreparedDraftPlan)
+
+    source_fact.summary = "Zmieniony fakt po przygotowaniu."
+    source_fact.evidence_ids.append("ev_mutated")
+    source_fact.source_fact_ids.append("source_mutated")
+
+    prepared_fact = plan.target_supports[0].source_facts[0]
+    assert prepared_fact.summary == "Zatwierdzony fakt dotyczący zakresu usługi."
+    assert prepared_fact.evidence_ids == ("ev_source_fact",)
+    assert prepared_fact.source_fact_ids == ("source_fact_exact",)
+
+
+def test_prepared_plan_blocks_only_the_unmapped_requirement() -> None:
+    fact = ContentPlanningSourceFact(
+        fact_id="fact_a",
+        summary="Fakt A.",
+        source_connector="official",
+        evidence_ids=["ev_ab"],
+        source_fact_ids=["source_a"],
+        regulatory_requirement_ids=["requirement_a"],
+    )
+    section = ContentPlanningSection(
+        section_id="section_ab",
+        heading="A i B",
+        purpose="Pokryj oba wymagania.",
+        evidence_ids=["ev_ab"],
+        regulatory_requirement_ids=["requirement_a", "requirement_b"],
+    )
+
+    result = prepare_draft_plan(_candidate(section), _source_snapshot(fact))
+
+    assert isinstance(result, DraftPlanBlocked)
+    assert result.blocker.source_codes == ["section_ab:requirement_b"]
+
+
+def test_second_alternation_call_reuses_the_same_prepared_plan(monkeypatch) -> None:
+    candidate = _candidate(
+        ContentPlanningSection(
+            section_id="section_exact",
+            heading="Sekcja ze źródłem",
+            purpose="Wyjaśnij potwierdzony zakres.",
+            evidence_ids=["ev_source_fact"],
+        )
+    )
+    plan = prepare_draft_plan(candidate, _source_snapshot(_source_fact()))
+    assert isinstance(plan, PreparedDraftPlan)
+    calls: list[object] = []
+    output = object()
+    repaired_output = object()
+
+    def fake_assure(**kwargs: object):
+        calls.append(kwargs["prepared_plan"])
+        return kwargs["output"], kwargs["trace"], None, None
+
+    readability_calls = 0
+
+    def fake_readability(**kwargs: object):
+        nonlocal readability_calls
+        readability_calls += 1
+        return (
+            (repaired_output if readability_calls == 1 else kwargs["output"]),
+            kwargs["trace"],
+            None,
+        )
+
+    monkeypatch.setattr(
+        "wilq.content.drafts.draft_alteration.assure_and_repair_initial_draft",
+        fake_assure,
+    )
+    monkeypatch.setattr(
+        "wilq.content.drafts.draft_alteration.assure_readability_and_repair",
+        fake_readability,
+    )
+
+    from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
+
+    alter_draft_towards_persistence(
+        planning_input=plan.exact_source_snapshot,
+        proposal=plan.candidate,
+        output=output,
+        trace=SimpleNamespace(status="completed"),
+        client=SimpleNamespace(),
+        run_store=SimpleNamespace(),
+        output_blocker=lambda _output: None,
+        prepared_plan=plan,
+    )
+
+    assert calls == [plan, plan]
 
 
 def test_unresolved_merge_is_not_a_body_target() -> None:

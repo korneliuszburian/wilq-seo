@@ -505,7 +505,7 @@ def test_enrich_benefit_sections_uses_only_missing_benefit_answers() -> None:
 
     assert "Z korzyści współpracy:" in enriched.sections[0].body_markdown
     assert "koszt" in enriched.sections[0].body_markdown
-    assert benefit_fact in enriched.sections[0].body_markdown
+    assert benefit_fact.casefold() in enriched.sections[0].body_markdown.casefold()
     assert not any(
         code == "heading_answer_mismatch" for code, _, _ in readability_issues_for_output(enriched)
     )
@@ -835,7 +835,7 @@ def test_refresh_pipeline_wires_benefit_enrichment_transform(
                 source_connector="public_site",
                 evidence_ids=["ev_benefit"],
             )
-        ]
+        ],
     )
     proposal = SimpleNamespace(
         proposal_id="proposal-1",
@@ -844,11 +844,19 @@ def test_refresh_pipeline_wires_benefit_enrichment_transform(
         source_material_ids=[],
         planning_digest="a" * 64,
         planning_input_digest="b" * 64,
+        research_packet_id=None,
+        research_packet_digest=None,
     )
     prepared = ifd._InitialDraftInputs(
         planning_input=planning_input,
         proposal=proposal,  # type: ignore[arg-type]
         generation_contract=StructuredDraftGenerationContract.model_construct(),
+        draft_plan=ifd.PreparedDraftPlan(
+            candidate=proposal,  # type: ignore[arg-type]
+            exact_source_snapshot=planning_input,
+            body_targets=(),
+            target_supports=(),
+        ),
     )
     captured: dict[str, object] = {}
 
@@ -875,7 +883,10 @@ def test_refresh_pipeline_wires_benefit_enrichment_transform(
     )
 
     result = ifd.generate_initial_full_draft(
-        snapshot=object(),
+        snapshot=SimpleNamespace(
+            planning_workspace=SimpleNamespace(proposal=prepared.proposal),
+            preflight=SimpleNamespace(item=SimpleNamespace(id="work-item-1")),
+        ),
         request=request,
         client=object(),
         workflow_store=object(),

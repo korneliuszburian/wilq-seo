@@ -12,6 +12,7 @@ from wilq.content.codex_turn import (
     require_all_object_properties,
     set_array_size,
 )
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan, PreparedSourceFact
 from wilq.content.drafts.fact_selection import (
     approved_source_facts_by_section,
 )
@@ -45,7 +46,23 @@ def initial_full_draft_turn_request(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     generation_contract: StructuredDraftGenerationContract,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
+    if prepared_plan is not None and (
+        prepared_plan.candidate is not proposal
+        and (
+            prepared_plan.candidate.work_item_id != proposal.work_item_id
+            or prepared_plan.candidate.planning_digest != proposal.planning_digest
+            or prepared_plan.candidate.planning_input_digest != proposal.planning_input_digest
+        )
+    ):
+        raise ValueError("Prepared draft plan does not match the proposal.")
+    if prepared_plan is not None and (
+        prepared_plan.exact_source_snapshot.work_item_id != planning_input.work_item_id
+        or prepared_plan.exact_source_snapshot.planning_input_digest
+        != planning_input.planning_input_digest
+    ):
+        raise ValueError("Prepared draft plan does not match the planning input.")
     packet = current_research_packet_for_model(planning_input)
     if packet is not None:
         planning_input = project_selected_source_pack_facts(
@@ -98,15 +115,20 @@ def initial_full_draft_turn_request(
                     if section.inventory_disposition == "remove_review_required"
                 ],
             },
-            "approved_source_facts_by_section": approved_source_facts_by_section(
-                planning_input,
-                proposal,
-                allowed_source_fact_ids=allowed_source_fact_ids,
+            "approved_source_facts_by_section": (
+                _prepared_source_facts_by_section(prepared_plan, regulatory=False)
+                if prepared_plan is not None
+                else approved_source_facts_by_section(
+                    planning_input,
+                    proposal,
+                    allowed_source_fact_ids=allowed_source_fact_ids,
+                )
             ),
             "approved_regulatory_facts_by_section": _regulatory_facts_by_section(
                 planning_input,
                 proposal,
                 allowed_source_fact_ids=allowed_source_fact_ids,
+                prepared_plan=prepared_plan,
             ),
         },
         ensure_ascii=False,
@@ -134,6 +156,7 @@ def regulatory_assertion_repair_turn_request(
     candidate: ContentInitialDraftModelOutput,
     missing_assertion_codes: list[str],
     repair_reasons: dict[str, str] | None = None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     """Make one bounded correction turn for deterministic regulatory omissions."""
 
@@ -158,17 +181,44 @@ def regulatory_assertion_repair_turn_request(
         set[str],
         {item["requirement_id"] for item in assertions},
     )
-    source_facts = [
-        {
-            "summary": fact.extracted_fact,
-            "requirement_ids": fact.regulatory_requirement_ids,
+    if prepared_plan is not None:
+        required_pairs = {
+            (str(item["section_id"]), str(item["requirement_id"])) for item in assertions
         }
-        for fact in regulatory_turn_context.approved_regulatory_source_facts(
-            planning_input,
-            requirement_ids,
-            allowed_source_fact_ids=(None if packet is None else packet.approved_source_fact_ids),
-        )
-    ]
+        source_facts = [
+            {
+                **fact,
+                "requirement_ids": [
+                    requirement_id
+                    for requirement_id in cast(list[str], fact["requirement_ids"])
+                    if (str(row["section_id"]), requirement_id) in required_pairs
+                ],
+            }
+            for row in _prepared_source_facts_by_section(prepared_plan, regulatory=True)
+            if set(cast(list[str], row["requirement_ids"])).intersection(requirement_ids)
+            for fact in cast(list[dict[str, object]], row["source_facts"])
+            if set(cast(list[str], fact["requirement_ids"])).intersection(
+                {
+                    requirement_id
+                    for section_id, requirement_id in required_pairs
+                    if section_id == str(row["section_id"])
+                }
+            )
+        ]
+    else:
+        source_facts = [
+            {
+                "summary": fact.extracted_fact,
+                "requirement_ids": fact.regulatory_requirement_ids,
+            }
+            for fact in regulatory_turn_context.approved_regulatory_source_facts(
+                planning_input,
+                requirement_ids,
+                allowed_source_fact_ids=(
+                    None if packet is None else packet.approved_source_fact_ids
+                ),
+            )
+        ]
     return CodexAppServerStructuredTurnRequest(
         instruction=(
             "Zwróć wyłącznie patch body_markdown wskazanych section_id wraz z server-owned "
@@ -421,13 +471,45 @@ def _regulatory_draft_directive(
     )
 
 
+def _planning_source_fact_payload(fact: PreparedSourceFact) -> dict[str, object]:
+    source_fact_ids = list(fact.source_fact_ids)
+    return {
+        "source_fact_id": source_fact_ids[0] if len(source_fact_ids) == 1 else None,
+        "source_fact_ids": source_fact_ids,
+        "summary": fact.summary,
+        "evidence_ids": list(fact.evidence_ids),
+        "source_material_ids": list(fact.source_material_ids),
+        "requirement_ids": list(fact.regulatory_requirement_ids),
+    }
+
+
+def _prepared_source_facts_by_section(
+    prepared_plan: PreparedDraftPlan,
+    *,
+    regulatory: bool,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "section_id": target.section.section_id,
+            "requirement_ids": list(target.section.regulatory_requirement_ids),
+            "source_facts": [_planning_source_fact_payload(fact) for fact in target.source_facts],
+        }
+        for target in prepared_plan.target_supports
+        if bool(target.section.regulatory_requirement_ids) is regulatory
+    ]
+
+
 def _regulatory_facts_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
     *,
     allowed_source_fact_ids: set[str] | None = None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[dict[str, object]]:
     """Project reviewed official facts next to each regulated document target."""
+
+    if prepared_plan is not None:
+        return _prepared_source_facts_by_section(prepared_plan, regulatory=True)
 
     requirement_ids = {
         requirement_id

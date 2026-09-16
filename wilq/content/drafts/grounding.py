@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.fact_selection import (
     approved_planning_source_facts,
     approved_source_facts_by_section,
@@ -17,6 +18,7 @@ from wilq.content.knowledge.text_matching import (
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.quality.reading_quality import WORKING_NOTE
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import validate_no_inline_link
 
 _MISSING_SOURCE_FACT_SIGNAL_PREFIX = "missing_source_fact_signal:"
 _MAX_GROUNDING_FACT_PARAGRAPHS = 3
@@ -72,13 +74,9 @@ def document_ready_fact_text(
 
     stripped = _SOURCE_ATTRIBUTION_PREFIX.sub("", fact_text).strip()
     sentences = [
-        sentence.strip()
-        for sentence in _SENTENCE_BOUNDARY.split(stripped)
-        if sentence.strip()
+        sentence.strip() for sentence in _SENTENCE_BOUNDARY.split(stripped) if sentence.strip()
     ]
-    normalized_terms = [
-        term.casefold().strip() for term in (protected_terms or []) if term.strip()
-    ]
+    normalized_terms = [term.casefold().strip() for term in (protected_terms or []) if term.strip()]
     kept = [
         sentence
         for sentence in sentences
@@ -89,9 +87,7 @@ def document_ready_fact_text(
     ]
     result = " ".join(kept) if kept else stripped
     qualifier = _TRAILING_VERIFICATION_CLAUSE.search(result)
-    if qualifier and not any(
-        term in qualifier.group(0).casefold() for term in normalized_terms
-    ):
+    if qualifier and not any(term in qualifier.group(0).casefold() for term in normalized_terms):
         result = result[: qualifier.start()].rstrip(" ,;")
     if not result:
         return result
@@ -131,6 +127,7 @@ def repair_missing_source_fact_signals(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
     missing_codes: list[str],
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentInitialDraftModelOutput:
     """Append exact approved planning facts to shallow targeted sections."""
 
@@ -139,14 +136,22 @@ def repair_missing_source_fact_signals(
         for code in missing_codes
         if code.startswith(_MISSING_SOURCE_FACT_SIGNAL_PREFIX)
     }
-    facts_by_section = source_fact_summaries_by_section(planning_input, proposal)
-    source_fact_corpus = [
-        fact.extracted_fact
-        for fact in approved_planning_source_facts(
-            planning_input,
-            include_official=True,
-        )
-    ]
+    facts_by_section = source_fact_summaries_by_section(
+        planning_input,
+        proposal,
+        prepared_plan=prepared_plan,
+    )
+    source_fact_corpus = (
+        prepared_source_fact_corpus(prepared_plan)
+        if prepared_plan is not None
+        else [
+            fact.extracted_fact
+            for fact in approved_planning_source_facts(
+                planning_input,
+                include_official=True,
+            )
+        ]
+    )
     distinctive_tokens = distinctive_fact_tokens(source_fact_corpus)
     sections = []
     for section in output.sections:
@@ -167,11 +172,12 @@ def repair_missing_source_fact_signals(
                 fact_text
                 for summary in fact_summaries
                 if (
-                    fact_text := document_ready_fact_text(
+                    fact_text := safe_document_ready_fact_text(
                         summary,
                         protected_terms=None,
-                    ).strip()
+                    )
                 )
+                is not None
             )
         )[:_MAX_GROUNDING_FACT_PARAGRAPHS]
         patch_text = "\n\n".join(document_ready_facts)
@@ -196,7 +202,15 @@ def repair_missing_source_fact_signals(
 def source_fact_summaries_by_section(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
+    *,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> dict[str, list[str]]:
+    if prepared_plan is not None:
+        return {
+            target.section.section_id: [fact.summary for fact in target.source_facts]
+            for target in prepared_plan.target_supports
+            if not target.section.regulatory_requirement_ids
+        }
     projection: dict[str, list[str]] = {}
     for row in approved_source_facts_by_section(planning_input, proposal):
         section_id = row.get("section_id")
@@ -215,11 +229,40 @@ def source_fact_summaries_by_section(
     return projection
 
 
+def safe_document_ready_fact_text(
+    summary: str,
+    *,
+    protected_terms: list[str] | None,
+) -> str | None:
+    try:
+        sanitized = document_ready_fact_text(summary, protected_terms=protected_terms).strip()
+        return validate_no_inline_link(sanitized).strip() if sanitized else None
+    except ValueError:
+        return None
+
+
+def prepared_source_fact_corpus(prepared_plan: PreparedDraftPlan) -> list[str]:
+    """Deduplicate exact assigned facts before deriving distinctive tokens."""
+
+    seen: set[tuple[tuple[str, ...], str]] = set()
+    corpus: list[str] = []
+    for target in prepared_plan.target_supports:
+        for fact in target.source_facts:
+            key = (tuple(sorted(fact.source_fact_ids)), fact.summary)
+            if key in seen:
+                continue
+            seen.add(key)
+            corpus.append(fact.summary)
+    return corpus
+
+
 __all__ = [
     "body_has_source_fact_signal",
     "distinctive_fact_tokens",
     "document_ready_fact_text",
+    "prepared_source_fact_corpus",
     "repair_missing_source_fact_signals",
+    "safe_document_ready_fact_text",
     "source_fact_summaries_by_section",
     "source_fact_signal_errors",
 ]

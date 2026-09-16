@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal, cast
 
 from wilq.codex.app_server import (
@@ -18,6 +18,7 @@ from wilq.content.drafts.generated_claim_safety import (
     generated_claim_blocker,
     generated_claim_safety_issues,
 )
+from wilq.content.drafts.grounding import document_ready_fact_text
 from wilq.content.drafts.initial_draft_persistence import (
     InitialDraftRevisionStore,
     persist_initial_draft,
@@ -90,6 +91,7 @@ class _InitialDraftInputs:
     proposal: ContentPlanningProposal
     generation_contract: StructuredDraftGenerationContract
     base_revision_id: str | None = None
+    draft_plan: PreparedDraftPlan | None = None
 
 
 BENEFIT_SOURCE_FACT_LIMIT = 2
@@ -110,7 +112,7 @@ _REFRESH_INITIAL_DRAFT_TURN_GOAL = InitialDraftTurnGoal(
 
 
 def _benefit_source_fact_text(summary: str) -> str | None:
-    text = summary.strip()
+    text = document_ready_fact_text(summary, protected_terms=None).strip()
     if BENEFIT_SOURCE_FACT_MARKER.search(text) is None:
         return None
     try:
@@ -122,27 +124,38 @@ def _benefit_source_fact_text(summary: str) -> str | None:
 def _enrich_benefit_sections(
     output: ContentInitialDraftModelOutput,
     planning_input: ContentPlanningInput,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentInitialDraftModelOutput:
-    benefit_facts = [
-        text
-        for fact in planning_input.source_facts
-        if (text := _benefit_source_fact_text(fact.summary)) is not None
-    ][:BENEFIT_SOURCE_FACT_LIMIT]
-    if not benefit_facts:
-        return output
-    fact_sentences = [
-        fact if fact.endswith((".", "!", "?")) else f"{fact}." for fact in benefit_facts
-    ]
-    fallback = f"Z korzyści współpracy: {' '.join(fact_sentences)}"
+    facts_by_section = (
+        {target.section.section_id: target.source_facts for target in prepared_plan.target_supports}
+        if prepared_plan is not None
+        else {}
+    )
     sections = []
     for section in output.sections:
         if (
             BENEFIT_HEADING_SIGNAL.search(section.heading) is not None
             and BENEFIT_BODY_MARKER.search(section.body_markdown) is None
         ):
-            section = section.model_copy(
-                update={"body_markdown": f"{section.body_markdown.rstrip()}\n\n{fallback}"}
+            assigned_facts = facts_by_section.get(section.section_id)
+            summaries = (
+                [fact.summary for fact in assigned_facts]
+                if assigned_facts is not None
+                else [fact.summary for fact in planning_input.source_facts]
             )
+            benefit_facts = [
+                text
+                for summary in summaries
+                if (text := _benefit_source_fact_text(summary)) is not None
+            ][:BENEFIT_SOURCE_FACT_LIMIT]
+            if benefit_facts:
+                fact_sentences = [
+                    fact if fact.endswith((".", "!", "?")) else f"{fact}." for fact in benefit_facts
+                ]
+                fallback = f"Z korzyści współpracy: {' '.join(fact_sentences)}"
+                section = section.model_copy(
+                    update={"body_markdown": f"{section.body_markdown.rstrip()}\n\n{fallback}"}
+                )
         sections.append(section)
     if sections == output.sections:
         return output
@@ -196,6 +209,16 @@ def generate_initial_full_draft(
     plan_blocked = _draft_plan_blocked_response(snapshot, prepared)
     if plan_blocked is not None:
         return plan_blocked
+    if prepared.draft_plan is None:
+        draft_plan = _prepared_draft_plan(prepared)
+        if isinstance(draft_plan, DraftPlanBlocked):
+            return _blocked_response(
+                snapshot,
+                proposal=prepared.proposal,
+                status="blocked",
+                blockers=[draft_plan.blocker],
+            )
+        prepared = replace(prepared, draft_plan=draft_plan)
     if (proposal_id := prepared.proposal.proposal_id) is None:
         raise RuntimeError("Prepared initial draft is missing its generated proposal ID.")
     return generate_initial_draft(
@@ -207,6 +230,7 @@ def generate_initial_full_draft(
                 planning_input=prepared.planning_input,
                 proposal=prepared.proposal,
                 generation_contract=prepared.generation_contract,
+                prepared_plan=prepared.draft_plan,
             ),
             turn_goal=_REFRESH_INITIAL_DRAFT_TURN_GOAL,
             run=InitialDraftRunMetadata(
@@ -222,7 +246,7 @@ def generate_initial_full_draft(
             ),
             output_blocker=lambda candidate: _output_blocker(prepared, candidate),
             output_transform=lambda output: _enrich_benefit_sections(
-                output, prepared.planning_input
+                output, prepared.planning_input, prepared.draft_plan
             ),
             response=lambda *, status, blocker, run, runtime: _blocked_response(
                 snapshot,
@@ -245,6 +269,7 @@ def generate_initial_full_draft(
                 run_store=run_store,
                 regulatory_assurance=regulatory_assurance,
             ),
+            prepared_plan=prepared.draft_plan,
             start_run=start_initial_draft_run,
             terminal_hook=finish_initial_draft_run,
             execute_turn=lambda **kwargs: _execute_runtime(
@@ -285,7 +310,7 @@ def _draft_plan_blocked_response(
             status="blocked",
             blockers=[_planning_workspace_blocker()],
         )
-    plan = prepare_draft_plan(prepared.proposal, prepared.planning_input)
+    plan = _prepared_draft_plan(prepared)
     if isinstance(plan, PreparedDraftPlan):
         return None
     if not isinstance(plan, DraftPlanBlocked):
@@ -296,6 +321,12 @@ def _draft_plan_blocked_response(
         status="blocked",
         blockers=[plan.blocker],
     )
+
+
+def _prepared_draft_plan(
+    prepared: _InitialDraftInputs,
+) -> PreparedDraftPlan | DraftPlanBlocked:
+    return prepared.draft_plan or prepare_draft_plan(prepared.proposal, prepared.planning_input)
 
 
 def _prepare_inputs(
@@ -563,11 +594,20 @@ def _prepare_generation_contract(
         proposal,
         planning_input,
     )
+    draft_plan = prepare_draft_plan(proposal, planning_input)
+    if isinstance(draft_plan, DraftPlanBlocked):
+        return _blocked_response(
+            snapshot,
+            proposal=proposal,
+            status="blocked",
+            blockers=[draft_plan.blocker],
+        )
     return _InitialDraftInputs(
         planning_input=planning_input,
         proposal=proposal,
         generation_contract=generation_contract,
         base_revision_id=base_revision_id,
+        draft_plan=draft_plan,
     )
 
 
@@ -721,6 +761,7 @@ def _output_blocker(
         inputs.planning_input,
         inputs.proposal,
         output,
+        prepared_plan=inputs.draft_plan,
     )
     if errors:
         return build_blocker(

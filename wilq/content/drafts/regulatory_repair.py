@@ -16,7 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.codex_turn import mapping, require_all_object_properties, runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.drafts.grounding import document_ready_fact_text
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
+from wilq.content.drafts.grounding import safe_document_ready_fact_text
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftModelOutput,
@@ -220,8 +221,7 @@ def regulatory_draft_preflight_errors(
                 for fact in official_facts
             ):
                 ungroundable_assertions.add(
-                    "regulatory_preflight:ungroundable_assertion:"
-                    f"{requirement.id}:{assertion.id}"
+                    f"regulatory_preflight:ungroundable_assertion:{requirement.id}:{assertion.id}"
                 )
         section_text = "\n".join(
             "\n".join((section.heading, section.purpose, section.reader_question))
@@ -253,6 +253,7 @@ def repair_regulatory_assertions(
     client: CodexAppServerClientProtocol,
     repair_reasons: dict[str, str] | None = None,
     force_deterministic_replace: bool = False,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
     """Repair only profile-owned failures, falling back to exact approved facts."""
 
@@ -272,6 +273,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=force_deterministic_replace,
+            prepared_plan=prepared_plan,
         )
     try:
         from wilq.content.drafts.initial_full_draft_turn import (
@@ -285,6 +287,7 @@ def repair_regulatory_assertions(
                 candidate=output,
                 missing_assertion_codes=missing,
                 repair_reasons=repair_reasons,
+                prepared_plan=prepared_plan,
             )
         )
     except Exception:
@@ -294,6 +297,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
+            prepared_plan=prepared_plan,
         )
     if result.status != "completed" or result.output_text is None:
         return _grounded_repair_fallback(
@@ -302,6 +306,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
+            prepared_plan=prepared_plan,
         )
     try:
         patch = RegulatoryAssertionRepairOutput.model_validate_json(result.output_text)
@@ -312,6 +317,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
+            prepared_plan=prepared_plan,
         )
     patches = validated_patches_by_section(patch, expected_modes=expected_modes)
     if patches is None:
@@ -321,6 +327,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
+            prepared_plan=prepared_plan,
         )
     try:
         validated_patch = apply_regulatory_patches(output, patches)
@@ -329,6 +336,7 @@ def repair_regulatory_assertions(
             planning_input=planning_input,
             proposal=proposal,
             missing_codes=missing,
+            prepared_plan=prepared_plan,
         )
     except ValueError:
         return _grounded_repair_fallback(
@@ -337,6 +345,7 @@ def repair_regulatory_assertions(
             output,
             missing,
             replace_semantic_requirements=fallback_requires_replacement,
+            prepared_plan=prepared_plan,
         )
     return grounded, runtime_trace(result)
 
@@ -348,6 +357,7 @@ def _grounded_repair_fallback(
     missing: list[str],
     *,
     replace_semantic_requirements: bool = False,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | None:
     try:
         grounded = ground_unmet_regulatory_assertions(
@@ -356,6 +366,7 @@ def _grounded_repair_fallback(
             proposal=proposal,
             missing_codes=missing,
             replace_semantic_requirements=replace_semantic_requirements,
+            prepared_plan=prepared_plan,
         )
     except ValueError:
         return None
@@ -371,6 +382,7 @@ def ground_unmet_regulatory_assertions(
     proposal: ContentPlanningProposal,
     missing_codes: list[str],
     replace_semantic_requirements: bool = False,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentInitialDraftModelOutput:
     """Ground unmet assertions with source facts, replacing only failed semantics.
 
@@ -412,11 +424,7 @@ def ground_unmet_regulatory_assertions(
         if target is None:
             continue
         current_body = next(
-            (
-                section.body_markdown
-                for section in output.sections
-                if section.section_id == target
-            ),
+            (section.body_markdown for section in output.sections if section.section_id == target),
             "",
         )
         if not replace_semantic_requirements and regulatory_assertion_matches(
@@ -429,24 +437,27 @@ def ground_unmet_regulatory_assertions(
         semantic_requirement = requirement_id in semantic_requirement_ids
         protected_terms = (
             sorted(
-                {
-                    term
-                    for item in requirement.document_assertions
-                    for term in item.required_any_of
-                }
+                {term for item in requirement.document_assertions for term in item.required_any_of}
             )
             if semantic_requirement
             else assertion.required_any_of
         )
         facts = [
-            document_ready_fact_text(item, protected_terms=protected_terms)
+            safe_fact
             for item in _approved_facts_for_requirement(
                 planning_input,
                 requirement_id=requirement_id,
-                assertion_terms=(
-                    None if semantic_requirement else assertion.required_any_of
-                ),
+                section_id=target,
+                assertion_terms=(None if semantic_requirement else assertion.required_any_of),
+                prepared_plan=prepared_plan,
             )
+            if (
+                safe_fact := safe_document_ready_fact_text(
+                    item,
+                    protected_terms=protected_terms,
+                )
+            )
+            is not None
         ]
         facts = list(dict.fromkeys(fact for fact in facts if fact.strip()))
         if not facts:
@@ -456,25 +467,31 @@ def ground_unmet_regulatory_assertions(
             for covered_requirement_id in sections[target].regulatory_requirement_ids:
                 covered_requirement = requirement_by_id.get(covered_requirement_id)
                 replacement_facts.extend(
-                    document_ready_fact_text(
-                        fact,
-                        protected_terms=(
-                            sorted(
-                                {
-                                    term
-                                    for item in covered_requirement.document_assertions
-                                    for term in item.required_any_of
-                                }
-                            )
-                            if covered_requirement is not None
-                            else None
-                        ),
-                    )
+                    safe_fact
                     for fact in _approved_facts_for_requirement(
                         planning_input,
                         requirement_id=covered_requirement_id,
+                        section_id=target,
                         assertion_terms=None,
+                        prepared_plan=prepared_plan,
                     )
+                    if (
+                        safe_fact := safe_document_ready_fact_text(
+                            fact,
+                            protected_terms=(
+                                sorted(
+                                    {
+                                        term
+                                        for item in covered_requirement.document_assertions
+                                        for term in item.required_any_of
+                                    }
+                                )
+                                if covered_requirement is not None
+                                else None
+                            ),
+                        )
+                    )
+                    is not None
                 )
             replacement_facts = list(
                 dict.fromkeys(fact for fact in replacement_facts if fact.strip())
@@ -521,9 +538,25 @@ def _approved_facts_for_requirement(
     planning_input: ContentPlanningInput,
     *,
     requirement_id: str,
+    section_id: str | None = None,
     assertion_terms: list[str] | None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[str]:
     """Return only exact approved facts, optionally narrowed to one assertion."""
+
+    if prepared_plan is not None:
+        assigned_targets = (
+            target
+            for target in prepared_plan.target_supports
+            if section_id is None or target.section.section_id == section_id
+        )
+        facts = [
+            fact
+            for target in assigned_targets
+            for fact in target.source_facts
+            if requirement_id in fact.regulatory_requirement_ids
+        ]
+        return list(dict.fromkeys(fact.summary for fact in facts))
 
     return [
         item.extracted_fact

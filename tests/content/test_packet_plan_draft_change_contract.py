@@ -159,6 +159,9 @@ def test_packet_bound_refresh_status_reads_exact_projected_job() -> None:
 def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
     preparation = _repository_source("wilq/content/drafts/draft_plan_preparation.py")
     draft = _repository_source("wilq/content/drafts/initial_full_draft.py")
+    turn = _repository_source("wilq/content/drafts/initial_full_draft_turn.py")
+    alteration = _repository_source("wilq/content/drafts/draft_alteration.py")
+    grounding = _repository_source("wilq/content/drafts/grounding.py")
     router = _repository_source("apps/api/wilq_api/routers/content_initial_draft.py")
 
     assert "def prepare_draft_plan(" in preparation
@@ -168,3 +171,9 @@ def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
     assert "plan_blocked = _draft_plan_blocked_response(snapshot, prepared)" in draft
     assert "pre_generation_guard=lambda: draft_plan_guard(" in router
     assert "pre_persistence_guard=lambda: draft_plan_guard(" in router
+    assert "class PreparedSourceFact" in preparation
+    assert "target_supports: tuple[PreparedDraftTarget, ...]" in preparation
+    assert "prepared_plan=prepared.draft_plan" in draft
+    assert "prepared_plan: PreparedDraftPlan | None = None" in turn
+    assert alteration.count("prepared_plan=prepared_plan") >= 4
+    assert "def safe_document_ready_fact_text(" in grounding

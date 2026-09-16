@@ -53,6 +53,7 @@ from wilq.content.drafts.regulatory_patch import (
     validated_patches_by_section,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
+from wilq.content.planning.input_sources import ContentPlanningSourceFact
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
@@ -132,28 +133,45 @@ def _regulated_prepared_inputs() -> initial_full_draft._InitialDraftInputs:
             )
         ],
     )
-    return initial_full_draft._InitialDraftInputs(
-        planning_input=prepared.planning_input.model_copy(
-            update={
-                "confirmed_service_card_id": "service_regulated",
-                "regulatory_coverage": ContentRegulatoryCoverage(
-                    profile_id="regulated_profile",
-                    profile_version="1",
-                    requirements=[requirement],
+    planning_input = prepared.planning_input.model_copy(
+        update={
+            "confirmed_service_card_id": "service_regulated",
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                profile_id="regulated_profile",
+                profile_version="1",
+                requirements=[requirement],
+            ),
+            "source_facts": [
+                *prepared.planning_input.source_facts,
+                ContentPlanningSourceFact(
+                    fact_id="planning_transport_document",
+                    summary="KPO opisuje obowiązek dokumentowania transportu odpadów.",
+                    source_connector="official_regulatory_review",
+                    evidence_ids=["ev_readability_gate", "ev_transport_document"],
+                    source_fact_ids=["regulatory_source_fact_transport_document"],
+                    regulatory_requirement_ids=[requirement.id],
                 ),
-            }
-        ),
-        proposal=prepared.proposal.model_copy(
-            update={
-                "sections": [
-                    prepared.proposal.sections[0].model_copy(
-                        update={"regulatory_requirement_ids": [requirement.id]}
-                    ),
-                    prepared.proposal.sections[1],
-                ]
-            }
-        ),
+            ],
+        }
+    )
+    proposal = prepared.proposal.model_copy(
+        update={
+            "sections": [
+                prepared.proposal.sections[0].model_copy(
+                    update={"regulatory_requirement_ids": [requirement.id]}
+                ),
+                prepared.proposal.sections[1],
+            ]
+        }
+    )
+    draft_plan = initial_full_draft.prepare_draft_plan(proposal, planning_input)
+    if not isinstance(draft_plan, initial_full_draft.PreparedDraftPlan):
+        raise AssertionError(f"regulated readability fake must compile: {draft_plan}")
+    return initial_full_draft._InitialDraftInputs(
+        planning_input=planning_input,
+        proposal=proposal,
         generation_contract=prepared.generation_contract,
+        draft_plan=draft_plan,
     )
 
 
@@ -253,8 +271,7 @@ def test_public_patch_application_preserves_readability_document_semantics() -> 
 
     assert patched.sections[0].body_markdown == _CLEAN_SECTION_ONE
     assert patched.sections[1].body_markdown == (
-        f"{_CLEAN_SECTION_TWO}\n\n"
-        "Dodatkowy krok wymaga potwierdzenia zakresu dokumentacji."
+        f"{_CLEAN_SECTION_TWO}\n\nDodatkowy krok wymaga potwierdzenia zakresu dokumentacji."
     )
     assert patched.page_assets == output.page_assets
 
@@ -406,7 +423,9 @@ def _generate_assured_response(
     monkeypatch.setattr(initial_full_draft, "persist_initial_draft", fake_persist_initial_draft)
     response = initial_full_draft.generate_initial_full_draft(
         snapshot=SimpleNamespace(
-            preflight=SimpleNamespace(item=SimpleNamespace(id=prepared.planning_input.work_item_id)),
+            preflight=SimpleNamespace(
+                item=SimpleNamespace(id=prepared.planning_input.work_item_id)
+            ),
             planning_workspace=SimpleNamespace(
                 section_map_current=True,
                 proposal=prepared.proposal,
@@ -488,8 +507,8 @@ def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
     response, persistence_calls, finish_calls = _generate_blocked_response(
         monkeypatch,
         _output(
-            first_body=_DIRTY_SECTION_ONE,
-            second_body=_DIRTY_SECTION_TWO,
+            first_body=f"{_DIRTY_SECTION_ONE} Informacja do testu czytelności.",
+            second_body=f"{_DIRTY_SECTION_TWO} Informacja do testu czytelności.",
         ),
         unchanged_client,
     )
@@ -505,8 +524,8 @@ def test_initial_draft_readability_gate_repairs_or_blocks_before_persistence(
 
 def test_failed_readability_repair_turn_is_terminal_without_persistence(monkeypatch) -> None:
     dirty_output = _output(
-        first_body=_DIRTY_SECTION_ONE,
-        second_body=_DIRTY_SECTION_TWO,
+        first_body=f"{_DIRTY_SECTION_ONE} Informacja do testu czytelności.",
+        second_body=f"{_DIRTY_SECTION_TWO} Informacja do testu czytelności.",
     )
     client = _BlockedThenPatchClient(
         {
@@ -581,6 +600,9 @@ def test_readability_repair_reassures_and_persists_the_fresh_receipt(monkeypatch
     assert response.status == "created"
     assert len(assurance_candidates) == 2
     assert assurance_candidates[0] is output
+    assert "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji." in (
+        assurance_candidates[0].sections[0].body_markdown
+    )
     assert assurance_candidates[1] is not output
     assert assurance_candidates[1].sections[0].body_markdown == _REGULATED_CLEAN_SECTION
     assert len(client.requests) == 1
@@ -604,11 +626,14 @@ def test_clean_readability_path_keeps_the_initial_assurance_receipt(monkeypatch)
     )
 
     assert response.status == "created"
-    assert assurance_candidates == [output]
+    assert len(assurance_candidates) == 1
     assert assurance_candidates[0] is output
+    assert "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji." in (
+        assurance_candidates[0].sections[0].body_markdown
+    )
     assert client.requests == []
     assert len(persistence_calls) == 1
-    assert persistence_calls[0]["output"] is output
+    assert persistence_calls[0]["output"] is assurance_candidates[0]
     assert persistence_calls[0]["regulatory_assurance"] is initial_receipt
     assert finish_calls == []
 
@@ -630,52 +655,68 @@ def _regulated_prepared_inputs_with_kpo_fact() -> initial_full_draft._InitialDra
             )
         ],
     )
-    return initial_full_draft._InitialDraftInputs(
-        planning_input=prepared.planning_input.model_copy(
-            update={
-                "confirmed_service_card_id": "service_regulated",
-                "regulatory_coverage": ContentRegulatoryCoverage(
-                    profile_id="regulated_profile",
-                    profile_version="1",
-                    requirements=[requirement],
-                    source_facts=[
-                        ContentSourceFact(
-                            source_id="regulatory_source_fact_kpo",
-                            source_type="legal_update",
-                            privacy_class="commit_safe",
-                            source_url_or_path="https://bdo.mos.gov.pl/kpo/",
-                            extracted_fact=_KPO_FACT_TEXT,
-                            scope="claim_policy",
-                            freshness_date="2026-08-01",
-                            confidence=1,
-                            review_status="approved",
-                            reviewer="ekspert",
-                            evidence_ids=["ev_kpo"],
-                            source_connectors=["official_regulatory_review"],
-                            target_card_id="regulatory_kpo",
-                            target_card_type="regulatory_source",
-                            target_card_title="Oficjalny opis KPO",
-                            official_source=True,
-                            regulatory_profile_id="regulated_profile",
-                            regulatory_profile_version="1",
-                            regulatory_requirement_ids=["transport_document"],
-                            applicable_service_card_ids=["service_regulated"],
-                        )
-                    ],
+    regulatory_fact = ContentSourceFact(
+        source_id="regulatory_source_fact_kpo",
+        source_type="legal_update",
+        privacy_class="commit_safe",
+        source_url_or_path="https://bdo.mos.gov.pl/kpo/",
+        extracted_fact=_KPO_FACT_TEXT,
+        scope="claim_policy",
+        freshness_date="2026-08-01",
+        confidence=1,
+        review_status="approved",
+        reviewer="ekspert",
+        evidence_ids=["ev_readability_gate", "ev_kpo"],
+        source_connectors=["official_regulatory_review"],
+        target_card_id="regulatory_kpo",
+        target_card_type="regulatory_source",
+        target_card_title="Oficjalny opis KPO",
+        official_source=True,
+        regulatory_profile_id="regulated_profile",
+        regulatory_profile_version="1",
+        regulatory_requirement_ids=["transport_document"],
+        applicable_service_card_ids=["service_regulated"],
+    )
+    planning_input = prepared.planning_input.model_copy(
+        update={
+            "confirmed_service_card_id": "service_regulated",
+            "regulatory_coverage": ContentRegulatoryCoverage(
+                profile_id="regulated_profile",
+                profile_version="1",
+                requirements=[requirement],
+                source_facts=[regulatory_fact],
+            ),
+            "source_facts": [
+                *prepared.planning_input.source_facts,
+                ContentPlanningSourceFact(
+                    fact_id="planning_regulatory_source_fact_kpo",
+                    summary=_KPO_FACT_TEXT,
+                    source_connector="official_regulatory_review",
+                    evidence_ids=["ev_readability_gate", "ev_kpo"],
+                    source_fact_ids=[regulatory_fact.source_id],
+                    regulatory_requirement_ids=[requirement.id],
                 ),
-            }
-        ),
-        proposal=prepared.proposal.model_copy(
-            update={
-                "sections": [
-                    prepared.proposal.sections[0].model_copy(
-                        update={"regulatory_requirement_ids": [requirement.id]}
-                    ),
-                    prepared.proposal.sections[1],
-                ]
-            }
-        ),
+            ],
+        }
+    )
+    proposal = prepared.proposal.model_copy(
+        update={
+            "sections": [
+                prepared.proposal.sections[0].model_copy(
+                    update={"regulatory_requirement_ids": [requirement.id]}
+                ),
+                prepared.proposal.sections[1],
+            ]
+        }
+    )
+    draft_plan = initial_full_draft.prepare_draft_plan(proposal, planning_input)
+    if not isinstance(draft_plan, initial_full_draft.PreparedDraftPlan):
+        raise AssertionError(f"regulated KPO fake must compile: {draft_plan}")
+    return initial_full_draft._InitialDraftInputs(
+        planning_input=planning_input,
+        proposal=proposal,
         generation_contract=prepared.generation_contract,
+        draft_plan=draft_plan,
     )
 
 
@@ -727,11 +768,14 @@ def test_failed_reassurance_after_readability_repair_blocks_without_persistence(
         monkeypatch,
         output=output,
         client=client,
-        assurance_results=[initial_receipt, failure],
+        assurance_results=[initial_receipt, failure, failure],
     )
 
-    assert len(assurance_candidates) == 2
+    assert len(assurance_candidates) == 3
     assert assurance_candidates[0] is output
+    assert "KPO stosuje się, gdy przekazanie odpadów podlega ewidencji." in (
+        assurance_candidates[0].sections[0].body_markdown
+    )
     assert response.status == "blocked"
     assert response.revision is None
     assert response.blockers[0].code == failure.code
@@ -929,7 +973,11 @@ def test_readability_gate_repairs_page_asset_lead() -> None:
 
 
 def test_readability_gate_blocks_dirty_output_before_spending_a_repair_turn() -> None:
-    dirty_output = _output(first_body=f"{_DIRTY_SECTION_ONE} {_BLOCKED_CLAIM_SECTION}")
+    source_signal = "Informacja do testu czytelności."
+    dirty_output = _output(
+        first_body=f"{_DIRTY_SECTION_ONE} {_BLOCKED_CLAIM_SECTION} {source_signal}",
+        second_body=f"{_CLEAN_SECTION_TWO} {source_signal}",
+    )
     trace = ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn")
     prepared = _prepared_inputs()
     blocker = initial_full_draft._output_blocker(prepared, dirty_output)
@@ -961,9 +1009,10 @@ def test_readability_gate_blocks_dirty_output_before_spending_a_repair_turn() ->
 def test_readability_gate_blocks_repaired_claim_before_persistence(
     monkeypatch,
 ) -> None:
+    source_signal = "Informacja do testu czytelności."
     dirty_output = _output(
-        first_body=_DIRTY_SECTION_ONE,
-        second_body=_DIRTY_SECTION_TWO,
+        first_body=f"{_DIRTY_SECTION_ONE} {source_signal}",
+        second_body=f"{_DIRTY_SECTION_TWO} {source_signal}",
     )
     assert {section_id for _, section_id, _ in readability_issues_for_output(dirty_output)} == {
         "section_01",
@@ -978,8 +1027,8 @@ def test_readability_gate_blocks_repaired_claim_before_persistence(
 
     direct_client = _PatchClient(
         {
-            "section_01": _BLOCKED_CLAIM_SECTION,
-            "section_02": _DIRTY_SECTION_TWO,
+            "section_01": f"{_BLOCKED_CLAIM_SECTION} {source_signal}",
+            "section_02": f"{_DIRTY_SECTION_TWO} {source_signal}",
         }
     )
     repaired, _repaired_trace, returned_blocker = _assure(
@@ -989,7 +1038,7 @@ def test_readability_gate_blocks_repaired_claim_before_persistence(
         output_blocker,
     )
 
-    assert repaired.sections[0].body_markdown == _BLOCKED_CLAIM_SECTION
+    assert _BLOCKED_CLAIM_SECTION in repaired.sections[0].body_markdown
     assert returned_blocker is not None
     assert returned_blocker.code == "generated_claim_blocked"
     assert returned_blocker.source_codes == ["undeclared_high_risk_claim_language"]
@@ -997,8 +1046,8 @@ def test_readability_gate_blocks_repaired_claim_before_persistence(
 
     persistence_client = _PatchClient(
         {
-            "section_01": _BLOCKED_CLAIM_SECTION,
-            "section_02": _DIRTY_SECTION_TWO,
+            "section_01": f"{_BLOCKED_CLAIM_SECTION} {source_signal}",
+            "section_02": f"{_DIRTY_SECTION_TWO} {source_signal}",
         }
     )
     response, persistence_calls, finish_calls = _generate_blocked_response(

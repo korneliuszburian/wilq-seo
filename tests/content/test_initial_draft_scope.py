@@ -14,6 +14,7 @@ from wilq.content.drafts import (
     initial_full_draft,
 )
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan, prepare_draft_plan
 from wilq.content.drafts.generated_claim_safety import (
     GeneratedClaimSafetyIssue,
     generated_claim_blocker,
@@ -1212,6 +1213,75 @@ def test_regulatory_repair_turn_allows_only_qualified_approved_source_facts() ->
     assert "Nie rozszerzaj obowiązku" in request.instruction
 
 
+def test_prepared_regulatory_repair_selects_only_the_exact_target_fact() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="shared_requirement",
+        label="Wymaganie wspólne",
+        reason="Wymaga exact factu.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="assertion",
+                label="Twierdzenie",
+                required_any_of=["warunek"],
+            )
+        ],
+    )
+    fact_a = ContentPlanningSourceFact(
+        fact_id="planning_fact_a",
+        summary="Warunek A obowiązuje.",
+        source_connector="official",
+        evidence_ids=["ev_a"],
+        source_fact_ids=["fact_a"],
+        regulatory_requirement_ids=[requirement.id],
+    )
+    fact_b = ContentPlanningSourceFact(
+        fact_id="planning_fact_b",
+        summary="Warunek B obowiązuje.",
+        source_connector="official",
+        evidence_ids=["ev_b"],
+        source_fact_ids=["fact_b"],
+        regulatory_requirement_ids=[requirement.id],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work_shared_requirement",
+        planning_input_digest="a" * 64,
+        source_facts=[fact_a, fact_b],
+        regulatory_coverage=ContentRegulatoryCoverage(requirements=[requirement]),
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id="work_shared_requirement",
+        planning_input_digest="a" * 64,
+        sections=[
+            ContentPlanningSection(
+                section_id="section_a",
+                heading="Sekcja A",
+                purpose="Odpowiedz dla A.",
+                evidence_ids=["ev_a"],
+                regulatory_requirement_ids=[requirement.id],
+            ),
+            ContentPlanningSection(
+                section_id="section_b",
+                heading="Sekcja B",
+                purpose="Odpowiedz dla B.",
+                evidence_ids=["ev_b"],
+                regulatory_requirement_ids=[requirement.id],
+            ),
+        ],
+    )
+    plan = prepare_draft_plan(proposal, planning_input)
+    assert isinstance(plan, PreparedDraftPlan)
+
+    from wilq.content.drafts.regulatory_repair import _approved_facts_for_requirement
+
+    assert _approved_facts_for_requirement(
+        planning_input,
+        requirement_id=requirement.id,
+        section_id="section_a",
+        assertion_terms=None,
+        prepared_plan=plan,
+    ) == [fact_a.summary]
+
+
 def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None:
     blocker = _planning_input_blocker(
         [
@@ -1255,9 +1325,7 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
                 "reason": (
                     "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem."
                 ),
-                "next_step": (
-                    "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."
-                ),
+                "next_step": ("Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."),
                 "source_codes": ["runtime_timeout"],
                 "retry_after_seconds": None,
             },

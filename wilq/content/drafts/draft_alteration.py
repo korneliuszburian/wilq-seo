@@ -26,6 +26,7 @@ from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
 )
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.grounding import (
     _MISSING_SOURCE_FACT_SIGNAL_PREFIX,
     repair_missing_source_fact_signals,
@@ -92,6 +93,7 @@ def alter_draft_towards_persistence(
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     output_blocker: OutputBlocker,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> DraftAlterationResult:
     """Run the pre-persist alternation policy to one terminal state.
 
@@ -117,6 +119,7 @@ def alter_draft_towards_persistence(
         trace=trace,
         client=client,
         output_blocker=output_blocker,
+        prepared_plan=prepared_plan,
     )
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
@@ -129,6 +132,7 @@ def alter_draft_towards_persistence(
         client=client,
         run_store=run_store,
         output_blocker=output_blocker,
+        prepared_plan=prepared_plan,
     )
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
@@ -153,6 +157,7 @@ def alter_draft_towards_persistence(
             output=output,
             blocker=blocker,
             client=client,
+            prepared_plan=prepared_plan,
         )
         if repaired is not None:
             output, trace = repaired
@@ -173,6 +178,7 @@ def alter_draft_towards_persistence(
                         output=output,
                         blocker=blocker,
                         client=client,
+                        prepared_plan=prepared_plan,
                     )
                     if repaired is not None:
                         output, trace = repaired
@@ -195,6 +201,7 @@ def alter_draft_towards_persistence(
             client=client,
             run_store=run_store,
             output_blocker=output_blocker,
+            prepared_plan=prepared_plan,
         )
         if blocker is not None:
             return DraftAlterationResult(
@@ -222,6 +229,7 @@ def alter_draft_towards_persistence(
             output=output,
             blocker=blocker,
             client=client,
+            prepared_plan=prepared_plan,
         )
         if repaired is None:
             return DraftAlterationResult(
@@ -249,6 +257,7 @@ def assure_and_repair_initial_draft(
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     output_blocker: OutputBlocker,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -281,6 +290,7 @@ def assure_and_repair_initial_draft(
             run_store=run_store,
         ),
         output_blocker=output_blocker,
+        prepared_plan=prepared_plan,
     )
 
 
@@ -292,6 +302,7 @@ def repair_initial_output_blocker(
     trace: ContentCodexRuntimeTrace,
     client: CodexAppServerClientProtocol,
     output_blocker: OutputBlocker,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -308,6 +319,7 @@ def repair_initial_output_blocker(
         output=output,
         blocker=blocker,
         client=client,
+        prepared_plan=prepared_plan,
     )
     if repaired is not None:
         output, trace = repaired
@@ -323,6 +335,7 @@ def repair_initial_output_blocker(
             proposal=proposal,
             output=output,
             missing_codes=missing_source_fact_codes,
+            prepared_plan=prepared_plan,
         )
         return output, trace, output_blocker(output)
     return output, trace, blocker
@@ -357,6 +370,7 @@ def repair_after_assurance_failure(
     client: CodexAppServerClientProtocol,
     assure_draft: AssureDraft,
     output_blocker: OutputBlocker,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -372,6 +386,7 @@ def repair_after_assurance_failure(
         blocker=_assurance_blocker(assurance),
         client=client,
         repair_reasons=assurance.repair_reasons,
+        prepared_plan=prepared_plan,
     )
     if repaired is None:
         return output, trace, assurance, None
@@ -384,6 +399,7 @@ def repair_after_assurance_failure(
             output=output,
             blocker=blocker,
             client=client,
+            prepared_plan=prepared_plan,
         )
         if assertion_repair is not None:
             output, trace = assertion_repair
@@ -413,6 +429,7 @@ def repair_after_assurance_failure(
             blocker=_assurance_blocker(reassured),
             client=client,
             force_deterministic_replace=True,
+            prepared_plan=prepared_plan,
         )
         if deterministic is None:
             return output, trace, reassured, None

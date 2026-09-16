@@ -1,6 +1,7 @@
 import pytest
 
 from wilq.content.drafts import fact_selection, grounding
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan, prepare_draft_plan
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
@@ -116,12 +117,134 @@ def test_source_fact_signal_errors_passes_concrete_section(grounding_case: tuple
         }
     )
 
-    assert grounding.source_fact_signal_errors(
+    assert (
+        grounding.source_fact_signal_errors(
+            proposal,
+            concrete,
+            source_facts_by_section={"section_01": summaries},
+            source_fact_corpus=summaries,
+        )
+        == []
+    )
+
+
+def test_prepared_plan_deduplicates_one_fact_assigned_to_three_targets() -> None:
+    shared = ContentPlanningSourceFact(
+        fact_id="planning_shared_fact",
+        summary="Impaktor kaskadowy wykonuje pomiary emisji.",
+        source_connector="test",
+        evidence_ids=["ev_shared"],
+        source_fact_ids=["shared_fact"],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work_shared",
+        planning_input_digest="a" * 64,
+        source_facts=[shared],
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id="work_shared",
+        planning_input_digest="a" * 64,
+        sections=[
+            ContentPlanningSection(
+                section_id=f"section_{index}",
+                heading=f"Sekcja {index}",
+                purpose="Opisz pomiar.",
+                evidence_ids=["ev_shared"],
+            )
+            for index in range(1, 4)
+        ],
+    )
+    plan = prepare_draft_plan(proposal, planning_input)
+    assert isinstance(plan, PreparedDraftPlan)
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Pomiary",
+            meta_title="Pomiary",
+            meta_description="Opis pomiarów.",
+            h1="Pomiary emisji",
+            lead="Praktyczne informacje.",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id=f"section_{index}",
+                heading=f"Sekcja {index}",
+                body_markdown="Impaktor kaskadowy wykonuje pomiary.",
+            )
+            for index in range(1, 4)
+        ],
+    )
+
+    summaries = grounding.source_fact_summaries_by_section(
+        planning_input,
         proposal,
-        concrete,
-        source_facts_by_section={"section_01": summaries},
-        source_fact_corpus=summaries,
-    ) == []
+        prepared_plan=plan,
+    )
+    assert grounding.prepared_source_fact_corpus(plan) == [shared.summary]
+    assert (
+        grounding.source_fact_signal_errors(
+            proposal,
+            output,
+            source_facts_by_section=summaries,
+            source_fact_corpus=grounding.prepared_source_fact_corpus(plan),
+        )
+        == []
+    )
+
+
+def test_inline_link_fact_is_not_appended_by_prepared_grounding() -> None:
+    unsafe = ContentPlanningSourceFact(
+        fact_id="planning_unsafe_fact",
+        summary="Fakt z [linkiem](https://example.com).",
+        source_connector="test",
+        evidence_ids=["ev_unsafe"],
+        source_fact_ids=["unsafe_fact"],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work_unsafe",
+        planning_input_digest="a" * 64,
+        source_facts=[unsafe],
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id="work_unsafe",
+        planning_input_digest="a" * 64,
+        sections=[
+            ContentPlanningSection(
+                section_id="section_unsafe",
+                heading="Sekcja",
+                purpose="Opisz fakt.",
+                evidence_ids=["ev_unsafe"],
+            )
+        ],
+    )
+    plan = prepare_draft_plan(proposal, planning_input)
+    assert isinstance(plan, PreparedDraftPlan)
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_unsafe",
+                heading="Sekcja",
+                body_markdown="Treść bez faktu.",
+            )
+        ],
+    )
+
+    repaired = grounding.repair_missing_source_fact_signals(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        missing_codes=["missing_source_fact_signal:section_unsafe"],
+        prepared_plan=plan,
+    )
+
+    assert repaired == output
+    assert "https://example.com" not in repaired.sections[0].body_markdown
 
 
 def test_repair_missing_source_fact_signals_appends_document_ready_facts(

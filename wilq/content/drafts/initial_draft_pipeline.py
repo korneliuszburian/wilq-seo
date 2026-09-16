@@ -18,6 +18,7 @@ from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftRuntimePolicyError,
@@ -105,6 +106,7 @@ class InitialDraftPipelineInputs:
     response: InitialDraftResponseBuilder
     persist: InitialDraftPersistenceAdapter
     base_revision_id: str | None = None
+    prepared_plan: PreparedDraftPlan | None = None
     output_transform: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftModelOutput] = (
         lambda output: output
     )
@@ -170,6 +172,7 @@ def generate_initial_draft(
         trace=runtime,
         client=client,
         run_store=run_store,
+        prepared_plan=inputs.prepared_plan,
         output_blocker=inputs.output_blocker,
     )
     if altered.status == "blocked":
