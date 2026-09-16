@@ -7,7 +7,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from wilq.content.canonical.urls import content_normalized_path
+from wilq.content.canonical.urls import (
+    content_is_safe_public_url,
+    content_normalized_path,
+    content_url_host,
+)
 from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
@@ -63,7 +67,7 @@ def build_server_owned_research_packet_command(
         facts=facts,
         brief=brief,
     )
-    cta_destination = _cta_destination(snapshot, brief)
+    cta_destination = _cta_destination(snapshot, brief, planning_input)
     internal_links = _internal_links(planning_input)
     context = _context_receipt(
         snapshot=snapshot,
@@ -82,7 +86,6 @@ def build_server_owned_research_packet_command(
             brief=brief,
         ),
     )
-
 
     blocked_claims, freshness = _fact_lineage(source_pack, facts)
     return ContentResearchPacketCommand(
@@ -166,9 +169,7 @@ def _evidence_partitions(
                 }
             )
         ),
-        "planning_evidence_ids": tuple(
-            sorted(identity.inventory_evidence_ids)
-        ),
+        "planning_evidence_ids": tuple(sorted(identity.inventory_evidence_ids)),
     }
 
 
@@ -307,12 +308,40 @@ def _fact_lineage(
     return blocked_claims, freshness
 
 
-def _cta_destination(snapshot: ContentWorkItemWorkflowSnapshotResponse, brief: Any) -> str:
-    return str(
-        getattr(brief, "cta_destination", None)
-        or getattr(snapshot.service_profile_context, "cta_destination", None)
-        or ""
+def _cta_destination(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    brief: Any,
+    planning_input: ContentPlanningInput,
+) -> str:
+    brief_destination = str(getattr(brief, "cta_destination", None) or "").strip()
+    if brief_destination:
+        return brief_destination
+    service_destination = str(
+        getattr(snapshot.service_profile_context, "cta_destination", None) or ""
     ).strip()
+    if service_destination:
+        return service_destination
+
+    if len(planning_input.internal_link_candidates) != 1:
+        return ""
+    candidate = planning_input.internal_link_candidates[0]
+    target_url = getattr(candidate, "target_url", None)
+    evidence_ids = getattr(candidate, "evidence_ids", ())
+    planning_evidence_ids = set(planning_input.evidence_ids)
+    if (
+        not isinstance(target_url, str)
+        or not content_is_safe_public_url(target_url)
+        or content_url_host(target_url) not in {"ekologus.pl", "www.ekologus.pl"}
+        or content_normalized_path(target_url) != "/kontakt"
+        or not evidence_ids
+        or any(
+            not isinstance(evidence_id, str) or not evidence_id.strip()
+            for evidence_id in evidence_ids
+        )
+        or not set(evidence_ids).issubset(planning_evidence_ids)
+    ):
+        return ""
+    return content_normalized_path(target_url)
 
 
 def _legal_requirements(planning_input: ContentPlanningInput) -> tuple[str, ...]:

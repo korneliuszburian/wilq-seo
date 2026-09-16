@@ -35,3 +35,19 @@ def test_research_packet_identifier_contract_keeps_regulatory_prefix_and_secret_
     assert "sk-[A-Za-z0-9_-]{20,}" in source
     assert "gho_[A-Za-z0-9_]{20,}" in source
     assert "ya29\\.[A-Za-z0-9._-]{20,}" in source
+
+
+def test_research_packet_cta_fallback_contract_is_exact_and_evidence_bound() -> None:
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "wilq/content/workflow/research_packet_derivation.py").read_text(
+        encoding="utf-8"
+    )
+
+    exact_count = "if len(planning_input.internal_link_candidates) != 1:"
+    first_candidate = "candidate = planning_input.internal_link_candidates[0]"
+    assert exact_count in source
+    assert '{"ekologus.pl", "www.ekologus.pl"}' in source
+    assert 'content_normalized_path(target_url) != "/kontakt"' in source
+    assert "set(evidence_ids).issubset(planning_evidence_ids)" in source
+    assert "internal_link_candidates[0].target_url" not in source
+    assert source.index(exact_count) < source.index(first_candidate)

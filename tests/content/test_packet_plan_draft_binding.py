@@ -43,6 +43,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
 )
+from wilq.content.planning.internal_link_candidates import ContentPlanningInternalLinkCandidate
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
@@ -57,6 +58,26 @@ from wilq.content.workflow.research_packet_preparation import (
     prepare_content_research_packet,
 )
 from wilq.content.workflow.source_pack_binding import ContentSourcePackBindingBlocker
+
+
+def _editorial_planning_input(case, candidates):
+    return case.planning_input.model_copy(
+        update={
+            "content_kind": "editorial",
+            "service_candidates": [],
+            "confirmed_service_card_id": None,
+            "service_label": None,
+            "internal_link_candidates": candidates,
+        }
+    )
+
+
+def _contact_candidate(case, *, target_url="https://www.ekologus.pl/kontakt", evidence_ids=None):
+    return ContentPlanningInternalLinkCandidate(
+        target_url=target_url,
+        anchor_hint="Kontakt",
+        evidence_ids=evidence_ids or [case.identity.inventory_evidence_ids[0]],
+    )
 
 
 def test_planning_turn_carries_server_owned_research_packet_binding() -> None:
@@ -152,6 +173,158 @@ def test_packet_command_derives_semantics_from_typed_planning_context(
     assert command.legal_source_requirements == ("none_identified",)
     assert command.context_receipt is not None
     assert command.context_receipt.brief_semantic_digest != "0" * 64
+
+
+def test_editorial_packet_derivation_uses_exact_evidence_backed_contact_candidate(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(
+        case,
+        [_contact_candidate(case)],
+    )
+
+    command = build_server_owned_research_packet_command(
+        snapshot=snapshot_without_cta(case),
+        planning_input=planning_input,
+        source_pack=case.source_pack,
+        identity=case.identity,
+        now=datetime.now(UTC),
+    )
+
+    assert not isinstance(command, ContentResearchPacketBlocker)
+    assert command.cta_destination == "/kontakt"
+    assert command.internal_links[0].destination_path == "/kontakt"
+    assert command.internal_links[0].verification == "exact_verified"
+
+
+@pytest.mark.parametrize(
+    ("companion_factory", "label"),
+    [
+        (
+            lambda case: _contact_candidate(
+                case,
+                target_url="https://sklep.ekologus.pl/kontakt",
+            ),
+            "foreign",
+        ),
+        (
+            lambda case: _contact_candidate(
+                case,
+                target_url="https://www.ekologus.pl/uslugi",
+            ),
+            "invalid",
+        ),
+        (
+            lambda case: _contact_candidate(case, evidence_ids=["ev_unbound_contact"]),
+            "missing_evidence",
+        ),
+    ],
+)
+def test_editorial_packet_derivation_blocks_contact_fallback_with_invalid_companion(
+    tmp_path: Path,
+    companion_factory,
+    label: str,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(
+        case,
+        [_contact_candidate(case), companion_factory(case)],
+    )
+
+    result = prepare_content_research_packet(
+        store=case.store,
+        snapshot=snapshot_without_cta(case),
+        planning_input=planning_input,
+    )
+
+    assert result.status == "blocked", label
+    assert result.packet is not None
+    assert result.packet.status == "blocked"
+    assert result.blocker is not None
+    assert result.blocker.reason == "cta_destination_missing"
+
+
+def test_editorial_packet_derivation_blocks_ambiguous_contact_candidates(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(
+        case,
+        [
+            _contact_candidate(case, target_url="https://www.ekologus.pl/kontakt"),
+            _contact_candidate(case, target_url="https://ekologus.pl/kontakt"),
+        ],
+    )
+
+    result = prepare_content_research_packet(
+        store=case.store,
+        snapshot=snapshot_without_cta(case),
+        planning_input=planning_input,
+    )
+
+    assert result.status == "blocked"
+    assert result.blocker is not None
+    assert result.blocker.reason == "cta_destination_missing"
+
+
+def test_editorial_packet_derivation_trims_brief_before_service_cta(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    snapshot = snapshot_without_cta(case)
+    brief = snapshot.sales_brief.sales_brief_result.brief
+    snapshot.sales_brief.sales_brief_result.brief = brief.model_copy(
+        update={"cta_destination": "  "}
+    )
+    snapshot.service_profile_context = (
+        ContentWorkItemServiceProfileContext.not_evaluated().model_copy(
+            update={"cta_destination": " /usluga/ "}
+        )
+    )
+
+    command = build_server_owned_research_packet_command(
+        snapshot=snapshot,
+        planning_input=case.planning_input,
+        source_pack=case.source_pack,
+        identity=case.identity,
+        now=datetime.now(UTC),
+    )
+
+    assert not isinstance(command, ContentResearchPacketBlocker)
+    assert command.cta_destination == "/usluga/"
+
+
+def test_editorial_packet_plan_route_persists_exact_current_packet_from_contact_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(case, [_contact_candidate(case)])
+    monkeypatch.setattr(planning_route, "content_workflow_store", lambda: case.store)
+    request = ContentPlanningProposalRequest(
+        content_kind="editorial",
+        expected_planning_input_digest=planning_input.planning_input_digest,
+        requested_by="wilku",
+    )
+
+    response, bound_input, bound_request = planning_route._prepare_and_bind_research_packet(
+        work_item_id=case.identity.current_work_item_id,
+        request=request,
+        planning_input=planning_input,
+        snapshot=snapshot_without_cta(case),
+    )
+
+    assert response is None
+    assert bound_input is not None
+    assert bound_request.research_packet_id is not None
+    packet = case.store.load_content_research_packet(bound_request.research_packet_id)
+    assert packet is not None
+    assert packet.status == "exact_current"
+    assert packet.cta_destination == "/kontakt"
+    assert packet.internal_links[0].destination_path == "/kontakt"
+    assert packet.internal_links[0].verification == "exact_verified"
+    assert bound_request.expected_research_packet_digest == packet.packet_digest
 
 
 def test_packet_derivation_accepts_approved_regulatory_source_fact_id(
@@ -531,8 +704,7 @@ def test_planning_model_context_excludes_facts_queries_and_evidence_outside_pack
     assert "outside_service_profile_fact" not in json.dumps(model_input)
     assert "ev_outside_packet" not in json.dumps(model_input)
     assert all(
-        row["term"] != "spoza packetu"
-        for row in model_input["query_portfolio"]["gsc_query_rows"]
+        row["term"] != "spoza packetu" for row in model_input["query_portfolio"]["gsc_query_rows"]
     )
     draft_model_input = compact_initial_draft_planning_input(bound, prepared.packet)
     assert "outside_service_profile_fact" not in json.dumps(draft_model_input)
@@ -739,12 +911,13 @@ def test_packet_preparation_is_idempotent_and_server_owned(
     assert bound_request.expected_research_packet_digest == first.packet.packet_digest
     assert bound_request.expected_planning_input_digest == bound_input.planning_input_digest
 
-    missing_cta = prepare_content_research_packet(
+    candidate_cta = prepare_content_research_packet(
         store=case.store,
         snapshot=snapshot_without_cta(case),
         planning_input=case.planning_input,
     )
 
-    assert missing_cta.status == "blocked"
-    assert missing_cta.blocker is not None
-    assert missing_cta.blocker.reason == "cta_destination_missing"
+    assert candidate_cta.status == "created"
+    assert candidate_cta.packet is not None
+    assert candidate_cta.packet.status == "exact_current"
+    assert candidate_cta.packet.cta_destination == "/kontakt"
