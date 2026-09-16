@@ -20,6 +20,7 @@ from wilq.content.drafts.draft_assurance import (
     regulatory_draft_assurance_profile,
     validate_draft_assurance_output,
 )
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
@@ -60,6 +61,7 @@ def run_regulatory_draft_assurance(
     output: ContentInitialDraftModelOutput,
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None:
     """Return a passed receipt or typed failure; this function never persists a draft."""
 
@@ -102,6 +104,7 @@ def run_regulatory_draft_assurance(
             profile=profile,
             assessment=assessment,
             codex_run_id=critic_run.id,
+            prepared_plan=prepared_plan,
         )
     except ValueError as error:
         invalid_output_code = _invalid_output_code(error)
@@ -160,6 +163,7 @@ def _collect_bounded_checks(
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     critic_run: CodexRun,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[ContentDraftAssuranceCheckOutput] | ContentDraftAssuranceFailure:
     requests = [
         draft_assurance_turn_request(
@@ -168,6 +172,7 @@ def _collect_bounded_checks(
             output=output,
             profile=profile,
             constraints_override=[constraint],
+            prepared_plan=prepared_plan,
         )
         for constraint in constraints
     ]

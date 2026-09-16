@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import asdict
 from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -23,6 +24,7 @@ from wilq.content.codex_turn import (
     require_all_object_properties,
     restrict_array_with_empty_placeholder,
 )
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
@@ -33,6 +35,7 @@ from wilq.content.regulatory.policy import (
     regulatory_draft_assurance_constraints,
 )
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.production import canonical_json_digest
 
 ContentDraftAssuranceStatus = Literal["passed", "failed", "not_applicable"]
 ContentDraftAssuranceCheckStatus = Literal["pass", "fail"]
@@ -47,6 +50,12 @@ ContentDraftAssuranceReasonCode = Literal[
 ]
 _CRITERIA_VERSION: Final[Literal["wilq_regulatory_draft_assurance_v1"]] = (
     "wilq_regulatory_draft_assurance_v1"
+)
+ASSURANCE_FINGERPRINT_VERSION: Final[Literal["wilq_draft_assurance_fingerprint_v1"]] = (
+    "wilq_draft_assurance_fingerprint_v1"
+)
+ASSURANCE_PROMPT_VERSION: Final[Literal["wilq_regulatory_draft_assurance_prompt_v1"]] = (
+    "wilq_regulatory_draft_assurance_prompt_v1"
 )
 
 _INSTRUCTION = (
@@ -114,6 +123,7 @@ class ContentDraftAssuranceReceipt(BaseModel):
     profile_version: str | None = None
     codex_run_id: str | None = None
     failed_constraint_ids: list[str] = Field(default_factory=list)
+    assurance_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def require_exact_status_payload(self) -> ContentDraftAssuranceReceipt:
@@ -155,6 +165,56 @@ def regulatory_draft_assurance_profile(
     return profile
 
 
+def draft_assurance_fingerprint(
+    *,
+    output: ContentInitialDraftModelOutput,
+    prepared_plan: PreparedDraftPlan,
+    profile_id: str,
+    profile_version: str,
+    criteria_version: str = _CRITERIA_VERSION,
+    prompt_version: str = ASSURANCE_PROMPT_VERSION,
+) -> str:
+    """Hash every server-owned input that can change an assurance verdict."""
+
+    exact_snapshot = prepared_plan.exact_source_snapshot
+    return canonical_json_digest(
+        {
+            "fingerprint_version": ASSURANCE_FINGERPRINT_VERSION,
+            "candidate_document": output.model_dump(mode="json"),
+            "prepared_plan": {
+                "candidate": prepared_plan.candidate.model_dump(mode="json"),
+                "exact_source_snapshot": exact_snapshot.model_dump(mode="json"),
+                "body_targets": [
+                    section.model_dump(mode="json") for section in prepared_plan.body_targets
+                ],
+                "target_supports": [
+                    {
+                        "section": target.section.model_dump(mode="json"),
+                        "source_facts": [asdict(fact) for fact in target.source_facts],
+                    }
+                    for target in prepared_plan.target_supports
+                ],
+            },
+            "context": {
+                "work_item_id": exact_snapshot.work_item_id,
+                "planning_input_digest": exact_snapshot.planning_input_digest,
+                "research_packet_id": exact_snapshot.research_packet_id,
+                "research_packet_digest": exact_snapshot.research_packet_digest,
+                "source_fact_ids": sorted(
+                    {
+                        source_fact_id
+                        for fact in exact_snapshot.source_facts
+                        for source_fact_id in fact.source_fact_ids
+                    }
+                ),
+            },
+            "profile": {"id": profile_id, "version": profile_version},
+            "criteria_version": criteria_version,
+            "prompt_version": prompt_version,
+        }
+    )
+
+
 def draft_assurance_turn_request(
     *,
     planning_input: ContentPlanningInput,
@@ -162,6 +222,7 @@ def draft_assurance_turn_request(
     output: ContentInitialDraftModelOutput,
     profile: ContentRegulatoryProfile,
     constraints_override: list[ContentRegulatoryClaimConstraint] | None = None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     """Make a fresh critic request over a frozen writer result and source bundle."""
 
@@ -172,9 +233,7 @@ def draft_assurance_turn_request(
         for requirement_id in constraint.requirement_ids
     }
     requirements = [
-        requirement
-        for requirement in profile.requirements
-        if requirement.id in requirement_ids
+        requirement for requirement in profile.requirements if requirement.id in requirement_ids
     ]
     section_ids_by_constraint = _section_ids_by_constraint(
         constraints,
@@ -189,6 +248,7 @@ def draft_assurance_turn_request(
             "planning_input_digest": planning_input.planning_input_digest,
             "service_card_id": planning_input.confirmed_service_card_id,
             "criteria_version": _CRITERIA_VERSION,
+            "prompt_version": ASSURANCE_PROMPT_VERSION,
             "profile_id": profile.id,
             "profile_version": profile.version,
             "constraint_ids_in_order": [constraint.id for constraint in constraints],
@@ -233,9 +293,13 @@ def draft_assurance_turn_request(
                 proposal,
                 constraints,
             ),
-            "official_source_facts": _source_facts_for_critic(
-                planning_input.regulatory_coverage,
-                constraints,
+            "official_source_facts": (
+                _source_facts_for_prepared_plan(prepared_plan, constraints)
+                if prepared_plan is not None
+                else _source_facts_for_critic(
+                    planning_input.regulatory_coverage,
+                    constraints,
+                )
             ),
         },
         ensure_ascii=False,
@@ -385,6 +449,7 @@ def validate_draft_assurance_output(
     profile: ContentRegulatoryProfile,
     assessment: ContentDraftAssuranceModelOutput,
     codex_run_id: str,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentDraftAssuranceReceipt:
     """Validate critic output against the frozen profile, evidence and document."""
 
@@ -404,6 +469,16 @@ def validate_draft_assurance_output(
         profile_version=profile.version,
         codex_run_id=codex_run_id,
         failed_constraint_ids=failed_ids,
+        assurance_fingerprint=(
+            None
+            if prepared_plan is None
+            else draft_assurance_fingerprint(
+                output=output,
+                prepared_plan=prepared_plan,
+                profile_id=profile.id,
+                profile_version=profile.version,
+            )
+        ),
     )
 
 
@@ -463,6 +538,34 @@ def _source_facts_for_critic(
     ]
 
 
+def _source_facts_for_prepared_plan(
+    prepared_plan: PreparedDraftPlan,
+    constraints: list[ContentRegulatoryClaimConstraint],
+) -> list[dict[str, object]]:
+    required_ids = {
+        requirement_id
+        for constraint in constraints
+        for requirement_id in constraint.requirement_ids
+    }
+    return [
+        {
+            "source_fact_id": fact.source_fact_ids[0] if len(fact.source_fact_ids) == 1 else None,
+            "source_fact_ids": list(fact.source_fact_ids),
+            "summary": fact.summary,
+            "evidence_ids": list(fact.evidence_ids),
+            "requirement_ids": [
+                requirement_id
+                for requirement_id in fact.regulatory_requirement_ids
+                if requirement_id in required_ids
+            ],
+        }
+        for target in prepared_plan.target_supports
+        if set(target.section.regulatory_requirement_ids).intersection(required_ids)
+        for fact in target.source_facts
+        if set(fact.regulatory_requirement_ids).intersection(required_ids)
+    ]
+
+
 def _evidence_by_constraint(
     coverage: ContentRegulatoryCoverage,
     constraints: list[ContentRegulatoryClaimConstraint],
@@ -484,7 +587,10 @@ def _evidence_by_constraint(
 __all__ = [
     "ContentDraftAssuranceModelOutput",
     "ContentDraftAssuranceReceipt",
+    "ASSURANCE_FINGERPRINT_VERSION",
+    "ASSURANCE_PROMPT_VERSION",
     "draft_assurance_turn_request",
+    "draft_assurance_fingerprint",
     "draft_assurance_output_schema",
     "regulatory_draft_assurance_profile",
     "validate_draft_assurance_output",

@@ -32,7 +32,10 @@ from wilq.content.drafts import (
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import assure_readability_and_repair
-from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance import (
+    ContentDraftAssuranceReceipt,
+    draft_assurance_fingerprint,
+)
 from wilq.content.drafts.draft_assurance_runtime import ContentDraftAssuranceFailure
 from wilq.content.drafts.initial_draft_readability import (
     apply_readability_patches,
@@ -389,8 +392,21 @@ def _generate_assured_response(
     def fake_assure_regulated_draft(
         **kwargs: object,
     ) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure:
-        assurance_candidates.append(cast(ContentInitialDraftModelOutput, kwargs["output"]))
-        return pending_results.pop(0)
+        candidate = cast(ContentInitialDraftModelOutput, kwargs["output"])
+        assurance_candidates.append(candidate)
+        result = pending_results.pop(0)
+        if isinstance(result, ContentDraftAssuranceReceipt) and result.status == "passed":
+            result = result.model_copy(
+                update={
+                    "assurance_fingerprint": draft_assurance_fingerprint(
+                        output=candidate,
+                        prepared_plan=prepared.draft_plan,
+                        profile_id=result.profile_id or "regulated_profile",
+                        profile_version=result.profile_version or "1",
+                    )
+                }
+            )
+        return result
 
     def fake_persist_initial_draft(**kwargs: object) -> SimpleNamespace:
         persistence_calls.append(kwargs)
@@ -414,6 +430,11 @@ def _generate_assured_response(
         draft_alteration,
         "assure_regulated_draft",
         fake_assure_regulated_draft,
+    )
+    monkeypatch.setattr(
+        draft_alteration,
+        "regulatory_draft_assurance_profile",
+        lambda _planning_input: SimpleNamespace(id="regulated_profile", version="1"),
     )
     monkeypatch.setattr(
         initial_full_draft,
@@ -608,7 +629,12 @@ def test_readability_repair_reassures_and_persists_the_fresh_receipt(monkeypatch
     assert len(client.requests) == 1
     assert len(persistence_calls) == 1
     assert persistence_calls[0]["output"] is assurance_candidates[1]
-    assert persistence_calls[0]["regulatory_assurance"] is after_receipt
+    persisted_assurance = cast(
+        ContentDraftAssuranceReceipt,
+        persistence_calls[0]["regulatory_assurance"],
+    )
+    assert persisted_assurance.codex_run_id == after_receipt.codex_run_id
+    assert persisted_assurance.assurance_fingerprint is not None
     assert persistence_calls[0]["regulatory_assurance"] is not before_receipt
     assert finish_calls == []
 
@@ -634,7 +660,12 @@ def test_clean_readability_path_keeps_the_initial_assurance_receipt(monkeypatch)
     assert client.requests == []
     assert len(persistence_calls) == 1
     assert persistence_calls[0]["output"] is assurance_candidates[0]
-    assert persistence_calls[0]["regulatory_assurance"] is initial_receipt
+    persisted_assurance = cast(
+        ContentDraftAssuranceReceipt,
+        persistence_calls[0]["regulatory_assurance"],
+    )
+    assert persisted_assurance.codex_run_id == initial_receipt.codex_run_id
+    assert persisted_assurance.assurance_fingerprint is not None
     assert finish_calls == []
 
 

@@ -6,6 +6,7 @@ from typing import Literal, Protocol
 
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     finish_initial_draft_run,
@@ -64,6 +65,7 @@ def persist_initial_draft(
     workflow_store: InitialDraftRevisionStore,
     run_store: LocalStateStore,
     regulatory_assurance: ContentDraftAssuranceReceipt | None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentInitialDraftResponse:
     """Persist revision and completed run atomically, or return a typed blocker."""
 
@@ -77,6 +79,7 @@ def persist_initial_draft(
             run=run,
             base_revision_id=base_revision_id,
             regulatory_assurance=regulatory_assurance,
+            prepared_plan=prepared_plan,
         )
     except (ValueError, StopIteration):
         return _finish_failure(

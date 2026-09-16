@@ -5,7 +5,12 @@ from hashlib import sha256
 
 from pydantic import BaseModel
 
-from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance import (
+    ContentDraftAssuranceReceipt,
+    draft_assurance_fingerprint,
+    regulatory_draft_assurance_profile,
+)
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
@@ -43,7 +48,27 @@ def build_initial_draft_revision_command(
     run: CodexRun,
     base_revision_id: str | None = None,
     regulatory_assurance: ContentDraftAssuranceReceipt | None = None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentDraftRevisionAppendCommand:
+    coverage = planning_input.regulatory_coverage
+    profile = regulatory_draft_assurance_profile(planning_input)
+    if coverage.applicability_status == "required" and (
+        regulatory_assurance is None
+        or regulatory_assurance.status != "passed"
+        or profile is None
+        or regulatory_assurance.profile_id != profile.id
+        or regulatory_assurance.profile_version != profile.version
+        or prepared_plan is None
+        or regulatory_assurance.assurance_fingerprint is None
+        or regulatory_assurance.assurance_fingerprint
+        != draft_assurance_fingerprint(
+            output=output,
+            prepared_plan=prepared_plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+    ):
+        raise ValueError("Legacy or stale assurance cannot authorize a new revision.")
     package = snapshot.draft_package.draft_package_result.draft_package
     if package is None:
         raise ValueError("Initial draft preflight passed without a draft package.")
@@ -127,6 +152,7 @@ def _revision_metadata(
     sections: list[ContentDraftRevisionSection],
     run: CodexRun,
     regulatory_assurance: ContentDraftAssuranceReceipt | None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> ContentDraftRevisionProposalMetadata:
     quality_finding_codes = ["semantic_review_required"]
     if regulatory_assurance is not None and regulatory_assurance.status == "passed":
@@ -151,6 +177,9 @@ def _revision_metadata(
         ),
         regulatory_assurance_criteria_version=(
             None if regulatory_assurance is None else regulatory_assurance.criteria_version
+        ),
+        regulatory_assurance_fingerprint=(
+            None if regulatory_assurance is None else regulatory_assurance.assurance_fingerprint
         ),
         review_scope="persisted_full_document_and_declared_lineage",
         research_packet_id=planning_input.research_packet_id,

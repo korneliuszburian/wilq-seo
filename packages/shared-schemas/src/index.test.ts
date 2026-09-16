@@ -196,11 +196,13 @@ describe("ContentDraftRevisionProposalMetadataSchema", () => {
       ContentDraftRevisionProposalMetadataSchema.parse({
         ...base,
         regulatory_assurance_run_id: " codex_assurance ",
-        regulatory_assurance_criteria_version: " criteria_v1 "
+        regulatory_assurance_criteria_version: " criteria_v1 ",
+        regulatory_assurance_fingerprint: "a".repeat(64)
       })
     ).toMatchObject({
       regulatory_assurance_run_id: "codex_assurance",
-      regulatory_assurance_criteria_version: "criteria_v1"
+      regulatory_assurance_criteria_version: "criteria_v1",
+      regulatory_assurance_fingerprint: "a".repeat(64)
     });
     expect(
       ContentDraftRevisionProposalMetadataSchema.safeParse({

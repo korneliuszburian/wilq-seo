@@ -2760,6 +2760,7 @@ export const ContentDraftRevisionProposalMetadataSchema = z
     quality_finding_codes: z.array(z.string()).default([]),
     regulatory_assurance_run_id: z.string().trim().min(1).nullable().optional(),
     regulatory_assurance_criteria_version: z.string().trim().min(1).nullable().optional(),
+    regulatory_assurance_fingerprint: z.string().regex(/^[0-9a-f]{64}$/).nullable().optional(),
     review_scope: z.enum([
       "persisted_selected_sections_and_declared_lineage",
       "persisted_selected_components_and_declared_lineage",

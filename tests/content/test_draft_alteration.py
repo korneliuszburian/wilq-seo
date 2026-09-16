@@ -17,17 +17,20 @@ from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAs
 def _output() -> ContentInitialDraftModelOutput:
     return ContentInitialDraftModelOutput(
         page_assets=ContentDraftRevisionPageAssets(
-            wordpress_title="t",
-            meta_title="m",
-            meta_description="d",
-            h1="h",
-            lead="l",
+            wordpress_title="Przewodnik dla przedsiębiorcy",
+            meta_title="Przewodnik dla przedsiębiorcy krok po kroku",
+            meta_description="Praktyczne wyjaśnienie obowiązków i kolejnych działań dla firmy.",
+            h1="Jak uporządkować obowiązki przedsiębiorcy?",
+            lead="Krótki przewodnik prowadzi przez najważniejsze działania i decyzje.",
         ),
         sections=[
             ContentInitialDraftSectionOutput(
                 section_id="section_01",
-                heading="Sekcja",
-                body_markdown="Treść sekcji.",
+                heading="Jak zacząć porządkowanie obowiązków?",
+                body_markdown=(
+                    "Najpierw sprawdź zakres obowiązków firmy, uporządkuj dokumenty "
+                    "i przypisz odpowiedzialność za kolejne działania."
+                ),
             )
         ],
         publish_ready=False,
@@ -36,6 +39,12 @@ def _output() -> ContentInitialDraftModelOutput:
 
 def _trace() -> ContentCodexRuntimeTrace:
     return ContentCodexRuntimeTrace(status="completed", turn_id="turn")
+
+
+def _nonregulated_input() -> SimpleNamespace:
+    return SimpleNamespace(
+        regulatory_coverage=SimpleNamespace(applicability_status="not_applicable")
+    )
 
 
 def _receipt() -> ContentDraftAssuranceReceipt:
@@ -89,7 +98,7 @@ def test_alteration_skips_regulatory_repair_when_readability_is_clean(
     )
 
     result = alter_draft_towards_persistence(
-        planning_input=SimpleNamespace(),
+        planning_input=_nonregulated_input(),
         proposal=SimpleNamespace(),
         output=output,
         trace=trace,
@@ -138,7 +147,7 @@ def test_alteration_grounds_regulatory_terms_only_after_readability_blocker(
     )
 
     result = alter_draft_towards_persistence(
-        planning_input=SimpleNamespace(),
+        planning_input=_nonregulated_input(),
         proposal=SimpleNamespace(),
         output=output,
         trace=trace,
@@ -183,7 +192,7 @@ def test_alteration_preserves_stage_order_and_regulatory_asymmetry(
     monkeypatch.setattr(draft_alteration, "repair_regulatory_assertions", fake_regulatory_repair)
 
     result = alter_draft_towards_persistence(
-        planning_input=SimpleNamespace(),
+        planning_input=_nonregulated_input(),
         proposal=SimpleNamespace(),
         output=_output(),
         trace=_trace(),
@@ -198,8 +207,6 @@ def test_alteration_preserves_stage_order_and_regulatory_asymmetry(
         "assure",
         "readability",
         "regulatory",
-        "readability",
-        "assure",
         "readability",
     ]
 
@@ -227,7 +234,9 @@ def test_alteration_uses_two_default_cycles_before_returning_terminal_blocker(
         nonlocal readability_calls
         readability_calls += 1
         if readability_calls == 1:
-            return kwargs["output"].model_copy(), kwargs["trace"], None
+            changed = kwargs["output"].model_copy(deep=True)
+            changed.sections[0].body_markdown += " Zmieniona wersja."
+            return changed, kwargs["trace"], None
         return kwargs["output"], kwargs["trace"], terminal_blocker
 
     def fake_regulatory_repair(**kwargs):
@@ -242,7 +251,7 @@ def test_alteration_uses_two_default_cycles_before_returning_terminal_blocker(
     monkeypatch.setattr(draft_alteration, "repair_regulatory_assertions", fake_regulatory_repair)
 
     result = alter_draft_towards_persistence(
-        planning_input=SimpleNamespace(),
+        planning_input=_nonregulated_input(),
         proposal=SimpleNamespace(),
         output=_output(),
         trace=_trace(),
@@ -283,7 +292,7 @@ def test_alteration_terminates_on_blocker_without_assurance(
     )
 
     result = alter_draft_towards_persistence(
-        planning_input=SimpleNamespace(),
+        planning_input=_nonregulated_input(),
         proposal=SimpleNamespace(),
         output=output,
         trace=trace,

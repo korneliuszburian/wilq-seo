@@ -21,7 +21,11 @@ from typing import Literal
 
 from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.drafts.draft_assurance import ContentDraftAssuranceReceipt
+from wilq.content.drafts.draft_assurance import (
+    ContentDraftAssuranceReceipt,
+    draft_assurance_fingerprint,
+    regulatory_draft_assurance_profile,
+)
 from wilq.content.drafts.draft_assurance_runtime import (
     ContentDraftAssuranceFailure,
     run_regulatory_draft_assurance,
@@ -94,6 +98,7 @@ def alter_draft_towards_persistence(
     run_store: LocalStateStore,
     output_blocker: OutputBlocker,
     prepared_plan: PreparedDraftPlan | None = None,
+    assurance_cache: dict[str, AssuranceResult] | None = None,
 ) -> DraftAlterationResult:
     """Run the pre-persist alternation policy to one terminal state.
 
@@ -112,6 +117,7 @@ def alter_draft_towards_persistence(
        and readable prose.
     """
 
+    cache = {} if assurance_cache is None else assurance_cache
     output, trace, blocker = repair_initial_output_blocker(
         planning_input=planning_input,
         proposal=proposal,
@@ -133,6 +139,7 @@ def alter_draft_towards_persistence(
         run_store=run_store,
         output_blocker=output_blocker,
         prepared_plan=prepared_plan,
+        assurance_cache=cache,
     )
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
@@ -186,13 +193,23 @@ def alter_draft_towards_persistence(
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
 
-    if output is assured_output:
+    if output == assured_output:
+        final_blocker = _final_candidate_blocker(
+            planning_input=planning_input,
+            output=output,
+            assurance=assurance,
+            prepared_plan=prepared_plan,
+            output_blocker=output_blocker,
+        )
+        if final_blocker is not None:
+            return DraftAlterationResult(
+                status="blocked", output=output, trace=trace, blocker=final_blocker
+            )
         return DraftAlterationResult(
             status="ready", output=output, trace=trace, assurance=assurance
         )
 
     for _ in range(_ALTERNATION_BUDGET):
-        before_assure = output
         output, trace, assurance, blocker = assure_and_repair_initial_draft(
             planning_input=planning_input,
             proposal=proposal,
@@ -202,6 +219,7 @@ def alter_draft_towards_persistence(
             run_store=run_store,
             output_blocker=output_blocker,
             prepared_plan=prepared_plan,
+            assurance_cache=cache,
         )
         if blocker is not None:
             return DraftAlterationResult(
@@ -211,6 +229,7 @@ def alter_draft_towards_persistence(
             return DraftAlterationResult(
                 status="assurance_failure", output=output, trace=trace, assurance=assurance
             )
+        assured_output = output
         output, trace, blocker = assure_readability_and_repair(
             planning_input=planning_input,
             proposal=proposal,
@@ -220,8 +239,21 @@ def alter_draft_towards_persistence(
             output_blocker=output_blocker,
         )
         if blocker is None:
+            if output != assured_output:
+                continue
+            final_blocker = _final_candidate_blocker(
+                planning_input=planning_input,
+                output=output,
+                assurance=assurance,
+                prepared_plan=prepared_plan,
+                output_blocker=output_blocker,
+            )
+            if final_blocker is None:
+                return DraftAlterationResult(
+                    status="ready", output=output, trace=trace, assurance=assurance
+                )
             return DraftAlterationResult(
-                status="ready", output=output, trace=trace, assurance=assurance
+                status="blocked", output=output, trace=trace, blocker=final_blocker
             )
         repaired = repair_regulatory_assertions(
             planning_input=planning_input,
@@ -241,11 +273,15 @@ def alter_draft_towards_persistence(
             return DraftAlterationResult(
                 status="blocked", output=output, trace=trace, blocker=blocker
             )
-        if output is before_assure:
-            return DraftAlterationResult(
-                status="ready", output=output, trace=trace, assurance=assurance
-            )
-    return DraftAlterationResult(status="ready", output=output, trace=trace, assurance=assurance)
+        # The repair changed the candidate after its last assurance. Re-enter
+        # the loop so the exact new fingerprint is assessed once.
+        continue
+    return DraftAlterationResult(
+        status="blocked",
+        output=output,
+        trace=trace,
+        blocker=_finalization_budget_blocker(),
+    )
 
 
 def assure_and_repair_initial_draft(
@@ -258,6 +294,7 @@ def assure_and_repair_initial_draft(
     run_store: LocalStateStore,
     output_blocker: OutputBlocker,
     prepared_plan: PreparedDraftPlan | None = None,
+    assurance_cache: dict[str, AssuranceResult] | None = None,
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -272,6 +309,8 @@ def assure_and_repair_initial_draft(
         output=output,
         client=client,
         run_store=run_store,
+        prepared_plan=prepared_plan,
+        assurance_cache=assurance_cache,
     )
     if not isinstance(assurance, ContentDraftAssuranceFailure):
         return output, trace, assurance, None
@@ -288,6 +327,8 @@ def assure_and_repair_initial_draft(
             output=candidate,
             client=client,
             run_store=run_store,
+            prepared_plan=prepared_plan,
+            assurance_cache=assurance_cache,
         ),
         output_blocker=output_blocker,
         prepared_plan=prepared_plan,
@@ -348,15 +389,115 @@ def assure_regulated_draft(
     output: ContentInitialDraftModelOutput,
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
+    prepared_plan: PreparedDraftPlan | None = None,
+    assurance_cache: dict[str, AssuranceResult] | None = None,
 ) -> AssuranceResult:
     """Run the independent critic before a regulated draft can be persisted."""
 
-    return run_regulatory_draft_assurance(
+    try:
+        profile = regulatory_draft_assurance_profile(planning_input)
+    except AttributeError:
+        profile = None
+    cache_key = (
+        None
+        if profile is None or prepared_plan is None
+        else draft_assurance_fingerprint(
+            output=output,
+            prepared_plan=prepared_plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+    )
+    if cache_key is not None and assurance_cache is not None and cache_key in assurance_cache:
+        return assurance_cache[cache_key]
+    result = run_regulatory_draft_assurance(
         planning_input=planning_input,
         proposal=proposal,
         output=output,
         client=client,
         run_store=run_store,
+        prepared_plan=prepared_plan,
+    )
+    if cache_key is not None and assurance_cache is not None:
+        assurance_cache[cache_key] = result
+    return result
+
+
+def _final_assurance_blocker(
+    *,
+    planning_input: ContentPlanningInput,
+    output: ContentInitialDraftModelOutput,
+    assurance: AssuranceResult,
+    prepared_plan: PreparedDraftPlan | None,
+) -> ContentInitialDraftBlocker | None:
+    try:
+        profile = regulatory_draft_assurance_profile(planning_input)
+    except AttributeError:
+        profile = None
+    coverage = planning_input.regulatory_coverage
+    if getattr(coverage, "applicability_status", None) != "required":
+        return None
+    if profile is None:
+        return ContentInitialDraftBlocker(
+            code="draft_assurance_failed",
+            label="Brakuje dokładnego profilu końcowej kontroli",
+            reason="Wymagana treść regulowana nie ma bieżącego profilu i wersji assurance.",
+            next_step="Odśwież profil regulacyjny i uruchom kontrolę finalnego dokumentu ponownie.",
+            source_codes=["assurance_profile_missing_or_mismatch"],
+        )
+    source_codes = ["assurance_fingerprint_missing"]
+    if not isinstance(assurance, ContentDraftAssuranceReceipt) or assurance.status != "passed":
+        source_codes = ["assurance_pass_required"]
+    elif prepared_plan is None:
+        source_codes = ["assurance_prepared_plan_missing"]
+    else:
+        expected = draft_assurance_fingerprint(
+            output=output,
+            prepared_plan=prepared_plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+        if assurance.assurance_fingerprint == expected:
+            return None
+        source_codes = ["assurance_fingerprint_mismatch"]
+    return ContentInitialDraftBlocker(
+        code="draft_assurance_failed",
+        label="Końcowa kontrola merytoryczna nie dotyczy finalnego dokumentu",
+        reason="Wynik PASS nie ma fingerprintu zgodnego z finalnym dokumentem i kontekstem.",
+        next_step="Uruchom nową próbę kontroli dla niezmienionego finalnego dokumentu.",
+        source_codes=source_codes,
+    )
+
+
+def _final_candidate_blocker(
+    *,
+    planning_input: ContentPlanningInput,
+    output: ContentInitialDraftModelOutput,
+    assurance: AssuranceResult,
+    prepared_plan: PreparedDraftPlan | None,
+    output_blocker: OutputBlocker,
+) -> ContentInitialDraftBlocker | None:
+    deterministic = output_blocker(output)
+    if deterministic is not None:
+        return deterministic
+    readability = readability_issues_for_output(output)
+    if readability:
+        return _readability_blocker(readability)
+    return _final_assurance_blocker(
+        planning_input=planning_input,
+        output=output,
+        assurance=assurance,
+        prepared_plan=prepared_plan,
+    )
+
+
+def _finalization_budget_blocker() -> ContentInitialDraftBlocker:
+    return ContentInitialDraftBlocker(
+        code="draft_assurance_failed",
+        label="Nie osiągnięto stabilnej wersji finalnego dokumentu",
+        reason="Budżet napraw zakończył się przed zgodnym readability i exact PASS.",
+        next_step="Popraw plan albo źródła i uruchom nową próbę; WILQ nie zapisze tej wersji.",
+        source_codes=["draft_finalization_budget_exhausted"],
     )
 
 

@@ -140,6 +140,10 @@ class ContentDraftRevisionProposalMetadata(BaseModel):
     quality_finding_codes: list[str] = Field(default_factory=list)
     regulatory_assurance_run_id: str | None = None
     regulatory_assurance_criteria_version: str | None = None
+    regulatory_assurance_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{64}$",
+    )
     review_scope: Literal[
         "persisted_selected_sections_and_declared_lineage",
         "persisted_selected_components_and_declared_lineage",

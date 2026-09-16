@@ -161,7 +161,10 @@ def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
     draft = _repository_source("wilq/content/drafts/initial_full_draft.py")
     turn = _repository_source("wilq/content/drafts/initial_full_draft_turn.py")
     alteration = _repository_source("wilq/content/drafts/draft_alteration.py")
+    assurance = _repository_source("wilq/content/drafts/draft_assurance.py")
+    persistence = _repository_source("wilq/content/drafts/initial_full_draft_document.py")
     grounding = _repository_source("wilq/content/drafts/grounding.py")
+    shared = _repository_source("packages/shared-schemas/src/contentWorkflow.ts")
     router = _repository_source("apps/api/wilq_api/routers/content_initial_draft.py")
 
     assert "def prepare_draft_plan(" in preparation
@@ -177,3 +180,7 @@ def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
     assert "prepared_plan: PreparedDraftPlan | None = None" in turn
     assert alteration.count("prepared_plan=prepared_plan") >= 4
     assert "def safe_document_ready_fact_text(" in grounding
+    assert "def draft_assurance_fingerprint(" in assurance
+    assert "draft_finalization_budget_exhausted" in alteration
+    assert "Legacy or stale assurance cannot authorize a new revision." in persistence
+    assert "regulatory_assurance_fingerprint" in shared

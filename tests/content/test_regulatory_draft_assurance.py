@@ -4,19 +4,27 @@ from types import SimpleNamespace
 import pytest
 
 from wilq.codex.app_server import CodexAppServerTurnResult
-from wilq.content.drafts import draft_alteration, draft_assurance_runtime
+from wilq.content.drafts import (
+    draft_alteration,
+    draft_assurance_runtime,
+    initial_full_draft_document,
+)
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceModelOutput,
+    ContentDraftAssuranceReceipt,
+    draft_assurance_fingerprint,
     draft_assurance_output_schema,
     draft_assurance_turn_request,
     validate_draft_assurance_output,
 )
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan, prepare_draft_plan
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.input_sources import ContentPlanningSourceFact
 from wilq.content.regulatory.policy import (
     ContentRegulatoryCoverage,
     ContentRegulatoryDocumentAssertion,
@@ -24,7 +32,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_requirement_assertion_errors,
 )
-from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal, ContentPlanningSection
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 from wilq.schemas import CodexRun
 
@@ -116,6 +124,212 @@ def _output(body_markdown: str) -> ContentInitialDraftModelOutput:
     )
 
 
+def _prepared_fingerprint_case() -> tuple[
+    ContentRegulatoryProfile,
+    ContentPlanningInput,
+    ContentPlanningProposal,
+    PreparedDraftPlan,
+    ContentInitialDraftModelOutput,
+]:
+    profile = _profile()
+    planning_input = _planning_input(profile).model_copy(
+        update={
+            "regulatory_coverage": _planning_input(profile).regulatory_coverage.model_copy(
+                update={"applicability_status": "required"}
+            ),
+            "source_facts": [
+                ContentPlanningSourceFact(
+                    fact_id="planning_official_kpo",
+                    summary="KPO stosuje się warunkowo.",
+                    source_connector="official_regulatory_review",
+                    evidence_ids=["ev_kpo"],
+                    source_fact_ids=["official_kpo_fact"],
+                    regulatory_requirement_ids=["transport_document"],
+                )
+            ],
+        }
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id=planning_input.work_item_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        planning_digest="b" * 64,
+        sections=[
+            ContentPlanningSection(
+                section_id="kpo",
+                heading="KPO",
+                purpose="Opisz KPO.",
+                evidence_ids=["ev_kpo"],
+                regulatory_requirement_ids=["transport_document"],
+            )
+        ],
+    )
+    plan = prepare_draft_plan(proposal, planning_input)
+    assert isinstance(plan, PreparedDraftPlan)
+    return profile, planning_input, proposal, plan, _output("KPO stosuje się warunkowo.")
+
+
+def test_assurance_fingerprint_is_fixed_point_bound() -> None:
+    profile, planning_input, proposal, plan, output = _prepared_fingerprint_case()
+    base = draft_assurance_fingerprint(
+        output=output, prepared_plan=plan, profile_id=profile.id, profile_version=profile.version
+    )
+    assert (
+        draft_assurance_fingerprint(
+            output=output.model_copy(deep=True),
+            prepared_plan=plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+        == base
+    )
+    assert (
+        draft_assurance_fingerprint(
+            output=output.model_copy(
+                update={
+                    "sections": [
+                        output.sections[0].model_copy(update={"body_markdown": "Inny tekst."})
+                    ]
+                }
+            ),
+            prepared_plan=plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+        != base
+    )
+
+
+def test_identical_assurance_fingerprint_calls_critic_once(monkeypatch) -> None:
+    profile, planning_input, proposal, plan, output = _prepared_fingerprint_case()
+    base = draft_assurance_fingerprint(
+        output=output,
+        prepared_plan=plan,
+        profile_id=profile.id,
+        profile_version=profile.version,
+    )
+    calls: list[ContentInitialDraftModelOutput] = []
+    receipt = validate_draft_assurance_output(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        assessment=ContentDraftAssuranceModelOutput(
+            checks=[
+                {
+                    "constraint_id": "requirement:transport_document",
+                    "status": "pass",
+                    "reason_code": "supported",
+                    "reason": "Dokument zachowuje warunkowy zakres KPO.",
+                    "document_section_id": "kpo",
+                    "evidence_ids": ["ev_kpo"],
+                }
+            ]
+        ),
+        codex_run_id="codex_assurance_cache",
+        prepared_plan=plan,
+    )
+
+    monkeypatch.setattr(
+        draft_alteration,
+        "regulatory_draft_assurance_profile",
+        lambda _planning_input: profile,
+    )
+
+    def critic(**kwargs):
+        calls.append(kwargs["output"])
+        return receipt
+
+    monkeypatch.setattr(draft_alteration, "run_regulatory_draft_assurance", critic)
+    cache: dict[str, object] = {}
+    first = draft_alteration.assure_regulated_draft(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        client=SimpleNamespace(),
+        run_store=SimpleNamespace(),
+        prepared_plan=plan,
+        assurance_cache=cache,
+    )
+    second = draft_alteration.assure_regulated_draft(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output.model_copy(deep=True),
+        client=SimpleNamespace(),
+        run_store=SimpleNamespace(),
+        prepared_plan=plan,
+        assurance_cache=cache,
+    )
+
+    assert first is second is receipt
+    assert calls == [output]
+    changed_input = planning_input.model_copy(
+        update={
+            "source_facts": [
+                planning_input.source_facts[0].model_copy(update={"summary": "Zmieniony fakt."})
+            ]
+        }
+    )
+    changed_plan = prepare_draft_plan(proposal, changed_input)
+    assert isinstance(changed_plan, PreparedDraftPlan)
+    assert (
+        draft_assurance_fingerprint(
+            output=output,
+            prepared_plan=changed_plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+        )
+        != base
+    )
+
+
+@pytest.mark.parametrize(
+    "receipt",
+    [
+        None,
+        ContentDraftAssuranceReceipt(
+            status="failed",
+            profile_id="regulated_service",
+            profile_version="2026-07-31",
+            codex_run_id="assurance_failed",
+            failed_constraint_ids=["requirement:transport_document"],
+        ),
+        ContentDraftAssuranceReceipt(
+            status="passed",
+            profile_id="regulated_service",
+            profile_version="2026-07-31",
+            codex_run_id="assurance_legacy",
+        ),
+        ContentDraftAssuranceReceipt(
+            status="passed",
+            profile_id="regulated_service",
+            profile_version="2026-07-31",
+            codex_run_id="assurance_stale",
+            assurance_fingerprint="0" * 64,
+        ),
+    ],
+)
+def test_required_assurance_rejects_missing_failed_legacy_and_stale_receipts(
+    monkeypatch,
+    receipt,
+) -> None:
+    profile, planning_input, proposal, plan, output = _prepared_fingerprint_case()
+    monkeypatch.setattr(
+        initial_full_draft_document,
+        "regulatory_draft_assurance_profile",
+        lambda _planning_input: profile,
+    )
+
+    with pytest.raises(ValueError, match="Legacy or stale assurance"):
+        initial_full_draft_document.build_initial_draft_revision_command(
+            snapshot=SimpleNamespace(),
+            request=SimpleNamespace(),
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            run=SimpleNamespace(),
+            regulatory_assurance=receipt,
+            prepared_plan=plan,
+        )
 def _proposal() -> ContentPlanningProposal:
     return ContentPlanningProposal.model_construct(
         sections=[
