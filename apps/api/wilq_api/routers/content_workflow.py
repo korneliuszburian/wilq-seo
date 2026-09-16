@@ -91,8 +91,13 @@ from wilq.content.workflow.pipeline_steps.stage_measurement import (
     build_content_work_item_measurement_outcome_response,
 )
 from wilq.content.workflow.refresh_preparation import RefreshPreparationRuntimeAuthorized
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationAuthorization,
+    ContentRefreshPreparationBinding,
+    refresh_preparation_bindings_match_authority,
+)
 from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
-from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 
 router = APIRouter()
 
@@ -108,28 +113,43 @@ def semantic_review_snapshot_for_work_item_or_404(
     revision context stale.
     """
 
-    revision_state = content_workflow_store().load_draft_revision_state(work_item_id)
+    workflow_store = content_workflow_store()
+    revision_state = workflow_store.load_draft_revision_state(work_item_id)
     revision = revision_state.latest_revision
     binding = None if revision is None else revision.refresh_preparation_binding
     if binding is None:
         return _snapshot_for_work_item_or_404(work_item_id)
-    request = ContentPlanningProposalRequest(
-        content_kind=binding.content_kind,
-        service_card_id=binding.service_card_id,
-        expected_planning_input_digest=binding.planning_input_digest,
-        requested_by="semantic_review",
-        refresh_preparation_authorization_id=binding.authorization_id,
-        expected_refresh_preparation_authorization_digest=binding.authorization_digest,
-    )
-    resolved = content_refresh_preparation_authority().resolve_planning(work_item_id, request)
     canonical = _snapshot_for_work_item_or_404(
         work_item_id,
         revision_state_override=revision_state,
         service_card_id_override=binding.service_card_id,
         prefer_revision_bound_proposal=True,
     )
+    authorization = _persisted_refresh_authorization_for_binding(workflow_store, binding)
+    if authorization is None:
+        return _fail_closed_semantic_review_snapshot(canonical)
+    if not _canonical_refresh_binding_matches_authority(
+        canonical,
+        binding=binding,
+        authorization=authorization,
+    ):
+        return _fail_closed_semantic_review_snapshot(canonical)
+    request = ContentPlanningProposalRequest(
+        content_kind=binding.content_kind,
+        service_card_id=binding.service_card_id,
+        expected_planning_input_digest=authorization.planning_input_digest,
+        requested_by="semantic_review",
+        refresh_preparation_authorization_id=binding.authorization_id,
+        expected_refresh_preparation_authorization_digest=binding.authorization_digest,
+    )
+    resolved = content_refresh_preparation_authority().resolve_planning(work_item_id, request)
     if not isinstance(resolved, RefreshPreparationRuntimeAuthorized):
-        return canonical
+        return _fail_closed_semantic_review_snapshot(canonical)
+    if not _refresh_binding_matches_authority(
+        binding,
+        resolved.authorization,
+    ):
+        return _fail_closed_semantic_review_snapshot(canonical)
     bound_revision_workspace = _binding_aware_revision_workspace(
         resolved_snapshot=resolved.snapshot,
         canonical_snapshot=canonical,
@@ -141,6 +161,100 @@ def semantic_review_snapshot_for_work_item_or_404(
             "revision_workspace": bound_revision_workspace,
         }
     )
+
+
+_SEMANTIC_REVIEW_REFRESH_AUTHORIZATION_NEXT_STEP = (
+    "Odśwież exact przygotowanie refresh i użyj zapisanej autoryzacji dla tej rewizji; "
+    "semantic review pozostaje zablokowane do czasu zgodności authorization, planu i packetu."
+)
+
+
+def _fail_closed_semantic_review_snapshot(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    """Make an invalid refresh authority visibly unusable for semantic review."""
+
+    revision_workspace = snapshot.revision_workspace.model_copy(
+        update={
+            "can_review": False,
+            "can_save": False,
+            "safe_next_step": _SEMANTIC_REVIEW_REFRESH_AUTHORIZATION_NEXT_STEP,
+        }
+    )
+    return snapshot.model_copy(
+        update={
+            "planning_workspace": None,
+            "revision_workspace": revision_workspace,
+        }
+    )
+
+
+def _canonical_refresh_binding_matches_authority(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    binding: ContentRefreshPreparationBinding,
+    authorization: ContentRefreshPreparationAuthorization,
+) -> bool:
+    try:
+        planning = snapshot.planning_workspace
+        proposal = None if planning is None else planning.proposal
+        proposal_binding = None if proposal is None else proposal.refresh_preparation_binding
+        return bool(
+            proposal_binding is not None
+            and proposal_binding == binding
+            and refresh_preparation_bindings_match_authority(
+                proposal_binding,
+                authorization.binding,
+            )
+        )
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _refresh_binding_matches_authority(
+    binding: ContentRefreshPreparationBinding,
+    authorization: ContentRefreshPreparationAuthorization,
+) -> bool:
+    try:
+        return (
+            authorization.authorization_id == binding.authorization_id
+            and authorization.authorization_digest == binding.authorization_digest
+            and refresh_preparation_bindings_match_authority(
+                binding,
+                authorization.binding,
+            )
+        )
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
+def _persisted_refresh_authorization_for_binding(
+    workflow_store: ContentWorkflowStore,
+    binding: ContentRefreshPreparationBinding,
+) -> ContentRefreshPreparationAuthorization | None:
+    """Return only the exact authority receipt carried by a packet-bound revision."""
+
+    try:
+        authorization = workflow_store.load_refresh_preparation_authorization(
+            binding.authorization_id
+        )
+    except (AttributeError, LookupError, TypeError, ValueError):
+        return None
+    if not isinstance(authorization, ContentRefreshPreparationAuthorization):
+        return None
+    if (
+        authorization.authorization_id != binding.authorization_id
+        or authorization.authorization_digest != binding.authorization_digest
+    ):
+        return None
+    try:
+        matches_authority = refresh_preparation_bindings_match_authority(
+            binding,
+            authorization.binding,
+        )
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return authorization if matches_authority else None
 
 
 def _binding_aware_revision_workspace(

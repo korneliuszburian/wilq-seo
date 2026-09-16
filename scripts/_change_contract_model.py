@@ -155,6 +155,7 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_packet_bound_reviews.py",
         "tests/content/test_packet_bound_review_public_api.py",
         "tests/content/test_packet_bound_review_races.py",
+        "tests/content/test_semantic_review_refresh_change_contract.py",
         "tests/content/test_semantic_review_refresh_binding.py",
         "tests/content/test_semantic_content_review_api.py::test_existing_exact_review_wins_over_retry_preflight_and_polling",
         "tests/content/test_independent_review_runs.py::test_api_records_run_and_critical_disposition",
@@ -185,6 +186,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (
+                "tests/content/test_semantic_review_refresh_change_contract.py::"
+                "test_semantic_refresh_source_contract",
                 "tests/content/test_packet_bound_reviews.py::"
                 "test_public_packet_bound_revision_reaches_semantic_and_independent_reviews",
             )
@@ -210,9 +213,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (
                 "tests/__init__.py",
-                "tests/content/test_packet_bound_reviews.py",
-                "tests/content/packet_bound_review_fixtures.py",
-                "wilq/content/quality/review_packet_binding.py",
+                "tests/content/test_semantic_review_refresh_change_contract.py",
             )
             if key == ("content-review", "exact-packet-revision")
             else ("tests/dashboard/test_current_disposition_card_change_contract.py",)
