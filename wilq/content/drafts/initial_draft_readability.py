@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftInternalLinkOutput,
     ContentInitialDraftModelOutput,
@@ -220,6 +221,7 @@ def repair_readability_candidate(
     output: ContentInitialDraftModelOutput,
     issues: list[ReadabilityIssue],
     client: CodexAppServerClientProtocol,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace]:
     expected_section_ids = {section_id for _, section_id, _ in issues}
     try:
@@ -229,6 +231,7 @@ def repair_readability_candidate(
                 proposal=proposal,
                 candidate=output,
                 issues=issues,
+                prepared_plan=prepared_plan,
             )
         )
     except Exception:

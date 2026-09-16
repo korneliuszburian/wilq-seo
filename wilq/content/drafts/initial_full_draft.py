@@ -268,6 +268,7 @@ def generate_initial_full_draft(
                 workflow_store=workflow_store,
                 run_store=run_store,
                 regulatory_assurance=regulatory_assurance,
+                prepared_plan=prepared.draft_plan,
             ),
             prepared_plan=prepared.draft_plan,
             start_run=start_initial_draft_run,

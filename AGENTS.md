@@ -158,6 +158,12 @@ record that state rather than silently publishing.
 - Preserve untracked files unless the active slice explicitly owns them. Commit,
   push, PR, merge, deploy, and vendor write remain distinct authority decisions.
 
+## Model orchestration and test economics
+
+- The owner records each exact model run command through terminal public readback; model output is untrusted input.
+- One deep module owns mutation → observation → seal. After matching PASS, only read-only validation, sealing, and persistence may follow.
+- Tests target stable public/deep seams and content-agnostic invariants, not generated prose or source-string topology. Replace or delete shallow tests when a deep falsifier supersedes them.
+
 ## Documentation and test topology
 
 Code, typed schemas, API responses, and persisted WILQ records own runtime

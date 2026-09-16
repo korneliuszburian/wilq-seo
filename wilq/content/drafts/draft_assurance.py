@@ -10,6 +10,7 @@ rewrites, publishes or persists a document.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import asdict
 from typing import Final, Literal
@@ -51,11 +52,14 @@ ContentDraftAssuranceReasonCode = Literal[
 _CRITERIA_VERSION: Final[Literal["wilq_regulatory_draft_assurance_v1"]] = (
     "wilq_regulatory_draft_assurance_v1"
 )
-ASSURANCE_FINGERPRINT_VERSION: Final[Literal["wilq_draft_assurance_fingerprint_v1"]] = (
-    "wilq_draft_assurance_fingerprint_v1"
+ASSURANCE_FINGERPRINT_VERSION: Final[Literal["wilq_draft_assurance_fingerprint_v2"]] = (
+    "wilq_draft_assurance_fingerprint_v2"
 )
-ASSURANCE_PROMPT_VERSION: Final[Literal["wilq_regulatory_draft_assurance_prompt_v1"]] = (
-    "wilq_regulatory_draft_assurance_prompt_v1"
+ASSURANCE_PROMPT_VERSION: Final[Literal["wilq_regulatory_draft_assurance_prompt_v2"]] = (
+    "wilq_regulatory_draft_assurance_prompt_v2"
+)
+CRITIC_INPUT_DIGEST_VERSION: Final[Literal["wilq_draft_assurance_critic_input_v1"]] = (
+    "wilq_draft_assurance_critic_input_v1"
 )
 
 _INSTRUCTION = (
@@ -69,7 +73,8 @@ _INSTRUCTION = (
     "samej obecności frazy za dowód prawidłowego zakresu, warunku lub wyjątku. "
     "Jeśli kandydat jest nadmiernie szeroki albo traci kwalifikator widoczny w "
     "official source fact, wybierz fail. Nie dopowiadaj wymogów prawnych, których "
-    "źródło nie opisuje. "
+    "źródło nie opisuje. Fact z assigned_document_section_id może uzasadniać wyłącznie "
+    "wskazaną sekcję; nie przenoś go do innego targetu. "
     "Nie przepisuj tekstu, nie dodawaj "
     "faktów ani źródeł, nie zatwierdzaj dokumentu, nie twórz ActionObjectu i nie "
     "wykonuj write. Dla każdego wyniku podaj document_section_id sekcji, na której "
@@ -124,6 +129,7 @@ class ContentDraftAssuranceReceipt(BaseModel):
     codex_run_id: str | None = None
     failed_constraint_ids: list[str] = Field(default_factory=list)
     assurance_fingerprint: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    critic_input_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def require_exact_status_payload(self) -> ContentDraftAssuranceReceipt:
@@ -173,46 +179,48 @@ def draft_assurance_fingerprint(
     profile_version: str,
     criteria_version: str = _CRITERIA_VERSION,
     prompt_version: str = ASSURANCE_PROMPT_VERSION,
+    critic_input_digest: str | None = None,
 ) -> str:
     """Hash every server-owned input that can change an assurance verdict."""
 
     exact_snapshot = prepared_plan.exact_source_snapshot
-    return canonical_json_digest(
-        {
-            "fingerprint_version": ASSURANCE_FINGERPRINT_VERSION,
-            "candidate_document": output.model_dump(mode="json"),
-            "prepared_plan": {
-                "candidate": prepared_plan.candidate.model_dump(mode="json"),
-                "exact_source_snapshot": exact_snapshot.model_dump(mode="json"),
-                "body_targets": [
-                    section.model_dump(mode="json") for section in prepared_plan.body_targets
-                ],
-                "target_supports": [
-                    {
-                        "section": target.section.model_dump(mode="json"),
-                        "source_facts": [asdict(fact) for fact in target.source_facts],
-                    }
-                    for target in prepared_plan.target_supports
-                ],
-            },
-            "context": {
-                "work_item_id": exact_snapshot.work_item_id,
-                "planning_input_digest": exact_snapshot.planning_input_digest,
-                "research_packet_id": exact_snapshot.research_packet_id,
-                "research_packet_digest": exact_snapshot.research_packet_digest,
-                "source_fact_ids": sorted(
-                    {
-                        source_fact_id
-                        for fact in exact_snapshot.source_facts
-                        for source_fact_id in fact.source_fact_ids
-                    }
-                ),
-            },
-            "profile": {"id": profile_id, "version": profile_version},
-            "criteria_version": criteria_version,
-            "prompt_version": prompt_version,
-        }
-    )
+    payload: dict[str, object] = {
+        "fingerprint_version": ASSURANCE_FINGERPRINT_VERSION,
+        "candidate_document": output.model_dump(mode="json"),
+        "prepared_plan": {
+            "candidate": prepared_plan.candidate.model_dump(mode="json"),
+            "exact_source_snapshot": exact_snapshot.model_dump(mode="json"),
+            "body_targets": [
+                section.model_dump(mode="json") for section in prepared_plan.body_targets
+            ],
+            "target_supports": [
+                {
+                    "section": target.section.model_dump(mode="json"),
+                    "source_facts": [asdict(fact) for fact in target.source_facts],
+                }
+                for target in prepared_plan.target_supports
+            ],
+        },
+        "context": {
+            "work_item_id": exact_snapshot.work_item_id,
+            "planning_input_digest": exact_snapshot.planning_input_digest,
+            "research_packet_id": exact_snapshot.research_packet_id,
+            "research_packet_digest": exact_snapshot.research_packet_digest,
+            "source_fact_ids": sorted(
+                {
+                    source_fact_id
+                    for fact in exact_snapshot.source_facts
+                    for source_fact_id in fact.source_fact_ids
+                }
+            ),
+        },
+        "profile": {"id": profile_id, "version": profile_version},
+        "criteria_version": criteria_version,
+        "prompt_version": prompt_version,
+    }
+    if critic_input_digest is not None:
+        payload["critic_input_digest"] = critic_input_digest
+    return canonical_json_digest(payload)
 
 
 def draft_assurance_turn_request(
@@ -317,6 +325,71 @@ def draft_assurance_turn_request(
             proposal,
             constraints_override=constraints,
         ),
+    )
+
+
+def draft_assurance_turn_requests(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    profile: ContentRegulatoryProfile,
+    prepared_plan: PreparedDraftPlan,
+) -> list[CodexAppServerStructuredTurnRequest]:
+    """Compile every exact critic request for one frozen regulated candidate."""
+
+    return [
+        draft_assurance_turn_request(
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            profile=profile,
+            constraints_override=[constraint],
+            prepared_plan=prepared_plan,
+        )
+        for constraint in regulatory_draft_assurance_constraints(profile)
+    ]
+
+
+def draft_assurance_critic_input_digest_from_requests(
+    requests: Sequence[CodexAppServerStructuredTurnRequest],
+) -> str:
+    """Digest the exact structured payloads handed to the critic adapter."""
+
+    return canonical_json_digest(
+        {
+            "digest_version": CRITIC_INPUT_DIGEST_VERSION,
+            "requests": [
+                {
+                    "instruction": request.instruction,
+                    "application_context": request.application_context,
+                    "untrusted_context": request.untrusted_context,
+                    "output_schema": request.output_schema,
+                }
+                for request in requests
+            ],
+        }
+    )
+
+
+def draft_assurance_critic_input_digest(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    profile: ContentRegulatoryProfile,
+    prepared_plan: PreparedDraftPlan,
+) -> str:
+    """Rebuild the exact critic bundle for final receipt/persistence validation."""
+
+    return draft_assurance_critic_input_digest_from_requests(
+        draft_assurance_turn_requests(
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            profile=profile,
+            prepared_plan=prepared_plan,
+        )
     )
 
 
@@ -450,6 +523,7 @@ def validate_draft_assurance_output(
     assessment: ContentDraftAssuranceModelOutput,
     codex_run_id: str,
     prepared_plan: PreparedDraftPlan | None = None,
+    critic_input_digest: str | None = None,
 ) -> ContentDraftAssuranceReceipt:
     """Validate critic output against the frozen profile, evidence and document."""
 
@@ -477,8 +551,10 @@ def validate_draft_assurance_output(
                 prepared_plan=prepared_plan,
                 profile_id=profile.id,
                 profile_version=profile.version,
+                critic_input_digest=critic_input_digest,
             )
         ),
+        critic_input_digest=critic_input_digest,
     )
 
 
@@ -549,6 +625,7 @@ def _source_facts_for_prepared_plan(
     }
     return [
         {
+            "assigned_document_section_id": target.section.section_id,
             "source_fact_id": fact.source_fact_ids[0] if len(fact.source_fact_ids) == 1 else None,
             "source_fact_ids": list(fact.source_fact_ids),
             "summary": fact.summary,
@@ -589,7 +666,11 @@ __all__ = [
     "ContentDraftAssuranceReceipt",
     "ASSURANCE_FINGERPRINT_VERSION",
     "ASSURANCE_PROMPT_VERSION",
+    "CRITIC_INPUT_DIGEST_VERSION",
+    "draft_assurance_critic_input_digest",
+    "draft_assurance_critic_input_digest_from_requests",
     "draft_assurance_turn_request",
+    "draft_assurance_turn_requests",
     "draft_assurance_fingerprint",
     "draft_assurance_output_schema",
     "regulatory_draft_assurance_profile",

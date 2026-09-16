@@ -734,8 +734,7 @@ def test_profile_rejects_a_custom_constraint_in_the_reserved_requirement_namespa
 
 
 def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypatch) -> None:
-    profile = _profile()
-    planning_input = _planning_input(profile)
+    profile, planning_input, proposal, plan, output = _prepared_fingerprint_case()
     output = _output("Każdy transport odpadów wymaga KPO.")
 
     class RunStore:
@@ -769,17 +768,19 @@ def test_failed_assurance_blocks_the_writer_before_document_persistence(monkeypa
         "regulatory_draft_assurance_profile",
         lambda _planning_input: profile,
     )
+    monkeypatch.setattr(
+        draft_alteration,
+        "regulatory_draft_assurance_profile",
+        lambda _planning_input: profile,
+    )
     store = RunStore()
     result = draft_alteration.assure_regulated_draft(
         planning_input=planning_input,
-        proposal=type(
-            "Proposal",
-            (),
-            {"proposal_id": "proposal-1", "sections": _proposal().sections},
-        )(),
+        proposal=proposal,
         output=output,
         client=Client(),
         run_store=store,
+        prepared_plan=plan,
     )
 
     assert result.code == "draft_assurance_failed"

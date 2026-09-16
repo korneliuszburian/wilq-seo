@@ -16,7 +16,9 @@ from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceCheckOutput,
     ContentDraftAssuranceModelOutput,
     ContentDraftAssuranceReceipt,
+    draft_assurance_critic_input_digest_from_requests,
     draft_assurance_turn_request,
+    draft_assurance_turn_requests,
     regulatory_draft_assurance_profile,
     validate_draft_assurance_output,
 )
@@ -61,7 +63,7 @@ def run_regulatory_draft_assurance(
     output: ContentInitialDraftModelOutput,
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
-    prepared_plan: PreparedDraftPlan | None = None,
+    prepared_plan: PreparedDraftPlan,
 ) -> ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None:
     """Return a passed receipt or typed failure; this function never persists a draft."""
 
@@ -82,6 +84,14 @@ def run_regulatory_draft_assurance(
         )
     )
     constraints = regulatory_draft_assurance_constraints(profile)
+    requests = draft_assurance_turn_requests(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        prepared_plan=prepared_plan,
+    )
+    critic_input_digest = draft_assurance_critic_input_digest_from_requests(requests)
     checks_or_failure = _collect_bounded_checks(
         planning_input=planning_input,
         proposal=proposal,
@@ -91,6 +101,8 @@ def run_regulatory_draft_assurance(
         client=client,
         run_store=run_store,
         critic_run=critic_run,
+        requests=requests,
+        prepared_plan=prepared_plan,
     )
     if isinstance(checks_or_failure, ContentDraftAssuranceFailure):
         return checks_or_failure
@@ -105,6 +117,7 @@ def run_regulatory_draft_assurance(
             assessment=assessment,
             codex_run_id=critic_run.id,
             prepared_plan=prepared_plan,
+            critic_input_digest=critic_input_digest,
         )
     except ValueError as error:
         invalid_output_code = _invalid_output_code(error)
@@ -163,19 +176,21 @@ def _collect_bounded_checks(
     client: CodexAppServerClientProtocol,
     run_store: LocalStateStore,
     critic_run: CodexRun,
+    requests: list[CodexAppServerStructuredTurnRequest] | None = None,
     prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[ContentDraftAssuranceCheckOutput] | ContentDraftAssuranceFailure:
-    requests = [
-        draft_assurance_turn_request(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            profile=profile,
-            constraints_override=[constraint],
-            prepared_plan=prepared_plan,
-        )
-        for constraint in constraints
-    ]
+    if requests is None:
+        requests = [
+            draft_assurance_turn_request(
+                planning_input=planning_input,
+                proposal=proposal,
+                output=output,
+                profile=profile,
+                constraints_override=[constraint],
+                prepared_plan=prepared_plan,
+            )
+            for constraint in constraints
+        ]
     results = list(
         _ASSURANCE_EXECUTOR.map(
             lambda request: _run_assurance_turn(client, request), requests

@@ -1,17 +1,8 @@
-"""Own the complete pre-persist repair policy for one initial draft.
+"""Own mutation, observation, and sealing for one initial draft finalization.
 
-The orchestrator (initial_full_draft) previously inlined a schedule over
-three repair systems: deterministic scope repair, regulated assurance and
-its repair cycle, and the readability last-writer. Each repair call
-appeared three to four times with the same terminal blocker closures
-duplicated inline. This module owns that schedule as one policy: the
-stage order, every repair budget, the blocker-closure path, and the
-intentional asymmetry that regulatory grounding fires only when a
-readability pass leaves a blocker.
-
-The module exposes a single interface; all terminal states (blocked,
-assurance failure, ready) come back as typed results so the orchestrator
-has exactly one exit to persist.
+The orchestrator has one exit into this module. It applies bounded repair
+before a final critic observes the exact candidate, then permits only
+read-only validation and persistence after PASS.
 """
 
 from __future__ import annotations
@@ -23,6 +14,7 @@ from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceReceipt,
+    draft_assurance_critic_input_digest,
     draft_assurance_fingerprint,
     regulatory_draft_assurance_profile,
 )
@@ -47,6 +39,7 @@ from wilq.content.drafts.initial_full_draft_contracts import (
 from wilq.content.drafts.regulatory_repair import repair_regulatory_assertions
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.storage.local_state import LocalStateStore
 
 OutputBlocker = Callable[
@@ -54,22 +47,17 @@ OutputBlocker = Callable[
     ContentInitialDraftBlocker | None,
 ]
 AssuranceResult = ContentDraftAssuranceReceipt | ContentDraftAssuranceFailure | None
-AssureDraft = Callable[
-    [ContentInitialDraftModelOutput, ContentCodexRuntimeTrace],
-    AssuranceResult,
-]
 
-_ALTERNATION_BUDGET = 2
 _ASSURANCE_REPAIR_TURN_BUDGET_PER_REGULATORY_SECTION = 1
 _READABILITY_REPAIR_TURN_BUDGET = 2
 
 
 class DraftAlterationResult:
-    """One terminal outcome of the pre-persist alternation policy.
+    """One terminal outcome of the pre-persist finalization policy.
 
     ``status`` is "ready", "blocked" or "assurance_failure". Exactly the
     matching payload is set; the orchestrator maps it to persistence or a
-    terminal blocker without re-reading the schedule.
+    terminal blocker without re-running the seal.
     """
 
     def __init__(
@@ -100,24 +88,23 @@ def alter_draft_towards_persistence(
     prepared_plan: PreparedDraftPlan | None = None,
     assurance_cache: dict[str, AssuranceResult] | None = None,
 ) -> DraftAlterationResult:
-    """Run the pre-persist alternation policy to one terminal state.
+    """Finalize one draft through mutation, observation, then an immutable seal.
 
-    Stage order (intentional, preserved from the previous orchestrator):
-
-    1. Deterministic scope repair — ground missing source-fact signals and
-       regulatory assertions before any assurance turn.
-    2. Regulated assurance with its bounded repair cycle.
-    3. Readability last-writer. A readability blocker re-grounds regulatory
-       assertions (the asymmetry: regulatory repair fires only here) and
-       re-runs readability once; if the re-grounded output still blocks, the
-       draft is terminal.
-    4. If assurance changed the output (grounded facts reintroduced after the
-       readability pass), alternate assurance and readability within a bounded
-       budget so the persisted document keeps both exact regulatory concepts
-       and readable prose.
+    Every transform runs before the critic. A passed receipt seals the exact
+    candidate: only deterministic read-only validation and persistence may
+    follow it. A failed critic can trigger a bounded repair, but that repaired
+    candidate must return through deterministic and readability validation
+    before another critic turn.
     """
 
     cache = {} if assurance_cache is None else assurance_cache
+    if _requires_regulatory_assurance(planning_input) and prepared_plan is None:
+        return DraftAlterationResult(
+            status="blocked",
+            output=output,
+            trace=trace,
+            blocker=_prepared_plan_missing_blocker(),
+        )
     output, trace, blocker = repair_initial_output_blocker(
         planning_input=planning_input,
         proposal=proposal,
@@ -130,25 +117,6 @@ def alter_draft_towards_persistence(
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
 
-    output, trace, assurance, blocker = assure_and_repair_initial_draft(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        trace=trace,
-        client=client,
-        run_store=run_store,
-        output_blocker=output_blocker,
-        prepared_plan=prepared_plan,
-        assurance_cache=cache,
-    )
-    if blocker is not None:
-        return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
-    if isinstance(assurance, ContentDraftAssuranceFailure):
-        return DraftAlterationResult(
-            status="assurance_failure", output=output, trace=trace, assurance=assurance
-        )
-
-    assured_output = output
     output, trace, blocker = assure_readability_and_repair(
         planning_input=planning_input,
         proposal=proposal,
@@ -156,44 +124,94 @@ def alter_draft_towards_persistence(
         trace=trace,
         client=client,
         output_blocker=output_blocker,
+        prepared_plan=prepared_plan,
     )
-    if blocker is not None:
-        repaired = repair_regulatory_assertions(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            blocker=blocker,
-            client=client,
-            prepared_plan=prepared_plan,
-        )
-        if repaired is not None:
-            output, trace = repaired
-            blocker = output_blocker(output)
-            if blocker is None:
-                output, trace, blocker = assure_readability_and_repair(
-                    planning_input=planning_input,
-                    proposal=proposal,
-                    output=output,
-                    trace=trace,
-                    client=client,
-                    output_blocker=output_blocker,
-                )
-                if blocker is not None:
-                    repaired = repair_regulatory_assertions(
-                        planning_input=planning_input,
-                        proposal=proposal,
-                        output=output,
-                        blocker=blocker,
-                        client=client,
-                        prepared_plan=prepared_plan,
-                    )
-                    if repaired is not None:
-                        output, trace = repaired
-                        blocker = output_blocker(output)
     if blocker is not None:
         return DraftAlterationResult(status="blocked", output=output, trace=trace, blocker=blocker)
 
-    if output == assured_output:
+    repair_budget = _regulatory_repair_budget(proposal)
+    repair_attempts = 0
+    seen_candidate_digests: set[str] = set()
+    while True:
+        candidate_digest = _candidate_digest(output)
+        if candidate_digest in seen_candidate_digests:
+            return DraftAlterationResult(
+                status="blocked",
+                output=output,
+                trace=trace,
+                blocker=_finalization_no_progress_blocker(),
+            )
+        seen_candidate_digests.add(candidate_digest)
+        assurance = assure_regulated_draft(
+            planning_input=planning_input,
+            proposal=proposal,
+            output=output,
+            client=client,
+            run_store=run_store,
+            prepared_plan=prepared_plan,
+            assurance_cache=cache,
+        )
+        if isinstance(assurance, ContentDraftAssuranceFailure):
+            if repair_attempts >= repair_budget:
+                return DraftAlterationResult(
+                    status="blocked",
+                    output=output,
+                    trace=trace,
+                    blocker=_finalization_budget_blocker(),
+                )
+            repaired = repair_regulatory_assertions(
+                planning_input=planning_input,
+                proposal=proposal,
+                output=output,
+                blocker=_assurance_blocker(assurance),
+                client=client,
+                repair_reasons=assurance.repair_reasons,
+                prepared_plan=prepared_plan,
+            )
+            if repaired is None:
+                return DraftAlterationResult(
+                    status="assurance_failure",
+                    output=output,
+                    trace=trace,
+                    assurance=assurance,
+                )
+            output, trace = repaired
+            repair_attempts += 1
+            if _candidate_digest(output) == candidate_digest:
+                return DraftAlterationResult(
+                    status="blocked",
+                    output=output,
+                    trace=trace,
+                    blocker=_finalization_no_progress_blocker(),
+                )
+            output, trace, blocker = repair_initial_output_blocker(
+                planning_input=planning_input,
+                proposal=proposal,
+                output=output,
+                trace=trace,
+                client=client,
+                output_blocker=output_blocker,
+                prepared_plan=prepared_plan,
+            )
+            if blocker is not None:
+                return DraftAlterationResult(
+                    status="blocked", output=output, trace=trace, blocker=blocker
+                )
+            output, trace, blocker = assure_readability_and_repair(
+                planning_input=planning_input,
+                proposal=proposal,
+                output=output,
+                trace=trace,
+                client=client,
+                output_blocker=output_blocker,
+                prepared_plan=prepared_plan,
+            )
+            if blocker is not None:
+                return DraftAlterationResult(
+                    status="blocked", output=output, trace=trace, blocker=blocker
+                )
+            continue
+
         final_blocker = _final_candidate_blocker(
             planning_input=planning_input,
             output=output,
@@ -208,131 +226,6 @@ def alter_draft_towards_persistence(
         return DraftAlterationResult(
             status="ready", output=output, trace=trace, assurance=assurance
         )
-
-    for _ in range(_ALTERNATION_BUDGET):
-        output, trace, assurance, blocker = assure_and_repair_initial_draft(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            trace=trace,
-            client=client,
-            run_store=run_store,
-            output_blocker=output_blocker,
-            prepared_plan=prepared_plan,
-            assurance_cache=cache,
-        )
-        if blocker is not None:
-            return DraftAlterationResult(
-                status="blocked", output=output, trace=trace, blocker=blocker
-            )
-        if isinstance(assurance, ContentDraftAssuranceFailure):
-            return DraftAlterationResult(
-                status="assurance_failure", output=output, trace=trace, assurance=assurance
-            )
-        assured_output = output
-        output, trace, blocker = assure_readability_and_repair(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            trace=trace,
-            client=client,
-            output_blocker=output_blocker,
-        )
-        if blocker is None:
-            if output != assured_output:
-                continue
-            final_blocker = _final_candidate_blocker(
-                planning_input=planning_input,
-                output=output,
-                assurance=assurance,
-                prepared_plan=prepared_plan,
-                output_blocker=output_blocker,
-            )
-            if final_blocker is None:
-                return DraftAlterationResult(
-                    status="ready", output=output, trace=trace, assurance=assurance
-                )
-            return DraftAlterationResult(
-                status="blocked", output=output, trace=trace, blocker=final_blocker
-            )
-        repaired = repair_regulatory_assertions(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            blocker=blocker,
-            client=client,
-            prepared_plan=prepared_plan,
-        )
-        if repaired is None:
-            return DraftAlterationResult(
-                status="blocked", output=output, trace=trace, blocker=blocker
-            )
-        output, trace = repaired
-        blocker = output_blocker(output)
-        if blocker is not None:
-            return DraftAlterationResult(
-                status="blocked", output=output, trace=trace, blocker=blocker
-            )
-        # The repair changed the candidate after its last assurance. Re-enter
-        # the loop so the exact new fingerprint is assessed once.
-        continue
-    return DraftAlterationResult(
-        status="blocked",
-        output=output,
-        trace=trace,
-        blocker=_finalization_budget_blocker(),
-    )
-
-
-def assure_and_repair_initial_draft(
-    *,
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    output: ContentInitialDraftModelOutput,
-    trace: ContentCodexRuntimeTrace,
-    client: CodexAppServerClientProtocol,
-    run_store: LocalStateStore,
-    output_blocker: OutputBlocker,
-    prepared_plan: PreparedDraftPlan | None = None,
-    assurance_cache: dict[str, AssuranceResult] | None = None,
-) -> tuple[
-    ContentInitialDraftModelOutput,
-    ContentCodexRuntimeTrace,
-    AssuranceResult,
-    ContentInitialDraftBlocker | None,
-]:
-    """Run assurance and its bounded repair policy as one fail-closed step."""
-
-    assurance = assure_regulated_draft(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        client=client,
-        run_store=run_store,
-        prepared_plan=prepared_plan,
-        assurance_cache=assurance_cache,
-    )
-    if not isinstance(assurance, ContentDraftAssuranceFailure):
-        return output, trace, assurance, None
-    return repair_after_assurance_failure(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        trace=trace,
-        assurance=assurance,
-        client=client,
-        assure_draft=lambda candidate, _candidate_trace: assure_regulated_draft(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=candidate,
-            client=client,
-            run_store=run_store,
-            prepared_plan=prepared_plan,
-            assurance_cache=assurance_cache,
-        ),
-        output_blocker=output_blocker,
-        prepared_plan=prepared_plan,
-    )
 
 
 def repair_initial_output_blocker(
@@ -351,6 +244,8 @@ def repair_initial_output_blocker(
 ]:
     """Repair deterministic scope failures before invoking assurance."""
 
+    if _requires_regulatory_assurance(planning_input) and prepared_plan is None:
+        return output, trace, _prepared_plan_missing_blocker()
     blocker = output_blocker(output)
     if blocker is None:
         return output, trace, None
@@ -398,17 +293,25 @@ def assure_regulated_draft(
         profile = regulatory_draft_assurance_profile(planning_input)
     except AttributeError:
         profile = None
-    cache_key = (
-        None
-        if profile is None or prepared_plan is None
-        else draft_assurance_fingerprint(
-            output=output,
-            prepared_plan=prepared_plan,
-            profile_id=profile.id,
-            profile_version=profile.version,
-        )
+    if profile is None:
+        return None
+    if prepared_plan is None:
+        return _prepared_plan_assurance_failure()
+    critic_input_digest = draft_assurance_critic_input_digest(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        prepared_plan=prepared_plan,
     )
-    if cache_key is not None and assurance_cache is not None and cache_key in assurance_cache:
+    cache_key = draft_assurance_fingerprint(
+        output=output,
+        prepared_plan=prepared_plan,
+        profile_id=profile.id,
+        profile_version=profile.version,
+        critic_input_digest=critic_input_digest,
+    )
+    if assurance_cache is not None and cache_key in assurance_cache:
         return assurance_cache[cache_key]
     result = run_regulatory_draft_assurance(
         planning_input=planning_input,
@@ -418,7 +321,7 @@ def assure_regulated_draft(
         run_store=run_store,
         prepared_plan=prepared_plan,
     )
-    if cache_key is not None and assurance_cache is not None:
+    if assurance_cache is not None:
         assurance_cache[cache_key] = result
     return result
 
@@ -451,15 +354,28 @@ def _final_assurance_blocker(
     elif prepared_plan is None:
         source_codes = ["assurance_prepared_plan_missing"]
     else:
+        expected_critic_input_digest = draft_assurance_critic_input_digest(
+            planning_input=planning_input,
+            proposal=prepared_plan.candidate,
+            output=output,
+            profile=profile,
+            prepared_plan=prepared_plan,
+        )
         expected = draft_assurance_fingerprint(
             output=output,
             prepared_plan=prepared_plan,
             profile_id=profile.id,
             profile_version=profile.version,
+            critic_input_digest=expected_critic_input_digest,
         )
-        if assurance.assurance_fingerprint == expected:
+        if assurance.critic_input_digest is None:
+            source_codes = ["assurance_critic_input_digest_missing"]
+        elif assurance.critic_input_digest != expected_critic_input_digest:
+            source_codes = ["assurance_critic_input_digest_mismatch"]
+        elif assurance.assurance_fingerprint == expected:
             return None
-        source_codes = ["assurance_fingerprint_mismatch"]
+        else:
+            source_codes = ["assurance_fingerprint_mismatch"]
     return ContentInitialDraftBlocker(
         code="draft_assurance_failed",
         label="Końcowa kontrola merytoryczna nie dotyczy finalnego dokumentu",
@@ -491,6 +407,60 @@ def _final_candidate_blocker(
     )
 
 
+def _requires_regulatory_assurance(planning_input: ContentPlanningInput) -> bool:
+    return (
+        getattr(planning_input.regulatory_coverage, "applicability_status", None) == "required"
+    )
+
+
+def _regulatory_repair_budget(proposal: ContentPlanningProposal) -> int:
+    return (
+        len(
+            {
+                section.section_id
+                for section in proposal.sections
+                if section.regulatory_requirement_ids
+            }
+        )
+        * _ASSURANCE_REPAIR_TURN_BUDGET_PER_REGULATORY_SECTION
+    )
+
+
+def _candidate_digest(output: ContentInitialDraftModelOutput) -> str:
+    return canonical_json_digest(output.model_dump(mode="json"))
+
+
+def _prepared_plan_missing_blocker() -> ContentInitialDraftBlocker:
+    return ContentInitialDraftBlocker(
+        code="draft_assurance_failed",
+        label="Brakuje skompilowanego planu końcowej kontroli",
+        reason="Treść regulowana nie może być naprawiana ani oceniana bez exact planu źródeł.",
+        next_step="Przygotuj aktualny plan źródeł i uruchom nową próbę; WILQ nie zapisze tekstu.",
+        source_codes=["assurance_prepared_plan_missing"],
+    )
+
+
+def _prepared_plan_assurance_failure() -> ContentDraftAssuranceFailure:
+    return ContentDraftAssuranceFailure(
+        code="draft_assurance_runtime_failed",
+        label="Brakuje dokładnego planu końcowej kontroli",
+        reason="Treść regulowana nie może trafić do krytyka bez skompilowanego planu źródeł.",
+        next_step="Przygotuj aktualny plan źródeł i uruchom nową próbę; WILQ nie zapisze tekstu.",
+        source_codes=["assurance_prepared_plan_missing"],
+        repair_reasons={},
+    )
+
+
+def _finalization_no_progress_blocker() -> ContentInitialDraftBlocker:
+    return ContentInitialDraftBlocker(
+        code="draft_assurance_failed",
+        label="Naprawa nie zmieniła finalizowanego dokumentu",
+        reason="Kolejna próba otrzymałaby ten sam kandydat, więc WILQ zatrzymał pętlę.",
+        next_step="Popraw plan albo źródła i uruchom nową próbę; WILQ nie zapisze tekstu.",
+        source_codes=["draft_finalization_no_progress"],
+    )
+
+
 def _finalization_budget_blocker() -> ContentInitialDraftBlocker:
     return ContentInitialDraftBlocker(
         code="draft_assurance_failed",
@@ -501,89 +471,6 @@ def _finalization_budget_blocker() -> ContentInitialDraftBlocker:
     )
 
 
-def repair_after_assurance_failure(
-    *,
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    output: ContentInitialDraftModelOutput,
-    trace: ContentCodexRuntimeTrace,
-    assurance: ContentDraftAssuranceFailure,
-    client: CodexAppServerClientProtocol,
-    assure_draft: AssureDraft,
-    output_blocker: OutputBlocker,
-    prepared_plan: PreparedDraftPlan | None = None,
-) -> tuple[
-    ContentInitialDraftModelOutput,
-    ContentCodexRuntimeTrace,
-    AssuranceResult,
-    ContentInitialDraftBlocker | None,
-]:
-    """Repair disclosed failures to a finite regulatory-section fixed point."""
-
-    repaired = repair_regulatory_assertions(
-        planning_input=planning_input,
-        proposal=proposal,
-        output=output,
-        blocker=_assurance_blocker(assurance),
-        client=client,
-        repair_reasons=assurance.repair_reasons,
-        prepared_plan=prepared_plan,
-    )
-    if repaired is None:
-        return output, trace, assurance, None
-    output, trace = repaired
-    blocker = output_blocker(output)
-    if blocker is not None:
-        assertion_repair = repair_regulatory_assertions(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            blocker=blocker,
-            client=client,
-            prepared_plan=prepared_plan,
-        )
-        if assertion_repair is not None:
-            output, trace = assertion_repair
-            blocker = output_blocker(output)
-    if blocker is not None:
-        return output, trace, assurance, blocker
-
-    reassured = assure_draft(output, trace)
-    if not isinstance(reassured, ContentDraftAssuranceFailure):
-        return output, trace, reassured, None
-
-    deterministic_repair_budget = (
-        len(
-            {
-                section.section_id
-                for section in proposal.sections
-                if section.regulatory_requirement_ids
-            }
-        )
-        * _ASSURANCE_REPAIR_TURN_BUDGET_PER_REGULATORY_SECTION
-    )
-    for _ in range(deterministic_repair_budget):
-        deterministic = repair_regulatory_assertions(
-            planning_input=planning_input,
-            proposal=proposal,
-            output=output,
-            blocker=_assurance_blocker(reassured),
-            client=client,
-            force_deterministic_replace=True,
-            prepared_plan=prepared_plan,
-        )
-        if deterministic is None:
-            return output, trace, reassured, None
-        output, trace = deterministic
-        blocker = output_blocker(output)
-        if blocker is not None:
-            return output, trace, reassured, blocker
-        reassured = assure_draft(output, trace)
-        if not isinstance(reassured, ContentDraftAssuranceFailure):
-            return output, trace, reassured, None
-    return output, trace, reassured, None
-
-
 def assure_readability_and_repair(
     *,
     planning_input: ContentPlanningInput,
@@ -592,6 +479,7 @@ def assure_readability_and_repair(
     trace: ContentCodexRuntimeTrace,
     client: CodexAppServerClientProtocol,
     output_blocker: Callable[[ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None],
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> tuple[
     ContentInitialDraftModelOutput,
     ContentCodexRuntimeTrace,
@@ -599,6 +487,8 @@ def assure_readability_and_repair(
 ]:
     """Repair readability issues within the module-owned turn budget."""
 
+    if _requires_regulatory_assurance(planning_input) and prepared_plan is None:
+        return output, trace, _prepared_plan_missing_blocker()
     issues = readability_issues_for_output(output)
     if not issues:
         return output, trace, None
@@ -618,6 +508,7 @@ def assure_readability_and_repair(
             output=candidate,
             issues=issues,
             client=client,
+            prepared_plan=prepared_plan,
         )
         issues = readability_issues_for_output(output)
         blocker = output_blocker(output)
@@ -672,9 +563,7 @@ def _readability_repair_failed_blocker(
 __all__ = [
     "DraftAlterationResult",
     "alter_draft_towards_persistence",
-    "assure_and_repair_initial_draft",
     "assure_readability_and_repair",
     "assure_regulated_draft",
-    "repair_after_assurance_failure",
     "repair_initial_output_blocker",
 ]

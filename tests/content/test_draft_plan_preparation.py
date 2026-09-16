@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 from wilq.content.drafts.draft_plan_preparation import (
     DraftPlanBlocked,
     PreparedDraftPlan,
@@ -182,61 +180,6 @@ def test_prepared_plan_blocks_only_the_unmapped_requirement() -> None:
 
     assert isinstance(result, DraftPlanBlocked)
     assert result.blocker.source_codes == ["section_ab:requirement_b"]
-
-
-def test_second_alternation_call_reuses_the_same_prepared_plan(monkeypatch) -> None:
-    candidate = _candidate(
-        ContentPlanningSection(
-            section_id="section_exact",
-            heading="Sekcja ze źródłem",
-            purpose="Wyjaśnij potwierdzony zakres.",
-            evidence_ids=["ev_source_fact"],
-        )
-    )
-    plan = prepare_draft_plan(candidate, _source_snapshot(_source_fact()))
-    assert isinstance(plan, PreparedDraftPlan)
-    calls: list[object] = []
-    output = object()
-    repaired_output = object()
-
-    def fake_assure(**kwargs: object):
-        calls.append(kwargs["prepared_plan"])
-        return kwargs["output"], kwargs["trace"], None, None
-
-    readability_calls = 0
-
-    def fake_readability(**kwargs: object):
-        nonlocal readability_calls
-        readability_calls += 1
-        return (
-            (repaired_output if readability_calls == 1 else kwargs["output"]),
-            kwargs["trace"],
-            None,
-        )
-
-    monkeypatch.setattr(
-        "wilq.content.drafts.draft_alteration.assure_and_repair_initial_draft",
-        fake_assure,
-    )
-    monkeypatch.setattr(
-        "wilq.content.drafts.draft_alteration.assure_readability_and_repair",
-        fake_readability,
-    )
-
-    from wilq.content.drafts.draft_alteration import alter_draft_towards_persistence
-
-    alter_draft_towards_persistence(
-        planning_input=plan.exact_source_snapshot,
-        proposal=plan.candidate,
-        output=output,
-        trace=SimpleNamespace(status="completed"),
-        client=SimpleNamespace(),
-        run_store=SimpleNamespace(),
-        output_blocker=lambda _output: None,
-        prepared_plan=plan,
-    )
-
-    assert calls == [plan, plan]
 
 
 def test_unresolved_merge_is_not_a_body_target() -> None:

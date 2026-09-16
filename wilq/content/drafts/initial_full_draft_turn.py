@@ -277,6 +277,7 @@ def readability_repair_turn_request(
     proposal: ContentPlanningProposal,
     candidate: ContentInitialDraftModelOutput,
     issues: list[tuple[str, str, str]],
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
     candidate_section_ids = {section.section_id for section in candidate.sections}
     auxiliary_section_ids = {
@@ -299,6 +300,11 @@ def readability_repair_turn_request(
     )
     if not affected_section_ids:
         raise ValueError("Readability repair requires an affected candidate section.")
+    affected_issues = [
+        (code, section_id, reason)
+        for code, section_id, reason in issues
+        if section_id in affected_section_ids
+    ]
     auxiliary_targets = any(
         section_id in auxiliary_section_ids for section_id in affected_section_ids
     )
@@ -311,7 +317,8 @@ def readability_repair_turn_request(
             "i zbyt długie zdania "
             "oraz rozwiń zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem "
             "opisany w jego reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla "
-            "czytelnika. Nie dotykaj żadnych innych pól. Dla FAQ, CTA, page assets i linków "
+            "czytelnika wyłącznie w granicach odpowiadających wpisów prepared_plan_assignments. "
+            "Nie dotykaj żadnych innych pól. Dla FAQ, CTA, page assets i linków "
             "zawsze użyj replace. Zwróć dokładnie po jednym patchu dla każdego dozwolonego "
             "section_id. Dla zwykłej sekcji użyj replace dla pełnej poprawionej treści albo "
             "append wyłącznie do uzupełnienia zbyt krótkiej sekcji. Nie dodawaj nowych notatek "
@@ -324,8 +331,11 @@ def readability_repair_turn_request(
             "robocze, meta-komentarze i powtórzone akapity, podziel ściany tekstu "
             "i zbyt długie zdania oraz rozwiń "
             "zbyt krótkie odpowiedzi. Każdy patch musi usuwać dokładny problem opisany w jego "
-            "reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla czytelnika. Nie dotykaj "
-            "innych sekcji, nagłówków, page assets, FAQ, CTA ani linków. Zwróć dokładnie po "
+            "reason. Zachowaj znaczenie, fakty, zakres i ton tekstu dla czytelnika. Używaj "
+            "wyłącznie odpowiadających wpisów prepared_plan_assignments; nie dodawaj ani nie "
+            "rozszerzaj faktów "
+            "poza przypisanym celem. Nie dotykaj innych sekcji, nagłówków, page assets, FAQ, CTA "
+            "ani linków. Zwróć dokładnie po "
             "jednym patchu dla każdego dozwolonego section_id. Użyj replace dla pełnej "
             "poprawionej treści sekcji albo append wyłącznie do uzupełnienia zbyt krótkiej "
             "sekcji. Nie dodawaj nowych notatek roboczych ani informacji wymagających "
@@ -350,14 +360,20 @@ def readability_repair_turn_request(
         ),
         untrusted_context=json.dumps(
             {
-                "candidate_document": candidate.model_dump(mode="json"),
+                **_readability_candidate_context(candidate, affected_section_ids),
+                "prepared_plan_assignments": _prepared_readability_assignments(
+                    planning_input=planning_input,
+                    candidate=candidate,
+                    affected_section_ids=affected_section_ids,
+                    prepared_plan=prepared_plan,
+                ),
                 "issues": [
                     {
                         "code": code,
                         "affected_section_id": section_id,
                         "reason": reason,
                     }
-                    for code, section_id, reason in issues
+                    for code, section_id, reason in affected_issues
                 ],
             },
             ensure_ascii=False,
@@ -366,6 +382,167 @@ def readability_repair_turn_request(
         ),
         output_schema=regulatory_assertion_repair_output_schema(affected_section_ids),
     )
+
+
+def _readability_candidate_context(
+    candidate: ContentInitialDraftModelOutput,
+    affected_section_ids: list[str],
+) -> dict[str, object]:
+    """Project only repair targets; unrelated draft text never reaches this turn."""
+
+    affected = set(affected_section_ids)
+    page_asset_fields = {
+        section_id.removeprefix("page_assets:")
+        for section_id in affected
+        if section_id.startswith("page_assets:")
+    }
+    section_targets = [
+        {
+            "target_id": section.section_id,
+            "kind": "section",
+            "heading": section.heading,
+            "body_markdown": section.body_markdown,
+        }
+        for section in candidate.sections
+        if section.section_id in affected
+    ]
+    faq_targets = [
+        {
+            "target_id": f"faq:{index}",
+            "kind": "faq",
+            "question": item.question,
+            "answer_markdown": item.answer_markdown,
+        }
+        for index, item in enumerate(candidate.faq, start=1)
+        if f"faq:{index}" in affected
+    ]
+    cta_targets = [
+        {
+            "target_id": f"cta:{index}",
+            "kind": "cta",
+            "body_markdown": item.body_markdown,
+        }
+        for index, item in enumerate(candidate.cta_blocks, start=1)
+        if f"cta:{index}" in affected
+    ]
+    page_asset_targets = [
+        {
+            "target_id": f"page_assets:{field}",
+            "kind": "page_asset",
+            "value": getattr(candidate.page_assets, field),
+        }
+        for field in sorted(page_asset_fields)
+    ]
+    link_targets = [
+        {
+            "target_id": f"link:{index}",
+            "kind": "internal_link",
+            "target_url": item.target_url,
+            "anchor_text": item.anchor_text,
+        }
+        for index, item in enumerate(candidate.internal_links, start=1)
+        if f"link:{index}" in affected
+    ]
+    return {
+        "candidate_document": {
+            "page_assets": {
+                field: getattr(candidate.page_assets, field) for field in sorted(page_asset_fields)
+            },
+            "sections": [
+                section.model_dump(mode="json")
+                for section in candidate.sections
+                if section.section_id in affected
+            ],
+            "faq": [
+                item.model_dump(mode="json")
+                for index, item in enumerate(candidate.faq, start=1)
+                if f"faq:{index}" in affected
+            ],
+            "cta_blocks": [
+                item.model_dump(mode="json")
+                for index, item in enumerate(candidate.cta_blocks, start=1)
+                if f"cta:{index}" in affected
+            ],
+            "internal_links": [
+                item.model_dump(mode="json")
+                for index, item in enumerate(candidate.internal_links, start=1)
+                if f"link:{index}" in affected
+            ],
+        },
+        "candidate_targets": [
+            *section_targets,
+            *faq_targets,
+            *cta_targets,
+            *page_asset_targets,
+            *link_targets,
+        ],
+    }
+
+
+def _prepared_readability_assignments(
+    *,
+    planning_input: ContentPlanningInput,
+    candidate: ContentInitialDraftModelOutput,
+    affected_section_ids: list[str],
+    prepared_plan: PreparedDraftPlan | None,
+) -> list[dict[str, object]]:
+    """Expose only immutable assignments for body targets being rewritten."""
+
+    if prepared_plan is None:
+        return []
+    affected = set(affected_section_ids)
+    candidate_body_ids = {section.section_id for section in candidate.sections}
+    targets_by_id = {
+        target.section.section_id: target for target in prepared_plan.target_supports
+    }
+    missing_assignments = sorted(
+        affected.intersection(candidate_body_ids).difference(targets_by_id)
+    )
+    if missing_assignments:
+        raise ValueError("Readability target has no prepared-plan assignment.")
+    requirements = {
+        requirement.id: requirement
+        for requirement in planning_input.regulatory_coverage.requirements
+    }
+    assignments: list[dict[str, object]] = []
+    for section_id in affected_section_ids:
+        target = targets_by_id.get(section_id)
+        if target is None:
+            continue
+        section = target.section
+        assignments.append(
+            {
+                "immutable_section": {
+                    "section_id": section.section_id,
+                    "heading": section.heading,
+                    "purpose": section.purpose,
+                    "reader_question": section.reader_question,
+                    "evidence_ids": list(section.evidence_ids),
+                    "source_material_ids": list(section.source_material_ids),
+                    "regulatory_requirement_ids": list(section.regulatory_requirement_ids),
+                },
+                "assigned_source_facts": [
+                    _planning_source_fact_payload(fact) for fact in target.source_facts
+                ],
+                "regulatory_requirements": [
+                    {
+                        "id": requirement.id,
+                        "label": requirement.label,
+                        "document_assertions": [
+                            {
+                                "id": assertion.id,
+                                "label": assertion.label,
+                                "required_any_of": assertion.required_any_of,
+                            }
+                            for assertion in requirement.document_assertions
+                        ],
+                    }
+                    for requirement_id in section.regulatory_requirement_ids
+                    if (requirement := requirements.get(requirement_id)) is not None
+                ],
+            }
+        )
+    return assignments
 
 
 def _missing_assertions_for_repair(

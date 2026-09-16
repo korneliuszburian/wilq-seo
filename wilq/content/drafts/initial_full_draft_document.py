@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from wilq.content.drafts.draft_assurance import (
     ContentDraftAssuranceReceipt,
+    draft_assurance_critic_input_digest,
     draft_assurance_fingerprint,
     regulatory_draft_assurance_profile,
 )
@@ -20,6 +21,7 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     content_planning_inventory_digest,
 )
+from wilq.content.regulatory.policy import ContentRegulatoryProfile
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.content_html import content_html_from_markdown
@@ -52,21 +54,13 @@ def build_initial_draft_revision_command(
 ) -> ContentDraftRevisionAppendCommand:
     coverage = planning_input.regulatory_coverage
     profile = regulatory_draft_assurance_profile(planning_input)
-    if coverage.applicability_status == "required" and (
-        regulatory_assurance is None
-        or regulatory_assurance.status != "passed"
-        or profile is None
-        or regulatory_assurance.profile_id != profile.id
-        or regulatory_assurance.profile_version != profile.version
-        or prepared_plan is None
-        or regulatory_assurance.assurance_fingerprint is None
-        or regulatory_assurance.assurance_fingerprint
-        != draft_assurance_fingerprint(
-            output=output,
-            prepared_plan=prepared_plan,
-            profile_id=profile.id,
-            profile_version=profile.version,
-        )
+    if coverage.applicability_status == "required" and not _current_regulatory_assurance(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        regulatory_assurance=regulatory_assurance,
+        prepared_plan=prepared_plan,
     ):
         raise ValueError("Legacy or stale assurance cannot authorize a new revision.")
     package = snapshot.draft_package.draft_package_result.draft_package
@@ -120,6 +114,49 @@ def build_initial_draft_revision_command(
         ),
         refresh_preparation_binding=proposal.refresh_preparation_binding,
         created_by=request.requested_by,
+    )
+
+
+def _current_regulatory_assurance(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    profile: ContentRegulatoryProfile | None,
+    regulatory_assurance: ContentDraftAssuranceReceipt | None,
+    prepared_plan: PreparedDraftPlan | None,
+) -> bool:
+    if (
+        regulatory_assurance is None
+        or regulatory_assurance.status != "passed"
+        or profile is None
+        or prepared_plan is None
+    ):
+        return False
+    if (
+        regulatory_assurance.profile_id != profile.id
+        or regulatory_assurance.profile_version != profile.version
+        or regulatory_assurance.critic_input_digest is None
+        or regulatory_assurance.assurance_fingerprint is None
+    ):
+        return False
+    critic_input_digest = draft_assurance_critic_input_digest(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        profile=profile,
+        prepared_plan=prepared_plan,
+    )
+    return (
+        regulatory_assurance.critic_input_digest == critic_input_digest
+        and regulatory_assurance.assurance_fingerprint
+        == draft_assurance_fingerprint(
+            output=output,
+            prepared_plan=prepared_plan,
+            profile_id=profile.id,
+            profile_version=profile.version,
+            critic_input_digest=critic_input_digest,
+        )
     )
 
 

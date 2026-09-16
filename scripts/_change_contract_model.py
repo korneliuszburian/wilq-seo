@@ -153,6 +153,7 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_regulatory_planning_lineage.py",
         "tests/content/test_initial_draft_editorial_packet_guard.py",
         "tests/content/test_editorial_planning_pipeline.py",
+        "tests/content/test_regulated_draft_finalization.py",
     ),
     ("content-review", "exact-packet-revision"): (
         "scripts/test.sh",
@@ -197,8 +198,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "test_editorial_initial_draft_requires_a_current_research_packet",
                 "tests/content/test_packet_plan_draft_change_contract.py::"
                 "test_packet_bound_refresh_status_reads_exact_projected_job",
-                "tests/content/test_packet_plan_draft_change_contract.py::"
-                "test_prepared_draft_plan_blocks_unsupported_targets_before_writer",
+                "tests/content/test_regulated_draft_finalization.py::"
+                "test_regulated_finalization_repairs_exact_scope_before_its_only_passing_critic",
             )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (
@@ -227,7 +228,11 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "scripts/trusted_test_report.py",
             )
             if key == ("change-contract-gate", "observed-before-state")
-            else ("tests/__init__.py", "tests/content/test_packet_plan_draft_change_contract.py")
+            else (
+                "tests/__init__.py",
+                "tests/content/test_packet_plan_draft_change_contract.py",
+                "tests/content/test_regulated_draft_finalization.py",
+            )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (
                 "tests/__init__.py",

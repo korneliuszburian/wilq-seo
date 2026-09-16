@@ -166,33 +166,3 @@ def test_packet_bound_refresh_status_reads_exact_projected_job() -> None:
     assert "binding=binding" in status
     assert "authority_binding=resolution.binding" in status
     assert "read_content_planning_proposal(" not in status
-
-
-def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
-    preparation = _repository_source("wilq/content/drafts/draft_plan_preparation.py")
-    draft = _repository_source("wilq/content/drafts/initial_full_draft.py")
-    turn = _repository_source("wilq/content/drafts/initial_full_draft_turn.py")
-    alteration = _repository_source("wilq/content/drafts/draft_alteration.py")
-    assurance = _repository_source("wilq/content/drafts/draft_assurance.py")
-    persistence = _repository_source("wilq/content/drafts/initial_full_draft_document.py")
-    grounding = _repository_source("wilq/content/drafts/grounding.py")
-    shared = _repository_source("packages/shared-schemas/src/contentWorkflow.ts")
-    router = _repository_source("apps/api/wilq_api/routers/content_initial_draft.py")
-
-    assert "def prepare_draft_plan(" in preparation
-    assert 'inventory_disposition == "merge"' in preparation
-    assert "draft_plan_source_support_missing" in preparation
-    assert "def prepare_initial_draft_plan_for_writer(" in draft
-    assert "plan_blocked = _draft_plan_blocked_response(snapshot, prepared)" in draft
-    assert "pre_generation_guard=lambda: draft_plan_guard(" in router
-    assert "pre_persistence_guard=lambda: draft_plan_guard(" in router
-    assert "class PreparedSourceFact" in preparation
-    assert "target_supports: tuple[PreparedDraftTarget, ...]" in preparation
-    assert "prepared_plan=prepared.draft_plan" in draft
-    assert "prepared_plan: PreparedDraftPlan | None = None" in turn
-    assert alteration.count("prepared_plan=prepared_plan") >= 4
-    assert "def safe_document_ready_fact_text(" in grounding
-    assert "def draft_assurance_fingerprint(" in assurance
-    assert "draft_finalization_budget_exhausted" in alteration
-    assert "Legacy or stale assurance cannot authorize a new revision." in persistence
-    assert "regulatory_assurance_fingerprint" in shared
