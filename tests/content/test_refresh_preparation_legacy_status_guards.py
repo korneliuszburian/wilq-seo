@@ -9,6 +9,16 @@ import apps.api.wilq_api.routers.content_planning_proposals as planning_router
 from apps.api.wilq_api.routers.content_initial_draft_refresh import (
     read_authorized_refresh_initial_draft_status,
 )
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlocker,
+    ContentInitialDraftResponse,
+)
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+)
+from wilq.content.workflow.refresh_preparation_models import (
+    RefreshPreparationRuntimeAuthorized,
+)
 
 _WORK_ITEM_ID = "content_work_item_refresh"
 _SERVICE_CARD_ID = "ekologus_service_operat_wodnoprawny"
@@ -120,3 +130,88 @@ def test_initial_draft_get_blocks_unbound_legacy_refresh_artifacts_without_legac
     assert response.status == "blocked"
     assert response.blockers[0].code == "refresh_preparation_proposal_binding_mismatch"
     assert calls == {"authority": 0, "legacy": 0}
+
+
+def test_initial_draft_get_uses_exact_current_run_before_older_revision_blocker() -> None:
+    binding = ContentRefreshPreparationBinding.model_construct(
+        authorization_id="current-authorization",
+        authorization_digest="b" * 64,
+        planning_input_digest="4" * 64,
+    )
+    proposal = SimpleNamespace(
+        generation_status="codex_generated",
+        proposal_id="current-proposal",
+        planning_digest="c" * 64,
+        planning_input_digest=binding.planning_input_digest,
+        refresh_preparation_binding=binding,
+    )
+    older_revision = SimpleNamespace(
+        planning_digest="d" * 64,
+        planning_input_digest="e" * 64,
+        refresh_preparation_binding=binding.model_copy(update={"authorization_digest": "f" * 64}),
+        proposal_metadata=None,
+    )
+    resolution = RefreshPreparationRuntimeAuthorized(
+        work_item_id=_WORK_ITEM_ID,
+        snapshot=SimpleNamespace(),
+        planning_input=SimpleNamespace(),
+        classification=SimpleNamespace(),
+        service_candidate=None,
+        authorization=SimpleNamespace(binding=binding),
+    )
+    reader_response = ContentInitialDraftResponse(
+        status="generating",
+        work_item_id=_WORK_ITEM_ID,
+        proposal_id=proposal.proposal_id,
+        run_id="exact-current-run",
+        blockers=[
+            ContentInitialDraftBlocker(
+                code="generation_in_progress",
+                label="Pełny tekst jest przygotowywany",
+                reason="Dokładny bieżący run nadal działa.",
+                next_step="Odśwież etap za chwilę.",
+            )
+        ],
+        safe_next_step="Odśwież etap za chwilę.",
+    )
+    created_response = ContentInitialDraftResponse.model_construct(
+        status="created",
+        work_item_id=_WORK_ITEM_ID,
+        proposal_id=proposal.proposal_id,
+        run_id="legacy-created-run",
+        safe_next_step="legacy",
+    )
+
+    def read_status(reader_response: ContentInitialDraftResponse) -> Any:
+        return read_authorized_refresh_initial_draft_status(
+            work_item_id=_WORK_ITEM_ID,
+            refresh_authority=cast(
+                Any,
+                SimpleNamespace(
+                    resolve_initial_draft=lambda *_args, **_kwargs: resolution,
+                    initial_draft_block_response=lambda *_args, **_kwargs: None,
+                ),
+            ),
+            proposal_store=cast(Any, SimpleNamespace(latest=lambda _work_item_id: proposal)),
+            workflow_store=cast(
+                Any,
+                SimpleNamespace(
+                    load_draft_revision_state=lambda _work_item_id: SimpleNamespace(
+                        latest_revision=older_revision
+                    )
+                ),
+            ),
+            legacy_status_reader=lambda *_args: reader_response,
+        )
+
+    response = read_status(reader_response)
+    assert response is reader_response
+    assert response.status == "generating"
+    assert response.run_id == "exact-current-run"
+    for legacy_response in (
+        created_response,
+        created_response.model_copy(update={"run_id": ""}),
+    ):
+        created = read_status(legacy_response)
+        assert created.status == "blocked"
+        assert created.blockers[0].code == "refresh_preparation_proposal_binding_mismatch"

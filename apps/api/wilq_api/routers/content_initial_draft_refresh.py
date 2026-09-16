@@ -174,6 +174,9 @@ def read_authorized_refresh_initial_draft_status(
     )
     if existing is not None:
         return existing
+    legacy_status = legacy_status_reader(work_item_id, lambda _work_item_id: resolved.snapshot)
+    if _legacy_refresh_status_can_override_revision_guard(legacy_status):
+        return legacy_status
     if revision is not None and (
         revision.refresh_preparation_binding is None
         or not refresh_preparation_bindings_match_authority(
@@ -184,7 +187,15 @@ def read_authorized_refresh_initial_draft_status(
             work_item_id,
             proposal_id=proposal.proposal_id,
         )
-    return legacy_status_reader(work_item_id, lambda _work_item_id: resolved.snapshot)
+    return legacy_status
+
+
+def _legacy_refresh_status_can_override_revision_guard(
+    response: ContentInitialDraftResponse,
+) -> bool:
+    """Allow only current-attempt non-created statuses past an old revision."""
+
+    return response.status in {"generating", "blocked", "failed"} and bool(response.run_id)
 
 
 def legacy_unbound_refresh_initial_draft_block(
