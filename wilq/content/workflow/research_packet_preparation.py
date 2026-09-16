@@ -7,7 +7,11 @@ from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
+)
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
 from wilq.content.workflow.research_packet import (
@@ -128,9 +132,15 @@ def prepare_content_research_packet(
                 "Najpierw zapisz exact delivery identity dla tej paczki źródłowej.",
             )
         )
+    projected_input_or_blocker = _project_source_pack_input_or_blocker(
+        planning_input=planning_input,
+        source_pack=source_pack,
+    )
+    if isinstance(projected_input_or_blocker, ContentResearchPacketBlocker):
+        return ContentResearchPacketPreparationResult.blocked_result(projected_input_or_blocker)
     command_or_blocker = build_server_owned_research_packet_command(
         snapshot=snapshot,
-        planning_input=planning_input,
+        planning_input=projected_input_or_blocker,
         source_pack=source_pack,
         identity=identity,
         now=timestamp,
@@ -216,9 +226,16 @@ def current_research_packet_blocker(
             packet.evidence_ids,
             "Odczytaj bieżący identity binding przed użyciem packetu.",
         )
+    projected_input_or_blocker = _project_source_pack_input_or_blocker(
+        planning_input=planning_input,
+        source_pack=source_pack,
+    )
+    if isinstance(projected_input_or_blocker, ContentResearchPacketBlocker):
+        return projected_input_or_blocker
+    projected_input = projected_input_or_blocker
     command = build_server_owned_research_packet_command(
         snapshot=snapshot,
-        planning_input=planning_input,
+        planning_input=projected_input,
         source_pack=source_pack,
         identity=identity,
         now=utc_now(),
@@ -269,6 +286,26 @@ def current_research_packet_blocker(
             "Kontekst packetu zmienił się; wygeneruj nowy plan z bieżącego packetu.",
         )
     return None
+
+
+def _project_source_pack_input_or_blocker(
+    *,
+    planning_input: ContentPlanningInput,
+    source_pack: ContentSourcePackBinding,
+) -> ContentPlanningInput | ContentResearchPacketBlocker:
+    try:
+        return project_selected_source_pack_facts(
+            planning_input,
+            source_pack.source_fact_ids,
+            ekologus_source_facts(),
+        )
+    except ValueError:
+        return _blocker(
+            "source_facts",
+            "source_fact_not_registered",
+            source_pack.evidence_ids,
+            "Odśwież source-fact registry i source-pack względem bieżących faktów.",
+        )
 
 
 def _revalidation_source_pack(

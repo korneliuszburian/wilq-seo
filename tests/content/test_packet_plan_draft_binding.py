@@ -12,6 +12,7 @@ import wilq.content.drafts.initial_full_draft_turn as initial_full_draft_turn_mo
 import wilq.content.planning.proposal_packet_binding as proposal_packet_binding
 import wilq.content.planning.route_packet_binding as route_packet_binding
 import wilq.content.workflow.research_packet_derivation as research_packet_derivation
+import wilq.content.workflow.research_packet_preparation as packet_preparation
 from tests.content.packet_plan_draft_fixtures import (
     build_packet_preparation_case,
     snapshot_without_cta,
@@ -44,6 +45,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceFact,
 )
 from wilq.content.planning.internal_link_candidates import ContentPlanningInternalLinkCandidate
+from wilq.content.planning.source_pack_projection import project_selected_source_pack_facts
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.demand_evidence import (
     ContentSearchDemandEvidence,
@@ -325,6 +327,59 @@ def test_editorial_packet_plan_route_persists_exact_current_packet_from_contact_
     assert packet.internal_links[0].destination_path == "/kontakt"
     assert packet.internal_links[0].verification == "exact_verified"
     assert bound_request.expected_research_packet_digest == packet.packet_digest
+
+
+def test_editorial_packet_preparation_revalidates_against_projected_source_pack(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    planning_input = _editorial_planning_input(case, [_contact_candidate(case)])
+    projected_input = project_selected_source_pack_facts(
+        planning_input,
+        case.source_pack.source_fact_ids,
+        ekologus_source_facts(),
+    )
+    original_builder = packet_preparation.build_server_owned_research_packet_command
+    builder_inputs: list[ContentPlanningInput] = []
+
+    def capture_builder_input(**kwargs):
+        builder_inputs.append(kwargs["planning_input"])
+        return original_builder(**kwargs)
+
+    monkeypatch.setattr(
+        packet_preparation,
+        "build_server_owned_research_packet_command",
+        capture_builder_input,
+    )
+
+    prepared = prepare_content_research_packet(
+        store=case.store,
+        snapshot=snapshot_without_cta(case),
+        planning_input=planning_input,
+    )
+    assert prepared.packet is not None
+    assert builder_inputs
+    assert builder_inputs[0].planning_input_digest == projected_input.planning_input_digest
+    projected_command = build_server_owned_research_packet_command(
+        snapshot=snapshot_without_cta(case),
+        planning_input=projected_input,
+        source_pack=case.source_pack,
+        identity=case.identity,
+        now=prepared.packet.recorded_at,
+    )
+
+    assert not isinstance(projected_command, ContentResearchPacketBlocker)
+    assert prepared.packet.context_receipt == projected_command.context_receipt
+    assert (
+        current_research_packet_blocker(
+            store=case.store,
+            packet=prepared.packet,
+            snapshot=snapshot_without_cta(case),
+            planning_input=planning_input,
+        )
+        is None
+    )
 
 
 def test_packet_derivation_accepts_approved_regulatory_source_fact_id(

@@ -90,12 +90,18 @@ def test_research_packet_freshness_projection_contract_is_complete() -> None:
 
 def test_selected_source_pack_projection_is_exact_and_editorial_only() -> None:
     source = _repository_source("wilq/content/planning/source_pack_projection.py")
+    preparation = _repository_source(
+        "wilq/content/workflow/research_packet_preparation.py"
+    )
 
     assert "def project_selected_source_pack_facts(" in source
     assert 'fact.review_status != "approved"' in source
     assert "fact.source_id: fact for fact in registry" in source
     assert 'if getattr(planning_input, "content_kind", "service") != "editorial":' in source
     assert "source_material_ids=[]" in source
+    assert "def _project_source_pack_input_or_blocker(" in preparation
+    assert preparation.count("_project_source_pack_input_or_blocker(") >= 3
+    assert "planning_input=projected_input_or_blocker," in preparation
 
 
 def test_bdo_profile_owns_the_editorial_canonical_path() -> None:
