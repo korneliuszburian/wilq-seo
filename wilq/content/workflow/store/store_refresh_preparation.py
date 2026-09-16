@@ -10,6 +10,9 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
     ContentRefreshPreparationAuthorizationRecordResult,
 )
+from wilq.content.workflow.store.current_preparation_read_adapter import (
+    resolve_current_preparation_readiness_from_connection,
+)
 from wilq.content.workflow.store.store_content_kind_receipt import (
     assert_persisted_editorial_content_kind_receipt,
 )
@@ -218,11 +221,10 @@ def _assert_current_refresh_authorization(
     if run is None:
         raise ValueError("Refresh authorization requires a current classification.")
     row = run.for_work_item(authorization.work_item_id)
+    if row is None or row.current_work_item_id != authorization.work_item_id:
+        raise ValueError("Refresh authorization does not bind the current classified row.")
     if (
-        row is None
-        or row.current_work_item_id != authorization.work_item_id
-        or row.decision != "refresh"
-        or run.freshness.requires_refresh
+        run.freshness.requires_refresh
         or run.run_id != authorization.classification_run_id
         or run.run_digest != authorization.classification_run_digest
         or run.input.decision_set_digest != authorization.decision_set_digest
@@ -233,6 +235,15 @@ def _assert_current_refresh_authorization(
         != sorted(item.code for item in row.blockers)
     ):
         raise ValueError("Refresh authorization does not bind the current classified row.")
+    if row.decision != "refresh":
+        readiness = resolve_current_preparation_readiness_from_connection(
+            connection,
+            authorization.work_item_id,
+            run=run,
+            row=row,
+        )
+        if getattr(readiness, "status", None) != "ready_for_refresh_authorization":
+            raise ValueError("Refresh authorization does not bind the current classified row.")
 
 
 __all__ = ["RefreshPreparationAuthorizationStoreMixin"]

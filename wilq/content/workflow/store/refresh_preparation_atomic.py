@@ -13,6 +13,9 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     refresh_preparation_binding_matches_content_identity,
     refresh_preparation_bindings_match_authority,
 )
+from wilq.content.workflow.store.current_preparation_read_adapter import (
+    resolve_current_preparation_readiness_from_connection,
+)
 from wilq.content.workflow.store.store_content_kind_receipt import (
     assert_persisted_editorial_content_kind_receipt,
 )
@@ -78,8 +81,17 @@ def _assert_refresh_preparation_current(
         if binding is not None:
             raise RefreshPreparationAtomicityError("refresh_preparation_authorization_foreign")
         return
-    if row.current_work_item_id != work_item_id or row.decision != "refresh":
+    if row.current_work_item_id != work_item_id:
         raise RefreshPreparationAtomicityError("refresh_preparation_proposal_binding_mismatch")
+    if row.decision != "refresh":
+        readiness = resolve_current_preparation_readiness_from_connection(
+            connection,
+            work_item_id,
+            run=classification,
+            row=row,
+        )
+        if getattr(readiness, "status", None) != "ready_for_refresh_authorization":
+            raise RefreshPreparationAtomicityError("refresh_preparation_proposal_binding_mismatch")
     if binding is None:
         raise RefreshPreparationAtomicityError("refresh_preparation_authorization_missing")
     if not refresh_preparation_binding_matches_content_identity(
@@ -171,9 +183,7 @@ def _authorization_for_binding(
         )
         return authorization if stored_scalars == expected_scalars else None
     except Exception as error:
-        raise RefreshPreparationAtomicityError(
-            "refresh_preparation_authorization_stale"
-        ) from error
+        raise RefreshPreparationAtomicityError("refresh_preparation_authorization_stale") from error
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:

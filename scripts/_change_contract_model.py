@@ -135,6 +135,8 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_preparation_readiness.py",
         "tests/content/test_refresh_preparation_authority.py::test_runtime_requires_exact_authorization_and_proposal_binding",
         "tests/content/test_content_selected_workspace_production_decision.py::test_selected_workspace_rejects_mismatched_production_identity",
+        "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_plan_and_revision_writers_accept_ready_blocked_row_with_readback",
+        "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_writers_reject_distinct_attempts_after_newer_blocked_pack",
     ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",

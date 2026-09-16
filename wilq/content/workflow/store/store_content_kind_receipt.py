@@ -13,6 +13,9 @@ from wilq.content.workflow.content_kind_receipt import (
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationAuthorization,
 )
+from wilq.content.workflow.store.current_preparation_read_adapter import (
+    resolve_current_preparation_readiness_from_connection,
+)
 from wilq.content.workflow.store.store_production_classification import (
     load_latest_production_classification_from_connection,
 )
@@ -151,11 +154,10 @@ def _assert_current_content_kind_receipt(
     if run is None:
         raise ValueError("Content-kind receipt requires a current classification.")
     row = run.for_work_item(receipt.work_item_id)
+    if row is None or row.current_work_item_id != receipt.work_item_id:
+        raise ValueError("Content-kind receipt does not bind the current classified row.")
     if (
-        row is None
-        or row.current_work_item_id != receipt.work_item_id
-        or row.decision != "refresh"
-        or run.freshness.requires_refresh
+        run.freshness.requires_refresh
         or run.run_id != receipt.classification_run_id
         or run.run_digest != receipt.classification_run_digest
         or run.input.decision_set_digest != receipt.decision_set_digest
@@ -164,6 +166,15 @@ def _assert_current_content_kind_receipt(
         or row.public_url != receipt.public_url
     ):
         raise ValueError("Content-kind receipt does not bind the current classified row.")
+    if row.decision != "refresh":
+        readiness = resolve_current_preparation_readiness_from_connection(
+            connection,
+            receipt.work_item_id,
+            run=run,
+            row=row,
+        )
+        if getattr(readiness, "status", None) != "ready_for_refresh_authorization":
+            raise ValueError("Content-kind receipt does not bind the current classified row.")
 
 
 def _content_kind_receipt_from_row(row: sqlite3.Row) -> ContentKindReceipt:
