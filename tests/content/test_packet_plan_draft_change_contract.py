@@ -106,9 +106,14 @@ def test_selected_source_pack_projection_is_exact_and_editorial_only() -> None:
 
 def test_bdo_profile_owns_the_editorial_canonical_path() -> None:
     source = _repository_source("wilq/content/regulatory/profiles.json")
+    candidates = _repository_source("wilq/content/regulatory/candidates.json")
 
     assert '"id": "bdo"' in source
     assert '"/bdo-co-musi-wiedziec-przedsiebiorca"' in source
+    assert '"rejestr-bdo.mos.gov.pl"' in source
+    assert '"source_url": "https://rejestr-bdo.mos.gov.pl/"' in candidates
+    assert '"observed_on": "2026-09-16"' in candidates
+    assert "logowanie-do-systemu-bdo-i-uwierzytelnienie" not in candidates
 
 
 def test_packet_context_partitions_use_the_projected_planning_input() -> None:

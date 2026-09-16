@@ -10,7 +10,8 @@
         "/bdo-co-musi-wiedziec-przedsiebiorca"
       ],
       "official_source_hosts": [
-        "bdo.mos.gov.pl"
+        "bdo.mos.gov.pl",
+        "rejestr-bdo.mos.gov.pl"
       ],
       "max_source_age_days": 180,
       "requirements": [

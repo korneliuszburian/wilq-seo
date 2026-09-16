@@ -136,9 +136,9 @@
       "profile_version": "2026-07-31-r2",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
       "canonical_paths": ["/bdo-co-musi-wiedziec-przedsiebiorca"],
-      "source_url": "https://bdo.mos.gov.pl/news/logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-identyfikacji-elektronicznej/",
-      "source_title": "BDO: Logowanie i uwierzytelnienie użytkowników systemu",
-      "observed_on": "2026-08-02",
+      "source_url": "https://rejestr-bdo.mos.gov.pl/",
+      "source_title": "BDO: Logowanie do systemu i role użytkowników",
+      "observed_on": "2026-09-16",
       "requirement_ids": ["bdo_access_and_account"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź sposób logowania, powiązanie konta i rozdział ról przed zatwierdzeniem factu źródłowego."
