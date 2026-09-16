@@ -6,9 +6,16 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
 )
+from wilq.content.drafts.regulatory_repair import ground_unmet_regulatory_assertions
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryDocumentAssertion,
+    ContentRegulatoryRequirement,
+    regulatory_requirement_assertion_errors,
+)
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     ContentPlanningSection,
@@ -365,3 +372,102 @@ def test_gate_and_repair_share_one_matcher(
         grounding.distinctive_fact_tokens(summaries),
     )
     assert calls == [expected, expected]
+
+
+def test_prepared_plan_grounds_all_assigned_regulatory_assertions() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="requirement_exact",
+        label="dokładne wymaganie",
+        reason="Wymaga dwóch obserwowalnych pojęć.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="assertion_one",
+                label="pierwsze pojęcie",
+                required_any_of=["pierwszy potwierdzony fakt"],
+            ),
+            ContentRegulatoryDocumentAssertion(
+                id="assertion_two",
+                label="drugie pojęcie",
+                required_any_of=["drugi potwierdzony fakt"],
+            ),
+        ],
+    )
+    source_facts = [
+        ContentPlanningSourceFact(
+            fact_id="planning_first_fact",
+            summary=(
+                "Oficjalne źródło BDO wskazuje, że pierwszy potwierdzony fakt. "
+                "Wymaga weryfikacji przez człowieka."
+            ),
+            source_connector="official_source",
+            evidence_ids=["ev_regulatory"],
+            source_fact_ids=["source_first_fact"],
+            regulatory_requirement_ids=[requirement.id],
+        ),
+        ContentPlanningSourceFact(
+            fact_id="planning_second_fact",
+            summary=(
+                "Oficjalne źródło BDO wskazuje, że drugi potwierdzony fakt. "
+                "Wymaga weryfikacji przez człowieka."
+            ),
+            source_connector="official_source",
+            evidence_ids=["ev_regulatory"],
+            source_fact_ids=["source_second_fact"],
+            regulatory_requirement_ids=[requirement.id],
+        ),
+    ]
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work_regulatory_grounding",
+        planning_input_digest="a" * 64,
+        source_facts=source_facts,
+        regulatory_coverage=ContentRegulatoryCoverage(requirements=[requirement]),
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id=planning_input.work_item_id,
+        planning_input_digest=planning_input.planning_input_digest,
+        sections=[
+            ContentPlanningSection(
+                section_id="section_regulatory",
+                heading="Wymaganie regulacyjne",
+                purpose="Pokryj całe wymaganie.",
+                evidence_ids=["ev_regulatory"],
+                regulatory_requirement_ids=[requirement.id],
+            )
+        ],
+    )
+    prepared_plan = prepare_draft_plan(proposal, planning_input)
+    assert isinstance(prepared_plan, PreparedDraftPlan)
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id="section_regulatory",
+                heading="Wymaganie regulacyjne",
+                body_markdown="Wprowadzenie.",
+            )
+        ],
+    )
+
+    grounded = ground_unmet_regulatory_assertions(
+        output,
+        planning_input=planning_input,
+        proposal=proposal,
+        missing_codes=[
+            "regulatory_document_assertion:requirement_exact:assertion_one",
+            "regulatory_document_assertion:requirement_exact:assertion_two",
+        ],
+        prepared_plan=prepared_plan,
+    )
+
+    body = grounded.sections[0].body_markdown
+    assert regulatory_requirement_assertion_errors(requirement=requirement, text=body) == []
+    assert "Pierwszy potwierdzony fakt" in body
+    assert "Drugi potwierdzony fakt" in body
+    assert "Oficjalne źródło" not in body
+    assert "Wymaga weryfikacji" not in body

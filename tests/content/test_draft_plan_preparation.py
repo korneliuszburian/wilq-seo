@@ -7,21 +7,28 @@ from wilq.content.drafts.draft_plan_preparation import (
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
-from wilq.content.regulatory.policy import ContentRegulatoryCoverage
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryDocumentAssertion,
+    ContentRegulatoryRequirement,
+)
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     ContentPlanningSection,
 )
 
 
-def _source_snapshot(*source_facts: ContentPlanningSourceFact) -> ContentPlanningInput:
+def _source_snapshot(
+    *source_facts: ContentPlanningSourceFact,
+    requirements: tuple[ContentRegulatoryRequirement, ...] = (),
+) -> ContentPlanningInput:
     return ContentPlanningInput.model_construct(
         work_item_id="content_work_item_draft_plan",
         planning_input_digest="a" * 64,
         content_kind="service",
         confirmed_service_card_id="service_bdo",
         source_facts=list(source_facts),
-        regulatory_coverage=ContentRegulatoryCoverage(),
+        regulatory_coverage=ContentRegulatoryCoverage(requirements=list(requirements)),
     )
 
 
@@ -126,7 +133,24 @@ def test_regulatory_target_reports_only_the_unmapped_requirement() -> None:
         )
     )
 
-    result = prepare_draft_plan(candidate, _source_snapshot(fact))
+    result = prepare_draft_plan(
+        candidate,
+        _source_snapshot(
+            fact,
+            requirements=(
+                ContentRegulatoryRequirement(
+                    id="requirement_a",
+                    label="wymaganie A",
+                    reason="Testowe wymaganie A.",
+                ),
+                ContentRegulatoryRequirement(
+                    id="requirement_b",
+                    label="wymaganie B",
+                    reason="Testowe wymaganie B.",
+                ),
+            ),
+        ),
+    )
 
     assert isinstance(result, DraftPlanBlocked)
     assert result.blocker.source_codes == ["section_regulatory:requirement_b"]
@@ -176,10 +200,118 @@ def test_prepared_plan_blocks_only_the_unmapped_requirement() -> None:
         regulatory_requirement_ids=["requirement_a", "requirement_b"],
     )
 
-    result = prepare_draft_plan(_candidate(section), _source_snapshot(fact))
+    result = prepare_draft_plan(
+        _candidate(section),
+        _source_snapshot(
+            fact,
+            requirements=(
+                ContentRegulatoryRequirement(
+                    id="requirement_a",
+                    label="wymaganie A",
+                    reason="Testowe wymaganie A.",
+                ),
+                ContentRegulatoryRequirement(
+                    id="requirement_b",
+                    label="wymaganie B",
+                    reason="Testowe wymaganie B.",
+                ),
+            ),
+        ),
+    )
 
     assert isinstance(result, DraftPlanBlocked)
     assert result.blocker.source_codes == ["section_ab:requirement_b"]
+
+
+def test_regulatory_target_requires_all_document_assertions_from_assigned_facts() -> None:
+    requirement = ContentRegulatoryRequirement(
+        id="requirement_exact",
+        label="dokładne wymaganie",
+        reason="Wymaga dwóch obserwowalnych pojęć.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="assertion_one",
+                label="pierwsze pojęcie",
+                required_any_of=["pierwszy potwierdzony fakt"],
+            ),
+            ContentRegulatoryDocumentAssertion(
+                id="assertion_two",
+                label="drugie pojęcie",
+                required_any_of=["drugi potwierdzony fakt"],
+            ),
+        ],
+    )
+    section = ContentPlanningSection(
+        section_id="section_regulatory",
+        heading="Wymaganie regulacyjne",
+        purpose="Pokryj całe wymaganie.",
+        inventory_disposition="rewrite",
+        evidence_ids=["ev_regulatory"],
+        regulatory_requirement_ids=[requirement.id],
+    )
+    first_fact = ContentPlanningSourceFact(
+        fact_id="planning_first_fact",
+        summary="Pierwszy potwierdzony fakt.",
+        source_connector="official_source",
+        evidence_ids=["ev_regulatory"],
+        source_fact_ids=["source_first_fact"],
+        regulatory_requirement_ids=[requirement.id],
+    )
+    second_fact = first_fact.model_copy(
+        update={
+            "fact_id": "planning_second_fact",
+            "summary": "Drugi potwierdzony fakt.",
+            "source_fact_ids": ["source_second_fact"],
+        }
+    )
+    candidate = _candidate(section)
+
+    first_result = prepare_draft_plan(
+        candidate,
+        _source_snapshot(first_fact).model_copy(
+            update={"regulatory_coverage": ContentRegulatoryCoverage(requirements=[requirement])}
+        ),
+    )
+
+    assert isinstance(first_result, DraftPlanBlocked)
+    assert first_result.blocker.code == "draft_plan_source_support_missing"
+    assert first_result.blocker.source_codes == [
+        "section_regulatory:requirement_exact:assertion_two"
+    ]
+
+    complete_result = prepare_draft_plan(
+        candidate,
+        _source_snapshot(first_fact, second_fact).model_copy(
+            update={"regulatory_coverage": ContentRegulatoryCoverage(requirements=[requirement])}
+        ),
+    )
+
+    assert isinstance(complete_result, PreparedDraftPlan)
+    assert [fact.fact_id for fact in complete_result.target_supports[0].source_facts] == [
+        "planning_first_fact",
+        "planning_second_fact",
+    ]
+
+
+def test_regulatory_target_requires_a_requirement_definition() -> None:
+    candidate = _candidate(
+        ContentPlanningSection(
+            section_id="section_regulatory",
+            heading="Wymaganie regulacyjne",
+            purpose="Pokryj wymaganie.",
+            inventory_disposition="rewrite",
+            evidence_ids=["ev_regulatory"],
+            regulatory_requirement_ids=["requirement_missing"],
+        )
+    )
+
+    result = prepare_draft_plan(candidate, _source_snapshot())
+
+    assert isinstance(result, DraftPlanBlocked)
+    assert result.blocker.code == "draft_plan_source_support_missing"
+    assert result.blocker.source_codes == [
+        "section_regulatory:requirement_missing:missing_requirement_definition"
+    ]
 
 
 def test_unresolved_merge_is_not_a_body_target() -> None:

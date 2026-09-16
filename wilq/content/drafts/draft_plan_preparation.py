@@ -7,9 +7,14 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
+from wilq.content.drafts.document_facts import safe_document_ready_fact_text
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryRequirement,
+    regulatory_requirement_assertion_errors,
+)
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
     ContentPlanningSection,
@@ -25,6 +30,7 @@ _NON_BODY_TARGET_DISPOSITIONS = frozenset(
     {"remove", "remove_review_required", "defer", "deferred", "defer_review_required"}
 )
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_MISSING_REQUIREMENT_DEFINITION_ASSERTION_ID = "missing_requirement_definition"
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,11 +163,24 @@ def prepare_draft_plan(
         )
 
     exact_facts = _exact_source_facts(exact_source_snapshot)
+    requirements_by_id = {
+        requirement.id: requirement
+        for requirement in exact_source_snapshot.regulatory_coverage.requirements
+    }
     target_supports: list[PreparedDraftTarget] = []
     unsupported: list[str] = []
     for section in body_targets:
         facts = _facts_for_target(section, exact_facts)
-        if not facts:
+        if section.regulatory_requirement_ids:
+            assertion_source_codes = _regulatory_assertion_source_codes(
+                section,
+                facts,
+                requirements_by_id,
+            )
+            if assertion_source_codes:
+                unsupported.extend(assertion_source_codes)
+                continue
+        elif not facts:
             unsupported.extend(_missing_target_codes(section, exact_facts))
             continue
         target_supports.append(PreparedDraftTarget(section=section, source_facts=facts))
@@ -240,7 +259,7 @@ def _facts_for_target(
     section_material = _nonblank_ids(section.source_material_ids)
     if section.regulatory_requirement_ids:
         requirement_ids = tuple(dict.fromkeys(section.regulatory_requirement_ids))
-        matched = tuple(
+        return tuple(
             fact
             for fact in facts
             if section_evidence.intersection(_nonblank_ids(fact.evidence_ids))
@@ -249,20 +268,59 @@ def _facts_for_target(
                 for requirement_id in requirement_ids
             )
         )
-        if any(
-            not any(
-                requirement_id in _nonblank_ids(fact.regulatory_requirement_ids) for fact in matched
-            )
-            for requirement_id in requirement_ids
-        ):
-            return ()
-        return matched
     return tuple(
         fact
         for fact in facts
         if section_evidence.intersection(_nonblank_ids(fact.evidence_ids))
         or section_material.intersection(_nonblank_ids(fact.source_material_ids))
     )
+
+
+def _regulatory_assertion_source_codes(
+    section: ContentPlanningSection,
+    facts: tuple[PreparedSourceFact, ...],
+    requirements_by_id: dict[str, ContentRegulatoryRequirement],
+) -> tuple[str, ...]:
+    target = _target_code(section)
+    source_codes: list[str] = []
+    for requirement_id in dict.fromkeys(section.regulatory_requirement_ids):
+        requirement = requirements_by_id.get(requirement_id)
+        if requirement is None:
+            source_codes.append(
+                f"{target}:{requirement_id}:{_MISSING_REQUIREMENT_DEFINITION_ASSERTION_ID}"
+            )
+            continue
+        assigned_facts = tuple(
+            fact
+            for fact in facts
+            if requirement_id in _nonblank_ids(fact.regulatory_requirement_ids)
+        )
+        protected_terms = [
+            term
+            for assertion in requirement.document_assertions
+            for term in assertion.required_any_of
+        ]
+        reader_ready_text = "\n".join(
+            safe_text
+            for fact in assigned_facts
+            if (
+                safe_text := safe_document_ready_fact_text(
+                    fact.summary,
+                    protected_terms=protected_terms,
+                )
+            )
+            is not None
+        )
+        for error in regulatory_requirement_assertion_errors(
+            requirement=requirement,
+            text=reader_ready_text,
+        ):
+            assertion_prefix = f"regulatory_document_assertion:{requirement_id}:"
+            assertion_id = error.removeprefix(assertion_prefix)
+            source_codes.append(f"{target}:{requirement_id}:{assertion_id}")
+        if not requirement.document_assertions and not assigned_facts:
+            source_codes.append(f"{target}:{requirement_id}")
+    return tuple(source_codes)
 
 
 def _missing_target_codes(
