@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -36,15 +37,19 @@ from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.workflow.source_fact_authority import (
     ContentSourceFactAuthorityPreviewCommand,
+    ContentSourceFactAuthorityProposal,
     ContentSourceFactAuthoritySnapshot,
     build_content_source_fact_authority_candidate_projection,
     execute_content_source_fact_authority,
     parse_source_fact_authority_snapshot_json,
     prepare_content_source_fact_authority_preview,
     read_content_source_fact_authority,
+    source_fact_authority_action_id,
     source_fact_authority_action_payload_digest,
+    source_fact_authority_proposal_digest,
     validate_source_fact_authority_action_payload,
 )
+from wilq.content.workflow.source_pack_binding import build_content_source_pack_prerequisites
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import ActionApplyRequest, AuditEvent
 from wilq.storage.local_state import LocalStateStore
@@ -65,9 +70,7 @@ def _prepared_snapshot(tmp_path: Path) -> ContentSourceFactAuthoritySnapshot:
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     )
     assert response.status == "preview_ready"
@@ -93,6 +96,307 @@ def test_exact_eligible_fact_preview_is_ready(tmp_path: Path) -> None:
     assert response.action.payload["source_fact_authority"]["source_fact_ids"] == [
         "ekologus_public_bdo_faq_2026_07_01"
     ]
+
+
+def test_attempt_zero_keeps_historical_authority_identity_and_json_readable() -> None:
+    identity_binding_id = "content_delivery_identity_bdo"
+    source_fact_ids = ("ekologus_public_bdo_faq_2026_07_01",)
+
+    assert (
+        source_fact_authority_proposal_digest(identity_binding_id, source_fact_ids)
+        == "d9197eec0c1f2e98ca317eceed4de644157eeb056e269a0f6c66bbfcf323a852"
+    )
+    assert (
+        source_fact_authority_action_id(identity_binding_id, source_fact_ids)
+        == "act_source_fact_authority_d9197eec0c1f2e98ca317ece"
+    )
+
+    legacy_payload = {
+        "schema_version": "wilq_content_source_fact_authority_proposal_v1",
+        "action_id": source_fact_authority_action_id(identity_binding_id, source_fact_ids),
+        "proposal_digest": source_fact_authority_proposal_digest(
+            identity_binding_id, source_fact_ids
+        ),
+        "identity_binding_id": identity_binding_id,
+        "proposed_source_fact_ids": list(source_fact_ids),
+        "prepared_snapshot_digest": None,
+        "prepared_at": "2026-09-16T00:00:00Z",
+    }
+
+    parsed = ContentSourceFactAuthorityProposal.model_validate_json(
+        json.dumps(legacy_payload), strict=True
+    )
+    assert parsed.attempt == 0
+
+
+def test_explicit_authority_attempt_is_append_only_and_idempotent(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "attempts.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    identity = store.record_content_delivery_identity(_exact_bdo_identity_command()).binding
+    source_fact_ids = ("ekologus_public_bdo_faq_2026_07_01",)
+
+    stable = prepare_content_source_fact_authority_preview(
+        store,
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id=identity.binding_id,
+            proposed_source_fact_ids=source_fact_ids,
+        ),
+    )
+    stable_proposal = store.load_content_source_fact_authority_proposal(stable.action.id)
+    assert stable_proposal is not None
+
+    retry_command = ContentSourceFactAuthorityPreviewCommand(
+        identity_binding_id=identity.binding_id,
+        proposed_source_fact_ids=source_fact_ids,
+        attempt=1,
+    )
+    retry = prepare_content_source_fact_authority_preview(store, retry_command)
+    repeated = prepare_content_source_fact_authority_preview(store, retry_command)
+    retry_proposal = store.load_content_source_fact_authority_proposal(retry.action.id)
+
+    assert retry.status == "preview_ready"
+    assert retry_proposal is not None
+    assert retry_proposal.attempt == 1
+    assert retry.action.id != stable.action.id
+    assert retry.action.payload["attempt"] == 1
+    assert retry_proposal.proposal_digest != stable_proposal.proposal_digest
+    assert repeated.action.id == retry.action.id
+    assert repeated.action.payload == retry.action.payload
+    assert store.load_content_source_fact_authority_proposal(stable.action.id) == stable_proposal
+
+
+@pytest.mark.parametrize("attempt", [True, "1", -1, 1001])
+def test_authority_attempt_is_strictly_typed_and_bounded(attempt: object) -> None:
+    with pytest.raises(ValidationError):
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id="content_delivery_identity_bdo",
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
+            attempt=attempt,
+        )
+
+
+@pytest.mark.parametrize("attempt", [True, "1", -1, 1001])
+def test_authority_action_attempt_validation_is_strict_and_bounded(attempt: object) -> None:
+    payload = {
+        "action_type": "content_source_fact_authority_receipt",
+        "mode": "apply",
+        "preview_contract": "content_source_fact_authority_preview_v1",
+        "local_authority_only": True,
+        "destructive": False,
+        "runtime_blockers": ["blocked_for_test"],
+        "attempt": attempt,
+    }
+
+    errors = validate_source_fact_authority_action_payload(payload)
+
+    assert errors == ["Source fact authority attempt must be an integer from 0 to 1000."]
+
+
+def test_nonzero_attempt_payload_tampering_fails_closed(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "attempt-tamper.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    identity = store.record_content_delivery_identity(_exact_bdo_identity_command()).binding
+    action = prepare_content_source_fact_authority_preview(
+        store,
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id=identity.binding_id,
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
+            attempt=1,
+        ),
+    ).action
+    snapshot = parse_source_fact_authority_snapshot_json(action.payload["source_fact_authority"])
+    payload_digest = source_fact_authority_action_payload_digest(action)
+    events = [
+        AuditEvent(
+            id=f"audit_attempt_tamper_{event_type}",
+            action_id=action.id,
+            event_type=event_type,
+            actor="wilku",
+            summary=event_type,
+            details={
+                "source_fact_authority_snapshot_digest": snapshot.context_digest,
+                "source_fact_authority_action_payload_digest": payload_digest,
+            },
+        )
+        for event_type in (
+            "action_preview_generated",
+            "human_review_approved_for_prepare",
+            "action_apply_confirmed",
+            "action_impact_check_completed",
+        )
+    ]
+    tampered = action.model_copy(deep=True)
+    tampered.payload["attempt"] = 2
+
+    assert source_fact_authority_action_payload_digest(tampered) != payload_digest
+    assert any(
+        "proposal digest" in error
+        for error in validate_source_fact_authority_action_payload(tampered.payload)
+    )
+    result, errors = execute_content_source_fact_authority(
+        tampered,
+        store=store,
+        audit_events=events,
+    )
+
+    assert result is None
+    assert errors == ["Source fact authority context changed before apply."]
+    assert store.load_content_source_fact_authority_receipt(action.id) is None
+
+
+def test_repeated_source_fact_authority_execution_is_idempotent(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "attempt-replay.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    identity = store.record_content_delivery_identity(_exact_bdo_identity_command()).binding
+    action = prepare_content_source_fact_authority_preview(
+        store,
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id=identity.binding_id,
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
+            attempt=1,
+        ),
+    ).action
+    snapshot = parse_source_fact_authority_snapshot_json(action.payload["source_fact_authority"])
+    events = [
+        AuditEvent(
+            id=f"audit_attempt_replay_{event_type}",
+            action_id=action.id,
+            event_type=event_type,
+            actor="wilku",
+            summary=event_type,
+            details={
+                "source_fact_authority_snapshot_digest": snapshot.context_digest,
+                "source_fact_authority_action_payload_digest": (
+                    source_fact_authority_action_payload_digest(action)
+                ),
+            },
+        )
+        for event_type in (
+            "action_preview_generated",
+            "human_review_approved_for_prepare",
+            "action_apply_confirmed",
+            "action_impact_check_completed",
+        )
+    ]
+
+    first, first_errors = execute_content_source_fact_authority(
+        action,
+        store=store,
+        audit_events=events,
+    )
+    replay, replay_errors = execute_content_source_fact_authority(
+        action,
+        store=store,
+        audit_events=events,
+    )
+
+    assert first_errors == []
+    assert replay_errors == []
+    assert first is not None
+    assert replay is not None
+    assert first["status"] == "created"
+    assert replay["status"] == "idempotent"
+    assert replay["receipt_id"] == first["receipt_id"]
+    assert (
+        len(
+            store.list_content_source_fact_authority_receipts(
+                identity_binding_id=identity.binding_id,
+                current_work_item_id=identity.current_work_item_id,
+            )
+        )
+        == 1
+    )
+
+
+def test_new_authority_attempt_completes_lifecycle_and_is_current_for_source_pack(
+    tmp_path: Path,
+) -> None:
+    store = ContentWorkflowStore(tmp_path / "attempt-lifecycle.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    identity = store.record_content_delivery_identity(_exact_bdo_identity_command()).binding
+    source_fact_ids = ("ekologus_public_bdo_faq_2026_07_01",)
+
+    def lifecycle_events(action, prefix: str) -> list[AuditEvent]:
+        events = []
+        snapshot = parse_source_fact_authority_snapshot_json(
+            action.payload["source_fact_authority"]
+        )
+        payload_digest = source_fact_authority_action_payload_digest(action)
+        for event_type in (
+            "action_preview_generated",
+            "human_review_approved_for_prepare",
+            "action_apply_confirmed",
+            "action_impact_check_completed",
+        ):
+            event = AuditEvent(
+                id=f"{prefix}_{event_type}",
+                action_id=action.id,
+                actor="wilku",
+                event_type=event_type,
+                summary=event_type,
+                details={
+                    "source_fact_authority_snapshot_digest": snapshot.context_digest,
+                    "source_fact_authority_action_payload_digest": payload_digest,
+                },
+            )
+            events.append(event)
+        return events
+
+    stable = prepare_content_source_fact_authority_preview(
+        store,
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id=identity.binding_id,
+            proposed_source_fact_ids=source_fact_ids,
+        ),
+    )
+    stable_result, stable_errors = execute_content_source_fact_authority(
+        stable.action,
+        store=store,
+        audit_events=lifecycle_events(stable.action, "stable"),
+    )
+    assert stable_errors == []
+    assert stable_result is not None
+
+    retry = prepare_content_source_fact_authority_preview(
+        store,
+        ContentSourceFactAuthorityPreviewCommand(
+            identity_binding_id=identity.binding_id,
+            proposed_source_fact_ids=source_fact_ids,
+            attempt=1,
+        ),
+    )
+    retry_result, retry_errors = execute_content_source_fact_authority(
+        retry.action,
+        store=store,
+        audit_events=lifecycle_events(retry.action, "retry"),
+    )
+    assert retry_errors == []
+    assert retry_result is not None
+    assert retry_result["status"] == "created"
+
+    stable_receipt = store.load_content_source_fact_authority_receipt(stable.action.id)
+    retry_receipt = store.load_content_source_fact_authority_receipt(retry.action.id)
+    assert stable_receipt is not None
+    assert retry_receipt is not None
+    assert stable_receipt.receipt_id != retry_receipt.receipt_id
+    assert read_content_source_fact_authority(store, action_id=stable.action.id).status == (
+        "blocked"
+    )
+    assert read_content_source_fact_authority(store, action_id=retry.action.id).status == (
+        "current"
+    )
+
+    prerequisites = build_content_source_pack_prerequisites(
+        identity,
+        authority_receipt=retry_receipt,
+        authority_receipts=(stable_receipt, retry_receipt),
+        classification=store.load_production_classification_for_work_item(
+            identity.current_work_item_id
+        ),
+    )
+    assert prerequisites.row_authority_status == "exact_current"
+    assert prerequisites.row_authority_receipt is not None
+    assert prerequisites.row_authority_receipt.receipt_id == retry_receipt.receipt_id
 
 
 def test_preview_blocks_approved_foreign_fact_for_exact_identity(tmp_path: Path) -> None:
@@ -244,9 +548,7 @@ def test_candidate_route_rejects_unsafe_identity_path() -> None:
     authority_router.register_content_source_fact_authority_routes(router)
     app.include_router(router)
 
-    response = TestClient(app).get(
-        "/api/content/source-fact-authority-reviews/candidates/bad!"
-    )
+    response = TestClient(app).get("/api/content/source-fact-authority-reviews/candidates/bad!")
 
     assert response.status_code == 422
     assert response.json()["detail"]
@@ -289,9 +591,7 @@ def test_json_action_snapshot_passes_its_strict_payload_validator(tmp_path: Path
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
 
@@ -321,9 +621,7 @@ def test_receipt_requires_complete_exact_audit_chain(tmp_path: Path) -> None:
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
     result, errors = execute_content_source_fact_authority(action, store=store, audit_events=[])
@@ -369,9 +667,7 @@ def test_receipt_rejects_out_of_order_audit_chain(tmp_path: Path) -> None:
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
     snapshot_digest = parse_source_fact_authority_snapshot_json(
@@ -402,9 +698,7 @@ def test_receipt_rejects_out_of_order_audit_chain(tmp_path: Path) -> None:
         update={"created_at": events[-1].created_at + timedelta(seconds=1)}
     )
 
-    result, errors = execute_content_source_fact_authority(
-        action, store=store, audit_events=events
-    )
+    result, errors = execute_content_source_fact_authority(action, store=store, audit_events=events)
 
     assert result is None
     assert errors == ["Source fact authority audit chain is out of order."]
@@ -419,9 +713,7 @@ def test_service_audit_stamp_binds_exact_authority_payload(tmp_path: Path) -> No
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
     event = AuditEvent(
@@ -454,9 +746,7 @@ def test_service_dispatch_executes_only_local_authority_receipt(
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
     events = []
@@ -497,9 +787,7 @@ def test_local_authority_receipt_does_not_resolve_wordpress_capability(
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
 
@@ -525,9 +813,7 @@ def test_local_authority_receipt_applies_through_canonical_lifecycle(
         store,
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         ),
     ).action
     action.validation_status = "valid"
@@ -593,29 +879,16 @@ def test_preview_router_uses_typed_server_side_authority_preview(
     response = authority_router.content_source_fact_authority_preview_endpoint(
         ContentSourceFactAuthorityPreviewCommand(
             identity_binding_id=identity.binding_id,
-            proposed_source_fact_ids=(
-                "ekologus_public_bdo_faq_2026_07_01",
-            ),
+            proposed_source_fact_ids=("ekologus_public_bdo_faq_2026_07_01",),
         )
     )
 
     assert response.status == "preview_ready"
     assert response.action.payload["local_authority_only"] is True
-    assert authority_router.content_source_fact_authority_read_endpoint(
-        response.action.id
-    ).status == "missing"
-
-
-def _assert_source_authority_tables_are_append_only(store_path: Path) -> None:
-    with sqlite3.connect(store_path) as connection:
-        for table in (
-            "content_source_fact_authority_proposals",
-            "content_source_fact_authority_receipts",
-        ):
-            with pytest.raises(sqlite3.IntegrityError, match="append-only"):
-                connection.execute(
-                    f"INSERT OR REPLACE INTO {table} SELECT * FROM {table} LIMIT 1"
-                )
+    assert (
+        authority_router.content_source_fact_authority_read_endpoint(response.action.id).status
+        == "missing"
+    )
 
 
 def test_public_authority_receipt_closes_source_pack_with_exact_current_binding(
@@ -710,18 +983,24 @@ def test_public_authority_receipt_closes_source_pack_with_exact_current_binding(
     assert binding_payload["status"] == "exact_current"
     assert binding_payload["source_fact_authority_receipt_id"] == applied["receipt_id"]
 
-    readback = client.get(
-        f"/api/content/source-pack-bindings/{binding_payload['binding_id']}"
-    )
+    readback = client.get(f"/api/content/source-pack-bindings/{binding_payload['binding_id']}")
     assert readback.status_code == 200
     assert readback.json()["binding"] == binding_payload
 
-    _assert_source_authority_tables_are_append_only(store.path)
+    with sqlite3.connect(store.path) as connection:
+        for table in (
+            "content_source_fact_authority_proposals",
+            "content_source_fact_authority_receipts",
+        ):
+            with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+                connection.execute(f"INSERT OR REPLACE INTO {table} SELECT * FROM {table} LIMIT 1")
 
 
+@pytest.mark.parametrize("attempt", [None, 1], ids=["legacy_attempt_zero", "attempt_one"])
 def test_public_http_authority_lifecycle_writes_only_local_row_receipt(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    attempt: int | None,
 ) -> None:
     store = ContentWorkflowStore(tmp_path / "public-workflow.sqlite3")
     audit_store = LocalStateStore(tmp_path / "public-audit.sqlite3")
@@ -738,12 +1017,15 @@ def test_public_http_authority_lifecycle_writes_only_local_row_receipt(
     monkeypatch.setattr(actions_router, "local_state_store", lambda: audit_store)
 
     client = TestClient(app)
+    preview_payload: dict[str, object] = {
+        "identity_binding_id": identity.binding_id,
+        "proposed_source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"],
+    }
+    if attempt is not None:
+        preview_payload["attempt"] = attempt
     preview = client.post(
         "/api/content/source-fact-authority-reviews/preview",
-        json={
-            "identity_binding_id": identity.binding_id,
-            "proposed_source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"],
-        },
+        json=preview_payload,
     )
     assert preview.status_code == 200, preview.text
     action_id = preview.json()["action"]["id"]

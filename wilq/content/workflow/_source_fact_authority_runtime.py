@@ -17,8 +17,10 @@ from wilq.content.workflow._source_fact_authority_contracts import (
     ContentSourceFactAuthorityReadProjection,
     ContentSourceFactAuthorityReceipt,
     ContentSourceFactAuthoritySnapshot,
+    _validate_attempt,
     parse_source_fact_authority_snapshot_json,
     source_fact_authority_action_payload_digest,
+    source_fact_authority_proposal_digest,
     source_fact_authority_receipt_digest,
 )
 from wilq.content.workflow._source_fact_authority_snapshot import (
@@ -50,6 +52,10 @@ def execute_content_source_fact_authority(
 
     if action.payload.get("local_authority_only") is not True:
         return None, ["Source fact authority action is not local-only."]
+    try:
+        _validate_attempt(action.payload.get("attempt", 0))
+    except ValueError as error:
+        return None, [str(error)]
     proposal = store.load_content_source_fact_authority_proposal(action.id)
     if proposal is None:
         return None, ["Source fact authority proposal is missing."]
@@ -89,27 +95,35 @@ def execute_content_source_fact_authority(
         return None, ["Source fact authority audit chain is out of order."]
     payload_digest = source_fact_authority_action_payload_digest(action)
     if any(
-        event.details.get("source_fact_authority_snapshot_digest")
-        != actual_snapshot.context_digest
+        event.details.get("source_fact_authority_snapshot_digest") != actual_snapshot.context_digest
         or event.details.get("source_fact_authority_action_payload_digest") != payload_digest
         for event in (preview, review, confirmation, impact)
     ):
         return None, ["Audit chain does not bind the exact current authority snapshot."]
     timestamp = datetime.now(UTC)
     provisional = ContentSourceFactAuthorityReceipt.model_construct(
-        action_id=action.id, action_payload_digest=payload_digest,
-        authority_snapshot=actual_snapshot, preview_audit_id=preview.id,
-        review_audit_id=review.id, confirmation_audit_id=confirmation.id,
-        impact_audit_id=impact.id, reviewed_by=review.actor, confirmed_by=confirmation.actor,
-        recorded_by="wilq_local_action_executor", recorded_at=timestamp,
-        receipt_id="", receipt_digest="",
+        action_id=action.id,
+        action_payload_digest=payload_digest,
+        authority_snapshot=actual_snapshot,
+        preview_audit_id=preview.id,
+        review_audit_id=review.id,
+        confirmation_audit_id=confirmation.id,
+        impact_audit_id=impact.id,
+        reviewed_by=review.actor,
+        confirmed_by=confirmation.actor,
+        recorded_by="wilq_local_action_executor",
+        recorded_at=timestamp,
+        receipt_id="",
+        receipt_digest="",
     )
     digest = source_fact_authority_receipt_digest(provisional)
     receipt = ContentSourceFactAuthorityReceipt.model_validate(
-        provisional.model_copy(update={
-            "receipt_id": f"content_source_fact_authority_{digest[:24]}",
-            "receipt_digest": digest,
-        })
+        provisional.model_copy(
+            update={
+                "receipt_id": f"content_source_fact_authority_{digest[:24]}",
+                "receipt_digest": digest,
+            }
+        )
     )
     status, stored = store.record_content_source_fact_authority_receipt(receipt)
     if status == "conflict":
@@ -164,7 +178,8 @@ def read_content_source_fact_authority(
                 blockers=(_blocker("current_context", "authority_receipt_superseded"),),
                 **common,
                 safe_next_step=(
-                    "Bieżący receipt został zastąpiony nowszą selekcją; użyj nowego authority."
+                    "Bieżący receipt został zastąpiony nowszą selekcją; zwiększ attempt i "
+                    "przygotuj nowy authority zamiast ponawiać ten sam action."
                 ),
             )
     if snapshot is None or receipt.authority_snapshot != snapshot:
@@ -174,7 +189,8 @@ def read_content_source_fact_authority(
             blockers=(_blocker("current_context", "authority_snapshot_drift"),),
             **common,
             safe_next_step=(
-                "Odśwież preview i przejdź nowy pełny lifecycle dla bieżącego kontekstu."
+                "Zwiększ attempt i przejdź nowy pełny lifecycle dla bieżącego kontekstu; "
+                "nie ponawiaj tego samego action."
             ),
         )
     return ContentSourceFactAuthorityReadProjection(
@@ -192,7 +208,9 @@ def _blocker(
     seam: str,
     reason: str,
     evidence_ids: tuple[str, ...] = (),
-    next_step: str = "Odśwież exact dane i przygotuj nowy preview.",
+    next_step: str = (
+        "Zwiększ attempt i przygotuj nowy exact preview zamiast ponawiać ten sam action."
+    ),
 ) -> ContentSourceFactAuthorityBlocker:
     return ContentSourceFactAuthorityBlocker(
         seam=seam,
@@ -268,7 +286,7 @@ def build_source_fact_authority_action(
                 "proposal",
                 "proposal_snapshot_drift",
                 () if snapshot is None else snapshot.evidence_ids,
-                "Odśwież preview dla bieżącego S1/classification/registry.",
+                "Zwiększ attempt i odśwież preview dla bieżącego S1/classification/registry.",
             ),
         )
         snapshot = None
@@ -284,15 +302,11 @@ def build_source_fact_authority_action(
         "id": f"source_fact_authority_{proposal.action_id}",
         "preview_contract": SOURCE_FACT_AUTHORITY_PREVIEW_CONTRACT,
         "operation_type": "record_source_fact_authority_receipt",
-        "current_work_item_id": (
-            snapshot.current_work_item_id if snapshot is not None else None
-        ),
+        "current_work_item_id": (snapshot.current_work_item_id if snapshot is not None else None),
         "canonical_path": snapshot.canonical_path if snapshot is not None else None,
         "public_url": snapshot.public_url if snapshot is not None else None,
         "source_fact_ids": list(proposal.proposed_source_fact_ids),
-        "source_facts_digest": (
-            snapshot.source_facts_digest if snapshot is not None else None
-        ),
+        "source_facts_digest": (snapshot.source_facts_digest if snapshot is not None else None),
         "source_fact_provenance_digest": (
             snapshot.source_fact_provenance_digest if snapshot is not None else None
         ),
@@ -308,6 +322,27 @@ def build_source_fact_authority_action(
         "api_mutation_ready": exact,
         "destructive": False,
     }
+    action_payload = {
+        "action_type": SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+        "connector": "wordpress_ekologus",
+        "mode": "apply",
+        "preview_contract": SOURCE_FACT_AUTHORITY_PREVIEW_CONTRACT,
+        "local_authority_only": True,
+        "proposal_digest": proposal.proposal_digest,
+        "source_fact_authority": preview_context,
+        "payload_preview": [payload_preview],
+        "payload_preview_total": 1,
+        "payload_preview_included": 1,
+        "required_validation": payload_preview["required_validation"],
+        "apply_allowed": exact,
+        "api_mutation_ready": exact,
+        "destructive": False,
+        "runtime_blockers": blocker_reasons,
+    }
+    # Omitting the default attempt keeps the historical attempt-zero action
+    # payload (and its receipt/audit digest) byte-for-byte compatible.
+    if proposal.attempt:
+        action_payload["attempt"] = proposal.attempt
     return ActionObject(
         id=proposal.action_id,
         title="Zatwierdź source facts dla exact wiersza S1",
@@ -325,23 +360,7 @@ def build_source_fact_authority_action(
             "Sprawdź exact S1 identity, bieżącą klasyfikację, registry i provenance faktów; "
             "dopiero potem wykonaj canonical ActionObject lifecycle."
         ),
-        payload={
-            "action_type": SOURCE_FACT_AUTHORITY_ACTION_TYPE,
-            "connector": "wordpress_ekologus",
-            "mode": "apply",
-            "preview_contract": SOURCE_FACT_AUTHORITY_PREVIEW_CONTRACT,
-            "local_authority_only": True,
-            "proposal_digest": proposal.proposal_digest,
-            "source_fact_authority": preview_context,
-            "payload_preview": [payload_preview],
-            "payload_preview_total": 1,
-            "payload_preview_included": 1,
-            "required_validation": payload_preview["required_validation"],
-            "apply_allowed": exact,
-            "api_mutation_ready": exact,
-            "destructive": False,
-            "runtime_blockers": blocker_reasons,
-        },
+        payload=action_payload,
         validation_status="not_validated",
         created_by="system_core_source_fact_authority",
     )
@@ -360,12 +379,28 @@ def validate_source_fact_authority_action_payload(payload: dict[str, Any]) -> li
     if payload.get("destructive") is not False:
         errors.append("Source fact authority cannot be destructive.")
     try:
-        parse_source_fact_authority_snapshot_json(payload.get("source_fact_authority", {}))
+        _validate_attempt(payload.get("attempt", 0))
+    except ValueError as error:
+        errors.append(str(error))
+    snapshot: ContentSourceFactAuthoritySnapshot | None = None
+    try:
+        snapshot = parse_source_fact_authority_snapshot_json(
+            payload.get("source_fact_authority", {})
+        )
     except Exception:
         # A blocked preview deliberately has no self-authenticating snapshot;
         # runtime revalidation will expose the typed blocker instead.
         if not payload.get("runtime_blockers"):
             errors.append("Source fact authority exact context is missing.")
+    if snapshot is not None and not errors:
+        attempt = payload.get("attempt", 0)
+        expected_proposal_digest = source_fact_authority_proposal_digest(
+            snapshot.identity_binding_id,
+            snapshot.source_fact_ids,
+            attempt,
+        )
+        if payload.get("proposal_digest") != expected_proposal_digest:
+            errors.append("Source fact authority proposal digest is invalid.")
     return errors
 
 
@@ -406,7 +441,14 @@ def prepare_content_source_fact_authority_preview(
     proposal = store.record_content_source_fact_authority_proposal(command)
     action = source_fact_authority_action_for_proposal(proposal, store=store)
     blockers = tuple(
-        _blocker("action", reason, next_step="Odśwież exact preview i sprawdź blocker.")
+        _blocker(
+            "action",
+            reason,
+            next_step=(
+                "Zwiększ attempt, przygotuj nowy exact preview i sprawdź blocker; "
+                "nie ponawiaj tego samego action."
+            ),
+        )
         for reason in action.payload.get("runtime_blockers", [])
         if isinstance(reason, str)
     )

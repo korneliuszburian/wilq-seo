@@ -128,8 +128,7 @@ def _authority_context_matches(
         and snapshot.classification_run_digest == identity.classification_run_digest
         and snapshot.classification_decision_set_digest
         == identity.classification_decision_set_digest
-        and snapshot.classification_source_row_digest
-        == identity.classification_source_row_digest
+        and snapshot.classification_source_row_digest == identity.classification_source_row_digest
     )
 
 
@@ -172,21 +171,18 @@ def _current_row_authority_state(
         blocker_reason = "source_fact_authority_stale"
     if accepted.recorded_at > timestamp or timestamp - accepted.recorded_at > _MAX_RECEIPT_AGE:
         blocker_reason = "source_fact_authority_stale"
-    if blocker_reason is None and (
-        expected_snapshot is None or expected_snapshot != snapshot
-    ):
+    if blocker_reason is None and (expected_snapshot is None or expected_snapshot != snapshot):
         blocker_reason = "source_fact_authority_drift"
     if blocker_reason is not None:
         return _blocked_row_authority_state(
             blocker_reason,
             "Row-authority receipt istnieje, ale nie odpowiada bieżącej tożsamości, "
             "klasyfikacji, registry albo karcie usługi.",
-            "Odśwież exact authority i przejdź nowy pełny lifecycle.",
+            "Zwiększ attempt, przygotuj exact authority i przejdź nowy pełny lifecycle; "
+            "nie ponawiaj tego samego action.",
         )
     provenance = tuple(
-        ContentSourcePackFactProvenance.model_validate_json(
-            item.model_dump_json(), strict=True
-        )
+        ContentSourcePackFactProvenance.model_validate_json(item.model_dump_json(), strict=True)
         for item in snapshot.source_fact_provenance
     )
     projection = ContentSourcePackRowAuthorityReceipt(
@@ -302,9 +298,7 @@ def build_content_source_pack_prerequisites(
         row_authority_reason_pl=row_authority.reason,
         safe_next_step_pl=row_authority.safe_next_step,
         approved_source_fact_ids=row_authority.approved_source_fact_ids,
-        global_approved_source_fact_count=sum(
-            fact.review_status == "approved" for fact in facts
-        ),
+        global_approved_source_fact_count=sum(fact.review_status == "approved" for fact in facts),
         source_fact_registry_receipt=registry_receipt,
         fresh_context_digest=attestation.context_digest,
         fresh_context_attestation=attestation,

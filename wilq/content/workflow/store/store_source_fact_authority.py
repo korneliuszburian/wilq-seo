@@ -35,15 +35,20 @@ class ContentSourceFactAuthorityStoreMixin:
             command.model_dump_json(), strict=True
         )
         digest = source_fact_authority_proposal_digest(
-            accepted.identity_binding_id, accepted.proposed_source_fact_ids
+            accepted.identity_binding_id,
+            accepted.proposed_source_fact_ids,
+            accepted.attempt,
         )
         proposal = ContentSourceFactAuthorityProposal(
             action_id=source_fact_authority_action_id(
-                accepted.identity_binding_id, accepted.proposed_source_fact_ids
+                accepted.identity_binding_id,
+                accepted.proposed_source_fact_ids,
+                accepted.attempt,
             ),
             proposal_digest=digest,
             identity_binding_id=accepted.identity_binding_id,
             proposed_source_fact_ids=accepted.proposed_source_fact_ids,
+            attempt=accepted.attempt,
             prepared_at=utc_now(),
         )
         with self._connect() as connection:
@@ -104,7 +109,8 @@ class ContentSourceFactAuthorityStoreMixin:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
                 "SELECT payload_json FROM content_source_fact_authority_receipts "
-                "WHERE action_id = ?", (accepted.action_id,)
+                "WHERE action_id = ?",
+                (accepted.action_id,),
             ).fetchone()
             if row is not None:
                 stored = ContentSourceFactAuthorityReceipt.model_validate_json(
@@ -138,10 +144,15 @@ class ContentSourceFactAuthorityStoreMixin:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT payload_json FROM content_source_fact_authority_receipts "
-                "WHERE action_id = ?", (action_id,)
+                "WHERE action_id = ?",
+                (action_id,),
             ).fetchone()
-        return None if row is None else ContentSourceFactAuthorityReceipt.model_validate_json(
-            cast(str, row["payload_json"]), strict=True
+        return (
+            None
+            if row is None
+            else ContentSourceFactAuthorityReceipt.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
         )
 
     def list_content_source_fact_authority_receipts(

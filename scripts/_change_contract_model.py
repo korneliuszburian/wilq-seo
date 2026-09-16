@@ -210,6 +210,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "server-owned-approval-command")
             else ("tests/content/test_current_preparation_readiness_change_contract.py",)
             if key == ("current-preparation", "exact-downstream-receipts")
+            else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
+            if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
             else _test_selectors(proof)
         ),
         observer_paths=(
@@ -234,6 +236,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "server-owned-approval-command")
             else ("tests/content/test_current_preparation_readiness_change_contract.py",)
             if key == ("current-preparation", "exact-downstream-receipts")
+            else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
+            if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",

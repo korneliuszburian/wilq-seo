@@ -38,12 +38,12 @@ SOURCE_FACT_AUTHORITY_ACTION_TYPE = "content_source_fact_authority_receipt"
 SOURCE_FACT_AUTHORITY_PREVIEW_CONTRACT = "content_source_fact_authority_preview_v1"
 SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER = "content_source_fact_authority_store"
 SOURCE_FACT_AUTHORITY_RECORDED_EVENT = "content_source_fact_authority_recorded"
-SOURCE_FACT_AUTHORITY_PROPOSAL_SCHEMA: Literal[
+SOURCE_FACT_AUTHORITY_PROPOSAL_SCHEMA: Literal["wilq_content_source_fact_authority_proposal_v1"] = (
     "wilq_content_source_fact_authority_proposal_v1"
-] = "wilq_content_source_fact_authority_proposal_v1"
-SOURCE_FACT_AUTHORITY_RECEIPT_SCHEMA: Literal[
+)
+SOURCE_FACT_AUTHORITY_RECEIPT_SCHEMA: Literal["wilq_content_source_fact_authority_receipt_v1"] = (
     "wilq_content_source_fact_authority_receipt_v1"
-] = "wilq_content_source_fact_authority_receipt_v1"
+)
 
 _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
@@ -87,6 +87,10 @@ class ContentSourceFactAuthorityPreviewCommand(_FrozenModel):
         pattern=_SAFE_IDENTIFIER,
     )
     proposed_source_fact_ids: tuple[str, ...] = Field(min_length=1, max_length=256)
+    # A retry must be a new append-only ActionObject identity.  Keep attempt
+    # optional so proposals written before this field existed remain readable
+    # as attempt zero.
+    attempt: int = Field(default=0, ge=0, le=1000, strict=True)
 
     @field_validator("proposed_source_fact_ids")
     @classmethod
@@ -201,6 +205,9 @@ class ContentSourceFactAuthorityProposal(_FrozenModel):
     proposal_digest: str = Field(pattern=_HEX64)
     identity_binding_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
     proposed_source_fact_ids: tuple[str, ...] = Field(min_length=1, max_length=256)
+    # Legacy proposal JSON omitted this field; Pydantic's default keeps those
+    # rows valid while non-zero attempts receive a distinct identity.
+    attempt: int = Field(default=0, ge=0, le=1000, strict=True)
     prepared_snapshot_digest: str | None = Field(default=None, pattern=_HEX64)
     prepared_at: datetime
 
@@ -226,10 +233,12 @@ class ContentSourceFactAuthorityProposal(_FrozenModel):
         expected = source_fact_authority_proposal_digest(
             self.identity_binding_id,
             self.proposed_source_fact_ids,
+            self.attempt,
         )
         if self.proposal_digest != expected or self.action_id != source_fact_authority_action_id(
             self.identity_binding_id,
             self.proposed_source_fact_ids,
+            self.attempt,
         ):
             raise ValueError("Source fact authority proposal ID/digest does not match.")
         return self
@@ -352,9 +361,7 @@ def authority_source_fact_digest(fact: ContentSourceFact) -> str:
 
 def authority_source_fact_evidence_digest(fact: ContentSourceFact) -> str:
     evidence_ids = tuple(sorted(set(fact.evidence_ids)))
-    return canonical_json_digest(
-        {"source_fact_id": fact.source_id, "evidence_ids": evidence_ids}
-    )
+    return canonical_json_digest({"source_fact_id": fact.source_id, "evidence_ids": evidence_ids})
 
 
 def authority_source_fact_provenance(fact: ContentSourceFact) -> ContentSourceFactProvenance:
@@ -381,11 +388,7 @@ def authority_source_fact_provenance_digest(
 def source_fact_authority_snapshot_digest(
     value: ContentSourceFactAuthoritySnapshot | dict[str, Any],
 ) -> str:
-    payload = (
-        value.model_dump(mode="json")
-        if isinstance(value, BaseModel)
-        else dict(value)
-    )
+    payload = value.model_dump(mode="json") if isinstance(value, BaseModel) else dict(value)
     # Legacy receipts predate the service-card binding.  Preserve their
     # original digest while making the field part of every newly built
     # snapshot's digest.
@@ -421,44 +424,55 @@ def parse_source_fact_authority_snapshot_json(
 def source_fact_authority_proposal_digest(
     identity_binding_id: str,
     source_fact_ids: tuple[str, ...],
+    attempt: int = 0,
 ) -> str:
-    return canonical_json_digest(
-        {
-            "identity_binding_id": identity_binding_id,
-            "proposed_source_fact_ids": source_fact_ids,
-        }
-    )
+    _validate_attempt(attempt)
+    payload: dict[str, Any] = {
+        "identity_binding_id": identity_binding_id,
+        "proposed_source_fact_ids": source_fact_ids,
+    }
+    # Do not change the digest of historical/legacy attempt-zero proposals.
+    if attempt:
+        payload["attempt"] = attempt
+    return canonical_json_digest(payload)
 
 
 def source_fact_authority_action_id(
     identity_binding_id: str,
     source_fact_ids: tuple[str, ...],
+    attempt: int = 0,
 ) -> str:
+    _validate_attempt(attempt)
+    # Keep the historical action ID stable, while making retries explicit and
+    # easy to distinguish in the action/audit ledgers.
     digest = source_fact_authority_proposal_digest(identity_binding_id, source_fact_ids)
-    return f"act_source_fact_authority_{digest[:24]}"
+    base_id = f"act_source_fact_authority_{digest[:24]}"
+    return base_id if attempt == 0 else f"{base_id}_attempt_{attempt}"
 
 
 def source_fact_authority_action_payload_digest(action: ActionObject) -> str:
     authority_payload = action.payload.get("source_fact_authority")
     if not isinstance(authority_payload, dict):
         return "0" * 64
-    return canonical_json_digest(
-        {
-            "action_type": action.payload.get("action_type"),
-            "proposal_digest": action.payload.get("proposal_digest"),
-            "source_fact_authority": authority_payload,
-        }
-    )
+    attempt = action.payload.get("attempt", 0)
+    _validate_attempt(attempt)
+    payload: dict[str, Any] = {
+        "action_type": action.payload.get("action_type"),
+        "proposal_digest": action.payload.get("proposal_digest"),
+        "source_fact_authority": authority_payload,
+    }
+    # Legacy attempt-zero ActionObjects did not carry this field.  Keep their
+    # payload/audit/receipt digest stable, while binding every retry's exact
+    # attempt into the digest so a 1 -> 2 rewrite cannot pass apply checks.
+    if attempt:
+        payload["attempt"] = attempt
+    return canonical_json_digest(payload)
 
 
 def source_fact_authority_receipt_digest(
     value: ContentSourceFactAuthorityReceipt | dict[str, Any],
 ) -> str:
-    payload = (
-        value.model_dump(mode="json")
-        if isinstance(value, BaseModel)
-        else dict(value)
-    )
+    payload = value.model_dump(mode="json") if isinstance(value, BaseModel) else dict(value)
     for key in ("receipt_id", "receipt_digest", "recorded_by", "recorded_at"):
         payload.pop(key, None)
     return sha256(
@@ -470,6 +484,11 @@ def source_fact_authority_receipt_digest(
             allow_nan=False,
         ).encode("utf-8")
     ).hexdigest()
+
+
+def _validate_attempt(attempt: int) -> None:
+    if isinstance(attempt, bool) or not isinstance(attempt, int) or not 0 <= attempt <= 1000:
+        raise ValueError("Source fact authority attempt must be an integer from 0 to 1000.")
 
 
 __all__ = [
