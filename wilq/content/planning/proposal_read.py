@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
@@ -36,6 +36,10 @@ from wilq.content.planning.proposal_quality import (
 from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+    refresh_preparation_bindings_match_authority,
+)
 
 
 def read_content_planning_proposal(
@@ -99,6 +103,205 @@ def read_content_planning_proposal(
         service_card_id=service_card_id,
         input_summary=input_summary,
         store=store,
+    )
+
+
+def read_content_planning_proposal_for_refresh_binding(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    planning_input: ContentPlanningInput,
+    binding: ContentRefreshPreparationBinding,
+    authority_binding: ContentRefreshPreparationBinding,
+    store: ContentPlanningProposalStore,
+    workflow_store: object | None = None,
+) -> ContentPlanningProposalResponse:
+    """Read the proposal/job bound to the exact packet-bound refresh receipt."""
+
+    if (
+        binding.current_work_item_id != planning_input.work_item_id
+        or not refresh_preparation_bindings_match_authority(binding, authority_binding)
+    ):
+        return _refresh_binding_status_block(binding)
+    subject = ContentPlanningSubject(
+        content_kind=binding.content_kind,
+        service_card_id=binding.service_card_id,
+    )
+    queued = store.queued_subject_response(
+        binding.current_work_item_id,
+        subject,
+        binding.planning_input_digest,
+    )
+    response = queued
+    if response is None:
+        proposal = store.for_subject_input(
+            binding.current_work_item_id,
+            subject,
+            binding.planning_input_digest,
+        )
+    else:
+        proposal = None
+    if response is None and proposal is not None:
+        packet_bound_input = _packet_bound_refresh_input(
+            planning_input=planning_input,
+            proposal=proposal,
+            binding=binding,
+            workflow_store=workflow_store,
+        )
+        if packet_bound_input is None:
+            return _packet_conflict_response(
+                _packet_conflict_base_response(
+                    planning_input=planning_input,
+                    binding=binding,
+                    research_packet_id=proposal.research_packet_id,
+                    research_packet_digest=proposal.research_packet_digest,
+                )
+            )
+        response = _response_for_current_proposal(
+            planning_input=packet_bound_input,
+            content_kind=binding.content_kind,
+            service_card_id=binding.service_card_id,
+            input_summary=content_planning_input_summary(packet_bound_input),
+            latest=proposal,
+            latest_is_current=True,
+        )
+    if response is None:
+        return _refresh_binding_status_block(binding)
+    response_binding = response.refresh_preparation_binding
+    if (
+        response_binding != binding
+        or response.planning_input_digest != binding.planning_input_digest
+    ):
+        return _refresh_binding_status_block(binding)
+    packet_bound_input = _packet_bound_refresh_input(
+        planning_input=planning_input,
+        proposal=response.proposal,
+        response=response,
+        binding=binding,
+        workflow_store=workflow_store,
+    )
+    if packet_bound_input is None:
+        return _packet_conflict_response(
+            response,
+            input_summary=content_planning_input_summary(planning_input),
+        )
+    return _revalidate_research_packet_response(
+        response=response,
+        snapshot=snapshot,
+        planning_input=packet_bound_input,
+        workflow_store=workflow_store,
+    )
+
+
+def _packet_bound_refresh_input(
+    *,
+    planning_input: ContentPlanningInput,
+    binding: ContentRefreshPreparationBinding,
+    proposal: ContentPlanningProposal | None = None,
+    response: ContentPlanningProposalResponse | None = None,
+    workflow_store: object | None = None,
+) -> ContentPlanningInput | None:
+    packet_id = (
+        response.research_packet_id
+        if response is not None
+        else None if proposal is None else proposal.research_packet_id
+    )
+    packet_digest = (
+        response.research_packet_digest
+        if response is not None
+        else None if proposal is None else proposal.research_packet_digest
+    )
+    if packet_id is None or packet_digest is None:
+        return None
+    packet_store = workflow_store
+    if packet_store is None:
+        from wilq.content.workflow.store.store import content_workflow_store
+
+        packet_store = content_workflow_store()
+    packet = cast(Any, packet_store).load_content_research_packet(packet_id)
+    if packet is None or packet.packet_digest != packet_digest:
+        return None
+    try:
+        bound = bind_research_packet_to_planning_input(planning_input, packet)
+    except ValueError:
+        return None
+    return bound if bound.planning_input_digest == binding.planning_input_digest else None
+
+
+def _refresh_binding_status_block(
+    binding: ContentRefreshPreparationBinding,
+) -> ContentPlanningProposalResponse:
+    next_step = "Odśwież przygotowanie refresh i wygeneruj plan dla bieżącego receipt."
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=binding.current_work_item_id,
+        content_kind=binding.content_kind,
+        service_card_id=binding.service_card_id,
+        blockers=[
+            ContentPlanningProposalBlocker(
+                code="refresh_preparation_authorization_foreign",
+                label="Plan refresh nie ma już bieżącej autoryzacji",
+                reason="Trwały plan nie pasuje do bieżącego receipt refresh.",
+                next_step=next_step,
+            )
+        ],
+        safe_next_step=next_step,
+    )
+
+
+def _packet_conflict_response(
+    response: ContentPlanningProposalResponse,
+    *,
+    input_summary: ContentPlanningInputSummary | None = None,
+) -> ContentPlanningProposalResponse:
+    next_step = "Odśwież exact packet i wygeneruj plan dla bieżącego kontekstu."
+    payload = response.model_dump(mode="python")
+    payload.update(
+        {
+            "status": "blocked",
+            "proposal": None,
+            "planning_workspace": None,
+            "input_summary": response.input_summary or input_summary,
+            "blockers": [
+                ContentPlanningProposalBlocker(
+                    code="research_packet_conflict",
+                    label="Research packet nie jest aktualny",
+                    reason="Nie można potwierdzić exact packetu zachowanego planu.",
+                    next_step=next_step,
+                )
+            ],
+            "safe_next_step": next_step,
+        }
+    )
+    return ContentPlanningProposalResponse.model_validate(payload)
+
+
+def _packet_conflict_base_response(
+    *,
+    planning_input: ContentPlanningInput,
+    binding: ContentRefreshPreparationBinding,
+    research_packet_id: str | None,
+    research_packet_digest: str | None,
+) -> ContentPlanningProposalResponse:
+    next_step = "Odśwież exact packet i wygeneruj plan dla bieżącego kontekstu."
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=binding.current_work_item_id,
+        content_kind=binding.content_kind,
+        service_card_id=binding.service_card_id,
+        planning_input_digest=binding.planning_input_digest,
+        research_packet_id=research_packet_id,
+        research_packet_digest=research_packet_digest,
+        input_summary=content_planning_input_summary(planning_input),
+        refresh_preparation_binding=binding,
+        blockers=[
+            ContentPlanningProposalBlocker(
+                code="research_packet_conflict",
+                label="Research packet nie jest aktualny",
+                reason="Nie można potwierdzić exact packetu zachowanego planu.",
+                next_step=next_step,
+            )
+        ],
+        safe_next_step=next_step,
     )
 
 
@@ -169,6 +372,7 @@ def _revalidate_research_packet_response(
     response: ContentPlanningProposalResponse,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     planning_input: ContentPlanningInput,
+    workflow_store: object | None = None,
 ) -> ContentPlanningProposalResponse:
     packet_id = response.research_packet_id
     packet_digest = response.research_packet_digest
@@ -177,16 +381,19 @@ def _revalidate_research_packet_response(
     from wilq.content.workflow.research_packet_preparation import (
         current_research_packet_blocker,
     )
-    from wilq.content.workflow.store.store import content_workflow_store
+    packet_store = workflow_store
+    if packet_store is None:
+        from wilq.content.workflow.store.store import content_workflow_store
 
-    packet = content_workflow_store().load_content_research_packet(packet_id)
+        packet_store = content_workflow_store()
+    packet = cast(Any, packet_store).load_content_research_packet(packet_id)
     if packet is None or packet.packet_digest != packet_digest:
         reason = "packet_conflict"
         next_step = "Odśwież exact packet i wygeneruj plan dla bieżącego kontekstu."
         evidence_ids: tuple[str, ...] = () if packet is None else packet.evidence_ids
     else:
         blocker = current_research_packet_blocker(
-            store=content_workflow_store(),
+            store=cast(Any, packet_store),
             packet=packet,
             snapshot=snapshot,
             planning_input=planning_input,
@@ -210,7 +417,9 @@ def _revalidate_research_packet_response(
         planning_input_digest=response.planning_input_digest,
         research_packet_id=response.research_packet_id,
         research_packet_digest=response.research_packet_digest,
-        input_summary=response.input_summary,
+        input_summary=response.input_summary or content_planning_input_summary(planning_input),
+        refresh_preparation_binding=response.refresh_preparation_binding,
+        runtime=response.runtime,
         blockers=[
             ContentPlanningProposalBlocker(
                 code=packet_code,
@@ -387,3 +596,9 @@ def _regulatory_lineage_blocked_response(
             )
         ],
     )
+
+
+__all__ = [
+    "read_content_planning_proposal",
+    "read_content_planning_proposal_for_refresh_binding",
+]

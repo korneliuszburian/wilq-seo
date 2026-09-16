@@ -118,3 +118,25 @@ def test_editorial_initial_draft_requires_a_current_research_packet() -> None:
     assert 'or getattr(planning.proposal, "content_kind", "service") == "editorial"' in source
     assert 'if proposal.content_kind == "editorial":' in source
     assert '"research_packet_missing"' in source
+
+
+def test_packet_bound_refresh_status_reads_exact_projected_job() -> None:
+    proposal_read = _repository_source("wilq/content/planning/proposal_read.py")
+    router = _repository_source("apps/api/wilq_api/routers/content_planning_proposals.py")
+
+    reader_marker = "def read_content_planning_proposal_for_refresh_binding("
+    assert reader_marker in proposal_read
+    reader_start = proposal_read.index(reader_marker)
+    reader_end = proposal_read.index("\ndef _packet_bound_refresh_input(", reader_start)
+    reader = proposal_read[reader_start:reader_end]
+    assert "store.queued_subject_response(" in reader
+    assert "binding.planning_input_digest" in reader
+    assert "store.for_subject_input(" in reader
+
+    status_start = router.index("def _authorized_refresh_planning_status(")
+    status_end = router.index("\ndef _bound_refresh_status_block(", status_start)
+    status = router[status_start:status_end]
+    assert "read_content_planning_proposal_for_refresh_binding(" in status
+    assert "binding=binding" in status
+    assert "authority_binding=resolution.binding" in status
+    assert "read_content_planning_proposal(" not in status

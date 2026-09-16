@@ -3,12 +3,14 @@ from __future__ import annotations
 import sqlite3
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
+import wilq.content.planning.proposal_read as proposal_read
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.workspace.api as workflow_api
 from apps.api.wilq_api.routers.actions import create_actions_router
@@ -24,9 +26,14 @@ from tests.content import dynamic_planning_test_support as planning_support
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from tests.content.test_delivery_identity_binding import _command as identity_command
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning import planning_generation_queue
+from wilq.content.planning.dynamic_input import ContentPlanningInputSummary
+from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalResponse
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.planning.input_sources import ContentPlanningSourceAssessment
 from wilq.content.workflow.decisions.inventory_binding import ContentKindInventoryBinding
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
     classification_counts,
@@ -34,6 +41,10 @@ from wilq.content.workflow.decisions.production import (
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityCommand
 from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.refresh_preparation import ContentRefreshPreparationAuthority
+from wilq.content.workflow.refresh_preparation_contracts import (
+    ContentRefreshPreparationBinding,
+)
+from wilq.content.workflow.refresh_preparation_models import RefreshPreparationRuntimeAuthorized
 from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.workspace.catalog import inventory_work_item_id
@@ -42,6 +53,78 @@ from wilq.storage.local_state import local_state_store
 BDO_URL = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
 BDO_WORK_ITEM_ID = inventory_work_item_id(BDO_URL)
 BDO_SERVICE_CARD_ID = "ekologus_service_bdo_reporting"
+
+
+def _packet_refresh_binding(
+    *,
+    work_item_id: str = "work-item",
+    planning_input_digest: str = "b" * 64,
+) -> ContentRefreshPreparationBinding:
+    return ContentRefreshPreparationBinding(
+        authorization_id="content_refresh_preparation_authorization_" + "a" * 24,
+        authorization_digest="a" * 64,
+        classification_run_id="classification_current",
+        classification_run_digest="d" * 64,
+        decision_set_digest="e" * 64,
+        source_packet_row_digest="f" * 64,
+        current_work_item_id=work_item_id,
+        canonical_path="/bdo-co-musi-wiedziec-przedsiebiorca",
+        public_url=BDO_URL,
+        content_kind="editorial",
+        planning_input_digest=planning_input_digest,
+    )
+
+
+def _packet_bound_generating_response(
+    binding: ContentRefreshPreparationBinding,
+    *,
+    packet_id: str = "packet-current",
+    packet_digest: str = "c" * 64,
+    run_id: str = "run-current",
+) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id=binding.current_work_item_id,
+        content_kind=binding.content_kind,
+        planning_input_digest=binding.planning_input_digest,
+        research_packet_id=packet_id,
+        research_packet_digest=packet_digest,
+        refresh_preparation_binding=binding,
+        runtime=ContentCodexRuntimeTrace(status="not_started", run_id=run_id),
+        safe_next_step="Poczekaj na wynik.",
+    )
+
+
+def _packet_input_summary() -> ContentPlanningInputSummary:
+    return ContentPlanningInputSummary(
+        final_canonical_url=BDO_URL,
+        content_kind="editorial",
+        inventory_status="available",
+        content_inventory_status="available",
+        acf_section_inventory_status="not_applicable",
+        source_assessments=[
+            ContentPlanningSourceAssessment(
+                source=source,
+                status="not_applicable",
+                reason="Testowy stan źródła.",
+            )
+            for source in (
+                "wordpress",
+                "service_profile",
+                "gsc",
+                "ga4",
+                "google_ads",
+                "ahrefs",
+                "keyword_planner",
+                "merchant",
+                "localo",
+                "social",
+            )
+        ],
+        source_fact_count=0,
+        evidence_id_count=0,
+        knowledge_card_count=0,
+    )
 
 
 class _InlineExecutor:
@@ -86,6 +169,220 @@ def test_classified_refresh_generates_one_bound_plan_and_revision(
         == revision.refresh_preparation_binding
     )
     assert runtime.calls == 2
+
+
+def test_classified_refresh_status_prefers_exact_packet_bound_job_over_old_proposal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from apps.api.wilq_api.routers import content_planning_proposals as planning_router
+
+    binding = _packet_refresh_binding()
+    current = _packet_bound_generating_response(binding)
+    old = ContentPlanningProposalResponse(
+        status="generating",
+        work_item_id="work-item",
+        content_kind="editorial",
+        planning_input_digest="1" * 64,
+        runtime=ContentCodexRuntimeTrace(status="not_started", run_id="run-old"),
+        safe_next_step="Poczekaj na wynik.",
+    )
+    authorization = SimpleNamespace(planning_input_digest="8" * 64)
+    authority_binding = binding.model_copy(
+        update={"planning_input_digest": authorization.planning_input_digest}
+    )
+
+    class ProposalStore:
+        queued_digest_calls: list[str] = []
+
+        def latest_generation_response(self, _work_item_id: str) -> Any:
+            return current
+
+        def latest(self, _work_item_id: str) -> Any:
+            return old
+
+        def queued_subject_response(
+            self, _work_item_id: str, _subject: Any, planning_input_digest: str
+        ) -> Any:
+            self.queued_digest_calls.append(planning_input_digest)
+            return current
+
+        def for_subject_input(self, *_args: Any) -> Any:
+            raise AssertionError("exact queued response should avoid proposal fallback")
+
+    resolution = RefreshPreparationRuntimeAuthorized(
+        work_item_id="work-item",
+        snapshot=object(),
+        planning_input=SimpleNamespace(
+            work_item_id="work-item",
+            planning_input_digest=authorization.planning_input_digest,
+        ),
+        classification=object(),
+        service_candidate=None,
+        authorization=SimpleNamespace(binding=authority_binding),
+    )
+
+    class Authority:
+        def resolve_planning(self, _work_item_id: str, request: Any) -> Any:
+            assert request.expected_planning_input_digest == authorization.planning_input_digest
+            return resolution
+
+        def planning_block_response(self, _resolution: Any, _request: Any) -> None:
+            return None
+
+    class WorkflowStore:
+        def load_refresh_preparation_authorization(self, _authorization_id: str) -> Any:
+            return authorization
+
+        def load_planning_decisions(self, _work_item_id: str) -> list[Any]:
+            return []
+
+        def load_content_research_packet(self, _packet_id: str) -> Any:
+            return SimpleNamespace(
+                packet_id="packet-current",
+                packet_digest="c" * 64,
+                current_work_item_id="work-item",
+            )
+
+    monkeypatch.setattr(planning_router, "content_planning_proposal_store", ProposalStore)
+    monkeypatch.setattr(planning_router, "content_workflow_store", lambda: WorkflowStore())
+    monkeypatch.setattr(
+        proposal_read,
+        "bind_research_packet_to_planning_input",
+        lambda planning_input, _packet: SimpleNamespace(
+            work_item_id=planning_input.work_item_id,
+            planning_input_digest=binding.planning_input_digest,
+        ),
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.research_packet_preparation.current_research_packet_blocker",
+        lambda **_kwargs: None,
+    )
+
+    result = planning_router._get_content_work_item_planning_proposal_status(
+        work_item_id="work-item",
+        snapshot_loader=lambda _work_item_id: (_ for _ in ()).throw(
+            AssertionError("old fallback snapshot must not be read")
+        ),
+        refresh_authority=Authority(),
+    )
+
+    assert result.status == "generating"
+    assert result.planning_input_digest == binding.planning_input_digest
+    assert result.research_packet_id == current.research_packet_id
+    assert result.runtime.run_id == current.runtime.run_id
+    assert ProposalStore.queued_digest_calls == [binding.planning_input_digest]
+
+
+def test_refresh_bound_reader_preserves_packet_conflict_runtime_and_binding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding = _packet_refresh_binding()
+    authority_binding = binding.model_copy(update={"planning_input_digest": "8" * 64})
+    queued = _packet_bound_generating_response(binding)
+    base_input = SimpleNamespace(
+        work_item_id=binding.current_work_item_id,
+        planning_input_digest=authority_binding.planning_input_digest,
+    )
+
+    class ProposalStore:
+        def queued_subject_response(self, *_args: Any) -> Any:
+            return queued
+
+    class WorkflowStore:
+        def load_content_research_packet(self, _packet_id: str) -> Any:
+            return SimpleNamespace(
+                packet_id=queued.research_packet_id,
+                packet_digest=queued.research_packet_digest,
+                current_work_item_id=binding.current_work_item_id,
+            )
+
+    monkeypatch.setattr(
+        proposal_read,
+        "bind_research_packet_to_planning_input",
+        lambda planning_input, _packet: SimpleNamespace(
+            work_item_id=planning_input.work_item_id,
+            planning_input_digest=binding.planning_input_digest,
+        ),
+    )
+    monkeypatch.setattr(
+        proposal_read, "content_planning_input_summary", lambda _input: _packet_input_summary()
+    )
+    monkeypatch.setattr(
+        "wilq.content.workflow.research_packet_preparation.current_research_packet_blocker",
+        lambda **_kwargs: SimpleNamespace(
+            reason="packet_conflict",
+            next_step_pl="Nowszy packet zastąpił zapisany packet.",
+            evidence_ids=("evidence-packet",),
+        ),
+    )
+
+    result = proposal_read.read_content_planning_proposal_for_refresh_binding(
+        snapshot=object(),
+        planning_input=base_input,
+        binding=binding,
+        authority_binding=authority_binding,
+        store=ProposalStore(),
+        workflow_store=WorkflowStore(),
+    )
+
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "research_packet_conflict"
+    assert result.research_packet_id == queued.research_packet_id
+    assert result.research_packet_digest == queued.research_packet_digest
+    assert result.refresh_preparation_binding == binding
+    assert result.runtime.run_id == queued.runtime.run_id
+
+
+def test_refresh_bound_reader_returns_typed_conflict_for_completed_missing_packet(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding = _packet_refresh_binding()
+    authority_binding = binding.model_copy(update={"planning_input_digest": "8" * 64})
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id=binding.current_work_item_id,
+        content_kind=binding.content_kind,
+        service_card_id=None,
+        planning_input_digest=binding.planning_input_digest,
+        research_packet_id="packet-missing",
+        research_packet_digest="d" * 64,
+        codex_run_id="run-completed",
+        generation_status="codex_generated",
+    )
+    base_input = SimpleNamespace(
+        work_item_id=binding.current_work_item_id,
+        planning_input_digest=authority_binding.planning_input_digest,
+    )
+
+    class ProposalStore:
+        def queued_subject_response(self, *_args: Any) -> None:
+            return None
+
+        def for_subject_input(self, *_args: Any) -> Any:
+            return proposal
+
+    class WorkflowStore:
+        def load_content_research_packet(self, _packet_id: str) -> None:
+            return None
+
+    summary = _packet_input_summary()
+    monkeypatch.setattr(proposal_read, "content_planning_input_summary", lambda _input: summary)
+
+    result = proposal_read.read_content_planning_proposal_for_refresh_binding(
+        snapshot=object(),
+        planning_input=base_input,
+        binding=binding,
+        authority_binding=authority_binding,
+        store=ProposalStore(),
+        workflow_store=WorkflowStore(),
+    )
+
+    assert isinstance(result, ContentPlanningProposalResponse)
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "research_packet_conflict"
+    assert result.input_summary is summary
+    assert result.research_packet_id == proposal.research_packet_id
+    assert result.research_packet_digest == proposal.research_packet_digest
+    assert result.refresh_preparation_binding == binding
 
 
 def test_refresh_initial_draft_status_is_not_masked_as_generation_disabled(
@@ -351,8 +648,7 @@ def test_atomic_revision_append_rejects_unbound_refresh_child(
     assert child.refresh_preparation_binding == revision.refresh_preparation_binding
     assert child.proposal_metadata is not None
     assert (
-        child.proposal_metadata.refresh_preparation_binding
-        == revision.refresh_preparation_binding
+        child.proposal_metadata.refresh_preparation_binding == revision.refresh_preparation_binding
     )
     unbound_metadata = revision.proposal_metadata.model_copy(
         update={"refresh_preparation_binding": None}
@@ -492,9 +788,13 @@ def _seed_exact_current_packet(client: TestClient, store: object) -> None:
             "retained_usage": None,
         }
     )
-    identity = cast(Any, store).record_content_delivery_identity(
-        ContentDeliveryIdentityCommand.model_validate(identity_payload)
-    ).binding
+    identity = (
+        cast(Any, store)
+        .record_content_delivery_identity(
+            ContentDeliveryIdentityCommand.model_validate(identity_payload)
+        )
+        .binding
+    )
     _record_authority_source_pack(client, identity)
 
 
@@ -510,18 +810,27 @@ def _record_authority_source_pack(client: TestClient, identity: Any) -> None:
     action_id = preview.json()["action"]["id"]
     assert client.post(f"/api/actions/{action_id}/validate").json()["valid"] is True
     assert client.post(f"/api/actions/{action_id}/preview", json={}).status_code == 200
-    assert client.post(
-        f"/api/actions/{action_id}/review",
-        json={"outcome": "approved_for_prepare", "reviewed_by": "wilku", "notes": "exact"},
-    ).status_code == 200
-    assert client.post(
-        f"/api/actions/{action_id}/confirm",
-        json={"confirmed_by": "wilku", "notes": "exact", "preview_acknowledged": True},
-    ).status_code == 200
-    assert client.post(
-        f"/api/actions/{action_id}/impact-check",
-        json={"checked_by": "wilku", "notes": "exact"},
-    ).status_code == 200
+    assert (
+        client.post(
+            f"/api/actions/{action_id}/review",
+            json={"outcome": "approved_for_prepare", "reviewed_by": "wilku", "notes": "exact"},
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/actions/{action_id}/confirm",
+            json={"confirmed_by": "wilku", "notes": "exact", "preview_acknowledged": True},
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/actions/{action_id}/impact-check",
+            json={"checked_by": "wilku", "notes": "exact"},
+        ).status_code
+        == 200
+    )
     applied = client.post(
         f"/api/actions/{action_id}/apply",
         json={"confirm": True, "confirmed_by": "wilku"},
@@ -603,9 +912,7 @@ def _initial_request(proposal: dict[str, Any], authorization: dict[str, str]) ->
         "expected_planning_input_digest": proposal["planning_input_digest"],
         "requested_by": "wilku",
         "refresh_preparation_authorization_id": authorization["authorization_id"],
-        "expected_refresh_preparation_authorization_digest": authorization[
-            "authorization_digest"
-        ],
+        "expected_refresh_preparation_authorization_digest": authorization["authorization_digest"],
     }
 
 

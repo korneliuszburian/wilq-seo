@@ -25,6 +25,9 @@ from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     content_planning_proposal_store,
 )
+from wilq.content.planning.proposal_read import (
+    read_content_planning_proposal_for_refresh_binding,
+)
 from wilq.content.planning.route_packet_binding import (
     authorized_refresh_generation_context as _authorized_refresh_generation_context,
 )
@@ -387,12 +390,14 @@ def _authorized_refresh_planning_status(
         return blocked
     if not isinstance(resolution, RefreshPreparationRuntimeAuthorized):
         return _bound_refresh_status_block(work_item_id, binding)
-    response = read_content_planning_proposal(snapshot=resolution.snapshot, store=store)
-    if response.refresh_preparation_binding is not None:
-        return response
-    if response.planning_input_digest != resolution.planning_input.planning_input_digest:
-        return _bound_refresh_status_block(work_item_id, binding)
-    return response.model_copy(update={"refresh_preparation_binding": resolution.binding})
+    return read_content_planning_proposal_for_refresh_binding(
+        snapshot=resolution.snapshot,
+        planning_input=resolution.planning_input,
+        binding=binding,
+        authority_binding=resolution.binding,
+        store=store,
+        workflow_store=content_workflow_store(),
+    )
 
 
 def _bound_refresh_status_block(
