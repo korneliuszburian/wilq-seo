@@ -331,7 +331,11 @@ def _generate_blocked_response(monkeypatch, output, client):
     )
     response = initial_full_draft.generate_initial_full_draft(
         snapshot=SimpleNamespace(
-            preflight=SimpleNamespace(item=SimpleNamespace(id=planning_input.work_item_id))
+            preflight=SimpleNamespace(item=SimpleNamespace(id=planning_input.work_item_id)),
+            planning_workspace=SimpleNamespace(
+                section_map_current=True,
+                proposal=proposal,
+            ),
         ),
         request=ContentInitialDraftRequest(
             expected_proposal_id=proposal.proposal_id,
@@ -402,7 +406,11 @@ def _generate_assured_response(
     monkeypatch.setattr(initial_full_draft, "persist_initial_draft", fake_persist_initial_draft)
     response = initial_full_draft.generate_initial_full_draft(
         snapshot=SimpleNamespace(
-            preflight=SimpleNamespace(item=SimpleNamespace(id=prepared.planning_input.work_item_id))
+            preflight=SimpleNamespace(item=SimpleNamespace(id=prepared.planning_input.work_item_id)),
+            planning_workspace=SimpleNamespace(
+                section_map_current=True,
+                proposal=prepared.proposal,
+            ),
         ),
         request=ContentInitialDraftRequest(
             expected_proposal_id=prepared.proposal.proposal_id,

@@ -197,6 +197,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
                 "test_editorial_initial_draft_requires_a_current_research_packet",
                 "tests/content/test_packet_plan_draft_change_contract.py::"
                 "test_packet_bound_refresh_status_reads_exact_projected_job",
+                "tests/content/test_packet_plan_draft_change_contract.py::"
+                "test_prepared_draft_plan_blocks_unsupported_targets_before_writer",
             )
             if key == ("content-research-packet", "server-owned-exact-plan-draft")
             else (

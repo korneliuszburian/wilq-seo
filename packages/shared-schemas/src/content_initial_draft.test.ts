@@ -92,6 +92,21 @@ describe("content initial draft contracts", () => {
     expect(ContentInitialDraftBlockerSchema.parse(blocker).source_codes).toEqual([]);
   });
 
+  it.each([
+    "draft_plan_source_support_missing",
+    "draft_plan_merge_target_missing",
+    "draft_plan_no_writable_targets"
+  ])("accepts the draft-plan blocker code %s", (code) => {
+    const parsed = ContentInitialDraftBlockerSchema.parse({
+      code,
+      label: "Plan szkicu wymaga dokładnego pokrycia",
+      reason: "Draft-plan wymaga dodatkowego sprawdzenia.",
+      next_step: "Odśwież plan i spróbuj ponownie."
+    });
+
+    expect(parsed.code).toBe(code);
+  });
+
   it("keeps existing-work success and conflict HTTP channels disjoint", () => {
     const blocked = blockedResponse();
     const conflict = { ...blocked, status: "conflict" as const };

@@ -8,6 +8,11 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
 )
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.draft_plan_preparation import (
+    DraftPlanBlocked,
+    PreparedDraftPlan,
+    prepare_draft_plan,
+)
 from wilq.content.drafts.generated_claim_safety import (
     claim_safety_output,
     generated_claim_blocker,
@@ -188,6 +193,9 @@ def generate_initial_full_draft(
         prepared = _prepare_inputs(snapshot, request)
     if isinstance(prepared, ContentInitialDraftResponse):
         return prepared
+    plan_blocked = _draft_plan_blocked_response(snapshot, prepared)
+    if plan_blocked is not None:
+        return plan_blocked
     if (proposal_id := prepared.proposal.proposal_id) is None:
         raise RuntimeError("Prepared initial draft is missing its generated proposal ID.")
     return generate_initial_draft(
@@ -252,13 +260,58 @@ def generate_initial_full_draft(
     )
 
 
+def prepare_initial_draft_plan_for_writer(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentInitialDraftRequest,
+    workflow_store: InitialDraftRevisionStore | None = None,
+) -> ContentInitialDraftResponse | None:
+    """Run the draft-plan seam before a queue claim or writer execution."""
+
+    prepared = _prepare_inputs(snapshot, request, workflow_store=workflow_store)
+    if isinstance(prepared, ContentInitialDraftResponse):
+        return prepared
+    return _draft_plan_blocked_response(snapshot, prepared)
+
+
+def _draft_plan_blocked_response(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    prepared: _InitialDraftInputs,
+) -> ContentInitialDraftResponse | None:
+    if getattr(snapshot, "planning_workspace", None) is None:
+        return _blocked_response(
+            snapshot,
+            proposal=prepared.proposal,
+            status="blocked",
+            blockers=[_planning_workspace_blocker()],
+        )
+    plan = prepare_draft_plan(prepared.proposal, prepared.planning_input)
+    if isinstance(plan, PreparedDraftPlan):
+        return None
+    if not isinstance(plan, DraftPlanBlocked):
+        raise RuntimeError("Draft-plan preparation returned an unknown result.")
+    return _blocked_response(
+        snapshot,
+        proposal=prepared.proposal,
+        status="blocked",
+        blockers=[plan.blocker],
+    )
+
+
 def _prepare_inputs(
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     request: ContentInitialDraftRequest,
     *,
     workflow_store: InitialDraftRevisionStore | None = None,
 ) -> _InitialDraftInputs | ContentInitialDraftResponse:
-    planning = snapshot.planning_workspace
+    planning = getattr(snapshot, "planning_workspace", None)
+    if planning is None:
+        return _blocked_response(
+            snapshot,
+            proposal=None,
+            status="blocked",
+            blockers=[_planning_workspace_blocker()],
+        )
     latest_revision = snapshot.revision_workspace.latest_revision
     if latest_revision is not None and snapshot.revision_workspace.context_current:
         return _blocked_response(
@@ -372,6 +425,8 @@ def _prepare_draft_planning_input(
             status="blocked",
             blockers=[packet_blocker],
         )
+    if workflow_store is None:
+        return planning_input
     return _planning_input_with_packet(workflow_store, proposal, planning_input)
 
 
@@ -741,4 +796,14 @@ def _planning_input_blocker(
     )
 
 
-__all__ = ["generate_initial_full_draft"]
+def _planning_workspace_blocker() -> ContentInitialDraftBlocker:
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code="planning_not_ready",
+        label="Brakuje aktualnego workspace planowania",
+        reason="Nie ma bieżącego planning_workspace, więc draft-plan nie może przejść do writera.",
+        next_step="Odśwież workspace i wygeneruj aktualny plan przed tworzeniem tekstu.",
+    )
+
+
+__all__ = ["generate_initial_full_draft", "prepare_initial_draft_plan_for_writer"]

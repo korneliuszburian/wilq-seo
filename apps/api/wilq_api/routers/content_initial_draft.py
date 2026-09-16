@@ -36,7 +36,10 @@ from wilq.content.drafts.initial_draft_run import (
     revision_matches_initial_draft_context,
     transition_initial_draft_run_if_status,
 )
-from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
+from wilq.content.drafts.initial_full_draft import (
+    generate_initial_full_draft,
+    prepare_initial_draft_plan_for_writer,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftBlockerCode,
@@ -221,6 +224,18 @@ def _submit_initial_draft(
 ) -> ContentInitialDraftResponse | JSONResponse:
     refresh_authority: ContentRefreshPreparationAuthority | None = None
     refresh_resolution = None
+
+    def draft_plan_guard(
+        current_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    ) -> ContentInitialDraftResponse | None:
+        if not isinstance(request, ContentInitialDraftRequest):
+            return None
+        return prepare_initial_draft_plan_for_writer(
+            snapshot=current_snapshot,
+            request=request,
+            workflow_store=content_workflow_store(),
+        )
+
     if isinstance(request, ContentInitialDraftRequest):
         refresh_authority = (
             refresh_authority_factory or _canonical_refresh_preparation_authority
@@ -241,6 +256,7 @@ def _submit_initial_draft(
                 ),
                 workflow_store=content_workflow_store(),
                 run_store=local_state_store(),
+                draft_plan_guard=draft_plan_guard,
             )
     resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
         work_item_id,
@@ -305,6 +321,7 @@ def _submit_initial_draft(
             ),
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
+            draft_plan_guard=draft_plan_guard,
         )
     snapshot = snapshot_loader(work_item_id)
     client = content_codex_app_server_client()
@@ -316,6 +333,8 @@ def _submit_initial_draft(
             snapshot_loader,
             snapshot,
             _INITIAL_DRAFT_EXECUTOR,
+            pre_generation_guard=lambda: draft_plan_guard(snapshot_loader(work_item_id)),
+            pre_persistence_guard=lambda: draft_plan_guard(snapshot_loader(work_item_id)),
         )
     result = generate_initial_full_draft(
         snapshot=snapshot,

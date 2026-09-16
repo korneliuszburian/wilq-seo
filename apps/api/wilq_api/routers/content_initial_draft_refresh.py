@@ -44,6 +44,9 @@ LegacyStatusReader = Callable[
 ]
 ConflictResponse = Callable[[ContentInitialDraftResponse], JSONResponse]
 ClientFactory = Callable[[], StdioCodexAppServerClient]
+DraftPlanGuard = Callable[
+    [ContentWorkItemWorkflowSnapshotResponse], ContentInitialDraftResponse | None
+]
 
 
 def submit_authorized_refresh_initial_draft(
@@ -58,6 +61,7 @@ def submit_authorized_refresh_initial_draft(
     legacy_status_reader: LegacyStatusReader,
     workflow_store: RefreshDraftWorkflowStore,
     run_store: LocalStateStore,
+    draft_plan_guard: DraftPlanGuard | None = None,
 ) -> ContentInitialDraftResponse | JSONResponse:
     current = [initial_resolution]
     use_initial_resolution = [True]
@@ -76,6 +80,12 @@ def submit_authorized_refresh_initial_draft(
 
     def current_snapshot(_work_item_id: str) -> ContentWorkItemWorkflowSnapshotResponse:
         return current[0].snapshot
+
+    def pre_generation_guard() -> ContentInitialDraftResponse | None:
+        blocked = guard()
+        if blocked is not None:
+            return blocked
+        return None if draft_plan_guard is None else draft_plan_guard(current[0].snapshot)
 
     blocked = guard()
     if blocked is not None:
@@ -100,8 +110,8 @@ def submit_authorized_refresh_initial_draft(
             current_snapshot,
             snapshot,
             executor,
-            pre_generation_guard=guard,
-            pre_persistence_guard=guard,
+            pre_generation_guard=pre_generation_guard,
+            pre_persistence_guard=pre_generation_guard,
         )
     result = generate_initial_full_draft(
         snapshot=snapshot,

@@ -12,6 +12,7 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationInput,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.input_sources import ContentPlanningSourceFact
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
@@ -113,6 +114,15 @@ def planning_input() -> ContentPlanningInput:
         regulatory_coverage=ContentRegulatoryCoverage(),
         claim_ledger=[],
         evidence_ids=["ev_readability_gate"],
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="planning_readability_gate",
+                summary="Zatwierdzony fakt do testu czytelności.",
+                source_connector="test_source",
+                evidence_ids=["ev_readability_gate"],
+                source_fact_ids=["source_readability_gate"],
+            )
+        ],
     )
 
 

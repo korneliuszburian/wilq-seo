@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import time
 from pathlib import Path
 from typing import Any
@@ -401,3 +402,83 @@ def test_public_http_packet_plan_draft_chain_is_exact_and_local_only(
         "identity_binding_blocked"
     )
     assert runtime.calls >= 2
+
+
+def test_public_http_inventory_only_rewrite_merge_blocks_before_writer_side_effects(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store, identity, runtime = _seed_http_identity(tmp_path, monkeypatch)
+    authority_client = TestClient(app)
+    _record_authority_source_pack(authority_client, identity)
+
+    loader = _loader_with_typed_cta(monkeypatch)
+    chain_app = _public_chain_app(monkeypatch, loader, store)
+    client = TestClient(chain_app)
+    work_item_id = identity.current_work_item_id
+    before = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
+    assert before.status_code == 200, before.text
+    before_payload = before.json()
+    authorization = _authorize_refresh(
+        client, work_item_id, before_payload["planning_input_digest"]
+    )
+
+    runtime.planning_inventory_only = True
+    planning_post = client.post(
+        f"/api/content/work-items/{work_item_id}/planning-proposals",
+        json={
+            "content_kind": "service",
+            "service_card_id": "ekologus_service_bdo_reporting",
+            "expected_planning_input_digest": before_payload["planning_input_digest"],
+            "requested_by": "wilku",
+            "refresh_preparation_authorization_id": authorization["authorization_id"],
+            "expected_refresh_preparation_authorization_digest": authorization[
+                "authorization_digest"
+            ],
+        },
+    )
+    assert planning_post.status_code == 200, planning_post.text
+    ready = _wait_for_plan(client, work_item_id)
+    assert ready["status"] in {"ready", "idempotent"}, ready
+    calls_before_draft = runtime.calls
+    with sqlite3.connect(store.path) as connection:
+        revisions_before = connection.execute(
+            "SELECT COUNT(*) FROM content_draft_revisions"
+        ).fetchone()[0]
+        assurance_before = connection.execute(
+            "SELECT COUNT(*) FROM codex_runs "
+            "WHERE json_extract(payload_json, '$.hook') = "
+            "'content_regulatory_draft_assurance'"
+        ).fetchone()[0]
+
+    draft_post = client.post(
+        f"/api/content/work-items/{work_item_id}/initial-draft",
+        json={
+            "expected_proposal_id": ready["proposal"]["proposal_id"],
+            "expected_planning_digest": ready["proposal"]["planning_digest"],
+            "expected_planning_input_digest": ready["proposal"]["planning_input_digest"],
+            "requested_by": "wilku",
+            "refresh_preparation_authorization_id": authorization["authorization_id"],
+            "expected_refresh_preparation_authorization_digest": authorization[
+                "authorization_digest"
+            ],
+        },
+    )
+
+    assert draft_post.status_code == 200, draft_post.text
+    draft = draft_post.json()
+    assert draft["status"] == "blocked", draft
+    assert draft["blockers"][0]["code"] in {
+        "draft_plan_source_support_missing",
+        "draft_plan_merge_target_missing",
+    }
+    assert runtime.calls == calls_before_draft
+    with sqlite3.connect(store.path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM content_draft_revisions").fetchone()[
+            0
+        ] == revisions_before
+        assert connection.execute(
+            "SELECT COUNT(*) FROM codex_runs "
+            "WHERE json_extract(payload_json, '$.hook') = "
+            "'content_regulatory_draft_assurance'"
+        ).fetchone()[0] == assurance_before

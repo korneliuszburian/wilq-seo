@@ -154,3 +154,17 @@ def test_packet_bound_refresh_status_reads_exact_projected_job() -> None:
     assert "binding=binding" in status
     assert "authority_binding=resolution.binding" in status
     assert "read_content_planning_proposal(" not in status
+
+
+def test_prepared_draft_plan_blocks_unsupported_targets_before_writer() -> None:
+    preparation = _repository_source("wilq/content/drafts/draft_plan_preparation.py")
+    draft = _repository_source("wilq/content/drafts/initial_full_draft.py")
+    router = _repository_source("apps/api/wilq_api/routers/content_initial_draft.py")
+
+    assert "def prepare_draft_plan(" in preparation
+    assert 'inventory_disposition == "merge"' in preparation
+    assert "draft_plan_source_support_missing" in preparation
+    assert "def prepare_initial_draft_plan_for_writer(" in draft
+    assert "plan_blocked = _draft_plan_blocked_response(snapshot, prepared)" in draft
+    assert "pre_generation_guard=lambda: draft_plan_guard(" in router
+    assert "pre_persistence_guard=lambda: draft_plan_guard(" in router
