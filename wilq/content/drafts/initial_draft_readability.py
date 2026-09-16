@@ -31,6 +31,14 @@ from wilq.content.workflow.documents.revisions import (
 ReadabilityIssue = tuple[str, str, str]
 
 
+def persistence_blocking_readability_issues(
+    issues: list[ReadabilityIssue],
+) -> list[ReadabilityIssue]:
+    """Classify only long sentences as advisory and return the blocking subset."""
+
+    return [issue for issue in issues if issue[0] != "long_sentence"]
+
+
 def readability_issues_for_output(
     output: ContentInitialDraftModelOutput,
 ) -> list[ReadabilityIssue]:
@@ -385,6 +393,7 @@ def _patched_auxiliary_body(
 
 __all__ = [
     "apply_readability_patches",
+    "persistence_blocking_readability_issues",
     "readability_issues_for_output",
     "repair_readability_candidate",
 ]

@@ -29,6 +29,7 @@ from wilq.content.drafts.grounding import (
 )
 from wilq.content.drafts.initial_draft_readability import (
     ReadabilityIssue,
+    persistence_blocking_readability_issues,
     readability_issues_for_output,
     repair_readability_candidate,
 )
@@ -396,9 +397,11 @@ def _final_candidate_blocker(
     deterministic = output_blocker(output)
     if deterministic is not None:
         return deterministic
-    readability = readability_issues_for_output(output)
-    if readability:
-        return _readability_blocker(readability)
+    blocking_readability = persistence_blocking_readability_issues(
+        readability_issues_for_output(output)
+    )
+    if blocking_readability:
+        return _readability_blocker(blocking_readability)
     return _final_assurance_blocker(
         planning_input=planning_input,
         output=output,
@@ -511,14 +514,17 @@ def assure_readability_and_repair(
             prepared_plan=prepared_plan,
         )
         issues = readability_issues_for_output(output)
+        blocking_issues = persistence_blocking_readability_issues(issues)
         blocker = output_blocker(output)
         if blocker is not None:
             return output, trace, blocker
-        if output is candidate and trace is not turn_input_trace:
+        if output is candidate and trace is not turn_input_trace and blocking_issues:
             return output, trace, _readability_repair_failed_blocker(trace)
         if not issues:
             return output, trace, None
-    return output, trace, _readability_blocker(issues)
+    if blocking_issues := persistence_blocking_readability_issues(issues):
+        return output, trace, _readability_blocker(blocking_issues)
+    return output, trace, None
 
 
 def _assurance_blocker(

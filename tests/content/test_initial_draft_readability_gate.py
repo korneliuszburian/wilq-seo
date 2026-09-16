@@ -94,6 +94,16 @@ _REGULATED_CLEAN_SECTION = (
     "Przedsiębiorca sprawdza zakres obowiązków, porządkuje dokumenty i planuje "
     "kolejne działania zgodnie z profilem swojej działalności."
 )
+_RESIDUAL_LONG_SENTENCE = (
+    f"{_CLEAN_SECTION_ONE} "
+    + " ".join(["Zdanie", *[f"wyraz{index}" for index in range(2, 26)]])
+    + "."
+)
+_SECOND_RESIDUAL_LONG_SENTENCE = (
+    f"{_CLEAN_SECTION_TWO} "
+    + " ".join(["Kolejne", *[f"hasło{index}" for index in range(2, 26)]])
+    + "."
+)
 
 
 def _output(
@@ -251,7 +261,7 @@ def _generate_blocked_response(monkeypatch, output, client):
     monkeypatch.setattr(
         initial_full_draft,
         "persist_initial_draft",
-        lambda **kwargs: persistence_calls.append(kwargs),
+        lambda **kwargs: persistence_calls.append(kwargs) or SimpleNamespace(status="created"),
     )
     response = initial_full_draft.generate_initial_full_draft(
         snapshot=SimpleNamespace(
@@ -411,6 +421,71 @@ def test_partial_readability_repair_continues_within_budget() -> None:
     second_turn_context = json.loads(client.requests[1].application_context)
     assert first_turn_context["affected_section_ids"] == ["section_01", "section_02"]
     assert second_turn_context["affected_section_ids"] == ["section_02"]
+
+
+def test_residual_long_sentence_stays_in_repair_input_and_is_advisory_for_persistence(
+    monkeypatch,
+) -> None:
+    output = _output(
+        first_body=_RESIDUAL_LONG_SENTENCE,
+        second_body=_SECOND_RESIDUAL_LONG_SENTENCE,
+    )
+    assert [
+        (code, section_id)
+        for code, section_id, _ in readability_issues_for_output(output)
+    ] == [
+        ("long_sentence", "section_01"),
+        ("long_sentence", "section_02"),
+    ]
+    client = _PatchClient()
+
+    response, persistence_calls, _finish_calls = _generate_blocked_response(
+        monkeypatch,
+        output,
+        client,
+    )
+
+    assert response.status == "created"
+    assert len(client.requests) == 2
+    assert all(
+        [
+            (issue["code"], issue["affected_section_id"])
+            for issue in json.loads(request.untrusted_context)["issues"]
+        ]
+        == [
+            ("long_sentence", "section_01"),
+            ("long_sentence", "section_02"),
+        ]
+        for request in client.requests
+    )
+    assert len(persistence_calls) == 1
+    persisted_output = persistence_calls[0]["output"]
+    assert isinstance(persisted_output, ContentInitialDraftModelOutput)
+    assert persisted_output.sections[0].body_markdown == _RESIDUAL_LONG_SENTENCE
+
+
+def test_residual_long_sentence_does_not_hide_a_hard_readability_blocker() -> None:
+    output = _output(
+        first_body=_RESIDUAL_LONG_SENTENCE,
+        second_body="Krótka odpowiedź.",
+    )
+    client = _PatchClient()
+
+    repaired, _repaired_trace, blocker = _assure(
+        output,
+        client,
+        ContentCodexRuntimeTrace(status="completed", turn_id="initial-turn"),
+        _allow_output,
+    )
+
+    assert len(client.requests) == 2
+    assert {code for code, _, _ in readability_issues_for_output(repaired)} == {
+        "long_sentence",
+        "thin_section",
+    }
+    assert blocker is not None
+    assert blocker.code == "readability_gate_failed"
+    assert blocker.source_codes == ["thin_section"]
 
 
 def test_readability_gate_flags_working_note_in_faq_answer() -> None:

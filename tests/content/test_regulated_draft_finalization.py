@@ -21,6 +21,7 @@ from wilq.content.drafts.initial_draft_pipeline import (
     InitialDraftRunMetadata,
     generate_initial_draft,
 )
+from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_draft_runtime import InitialDraftFailureCopy, InitialDraftTurnGoal
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
@@ -46,13 +47,20 @@ _CRITIC_OPERATION = "assure_regulatory_content_draft"
 class _RecordingModel:
     """Scripted model boundary that preserves every request it receives."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        readability_repair_body: str | None = None,
+        critic_passes_immediately: bool = False,
+    ) -> None:
         self.requests: list[CodexAppServerStructuredTurnRequest] = []
         self.operations: list[str] = []
         self.operations_after_pass: list[str] = []
         self._critic_turns = 0
         self._has_returned_pass = False
         self._readability_repairs = 0
+        self._readability_repair_body = readability_repair_body
+        self._critic_passes_immediately = critic_passes_immediately
         self._lock = Lock()
 
     def run_structured_turn(
@@ -70,7 +78,7 @@ class _RecordingModel:
         if operation == _REPAIR_OPERATION:
             with self._lock:
                 self._readability_repairs += 1
-                repaired_body = (
+                repaired_body = self._readability_repair_body or (
                     "Warunek alfa obowiązuje wyłącznie w przypisanym zakresie i wymaga "
                     "oceny konkretnego przypadku w wersji pierwszej."
                     if self._readability_repairs == 1
@@ -125,14 +133,15 @@ class _RecordingModel:
             with self._lock:
                 self._critic_turns += 1
                 critic_turn = self._critic_turns
+            passed = self._critic_passes_immediately or critic_turn > 1
             check = {
                 "constraint_id": constraint_id,
-                "status": "fail" if critic_turn == 1 else "pass",
-                "reason_code": "missing_scope" if critic_turn == 1 else "supported",
+                "status": "pass" if passed else "fail",
+                "reason_code": "supported" if passed else "missing_scope",
                 "reason": (
-                    "Kandydat wymaga uzupełnienia przypisanego zakresu."
-                    if critic_turn == 1
-                    else "Kandydat zachowuje przypisany zakres."
+                    "Kandydat zachowuje przypisany zakres."
+                    if passed
+                    else "Kandydat wymaga uzupełnienia przypisanego zakresu."
                 ),
                 "document_section_id": section_id,
                 "evidence_ids": [],
@@ -144,7 +153,7 @@ class _RecordingModel:
                 ).model_dump_json(),
                 turn_id="final-critic",
             )
-            if critic_turn > 1:
+            if passed:
                 with self._lock:
                     self._has_returned_pass = True
             return result
@@ -543,3 +552,56 @@ def test_regulated_finalization_repairs_exact_scope_before_its_only_passing_crit
         profile,
         model,
     )
+
+
+def test_regulated_finalization_persists_after_only_residual_long_sentence(
+    monkeypatch,
+) -> None:
+    profile, planning_input, proposal, prepared_plan, initial_output = _compiled_case()
+    residual_long_sentence = " ".join(
+        ["Warunek", "alfa", *[f"wyraz{index}" for index in range(3, 26)]]
+    ) + "."
+    initial_output = initial_output.model_copy(
+        update={
+            "sections": [
+                initial_output.sections[0].model_copy(
+                    update={"body_markdown": residual_long_sentence}
+                ),
+                initial_output.sections[1],
+            ]
+        }
+    )
+    assert [
+        (code, section_id) for code, section_id, _ in readability_issues_for_output(initial_output)
+    ] == [("long_sentence", "section_alpha")]
+    model = _RecordingModel(
+        readability_repair_body=residual_long_sentence,
+        critic_passes_immediately=True,
+    )
+    run_store = _RunStore()
+    persisted: list[dict[str, Any]] = []
+    _install_regulatory_profile(monkeypatch, profile)
+
+    response = generate_initial_draft(
+        inputs=_finalization_inputs(
+            planning_input,
+            proposal,
+            prepared_plan,
+            initial_output,
+            persisted,
+        ),
+        client=model,
+        run_store=run_store,
+    )
+
+    assert response.status == "created"
+    assert model.operations == [_REPAIR_OPERATION, _CRITIC_OPERATION]
+    repair_contexts = _request_contexts(model, _REPAIR_OPERATION)
+    assert [
+        (issue["code"], issue["affected_section_id"])
+        for issue in repair_contexts[0]["issues"]
+    ] == [("long_sentence", "section_alpha")]
+    assert len(_request_contexts(model, _CRITIC_OPERATION)) == 1
+    assert len(persisted) == 1
+    assert persisted[0]["output"].sections[0].body_markdown == residual_long_sentence
+    assert persisted[0]["regulatory_assurance"].status == "passed"
