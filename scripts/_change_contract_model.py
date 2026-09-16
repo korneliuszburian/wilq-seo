@@ -137,6 +137,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_content_selected_workspace_production_decision.py::test_selected_workspace_rejects_mismatched_production_identity",
         "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_plan_and_revision_writers_accept_ready_blocked_row_with_readback",
         "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_writers_reject_distinct_attempts_after_newer_blocked_pack",
+        "tests/content/test_initial_draft_production_authority.py::test_authorized_current_preparation_bypasses_canonical_guard_without_duplicate_resolve",
+        "tests/content/test_initial_draft_status_read_path.py::test_status_reads_authorized_refresh_for_exact_current_preparation_blocker",
+        "tests/content/test_initial_draft_status_read_path.py::test_status_preserves_exact_current_preparation_guard_when_refresh_read_is_none",
+        "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_other_blocked_or_write_rows",
+        "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_conflict_or_reuse",
     ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",

@@ -5,7 +5,7 @@ import sqlite3
 from collections.abc import Callable
 from pathlib import Path
 from threading import Event, Thread
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from fastapi import FastAPI
@@ -59,6 +59,7 @@ from wilq.content.drafts.initial_draft_authority import (
     StatusRead,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftRequest,
     ContentInitialDraftResponse,
     ContentWorkItemInitialDraftRequest,
 )
@@ -67,6 +68,9 @@ from wilq.content.workflow.decisions.production import (
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionReview,
+)
+from wilq.content.workflow.refresh_preparation_models import (
+    RefreshPreparationRuntimeAuthorized,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
@@ -97,6 +101,62 @@ def test_initial_draft_ignores_historical_classification_authority(
     )
 
     assert isinstance(result, InitialDraftAuthorityUnclassified)
+
+
+def test_authorized_current_preparation_bypasses_canonical_guard_without_duplicate_resolve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = ContentInitialDraftRequest.model_validate(
+        {
+            "expected_proposal_id": "proposal",
+            "expected_planning_digest": "a" * 64,
+            "expected_planning_input_digest": "b" * 64,
+            "requested_by": "wilku",
+            "refresh_preparation_authorization_id": "authorization",
+            "expected_refresh_preparation_authorization_digest": "c" * 64,
+        }
+    )
+    resolution = RefreshPreparationRuntimeAuthorized(
+        work_item_id="current",
+        snapshot=cast(Any, object()),
+        planning_input=cast(Any, object()),
+        classification=cast(Any, object()),
+        service_candidate=None,
+        authorization=cast(Any, object()),
+    )
+    calls = {"resolve": 0, "submit": 0}
+
+    class Authority:
+        def resolve_initial_draft(self, work_item_id: str, _request: object) -> object:
+            assert work_item_id == "current"
+            calls["resolve"] += 1
+            return resolution
+
+        def initial_draft_block_response(self, *_args: object, **_kwargs: object) -> None:
+            return None
+
+    def canonical_guard(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("authorized current preparation must bypass canonical guard")
+
+    sentinel = object()
+
+    def submit(**kwargs: object) -> object:
+        calls["submit"] += 1
+        assert kwargs["initial_resolution"] is resolution
+        return sentinel
+
+    monkeypatch.setattr(initial_draft_router, "submit_authorized_refresh_initial_draft", submit)
+
+    result = initial_draft_router._submit_initial_draft(
+        "current",
+        request,
+        _bomb,
+        authority_resolver=canonical_guard,
+        refresh_authority_factory=lambda: cast(Any, Authority()),
+    )
+
+    assert result is sentinel
+    assert calls == {"resolve": 1, "submit": 1}
 
 
 @pytest.mark.parametrize(

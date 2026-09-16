@@ -28,6 +28,9 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationBinding,
     refresh_preparation_bindings_match_authority,
 )
+from wilq.content.workflow.refresh_preparation_models import (
+    RefreshPreparationRuntimeResolution,
+)
 from wilq.storage.local_state import LocalStateStore
 
 
@@ -57,9 +60,15 @@ def submit_authorized_refresh_initial_draft(
     run_store: LocalStateStore,
 ) -> ContentInitialDraftResponse | JSONResponse:
     current = [initial_resolution]
+    use_initial_resolution = [True]
 
     def guard() -> ContentInitialDraftResponse | None:
-        resolved = authority.resolve_initial_draft(work_item_id, request)
+        resolved: RefreshPreparationRuntimeResolution
+        if use_initial_resolution[0]:
+            resolved = current[0]
+            use_initial_resolution[0] = False
+        else:
+            resolved = authority.resolve_initial_draft(work_item_id, request)
         response = authority.initial_draft_block_response(resolved, request)
         if response is None and isinstance(resolved, RefreshPreparationRuntimeAuthorized):
             current[0] = resolved
@@ -155,13 +164,10 @@ def read_authorized_refresh_initial_draft_status(
     )
     if existing is not None:
         return existing
-    if (
-        revision is not None
-        and (
-            revision.refresh_preparation_binding is None
-            or not refresh_preparation_bindings_match_authority(
-                revision.refresh_preparation_binding, resolved.binding
-            )
+    if revision is not None and (
+        revision.refresh_preparation_binding is None
+        or not refresh_preparation_bindings_match_authority(
+            revision.refresh_preparation_binding, resolved.binding
         )
     ):
         return legacy_unbound_refresh_initial_draft_block(

@@ -28,6 +28,8 @@ def test_current_preparation_source_contract() -> None:
             "wilq/content/workflow/workspace/production_decision.py",
             "wilq/content/workflow/workspace/selected_workspace.py",
             "apps/api/wilq_api/routers/content_selected_workspace.py",
+            "apps/api/wilq_api/routers/content_initial_draft.py",
+            "apps/api/wilq_api/routers/content_initial_draft_refresh.py",
         )
     }
 
@@ -63,6 +65,43 @@ def test_current_preparation_source_contract() -> None:
         "current_preparation_readiness"
         in sources["apps/api/wilq_api/routers/content_selected_workspace.py"]
     )
+    initial_draft = sources["apps/api/wilq_api/routers/content_initial_draft.py"]
+    submit_marker = "def _submit_initial_draft("
+    canonical_marker = "def _canonical_refresh_preparation_authority()"
+    assert submit_marker in initial_draft
+    assert canonical_marker in initial_draft
+    submit_start = initial_draft.index(submit_marker)
+    submit_end = initial_draft.index(canonical_marker, submit_start)
+    submit_source = initial_draft[submit_start:submit_end]
+    refresh_resolve_marker = "refresh_authority.resolve_initial_draft(work_item_id, request)"
+    canonical_guard_marker = (
+        "resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)"
+    )
+    assert refresh_resolve_marker in submit_source
+    assert canonical_guard_marker in submit_source
+    assert "isinstance(refresh_resolution, RefreshPreparationRuntimeAuthorized)" in submit_source
+    refresh_resolve = submit_source.index(refresh_resolve_marker)
+    canonical_guard = submit_source.index(canonical_guard_marker)
+    assert refresh_resolve < canonical_guard
+    refresh_submit = sources["apps/api/wilq_api/routers/content_initial_draft_refresh.py"]
+    use_initial_marker = "use_initial_resolution = [True]"
+    initial_guard_marker = "resolved = current[0]"
+    runtime_recheck_marker = "resolved = authority.resolve_initial_draft(work_item_id, request)"
+    consumed_marker = "use_initial_resolution[0] = False"
+    assert use_initial_marker in refresh_submit
+    assert initial_guard_marker in refresh_submit
+    assert runtime_recheck_marker in refresh_submit
+    assert consumed_marker in refresh_submit
+    initial_guard = refresh_submit.index(initial_guard_marker)
+    runtime_recheck = refresh_submit.index(runtime_recheck_marker)
+    assert initial_guard < runtime_recheck
+    status_marker = "def _read_initial_draft_status("
+    assert status_marker in initial_draft
+    status_source = initial_draft[initial_draft.index(status_marker) :]
+    blocked_marker = 'classification_decision == "blocked"'
+    current_blocker_marker = '("current_content_binding_missing",)'
+    assert blocked_marker in status_source
+    assert current_blocker_marker in status_source
     adapter = sources["wilq/content/workflow/store/current_preparation_read_adapter.py"]
     assert "TransactionBoundCurrentPreparationReadAdapter" in adapter
     assert "resolve_current_preparation_readiness_from_connection" in adapter

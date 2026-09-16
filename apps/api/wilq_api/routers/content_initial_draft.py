@@ -219,6 +219,29 @@ def _submit_initial_draft(
     authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
     refresh_authority_factory: ContentRefreshPreparationAuthorityFactory | None = None,
 ) -> ContentInitialDraftResponse | JSONResponse:
+    refresh_authority: ContentRefreshPreparationAuthority | None = None
+    refresh_resolution = None
+    if isinstance(request, ContentInitialDraftRequest):
+        refresh_authority = (
+            refresh_authority_factory or _canonical_refresh_preparation_authority
+        )()
+        refresh_resolution = refresh_authority.resolve_initial_draft(work_item_id, request)
+        if isinstance(refresh_resolution, RefreshPreparationRuntimeAuthorized):
+            return submit_authorized_refresh_initial_draft(
+                work_item_id=work_item_id,
+                request=request,
+                authority=refresh_authority,
+                initial_resolution=refresh_resolution,
+                client_factory=content_codex_app_server_client,
+                executor=_INITIAL_DRAFT_EXECUTOR,
+                conflict_response=_content_initial_draft_conflict_response,
+                legacy_status_reader=lambda item_id, loader: _read_legacy_initial_draft_status(
+                    item_id,
+                    snapshot_loader=loader,
+                ),
+                workflow_store=content_workflow_store(),
+                run_store=local_state_store(),
+            )
     resolution = (authority_resolver or _canonical_initial_draft_authority_resolver)(
         work_item_id,
         SubmitExpectation(
@@ -258,8 +281,12 @@ def _submit_initial_draft(
             safe_next_step="Otwórz przygotowanie refresh i zapisz dokładną autoryzację.",
         )
         return _content_initial_draft_conflict_response(response)
-    authority = (refresh_authority_factory or _canonical_refresh_preparation_authority)()
-    refresh_resolution = authority.resolve_initial_draft(work_item_id, request)
+    authority = (
+        refresh_authority
+        or (refresh_authority_factory or _canonical_refresh_preparation_authority)()
+    )
+    if refresh_resolution is None:
+        refresh_resolution = authority.resolve_initial_draft(work_item_id, request)
     refresh_block = authority.initial_draft_block_response(refresh_resolution, request)
     if refresh_block is not None:
         return _content_initial_draft_conflict_response(refresh_block)
@@ -384,10 +411,13 @@ def _read_initial_draft_status(
     )
     guarded = map_initial_draft_authority_response(resolution)
     if guarded is not None:
-        if (
-            authority_resolver is None
-            and getattr(resolution, "classification_decision", None) == "refresh"
-        ):
+        classification_decision = getattr(resolution, "classification_decision", None)
+        refresh_status_allowed = classification_decision == "refresh" or (
+            classification_decision == "blocked"
+            and tuple(getattr(resolution, "source_codes", ()))
+            == ("current_content_binding_missing",)
+        )
+        if authority_resolver is None and refresh_status_allowed:
             refresh_status = read_authorized_refresh_initial_draft_status(
                 work_item_id=work_item_id,
                 refresh_authority=(
@@ -402,10 +432,11 @@ def _read_initial_draft_status(
             )
             if refresh_status is not None:
                 return refresh_status
-            return _read_legacy_initial_draft_status(
-                work_item_id,
-                snapshot_loader=snapshot_loader,
-            )
+            if getattr(resolution, "classification_decision", None) == "refresh":
+                return _read_legacy_initial_draft_status(
+                    work_item_id,
+                    snapshot_loader=snapshot_loader,
+                )
         return guarded
     return _read_legacy_initial_draft_status(
         work_item_id,
