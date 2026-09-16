@@ -45,9 +45,9 @@
       "profile_version": "2026-07-31-r2",
       "service_card_ids": ["ekologus_service_bdo_reporting"],
       "canonical_paths": ["/bdo-co-musi-wiedziec-przedsiebiorca"],
-      "source_url": "https://bdo.mos.gov.pl/baza-wiedzy/jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-za-dzialanie-niezgodne-z-przepisami/",
-      "source_title": "BDO: Sankcje za działanie niezgodne z przepisami",
-      "observed_on": "2026-08-02",
+      "source_url": "https://api.sejm.gov.pl/eli/acts/DU/2013/21/text/U/D20130021Lj.pdf",
+      "source_title": "Ustawa o odpadach: aktualny tekst ujednolicony",
+      "observed_on": "2026-09-16",
       "requirement_ids": ["bdo_risks_and_sanctions"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź zakres sankcji i ich warunki przed zatwierdzeniem factu źródłowego."

@@ -177,7 +177,12 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
     assert profile is not None
     assert profile.id == "bdo"
     assert profile.version == "2026-07-31-r2"
-    assert profile.official_source_hosts == ["bdo.mos.gov.pl"]
+    assert profile.official_source_hosts == [
+        "bdo.mos.gov.pl",
+        "rejestr-bdo.mos.gov.pl",
+        "eli.gov.pl",
+        "api.sejm.gov.pl",
+    ]
     assert [requirement.id for requirement in profile.requirements] == [
         "bdo_definition",
         "bdo_registration_scope",
@@ -220,14 +225,10 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "https://bdo.mos.gov.pl/zasady-rejestracji/"
     )
     assert candidates_by_requirement[("bdo_risks_and_sanctions",)] == (
-        "https://bdo.mos.gov.pl/baza-wiedzy/"
-        "jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-"
-        "za-dzialanie-niezgodne-z-przepisami/"
+        "https://api.sejm.gov.pl/eli/acts/DU/2013/21/text/U/D20130021Lj.pdf"
     )
     assert candidates_by_requirement[("bdo_access_and_account",)] == (
-        "https://bdo.mos.gov.pl/news/"
-        "logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-"
-        "identyfikacji-elektronicznej/"
+        "https://rejestr-bdo.mos.gov.pl/"
     )
     assert {
         candidate.source_url
@@ -241,6 +242,54 @@ def test_bdo_is_an_explicit_data_profile_not_a_planner_branch() -> None:
         "https://bdo.mos.gov.pl/wp-content/uploads/2025/01/"
         "BDO_SPR_IS-Sprawozdanie-o-produktach-opakowaniach-i-o-gospodarowaniu-odpadami-wersja-1.3.pdf",
     }
+
+
+def test_bdo_login_candidate_uses_the_current_authoritative_login_surface() -> None:
+    historical_url = (
+        "https://bdo.mos.gov.pl/news/"
+        "logowanie-do-systemu-bdo-i-uwierzytelnienie-uzytkownika-poprzez-krajowy-wezel-"
+        "identyfikacji-elektronicznej/"
+    )
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "bdo_login_access_2026_08_02_r3"
+    )
+
+    assert candidate.source_url == "https://rejestr-bdo.mos.gov.pl/"
+    assert candidate.source_title == "BDO: Logowanie do systemu i role użytkowników"
+    assert candidate.observed_on == "2026-09-16"
+    assert candidate.profile_id == "bdo"
+    assert candidate.profile_version == "2026-07-31-r2"
+    assert candidate.canonical_paths == ["/bdo-co-musi-wiedziec-przedsiebiorca"]
+    assert candidate.requirement_ids == ["bdo_access_and_account"]
+    assert historical_url not in {item.source_url for item in regulatory_source_candidates()}
+
+
+def test_bdo_sanctions_candidate_uses_current_consolidated_waste_act() -> None:
+    historical_url = (
+        "https://bdo.mos.gov.pl/baza-wiedzy/"
+        "jakie-groza-sankcje-karne-podmiotom-zobowiazanym-do-uzyskania-wpisu-do-rejestru-bdo-"
+        "za-dzialanie-niezgodne-z-przepisami/"
+    )
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "bdo_sanctions_2026_08_02_r3"
+    )
+
+    assert candidate.source_url == (
+        "https://api.sejm.gov.pl/eli/acts/DU/2013/21/text/U/D20130021Lj.pdf"
+    )
+    assert candidate.source_title == "Ustawa o odpadach: aktualny tekst ujednolicony"
+    assert candidate.observed_on == "2026-09-16"
+    assert candidate.profile_id == "bdo"
+    assert candidate.profile_version == "2026-07-31-r2"
+    assert candidate.service_card_ids == ["ekologus_service_bdo_reporting"]
+    assert candidate.canonical_paths == ["/bdo-co-musi-wiedziec-przedsiebiorca"]
+    assert candidate.requirement_ids == ["bdo_risks_and_sanctions"]
+    assert candidate.review_status == "review_required"
+    assert historical_url not in {item.source_url for item in regulatory_source_candidates()}
 
 
 def test_environmental_assessment_is_a_data_profile_with_official_review_candidates() -> None:

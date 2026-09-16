@@ -11,7 +11,9 @@
       ],
       "official_source_hosts": [
         "bdo.mos.gov.pl",
-        "rejestr-bdo.mos.gov.pl"
+        "rejestr-bdo.mos.gov.pl",
+        "eli.gov.pl",
+        "api.sejm.gov.pl"
       ],
       "max_source_age_days": 180,
       "requirements": [

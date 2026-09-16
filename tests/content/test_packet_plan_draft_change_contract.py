@@ -111,9 +111,16 @@ def test_bdo_profile_owns_the_editorial_canonical_path() -> None:
     assert '"id": "bdo"' in source
     assert '"/bdo-co-musi-wiedziec-przedsiebiorca"' in source
     assert '"rejestr-bdo.mos.gov.pl"' in source
+    assert '"eli.gov.pl"' in source
+    assert '"api.sejm.gov.pl"' in source
     assert '"source_url": "https://rejestr-bdo.mos.gov.pl/"' in candidates
+    assert (
+        '"source_url": "https://api.sejm.gov.pl/eli/acts/DU/2013/21/text/U/D20130021Lj.pdf"'
+        in candidates
+    )
     assert '"observed_on": "2026-09-16"' in candidates
     assert "logowanie-do-systemu-bdo-i-uwierzytelnienie" not in candidates
+    assert "jakie-groza-sankcje-karne" not in candidates
 
 
 def test_packet_context_partitions_use_the_projected_planning_input() -> None:
