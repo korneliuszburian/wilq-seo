@@ -241,6 +241,7 @@ def test_classified_refresh_status_prefers_exact_packet_bound_job_over_old_propo
                 packet_id="packet-current",
                 packet_digest="c" * 64,
                 current_work_item_id="work-item",
+                approved_source_fact_ids=(),
             )
 
     monkeypatch.setattr(planning_router, "content_planning_proposal_store", ProposalStore)
@@ -294,6 +295,7 @@ def test_refresh_bound_reader_preserves_packet_conflict_runtime_and_binding(
                 packet_id=queued.research_packet_id,
                 packet_digest=queued.research_packet_digest,
                 current_work_item_id=binding.current_work_item_id,
+                approved_source_fact_ids=(),
             )
 
     monkeypatch.setattr(

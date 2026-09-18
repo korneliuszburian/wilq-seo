@@ -421,6 +421,8 @@ def test_editorial_summary_exposes_regulatory_candidates() -> None:
         final_canonical_url="https://www.ekologus.pl" + CANONICAL_PATH + "/",
         proposed_ia_location=None,
         content_kind="editorial",
+        research_packet_id=None,
+        research_packet_digest=None,
         service_label=None,
         inventory=SimpleNamespace(
             status="available",
