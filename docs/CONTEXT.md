@@ -33,9 +33,14 @@ readbacku; CSV nie zastępuje tych rekordów.
 Poniższe snapshoty są wyłącznie `historical/reference` i nie mogą sterować
 bieżącą kolejką ani nadpisywać CSV:
 
-- `docs/content-dev-state-journal-20260828.json`;
+- `docs/content-acf-inventory-20260828.json`;
+- `docs/content-canonical-ledger-20260828.jsonl`;
+- `docs/content-dev-authoring-inventory-20260828.json`;
+- `docs/content-dev-state-journal-20260828.json` (oraz jego `.README.md`);
+- `docs/content-keep-eligibility-20260828.json`;
 - `docs/content-keep-eligibility-context-20260828.json`;
-- `docs/content-keep-eligibility-20260828.json`.
+- `docs/content-keep-target-mapping-snapshot-20260828.json`;
+- `docs/content-sitemap-inventory-20260828.json`.
 
 Ich kod może pozostać potrzebny do odczytu historii lub regresji, ale nie jest
 writerem kanonicznego journalu. Bieżący plan, kolejność bram i graf dostawy są
