@@ -2,13 +2,14 @@
 
 Last updated: 2026-07-21
 
-This is the living state file for WILQ dashboard work. Read it before changing
-any dashboard route, dashboard API view-model, dashboard copy, dashboard test or
-dashboard screenshot task.
+> Rola: `historical/reference` do czasu ponownej weryfikacji route'ów. Ten plik
+> nie jest już bieżącą mapą operacyjną: od 2026-07-21 zmieniły się trasy i
+> ścieżki API (np. `src/lib/api.ts` to obecnie katalog `src/lib/api/`). Bieżącą
+> prawdą per route są typowane kontrakty API, testy dashboardu i aktywny Bead;
+> przed użyciem potwierdź każdy wiersz w kodzie.
 
-Do not treat this file as a historical audit. Replace rows when the state
-changes. Historical roasts, screenshots and Beads may explain why a decision was
-made, but this file is the current operating map.
+Historical reference. Rows opisują stan z 2026-07-21 i nie sterują bieżącą
+decyzją; plik wymaga ponownej weryfikacji, zanim znów będzie `current state`.
 
 ## Rules
 
@@ -19,7 +20,7 @@ made, but this file is the current operating map.
   objective proof. They are smoke signals. Real readiness needs current API
   state, rendered screenshot and ideally a neutral second opinion.
 - Do not create a new endpoint if an existing API surface already exposes the
-  needed facts. First check the `API source` column and `apps/dashboard/src/lib/api.ts`.
+  needed facts. First check the `API source` column and `apps/dashboard/src/lib/api/`.
 - Do not keep returning to a screen that is already good enough unless a current
   screenshot or API change proves it regressed.
 - Technical IDs, payloads, contracts, raw ActionObject details, evidence IDs and
@@ -553,7 +554,7 @@ Use these before adding endpoints:
   `POST /api/connectors/{connector}/refresh`
 - Actions: `GET /api/actions`, `GET /api/actions/{id}`, validate/preview/review/confirm endpoints,
   mutation readiness `GET /api/actions/{id}/mutation-readiness`
-- The dashboard consumes every response through `apps/dashboard/src/lib/api.ts` with
+- The dashboard consumes every response through `apps/dashboard/src/lib/api/` with
   zod parsing; it never re-derives workflow state or approval.
 
 ## Second Opinion Packet Requirements
