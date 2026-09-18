@@ -11,6 +11,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
 )
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+    CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
+)
 from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
@@ -55,6 +59,12 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
         and action.connector == "wordpress_ekologus"
     ):
         return SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER
+    if (
+        action.payload.get("action_type") == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER
     if (
         action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE
         and action.connector == "wordpress_ekologus"

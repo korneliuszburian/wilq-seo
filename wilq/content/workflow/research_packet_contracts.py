@@ -223,9 +223,7 @@ class ContentResearchPacketContextReceipt(_FrozenModel):
         "planning_evidence_ids",
     )
     @classmethod
-    def require_sorted_context_evidence(
-        cls, value: tuple[str, ...]
-    ) -> tuple[str, ...]:
+    def require_sorted_context_evidence(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         return _safe_ids(value, "Research packet context evidence IDs") if value else value
 
     @field_validator("cta_destination")
@@ -360,9 +358,7 @@ class ContentResearchPacketCommand(_FrozenModel):
 
     @field_validator("query_cluster", "approved_source_fact_ids", "blocked_claims", "evidence_ids")
     @classmethod
-    def normalize_id_or_claim_lists(
-        cls, value: tuple[str, ...], info: object
-    ) -> tuple[str, ...]:
+    def normalize_id_or_claim_lists(cls, value: tuple[str, ...], info: object) -> tuple[str, ...]:
         field_name = str(getattr(info, "field_name", "packet values"))
         if field_name == "query_cluster":
             normalized = tuple(_safe_text(item, field_name, allow_blank=False) for item in value)
@@ -403,9 +399,7 @@ class ContentResearchPacketCommand(_FrozenModel):
 
     @model_validator(mode="after")
     def require_preparation_receipt_pair(self) -> Self:
-        if (self.preparation_receipt_id is None) != (
-            self.preparation_receipt_digest is None
-        ):
+        if (self.preparation_receipt_id is None) != (self.preparation_receipt_digest is None):
             raise ValueError("Preparation receipt ID and digest must be supplied together.")
         return self
 
@@ -483,14 +477,11 @@ class ContentResearchPacket(_FrozenModel):
             if (
                 context.identity_binding_id != self.identity_binding_id
                 or context.identity_binding_digest != self.identity_binding_digest
-                or context.classification_source_row_digest
-                != self.classification_source_row_digest
+                or context.classification_source_row_digest != self.classification_source_row_digest
                 or context.cta_destination != self.cta_destination
             ):
                 raise ValueError("Research packet context receipt does not match its packet.")
-        if (self.preparation_receipt_id is None) != (
-            self.preparation_receipt_digest is None
-        ):
+        if (self.preparation_receipt_id is None) != (self.preparation_receipt_digest is None):
             raise ValueError("Preparation receipt ID and digest must be supplied together.")
         expected = research_packet_digest(self)
         logical_id = research_packet_logical_id(self)

@@ -257,6 +257,9 @@ def _patch_decision_context(
         content_word_count=120,
         section_headings=["Zakres usługi", "Kontakt"],
         evidence_id="ev_wp_readiness_axes",
+        inventory_observation_evidence_id="ev_wp_readiness_axes",
+        material_observation_evidence_id="ev_wp_readiness_axes",
+        material_lineage_status="inventory_observation_bound",
         extraction_region="wordpress_rest.content",
     )
     monkeypatch.setattr(

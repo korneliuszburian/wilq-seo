@@ -1157,7 +1157,7 @@ def _read_wordpress_material_from_rest(
             link_path = urlparse(link).path.rstrip("/") or "/"
             if link_path != requested_path:
                 continue
-            return _material_from_rest_item(item, requested_url=requested_url)
+            return _material_from_rest_item(item, observed_url=link)
     return None
 
 
@@ -1166,13 +1166,16 @@ def _read_wordpress_material_from_html(
 ) -> WordPressContentMaterial:
     response = client.get(url, timeout=WORDPRESS_MATERIAL_REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
+    observed_url = str(response.url)
+    if not observed_url:
+        raise WordPressDraftReadError("WordPress nie zwrócił obserwowanego adresu materiału.")
     parser = _HtmlMetadataParser()
     parser.feed(response.text[:200_000])
     text = clean_metadata_text(" ".join(parser.main_text_chunks))
     if not text:
         raise WordPressDraftReadError("WordPress nie wystawił widocznego materiału treści.")
     return WordPressContentMaterial(
-        url=url,
+        url=observed_url,
         source_kind="rendered_html",
         title=clean_metadata_text(parser.title or parser.h1),
         content_text=text,
@@ -1265,7 +1268,7 @@ def normalize_wordpress_material_content_type_hint(
 
 
 def _material_from_rest_item(
-    item: dict[str, Any], *, requested_url: str
+    item: dict[str, Any], *, observed_url: str
 ) -> WordPressContentMaterial:
     content = item.get("content")
     raw = content.get("raw") if isinstance(content, dict) else None
@@ -1287,7 +1290,7 @@ def _material_from_rest_item(
     content_dimensions = content_inventory(content)
     acf_dimensions = acf_inventory(item.get("acf"))
     return WordPressContentMaterial(
-        url=requested_url,
+        url=observed_url,
         source_kind="wordpress_rest",
         title=wordpress_title(item.get("title")),
         content_text=text,

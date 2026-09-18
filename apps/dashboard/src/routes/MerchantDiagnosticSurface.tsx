@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Boxes, ClipboardList, RefreshCw, ShoppingCart } from "lucide-react";
 
 import { getActions, getMerchantDiagnostics } from "../lib/api";
+import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import {
@@ -18,7 +19,7 @@ export function MerchantDiagnosticSurface() {
     queryKey: ["actions"],
     queryFn: getActions
   });
-  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -26,17 +27,28 @@ export function MerchantDiagnosticSurface() {
       </main>
     );
   }
+  const data = diagnostics.data;
+  const readinessPanel = <DiagnosticDataReadinessPanel readiness={data.data_readiness} />;
+  if (actions.isLoading) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        {readinessPanel}
+        <LoadingBand />
+      </main>
+    );
+  }
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        {readinessPanel}
         <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
-  const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      {readinessPanel}
       <MerchantOperatingViewport data={data} />
       <MerchantExpandableReviewPanel data={data} />
       {routeActions.length > 0 ? (

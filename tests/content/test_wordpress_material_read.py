@@ -3,15 +3,18 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 import wilq.content.workflow.workspace.catalog as catalog_module
 from wilq.connectors.wordpress.client import (
     WordPressCredentials,
+    _read_wordpress_material_from_html,
     read_wordpress_content_material,
 )
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
+    ContentInventoryMaterialResponse,
     inventory_work_item_id,
 )
 
@@ -77,6 +80,53 @@ def test_content_type_hint_limits_rest_probe_and_keeps_exact_path_match(
 
     assert material.content_text == "Dokładna treść."
     assert rest_paths == [f"/wp-json/wp/v2/{expected_endpoint}"]
+
+
+def test_rest_material_preserves_observed_link_instead_of_requested_url() -> None:
+    requested_url = "https://www.ekologus.pl/oferta/doradztwo"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            request=request,
+            json=[
+                {
+                    "link": PAGE_URL,
+                    "title": {"rendered": "Doradztwo"},
+                    "content": {"rendered": "<p>Dokładna treść.</p>"},
+                    "acf": {},
+                }
+            ],
+        )
+
+    material = read_wordpress_content_material(
+        requested_url,
+        content_type_hint="page",
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert material.url == PAGE_URL
+
+
+def test_html_material_preserves_final_observed_url() -> None:
+    requested_url = PAGE_URL
+    observed_url = "https://www.ekologus.pl/oferta/obserwowany/"
+
+    class Response:
+        url = observed_url
+        text = "<html><body><main><p>Materiał HTML.</p></main></body></html>"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            assert timeout == 3.0
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=requested_url)
+
+    assert material.url == observed_url
 
 
 @pytest.mark.parametrize(
@@ -226,3 +276,101 @@ def test_material_cache_ttl_starts_when_slow_read_completes(
 
     assert first.content_text == second.content_text == "Treść po wolnym odczycie."
     assert calls == 1
+
+
+def test_live_material_separates_inventory_provenance_from_material_lineage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url = "https://www.ekologus.pl/news/"
+    bodies = iter(("Pierwszy live body.", "Drugi live body."))
+
+    def read_live(_url: str, *, content_type_hint: str | None = None) -> SimpleNamespace:
+        return _material(url, next(bodies))
+
+    monkeypatch.setattr(catalog_module, "_inventory_material_cache", {})
+    monkeypatch.setattr(catalog_module, "read_wordpress_content_material", read_live)
+    first = catalog_module.read_content_inventory_material(
+        url,
+        catalog=_catalog(url, evidence_id="ev_inventory_old"),
+    )
+    monkeypatch.setattr(catalog_module, "_inventory_material_cache", {})
+    second = catalog_module.read_content_inventory_material(
+        url,
+        catalog=_catalog(url, evidence_id="ev_inventory_old"),
+    )
+
+    assert first.content_text == "Pierwszy live body."
+    assert second.content_text == "Drugi live body."
+    assert first.evidence_id is None
+    assert second.evidence_id is None
+    assert first.inventory_observation_evidence_id == "ev_inventory_old"
+    assert second.inventory_observation_evidence_id == "ev_inventory_old"
+    assert first.material_observation_evidence_id is None
+    assert second.material_observation_evidence_id is None
+    assert first.material_confidence == "review_required"
+    assert second.material_confidence == "review_required"
+    assert first.material_lineage_status == "live_material_not_evidence_bound"
+    assert second.material_lineage_status == "live_material_not_evidence_bound"
+
+
+def test_live_material_blocks_foreign_observed_path_without_leaking_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url = "https://www.ekologus.pl/news/"
+
+    monkeypatch.setattr(catalog_module, "_inventory_material_cache", {})
+    monkeypatch.setattr(
+        catalog_module,
+        "read_wordpress_content_material",
+        lambda _url, **_kwargs: _material(
+            "https://www.ekologus.pl/other/",
+            "Foreign body must not escape.",
+        ),
+    )
+
+    result = catalog_module.read_content_inventory_material(
+        url,
+        catalog=_catalog(url, evidence_id="ev_inventory_old"),
+    )
+
+    assert result.status == "blocked"
+    assert result.blocker_code == "material_identity_mismatch"
+    assert result.content_text is None
+    assert result.title is None
+    assert result.evidence_id is None
+    assert result.inventory_observation_evidence_id == "ev_inventory_old"
+    assert result.material_observation_evidence_id is None
+
+
+def test_live_material_python_model_rejects_contradictory_evidence() -> None:
+    with pytest.raises(ValidationError):
+        ContentInventoryMaterialResponse(
+            status="ready",
+            url=PAGE_URL,
+            evidence_id="ev_inventory_old",
+            inventory_observation_evidence_id="ev_inventory_old",
+            material_observation_evidence_id=None,
+            material_lineage_status="live_material_not_evidence_bound",
+            material_confidence="review_required",
+        )
+
+    with pytest.raises(ValidationError):
+        ContentInventoryMaterialResponse(
+            status="ready",
+            url=PAGE_URL,
+            material_lineage_status="invented_status",
+        )
+
+    with pytest.raises(ValidationError):
+        ContentInventoryMaterialResponse(
+            status="invented_status",
+            url=PAGE_URL,
+        )
+
+    with pytest.raises(ValidationError):
+        ContentInventoryMaterialResponse(
+            status="ready",
+            url=PAGE_URL,
+            material_lineage_status="inventory_observation_bound",
+            material_observation_evidence_id="ev_material",
+        )

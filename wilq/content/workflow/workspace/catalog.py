@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from threading import Lock, RLock
 from time import monotonic
-from typing import Any, cast
+from typing import Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.connectors.wordpress.client import (
     WordPressDraftReadError,
@@ -23,6 +23,11 @@ from wilq.content.canonical.landing_identity import (
 from wilq.content.canonical.urls import (
     content_is_safe_authoring_url,
     content_is_safe_public_url,
+    content_normalized_url,
+)
+from wilq.content.workflow.workspace.journal_evidence_readiness import (
+    ContentInventoryJournalReadiness,
+    build_content_inventory_journal_readiness,
 )
 from wilq.content.workflow.workspace.journal_reconciliation import (
     ContentInventoryJournalReconciliation,
@@ -48,6 +53,13 @@ _inventory_metric_cache: dict[
     tuple[float, list[Any]],
 ] = {}
 _inventory_metric_cache_lock = RLock()
+
+ContentInventoryMaterialLineageStatus = Literal[
+    "inventory_selection_only",
+    "inventory_observation_bound",
+    "live_material_not_evidence_bound",
+]
+ContentInventoryMaterialStatus = Literal["ready", "blocked"]
 
 
 class ContentInventoryCatalogItem(BaseModel):
@@ -119,12 +131,13 @@ class ContentInventoryCatalogResponse(BaseModel):
     )
     coverage: ContentInventoryCoverage = Field(default_factory=ContentInventoryCoverage)
     journal_reconciliation: ContentInventoryJournalReconciliation | None = None
+    journal_readiness: ContentInventoryJournalReadiness | None = None
 
 
 class ContentInventoryMaterialResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: str
+    status: ContentInventoryMaterialStatus
     url: str
     source_kind: str | None = None
     title: str | None = None
@@ -136,11 +149,37 @@ class ContentInventoryMaterialResponse(BaseModel):
     acf_section_headings: list[str] = Field(default_factory=list)
     modified_gmt: str | None = None
     evidence_id: str | None = None
+    inventory_observation_evidence_id: str | None = None
+    material_observation_evidence_id: str | None = None
+    material_lineage_status: ContentInventoryMaterialLineageStatus = (
+        "live_material_not_evidence_bound"
+    )
     blocker_code: str | None = None
     blocker: str | None = None
     extraction_region: str | None = None
     material_confidence: str | None = None
     source_field_lineage: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_lineage(self) -> ContentInventoryMaterialResponse:
+        if self.material_lineage_status == "live_material_not_evidence_bound":
+            if self.evidence_id is not None or self.material_observation_evidence_id is not None:
+                raise ValueError(
+                    "Live material cannot expose material evidence identity"
+                )
+            if self.status == "ready" and self.material_confidence != "review_required":
+                raise ValueError("Live material must remain review_required")
+        if self.material_lineage_status == "inventory_observation_bound" and (
+            self.inventory_observation_evidence_id is None
+            or self.material_observation_evidence_id is None
+        ):
+            raise ValueError("Inventory-bound material requires observation evidence")
+        if (
+            self.material_lineage_status != "inventory_observation_bound"
+            and self.material_observation_evidence_id is not None
+        ):
+            raise ValueError("Material evidence requires an evidence-bound status")
+        return self
 
 
 class ContentInventoryBindingRequest(BaseModel):
@@ -150,11 +189,16 @@ class ContentInventoryBindingRequest(BaseModel):
 class ContentInventoryBindingResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: str
+    status: ContentInventoryMaterialStatus
     url: str
     work_item_id: str | None = None
     title: str | None = None
     evidence_id: str | None = None
+    inventory_observation_evidence_id: str | None = None
+    material_observation_evidence_id: str | None = None
+    material_lineage_status: ContentInventoryMaterialLineageStatus = (
+        "inventory_selection_only"
+    )
     material_status: str | None = None
     material_source_kind: str | None = None
     material_confidence: str | None = None
@@ -166,6 +210,30 @@ class ContentInventoryBindingResponse(BaseModel):
     metrics_evidence_ids: list[str] = Field(default_factory=list)
     knowledge_status: str = "not_evaluated"
     generation_status: str = "blocked_until_service_and_metrics"
+
+    @model_validator(mode="after")
+    def validate_lineage(self) -> ContentInventoryBindingResponse:
+        if self.material_lineage_status == "live_material_not_evidence_bound":
+            if self.evidence_id is not None or self.material_observation_evidence_id is not None:
+                raise ValueError(
+                    "Live material cannot expose material evidence identity"
+                )
+            if self.status == "ready" and self.material_confidence != "review_required":
+                raise ValueError("Live material must remain review_required")
+        if (
+            self.material_lineage_status == "inventory_observation_bound"
+            and (
+                self.inventory_observation_evidence_id is None
+                or self.material_observation_evidence_id is None
+            )
+        ):
+            raise ValueError("Inventory-bound material requires observation evidence")
+        if (
+            self.material_lineage_status != "inventory_observation_bound"
+            and self.material_observation_evidence_id is not None
+        ):
+            raise ValueError("Material evidence requires an evidence-bound status")
+        return self
 
 
 def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
@@ -252,6 +320,7 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     coverage = _inventory_coverage()
     rest_content_objects = _authoring_rest_content_objects()
     catalog = ContentInventoryCatalogResponse(
+        status="ready" if coverage.status == "complete" else "blocked",
         total_count=len(items),
         ready_count=sum(
             item.material_status in {"content_summary", "content_and_structure"}
@@ -268,6 +337,18 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             items,
             authoring_source_paths=(rest_object.url for rest_object in rest_content_objects),
         ),
+    )
+    from wilq.content.workflow.authoring_inventory_receipt import (
+        content_inventory_catalog_snapshot_digest,
+    )
+
+    catalog_snapshot_digest = content_inventory_catalog_snapshot_digest(catalog)
+    catalog.journal_readiness = build_content_inventory_journal_readiness(
+        catalog.items,
+        catalog_coverage_status=cast(
+            Literal["complete", "partial", "unknown"], coverage.status
+        ),
+        catalog_snapshot_digest=catalog_snapshot_digest,
     )
     return catalog
 
@@ -532,13 +613,18 @@ def read_content_inventory_material(
         ),
         None,
     )
-    evidence_id = item.evidence_id if item else None
-    cache_key = (url.rstrip("/"), evidence_id)
+    inventory_observation_evidence_id = item.evidence_id if item else None
+    cache_key = (url.rstrip("/"), item.content_type if item else None)
     now = monotonic()
     with _inventory_material_cache_lock:
         cached = _inventory_material_cache.get(cache_key)
         if cached is not None and now - cached[0] < _INVENTORY_MATERIAL_CACHE_SECONDS:
-            return cached[1].model_copy(update={"evidence_id": evidence_id})
+            return cached[1].model_copy(
+                update={
+                    "evidence_id": None,
+                    "inventory_observation_evidence_id": inventory_observation_evidence_id,
+                }
+            )
         if cached is not None:
             _inventory_material_cache.pop(cache_key, None)
     with _inventory_material_cache_lock:
@@ -551,7 +637,12 @@ def read_content_inventory_material(
         with _inventory_material_cache_lock:
             cached = _inventory_material_cache.get(cache_key)
             if cached is not None and now - cached[0] < _INVENTORY_MATERIAL_CACHE_SECONDS:
-                return cached[1].model_copy(update={"evidence_id": evidence_id})
+                return cached[1].model_copy(
+                    update={
+                        "evidence_id": None,
+                        "inventory_observation_evidence_id": inventory_observation_evidence_id,
+                    }
+                )
             if cached is not None:
                 _inventory_material_cache.pop(cache_key, None)
         try:
@@ -563,7 +654,10 @@ def read_content_inventory_material(
             response = ContentInventoryMaterialResponse(
                 status="blocked",
                 url=url,
-                evidence_id=evidence_id,
+                evidence_id=None,
+                inventory_observation_evidence_id=inventory_observation_evidence_id,
+                material_observation_evidence_id=None,
+                material_lineage_status="live_material_not_evidence_bound",
                 blocker_code="material_unavailable",
                 blocker=str(exc),
                 extraction_region=None,
@@ -571,23 +665,43 @@ def read_content_inventory_material(
                 source_field_lineage=[],
             )
         else:
-            response = ContentInventoryMaterialResponse(
-                status="ready",
-                url=wordpress_material.url,
-                source_kind=wordpress_material.source_kind,
-                title=wordpress_material.title,
-                content_text=wordpress_material.content_text,
-                content_summary=wordpress_material.content_summary,
-                content_word_count=wordpress_material.content_word_count,
-                section_headings=wordpress_material.section_headings,
-                acf_field_names=wordpress_material.acf_field_names,
-                acf_section_headings=wordpress_material.acf_section_headings,
-                modified_gmt=wordpress_material.modified_gmt,
-                evidence_id=evidence_id,
-                extraction_region=wordpress_material.extraction_region,
-                material_confidence=wordpress_material.material_confidence,
-                source_field_lineage=wordpress_material.source_field_lineage,
-            )
+            if not _material_identity_matches(url, wordpress_material.url):
+                response = ContentInventoryMaterialResponse(
+                    status="blocked",
+                    url=url,
+                    evidence_id=None,
+                    inventory_observation_evidence_id=inventory_observation_evidence_id,
+                    material_observation_evidence_id=None,
+                    material_lineage_status="live_material_not_evidence_bound",
+                    blocker_code="material_identity_mismatch",
+                    blocker=(
+                        "Odczytany materiał WordPress wskazuje inny bezpieczny host lub path; "
+                        "live preview został zablokowany."
+                    ),
+                    material_confidence=None,
+                    source_field_lineage=[],
+                )
+            else:
+                response = ContentInventoryMaterialResponse(
+                    status="ready",
+                    url=wordpress_material.url,
+                    source_kind=wordpress_material.source_kind,
+                    title=wordpress_material.title,
+                    content_text=wordpress_material.content_text,
+                    content_summary=wordpress_material.content_summary,
+                    content_word_count=wordpress_material.content_word_count,
+                    section_headings=wordpress_material.section_headings,
+                    acf_field_names=wordpress_material.acf_field_names,
+                    acf_section_headings=wordpress_material.acf_section_headings,
+                    modified_gmt=wordpress_material.modified_gmt,
+                    evidence_id=None,
+                    inventory_observation_evidence_id=inventory_observation_evidence_id,
+                    material_observation_evidence_id=None,
+                    material_lineage_status="live_material_not_evidence_bound",
+                    extraction_region=wordpress_material.extraction_region,
+                    material_confidence="review_required",
+                    source_field_lineage=wordpress_material.source_field_lineage,
+                )
         completed_at = monotonic()
         with _inventory_material_cache_lock:
             _inventory_material_cache[cache_key] = (completed_at, response)
@@ -626,6 +740,15 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
         else None
     )
     material_confidence = "source_bound" if item.material_status != "url_only" else None
+    inventory_observation_evidence_id = item.evidence_id
+    material_observation_evidence_id = (
+        item.evidence_id if item.material_status != "url_only" else None
+    )
+    material_lineage_status: ContentInventoryMaterialLineageStatus = (
+        "inventory_observation_bound"
+        if item.material_status != "url_only"
+        else "inventory_selection_only"
+    )
     extraction_region = None
     source_field_lineage = (
         ["wordpress_inventory.content_object_seen"]
@@ -634,6 +757,26 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
     )
     if item.material_status == "url_only":
         material = read_content_inventory_material(item.url, catalog=catalog)
+        if material.status != "ready":
+            return ContentInventoryBindingResponse(
+                status="blocked",
+                url=item.url,
+                work_item_id=inventory_work_item_id(item.url),
+                title=item.title,
+                evidence_id=None,
+                inventory_observation_evidence_id=material.inventory_observation_evidence_id,
+                material_observation_evidence_id=material.material_observation_evidence_id,
+                material_lineage_status=material.material_lineage_status,
+                material_status=item.material_status,
+                material_source_kind=material.source_kind,
+                material_confidence=material.material_confidence,
+                extraction_region=material.extraction_region,
+                source_field_lineage=material.source_field_lineage,
+                blocker_code=material.blocker_code,
+                blocker=material.blocker,
+                metrics_status="available" if metric_facts else "missing",
+                metrics_evidence_ids=sorted({fact.evidence_id for fact in metric_facts}),
+            )
         if material.status == "ready" and material.content_text:
             material_status = (
                 "content_and_structure"
@@ -645,12 +788,34 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
             material_confidence = material.material_confidence
             extraction_region = material.extraction_region
             source_field_lineage = material.source_field_lineage
+            inventory_observation_evidence_id = getattr(
+                material,
+                "inventory_observation_evidence_id",
+                item.evidence_id,
+            )
+            material_observation_evidence_id = getattr(
+                material,
+                "material_observation_evidence_id",
+                None,
+            )
+            material_lineage_status = getattr(
+                material,
+                "material_lineage_status",
+                "live_material_not_evidence_bound",
+            )
     return ContentInventoryBindingResponse(
         status="ready",
         url=item.url,
         work_item_id=inventory_work_item_id(item.url),
         title=title,
-        evidence_id=item.evidence_id,
+        evidence_id=(
+            None
+            if material_lineage_status == "live_material_not_evidence_bound"
+            else item.evidence_id
+        ),
+        inventory_observation_evidence_id=inventory_observation_evidence_id,
+        material_observation_evidence_id=material_observation_evidence_id,
+        material_lineage_status=material_lineage_status,
         material_status=material_status,
         material_source_kind=material_source_kind,
         material_confidence=material_confidence,
@@ -663,6 +828,14 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
         # source context; do not present it as a failed match here.
         knowledge_status="not_evaluated",
         generation_status="blocked_until_service_and_metrics",
+    )
+
+
+def _material_identity_matches(requested_url: str, observed_url: str) -> bool:
+    return (
+        content_is_safe_public_url(requested_url)
+        and content_is_safe_public_url(observed_url)
+        and content_normalized_url(requested_url) == content_normalized_url(observed_url)
     )
 
 
@@ -718,7 +891,7 @@ def _latest_metric_refresh(connector_id: str) -> ConnectorRefreshRun | None:
     return _latest_completed_vendor_read(connector_id)
 
 
-def _refresh_run_recency(run: ConnectorRefreshRun) -> datetime:
+def _refresh_run_recency(run: Any) -> datetime:
     value = getattr(run, "completed_at", None) or getattr(run, "started_at", None)
     if not isinstance(value, datetime):
         return datetime.min.replace(tzinfo=UTC)

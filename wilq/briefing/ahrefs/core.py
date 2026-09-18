@@ -157,6 +157,7 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         factual_metric_count=len(trusted_ahrefs_facts),
         evidence_ids=evidence_ids,
         partial=bool(latest_refresh and latest_refresh.quality_state.value == "partial"),
+        stale=connector.freshness.state == "stale",
         partial_coverage_label=(
             "Pokazane metryki obejmują tylko potwierdzony zakres odczytu Ahrefs."
         ),

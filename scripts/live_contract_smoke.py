@@ -19,6 +19,27 @@ ENDPOINTS = {
     "ga4_diagnostics": "/api/ga4/diagnostics",
     "localo_diagnostics": "/api/localo/diagnostics",
 }
+_CONTENT_DEV_URL_FIELDS = frozenset(
+    {
+        "page",
+        "source_url",
+        "referenced_public_url",
+        "source_public_url",
+        "preview_url",
+        "intended_final_url",
+        "final_canonical_url",
+        "wordpress_content_url",
+        "content_url",
+        "wordpress_overlap_urls",
+    }
+)
+_CONTENT_STALE_SEMANTIC_FRAGMENTS = (
+    "target_site",
+    "mapping_review",
+    "migration-map",
+    "migration_map",
+)
+_CONTENT_DEV_AUTHORING_HOST = "ekologus.dev.proudsite.pl"
 
 
 def main() -> int:
@@ -164,15 +185,36 @@ def _check_diagnostics_shape(
 
 
 def _check_content_url_semantics(diagnostics: dict[str, Any], errors: list[str]) -> None:
-    serialized = json.dumps(diagnostics, ensure_ascii=False)
-    for stale_fragment in (
-        "ekologus.dev.proudsite.pl",
-        "target_site",
-        "mapping_review",
-        "migration-map",
-        "migration_map",
-    ):
-        if stale_fragment in serialized:
+    stale_fragments: set[str] = set()
+
+    def inspect(value: Any, field_name: str | None = None) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                key_name = str(key)
+                for stale_fragment in _CONTENT_STALE_SEMANTIC_FRAGMENTS:
+                    if stale_fragment in key_name.casefold():
+                        stale_fragments.add(stale_fragment)
+                inspect(child, key_name)
+            return
+        if isinstance(value, list):
+            for child in value:
+                inspect(child, field_name)
+            return
+        if not isinstance(value, str):
+            return
+        normalized = value.casefold()
+        for stale_fragment in _CONTENT_STALE_SEMANTIC_FRAGMENTS:
+            if stale_fragment in normalized:
+                stale_fragments.add(stale_fragment)
+        if (
+            _CONTENT_DEV_AUTHORING_HOST.casefold() in normalized
+            and field_name not in _CONTENT_DEV_URL_FIELDS
+        ):
+            stale_fragments.add(_CONTENT_DEV_AUTHORING_HOST)
+
+    inspect(diagnostics)
+    for stale_fragment in (*_CONTENT_STALE_SEMANTIC_FRAGMENTS, _CONTENT_DEV_AUTHORING_HOST):
+        if stale_fragment in stale_fragments:
             errors.append(
                 f"content_diagnostics must not expose stale URL semantics: {stale_fragment}"
             )

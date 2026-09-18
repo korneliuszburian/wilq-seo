@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { ConnectorRefreshRunSchema, ConnectorStatusSchema, MetricFactSchema } from "./connectors";
 import { ContentAhrefsCandidateRowSchema } from "./content_diagnostics";
+import { DiagnosticDataReadinessSchema } from "./diagnostic_readiness";
 
 export const AhrefsRequestBudgetSchema = z.object({
   estimated_calls: z.number().int().nonnegative(),
@@ -184,6 +185,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
   connector_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   latest_refresh_status_label: z.string().nullable().optional(),
   request_budget: AhrefsRequestBudgetSchema.optional(),

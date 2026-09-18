@@ -33,7 +33,10 @@ client = TestClient(app)
         ("connector_refresh", "okres odświeżenia źródła"),
         ("current", "bieżący"),
         ("2026-07-01/2026-07-28", "od 2026-07-01 do 2026-07-28"),
-        ("custom_period", "custom_period"),
+        ("ahrefs_content_gap", "przekrój luk treści Ahrefs"),
+        ("recommendation_impact", "podgląd wpływu rekomendacji"),
+        ("search_term_safety_90d", "bezpieczny przegląd zapytań: ostatnie 90 dni"),
+        ("custom_period", "okres nieokreślony — sprawdź źródło"),
     ],
 )
 def test_metric_fact_fills_marketer_readable_source_and_period_labels(

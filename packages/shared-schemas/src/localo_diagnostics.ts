@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ConnectorRefreshRunSchema, ConnectorStatusSchema, MetricFactSchema } from "./connectors";
+import { DiagnosticDataReadinessSchema } from "./diagnostic_readiness";
 
 export const LocaloAccessProbeSchema = z.object({
   status: z.enum(["access_ready", "access_blocked", "unknown"]),
@@ -128,6 +129,7 @@ export const LocaloDiagnosticsResponseSchema = z.object({
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
   connector_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   latest_refresh_status_label: z.string().nullable().optional(),
   access_probe: LocaloAccessProbeSchema,
@@ -141,5 +143,4 @@ export const LocaloDiagnosticsResponseSchema = z.object({
   action_ids: z.array(z.string()),
   blocker_count: z.number()
 });
-
 

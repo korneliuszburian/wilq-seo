@@ -59,6 +59,9 @@ from wilq.content.planning.generated_proposal_turn import content_planning_turn_
 from wilq.content.planning.generation_input import (
     build_generation_input as _build_generation_input,
 )
+from wilq.content.planning.planning_workspace_projection import (  # noqa: F401
+    with_current_planning_workspace as _with_current_planning_workspace,
+)
 from wilq.content.planning.proposal_lineage import (
     canonicalize_regulatory_section_assertions,
     canonicalize_regulatory_section_evidence,
@@ -82,13 +85,21 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningDecision,
     ContentPlanningInventoryMapping,
     ContentPlanningProposal,
-    build_content_planning_workspace,
 )
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
 from wilq.content.workflow.runtime.codex_run_lifecycle import save_terminal_codex_run
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store
+
+
+def with_current_planning_workspace(
+    response: ContentPlanningProposalResponse,
+    decisions: list[ContentPlanningDecision],
+) -> ContentPlanningProposalResponse:
+    """Keep the historical import seam for exact workspace projection."""
+
+    return _with_current_planning_workspace(response, decisions)
 
 
 def read_content_planning_proposal(
@@ -99,34 +110,6 @@ def read_content_planning_proposal(
     from wilq.content.planning.proposal_read import read_content_planning_proposal as read
 
     return read(snapshot=snapshot, store=store)
-
-
-def with_current_planning_workspace(
-    response: ContentPlanningProposalResponse,
-    decisions: list[ContentPlanningDecision],
-) -> ContentPlanningProposalResponse:
-    """Project review only when it binds to the response's exact ready plan."""
-
-    if response.status != "ready" or response.proposal is None:
-        return response.model_copy(update={"planning_workspace": None})
-    proposal = response.proposal
-    exact_decisions = [
-        decision
-        for decision in decisions
-        if decision.work_item_id == proposal.work_item_id
-        and decision.planning_digest == proposal.planning_digest
-        and (
-            decision.service_card_id is None or decision.service_card_id == proposal.service_card_id
-        )
-    ]
-    return response.model_copy(
-        update={
-            "planning_workspace": build_content_planning_workspace(
-                proposal,
-                exact_decisions,
-            )
-        }
-    )
 
 
 def generate_content_planning_proposal(

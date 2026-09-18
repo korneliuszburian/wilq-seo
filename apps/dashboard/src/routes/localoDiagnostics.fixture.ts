@@ -66,6 +66,20 @@ export const localoDiagnostics = {
       "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji."
   },
   live_data_available: false,
+  data_readiness: {
+    state: "unavailable",
+    state_label: "Dane są niedostępne",
+    reason: "WILQ nie potwierdził metryk potrzebnych do tego widoku.",
+    coverage_label: "Brak potwierdzonych metryk do pokazania.",
+    refresh_allowed: false,
+    safe_next_step: "Sprawdź źródło danych przed użyciem metryk w decyzji.",
+    factual_metric_count: 0,
+    factual_metrics: [],
+    evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    connector_id: "localo",
+    connector_label: "Localo",
+    latest_refresh_id: "refresh_localo_access_ready_test"
+  },
   visibility_fact_count: 0,
   operator_summary: {
     id: "localo_operator_summary",

@@ -213,14 +213,30 @@ export const ContentProductionDecisionSchema = z.discriminatedUnion("status", [
   ContentProductionDecisionAvailableSchema
 ]);
 
+export const ContentSelectedWorkspaceIdentityReadinessSchema = z.object({
+  status: z.enum(["bound", "missing", "mismatch", "not_applicable"]),
+  binding_id: z.string().min(1).nullable(),
+  reason_pl: z.string().min(1),
+  safe_next_step_pl: z.string().min(1),
+  generation_allowed: z.literal(false)
+}).strict().superRefine((value, context) => {
+  if (value.status === "bound" && value.binding_id === null) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["binding_id"], message: "Bound S1 identity requires its exact binding ID." });
+  }
+  if (value.status !== "bound" && value.binding_id !== null) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["binding_id"], message: "Blocked S1 identity cannot expose a binding ID." });
+  }
+});
+
 export const ContentSelectedWorkspaceSchema = z
   .object({
     response_type: z.literal("content_selected_workspace").default("content_selected_workspace"),
-    contract_version: z.literal("content_selected_workspace_v2").default("content_selected_workspace_v2"),
+    contract_version: z.literal("content_selected_workspace_v3").default("content_selected_workspace_v3"),
     status: z.enum(["ready", "missing"]),
     work_item_id: z.string().min(1),
     requested_work_item_id: z.string().min(1),
     production_decision: ContentProductionDecisionSchema,
+    identity_readiness: ContentSelectedWorkspaceIdentityReadinessSchema,
     operator_journey: z.lazy(() => ContentWorkflowOperatorJourneySchema),
     workspace: ContentDocumentWorkspaceSchema.nullable().optional(),
     reason: z.string().min(1),
@@ -340,3 +356,6 @@ export type ContentProductionRevisionBinding = z.infer<
 >;
 export type ContentReusableDocument = z.infer<typeof ContentReusableDocumentSchema>;
 export type ContentSelectedWorkspace = z.infer<typeof ContentSelectedWorkspaceSchema>;
+export type ContentSelectedWorkspaceIdentityReadiness = z.infer<
+  typeof ContentSelectedWorkspaceIdentityReadinessSchema
+>;

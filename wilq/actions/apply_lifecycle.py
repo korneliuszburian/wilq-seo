@@ -23,6 +23,9 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+)
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.store.store import WordPressRevisionApplyClaimResult
 from wilq.content.workflow.store.store_new_page_apply import new_page_apply_claim_store
@@ -46,9 +49,7 @@ from wilq.schemas import (
     AuditEvent,
 )
 
-WordPressApplyCapability = Callable[
-    ..., tuple[Any, list[ActionWordPressDraftApplyBlocker]]
-]
+WordPressApplyCapability = Callable[..., tuple[Any, list[ActionWordPressDraftApplyBlocker]]]
 ExecuteMutationAdapter = Callable[
     [ActionObject, str, Any],
     tuple[dict[str, Any] | None, list[str]],
@@ -90,13 +91,9 @@ def apply_action(
 ) -> ActionApplyResult:
     """Run the canonical fail-closed apply lifecycle and preserve mutation audit."""
     errors: list[str] = []
-    resolved = _resolve_apply_capability(
-        action, request, dependencies.wordpress_apply_capability
-    )
+    resolved = _resolve_apply_capability(action, request, dependencies.wordpress_apply_capability)
     wordpress_revision_blockers = resolved.blockers
-    errors.extend(
-        f"{blocker.label}: {blocker.reason}" for blocker in wordpress_revision_blockers
-    )
+    errors.extend(f"{blocker.label}: {blocker.reason}" for blocker in wordpress_revision_blockers)
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
     connector = dependencies.connector_status(action.connector)
     preview = latest_preview_event(action.audit_events)
@@ -227,6 +224,7 @@ def _resolve_apply_capability(
             SOURCE_FACT_AUTHORITY_ACTION_TYPE,
             CURRENT_DISPOSITION_ACTION_TYPE,
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+            CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
         }
         and action.payload.get("local_authority_only") is True
     ):
@@ -365,10 +363,7 @@ def _new_page_apply_claim_blocker(
             "new_page_revision_apply_consent_consumed",
             "Poprzednia próba zużyła zgodę tej rewizji",
             "Nie można powtarzać starej rewizji po nieudanej lub niepewnej próbie.",
-            (
-                "Zapisz nową wersję, wykonaj nowe review i utwórz nową akcję przed "
-                "kolejną próbą."
-            ),
+            ("Zapisz nową wersję, wykonaj nowe review i utwórz nową akcję przed kolejną próbą."),
         ),
         "uncertain": (
             "new_page_revision_apply_result_uncertain",
@@ -386,10 +381,7 @@ def _new_page_apply_claim_blocker(
             "new_page_revision_not_current_at_apply",
             "Rewizja nowej strony nie jest już aktualna",
             "Binding nie odpowiada najnowszej approved rewizji w lokalnym store.",
-            (
-                "Odśwież nową stronę, zapisz i zatwierdź aktualną rewizję, potem utwórz "
-                "nową akcję."
-            ),
+            ("Odśwież nową stronę, zapisz i zatwierdź aktualną rewizję, potem utwórz nową akcję."),
         ),
     }
     code, label, reason, next_step = messages.get(claim_result, messages["not_current"])

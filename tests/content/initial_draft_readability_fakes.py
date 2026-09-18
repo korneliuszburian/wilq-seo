@@ -117,7 +117,7 @@ def planning_input() -> ContentPlanningInput:
         source_facts=[
             ContentPlanningSourceFact(
                 fact_id="planning_readability_gate",
-                summary="Zatwierdzony fakt do testu czytelności.",
+                summary="Dokumentacji do testu czytelności.",
                 source_connector="test_source",
                 evidence_ids=["ev_readability_gate"],
                 source_fact_ids=["source_readability_gate"],
@@ -164,10 +164,16 @@ def generation_contract() -> StructuredDraftGenerationContract:
 
 
 def prepared_inputs() -> initial_full_draft._InitialDraftInputs:
+    source_snapshot = planning_input()
+    candidate = proposal()
+    draft_plan = initial_full_draft.prepare_draft_plan(candidate, source_snapshot)
+    if not isinstance(draft_plan, initial_full_draft.PreparedDraftPlan):
+        raise AssertionError(f"readability fake must compile its draft plan: {draft_plan}")
     return initial_full_draft._InitialDraftInputs(
-        planning_input=planning_input(),
-        proposal=proposal(),
+        planning_input=source_snapshot,
+        proposal=candidate,
         generation_contract=generation_contract(),
+        draft_plan=draft_plan,
     )
 
 

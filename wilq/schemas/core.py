@@ -304,6 +304,7 @@ class Evidence(BaseModel):
     source_type: str
     source_type_label: str = ""
     source_id: str
+    source_url: str | None = None
     collected_at: datetime = Field(default_factory=utc_now)
     freshness: FreshnessState
     freshness_label: str = ""
@@ -503,6 +504,9 @@ def _metric_period_label(period: str) -> str:
         "connector_refresh": "okres odświeżenia źródła",
         "current": "bieżący",
         "localo_mcp_read": "ostatni odczyt Localo",
+        "ahrefs_content_gap": "przekrój luk treści Ahrefs",
+        "recommendation_impact": "podgląd wpływu rekomendacji",
+        "search_term_safety_90d": "bezpieczny przegląd zapytań: ostatnie 90 dni",
     }
     if value in labels:
         return labels[value]
@@ -523,9 +527,9 @@ def _metric_period_label(period: str) -> str:
         start = date.fromisoformat(start_value)
         end = date.fromisoformat(end_value)
     except ValueError:
-        return period
+        return "okres nieokreślony — sprawdź źródło"
     if start.isoformat() != start_value or end.isoformat() != end_value or start > end:
-        return period
+        return "okres nieokreślony — sprawdź źródło"
     return f"od {start.isoformat()} do {end.isoformat()}"
 
 

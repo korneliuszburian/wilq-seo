@@ -5463,6 +5463,174 @@ export const ContentInventoryCatalogItemSchema = z.object({
   metrics_impressions: z.number().int().nonnegative().default(0)
 });
 
+export const ContentEvidenceReadinessBlockerSchema = z.object({
+  code: z.string().min(1),
+  reason: z.string().min(1),
+  evidence_ids: z.array(z.string()).default([]),
+  safe_next_step: z.string().min(1)
+});
+
+export const ContentEvidenceAuthoringInventoryReceiptReadinessSchema = z.object({
+  status: z.enum(["current", "missing", "stale"]),
+  receipt_id: z.string().nullable().optional(),
+  receipt_digest: z.string().nullable().optional(),
+  evidence_id: z.string().nullable().optional(),
+  collected_at: z.string().nullable().optional(),
+  freshness: z.enum(["fresh", "stale", "missing"])
+}).superRefine((value, context) => {
+  const hasIdentity = value.receipt_id != null && value.receipt_digest != null && value.evidence_id != null;
+  if (value.status === "current" && (!hasIdentity || value.freshness !== "fresh")) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Current receipt readiness requires fresh receipt identity." });
+  }
+  if (value.status === "missing" && (hasIdentity || value.freshness !== "missing" || value.collected_at != null)) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Missing receipt readiness cannot expose receipt identity." });
+  }
+  if (value.status === "stale" && (!hasIdentity || value.freshness !== "stale")) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Stale receipt readiness requires receipt identity." });
+  }
+});
+
+export const ContentEvidenceAcquisitionReadinessSchema = z.object({
+  recorded_status: z.enum(["missing", "blocked", "ready_for_researcher"]),
+  current_status: z.enum(["missing", "blocked", "ready_for_researcher"]),
+  run_id: z.string().nullable().optional(),
+  run_digest: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()).default([]),
+  subject_kind: z.enum(["identity_binding", "authoring_inventory_receipt"]).nullable().optional(),
+  subject_id: z.string().nullable().optional(),
+  freshness: z.enum(["fresh", "stale", "missing", "not_applicable"]),
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.recorded_status === "missing" && (
+    value.current_status !== "missing" || value.run_id != null || value.run_digest != null
+    || value.evidence_ids.length > 0 || value.subject_kind != null || value.subject_id != null
+  )) {
+    context.addIssue({ code: "custom", path: ["recorded_status"], message: "Missing acquisition readiness cannot expose a run." });
+  }
+  if (value.current_status === "blocked" && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Blocked acquisition readiness requires typed blockers." });
+  }
+});
+
+export const ContentEvidenceResearchProposalReadinessSchema = z.object({
+  status: z.enum(["missing", "blocked", "ready_for_review"]),
+  proposal_id: z.string().nullable().optional(),
+  proposal_digest: z.string().nullable().optional(),
+  acquisition_run_id: z.string().nullable().optional(),
+  review_required: z.boolean(),
+  approved: z.literal(false).default(false),
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.status === "missing" && (
+    value.proposal_id != null || value.proposal_digest != null || value.acquisition_run_id != null
+    || value.review_required
+  )) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Missing research readiness cannot expose a proposal." });
+  }
+  if (value.status === "blocked" && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Blocked research readiness requires typed blockers." });
+  }
+  if (value.status === "ready_for_review" && !value.review_required) {
+    context.addIssue({ code: "custom", path: ["review_required"], message: "Research proposal readiness requires human review." });
+  }
+});
+
+export const ContentEvidenceIdentityReadinessSchema = z.object({
+  status: z.enum(["missing", "exact_current", "reconciled_retained", "blocked"]),
+  binding_id: z.string().nullable().optional(),
+  binding_digest: z.string().nullable().optional(),
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.status === "missing" && (value.binding_id != null || value.binding_digest != null)) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Missing identity readiness cannot expose a binding." });
+  }
+  if ((value.status === "reconciled_retained" || value.status === "blocked") && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Non-current identity readiness requires a blocker." });
+  }
+});
+
+export const ContentEvidenceServiceCardReadinessSchema = z.object({
+  status: z.enum(["missing", "approved_current", "review_required", "blocked"]),
+  card_id: z.string().nullable().optional(),
+  card_status: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.status === "missing" && value.card_id != null) {
+    context.addIssue({ code: "custom", path: ["card_id"], message: "Missing card readiness cannot expose a card." });
+  }
+  if (value.status !== "approved_current" && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Unapproved card readiness requires a blocker." });
+  }
+});
+
+export const ContentEvidencePromotionReadinessSchema = z.object({
+  status: z.enum(["missing", "blocked", "review_required", "approved_current", "rejected"]),
+  receipt_id: z.string().nullable().optional(),
+  source_fact_id: z.string().nullable().optional(),
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.status === "approved_current" && (
+    value.receipt_id == null || value.source_fact_id == null || value.blockers.length > 0
+  )) {
+    context.addIssue({ code: "custom", path: ["status"], message: "Approved promotion readiness requires a receipt and source fact." });
+  }
+  if (value.status !== "approved_current" && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Non-approved promotion readiness requires a blocker." });
+  }
+});
+
+export const ContentEvidenceReadinessSchema = z.object({
+  status: z.enum(["missing", "blocked", "ready_for_researcher", "review_required"]),
+  status_label: z.string().min(1),
+  authoring_inventory_receipt: ContentEvidenceAuthoringInventoryReceiptReadinessSchema,
+  evidence_acquisition: ContentEvidenceAcquisitionReadinessSchema,
+  research_proposal: ContentEvidenceResearchProposalReadinessSchema,
+  identity: ContentEvidenceIdentityReadinessSchema,
+  service_card: ContentEvidenceServiceCardReadinessSchema,
+  promotion: ContentEvidencePromotionReadinessSchema,
+  blockers: z.array(ContentEvidenceReadinessBlockerSchema).default([]),
+  generation_allowed: z.literal(false).default(false),
+  safe_next_step: z.string().min(1)
+}).superRefine((value, context) => {
+  if (value.status === "blocked" && value.blockers.length === 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Blocked readiness requires a blocker." });
+  }
+  if (value.status !== "blocked" && value.blockers.length > 0) {
+    context.addIssue({ code: "custom", path: ["blockers"], message: "Non-blocked readiness cannot carry blockers." });
+  }
+});
+
+export const ContentEvidenceReadinessSummarySchema = z.object({
+  total_count: z.number().int().nonnegative(),
+  blocked_count: z.number().int().nonnegative(),
+  review_required_count: z.number().int().nonnegative(),
+  ready_for_researcher_count: z.number().int().nonnegative(),
+  missing_count: z.number().int().nonnegative(),
+  authoring_receipt_current_count: z.number().int().nonnegative(),
+  authoring_receipt_stale_count: z.number().int().nonnegative(),
+  authoring_receipt_missing_count: z.number().int().nonnegative(),
+  acquisition_ready_count: z.number().int().nonnegative(),
+  acquisition_blocked_count: z.number().int().nonnegative(),
+  acquisition_missing_count: z.number().int().nonnegative(),
+  research_ready_count: z.number().int().nonnegative(),
+  research_blocked_count: z.number().int().nonnegative(),
+  research_missing_count: z.number().int().nonnegative(),
+  identity_exact_current_count: z.number().int().nonnegative(),
+  identity_blocked_count: z.number().int().nonnegative(),
+  identity_missing_count: z.number().int().nonnegative(),
+  service_card_approved_current_count: z.number().int().nonnegative(),
+  service_card_review_required_count: z.number().int().nonnegative(),
+  promotion_approved_current_count: z.number().int().nonnegative(),
+  generation_allowed: z.literal(false).default(false)
+});
+
 export const ContentInventoryCatalogResponseSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   total_count: z.number().int().nonnegative(),
@@ -5487,7 +5655,47 @@ export const ContentInventoryCatalogResponseSchema = z.object({
     status: "unknown",
     returned_count: 0,
     caveat: "Brak coverage z aktualnego odczytu WordPress."
-  })
+  }),
+  journal_reconciliation: z.object({
+    status: z.enum(["complete", "incomplete", "blocked"]),
+    journal_record_count: z.number().int().nonnegative(),
+    matched_catalog_count: z.number().int().nonnegative(),
+    missing_inventory_binding_count: z.number().int().nonnegative(),
+    catalog_outside_journal_count: z.number().int().nonnegative(),
+    matched_authoring_source_count: z.number().int().nonnegative(),
+    missing_authoring_source_count: z.number().int().nonnegative(),
+    missing_inventory_by_content_kind: z.record(z.string(), z.number().int().nonnegative()).default({}),
+    caveat: z.string(),
+    safe_next_step: z.string()
+  }).nullable().optional(),
+  journal_readiness: z.object({
+    status: z.enum(["complete", "incomplete", "blocked"]),
+    journal_record_count: z.number().int().nonnegative(),
+    catalog_coverage_status: z.enum(["complete", "partial", "unknown"]),
+    rows: z.array(z.object({
+      canonical_path: z.string(),
+      historical_as_of: z.string(),
+      content_kind: z.string(),
+      final_disposition: z.enum(["keep", "noindex", "redirect", "remove"]),
+      historical_next_action: z.string(),
+      operational_owner: z.enum(["WILQ content workflow", "WILQ sitemap operations"]),
+      production_cohort: z.boolean(),
+      current_catalog_state: z.enum(["exact_path_observed", "not_observed", "ambiguous"]),
+      current_catalog_observation: z.object({
+        path: z.string(),
+        url: z.string(),
+        content_type: z.string(),
+        material_status: z.string(),
+        source_connector: z.string(),
+        evidence_id: z.string(),
+        collected_at: z.string()
+      }).nullable(),
+      content_evidence_readiness: ContentEvidenceReadinessSchema
+    })).default([]),
+    content_evidence_readiness: ContentEvidenceReadinessSummarySchema,
+    caveat: z.string(),
+    safe_next_step: z.string()
+  }).nullable().optional()
 });
 
 export const ContentInventoryMaterialResponseSchema = z.object({
@@ -5503,11 +5711,62 @@ export const ContentInventoryMaterialResponseSchema = z.object({
   acf_section_headings: z.array(z.string()).default([]),
   modified_gmt: z.string().nullable().optional(),
   evidence_id: z.string().nullable().optional(),
+  inventory_observation_evidence_id: z.string().nullable().optional(),
+  material_observation_evidence_id: z.string().nullable().optional(),
+  material_lineage_status: z
+    .enum([
+      "inventory_observation_bound",
+      "inventory_selection_only",
+      "live_material_not_evidence_bound"
+    ])
+    .default("live_material_not_evidence_bound"),
   blocker_code: z.string().nullable().optional(),
   blocker: z.string().nullable().optional(),
   extraction_region: z.string().nullable().optional(),
   material_confidence: z.string().nullable().optional(),
   source_field_lineage: z.array(z.string()).default([])
+}).superRefine((material, context) => {
+  if (material.material_lineage_status === "live_material_not_evidence_bound") {
+    if (material.evidence_id !== null && material.evidence_id !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["evidence_id"],
+        message: "Live material cannot expose legacy material evidence identity"
+      });
+    }
+    if (material.material_observation_evidence_id !== null
+      && material.material_observation_evidence_id !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["material_observation_evidence_id"],
+        message: "Live material cannot expose material observation evidence"
+      });
+    }
+    if (material.status === "ready" && material.material_confidence !== "review_required") {
+      context.addIssue({
+        code: "custom",
+        path: ["material_confidence"],
+        message: "Live material must remain review_required"
+      });
+    }
+  }
+  if (material.material_lineage_status === "inventory_observation_bound"
+    && (!material.inventory_observation_evidence_id
+      || !material.material_observation_evidence_id)) {
+    context.addIssue({
+      code: "custom",
+      path: ["material_observation_evidence_id"],
+      message: "Inventory-bound material requires material observation evidence"
+    });
+  }
+  if (material.material_lineage_status !== "inventory_observation_bound"
+    && material.material_observation_evidence_id) {
+    context.addIssue({
+      code: "custom",
+      path: ["material_observation_evidence_id"],
+      message: "Material observation evidence requires an evidence-bound status"
+    });
+  }
 });
 
 export const ContentInventoryBindingRequestSchema = z.object({ url: z.string().min(1) });
@@ -5517,6 +5776,15 @@ export const ContentInventoryBindingResponseSchema = z.object({
   work_item_id: z.string().nullable().optional(),
   title: z.string().nullable().optional(),
   evidence_id: z.string().nullable().optional(),
+  inventory_observation_evidence_id: z.string().nullable().optional(),
+  material_observation_evidence_id: z.string().nullable().optional(),
+  material_lineage_status: z
+    .enum([
+      "inventory_observation_bound",
+      "inventory_selection_only",
+      "live_material_not_evidence_bound"
+    ])
+    .default("inventory_selection_only"),
   material_status: z.string().nullable().optional(),
   material_source_kind: z.string().nullable().optional(),
   material_confidence: z.string().nullable().optional(),
@@ -5528,6 +5796,48 @@ export const ContentInventoryBindingResponseSchema = z.object({
   metrics_evidence_ids: z.array(z.string()).default([]),
   knowledge_status: z.string().default("not_evaluated"),
   generation_status: z.string().default("blocked_until_service_and_metrics")
+}).superRefine((binding, context) => {
+  if (binding.material_lineage_status === "live_material_not_evidence_bound") {
+    if (binding.evidence_id !== null && binding.evidence_id !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["evidence_id"],
+        message: "Live material cannot expose legacy material evidence identity"
+      });
+    }
+    if (binding.material_observation_evidence_id !== null
+      && binding.material_observation_evidence_id !== undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["material_observation_evidence_id"],
+        message: "Live material cannot expose material observation evidence"
+      });
+    }
+    if (binding.status === "ready" && binding.material_confidence !== "review_required") {
+      context.addIssue({
+        code: "custom",
+        path: ["material_confidence"],
+        message: "Live material must remain review_required"
+      });
+    }
+  }
+  if (binding.material_lineage_status === "inventory_observation_bound"
+    && (!binding.inventory_observation_evidence_id
+      || !binding.material_observation_evidence_id)) {
+    context.addIssue({
+      code: "custom",
+      path: ["material_observation_evidence_id"],
+      message: "Inventory-bound material requires material observation evidence"
+    });
+  }
+  if (binding.material_lineage_status !== "inventory_observation_bound"
+    && binding.material_observation_evidence_id) {
+    context.addIssue({
+      code: "custom",
+      path: ["material_observation_evidence_id"],
+      message: "Material observation evidence requires an evidence-bound status"
+    });
+  }
 });
 
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
@@ -5566,6 +5876,31 @@ export type ContentInventoryCatalogResponse = z.infer<typeof ContentInventoryCat
 export type ContentInventoryMaterialResponse = z.infer<typeof ContentInventoryMaterialResponseSchema>;
 export type ContentInventoryBindingRequest = z.input<typeof ContentInventoryBindingRequestSchema>;
 export type ContentInventoryBindingResponse = z.infer<typeof ContentInventoryBindingResponseSchema>;
+export type ContentEvidenceReadinessBlocker = z.infer<
+  typeof ContentEvidenceReadinessBlockerSchema
+>;
+export type ContentEvidenceAuthoringInventoryReceiptReadiness = z.infer<
+  typeof ContentEvidenceAuthoringInventoryReceiptReadinessSchema
+>;
+export type ContentEvidenceAcquisitionReadiness = z.infer<
+  typeof ContentEvidenceAcquisitionReadinessSchema
+>;
+export type ContentEvidenceResearchProposalReadiness = z.infer<
+  typeof ContentEvidenceResearchProposalReadinessSchema
+>;
+export type ContentEvidenceIdentityReadiness = z.infer<
+  typeof ContentEvidenceIdentityReadinessSchema
+>;
+export type ContentEvidenceServiceCardReadiness = z.infer<
+  typeof ContentEvidenceServiceCardReadinessSchema
+>;
+export type ContentEvidencePromotionReadiness = z.infer<
+  typeof ContentEvidencePromotionReadinessSchema
+>;
+export type ContentEvidenceReadiness = z.infer<typeof ContentEvidenceReadinessSchema>;
+export type ContentEvidenceReadinessSummary = z.infer<
+  typeof ContentEvidenceReadinessSummarySchema
+>;
 export type ContentWorkItemPreflightResponse = z.infer<
   typeof ContentWorkItemPreflightResponseSchema
 >;

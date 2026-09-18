@@ -7,6 +7,7 @@ import {
   MetricFactSchema
 } from "./connectors";
 import { TacticalQueueItemSchema } from "./marketing";
+import { DiagnosticDataReadinessSchema } from "./diagnostic_readiness";
 
 export const MerchantDiagnosticSectionSchema = z.object({
   id: z.string(),
@@ -281,6 +282,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
   connector_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   latest_refresh_status_label: z.string().nullable().optional(),
   live_data_available: z.boolean(),
@@ -303,5 +305,4 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
-
 

@@ -19,6 +19,7 @@ from wilq.content.drafts.initial_draft_pipeline import (
     InitialDraftRunMetadata,
     generate_initial_draft,
 )
+from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_draft_run import (
     transition_initial_draft_run_if_status,
 )
@@ -61,8 +62,7 @@ from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore
 
 _NewPagePrePersistResult = (
-    tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace]
-    | ContentInitialDraftResponse
+    tuple[ContentInitialDraftModelOutput, ContentCodexRuntimeTrace] | ContentInitialDraftResponse
 )
 
 _NEW_PAGE_INITIAL_DRAFT_TURN_GOAL = InitialDraftTurnGoal(
@@ -136,9 +136,7 @@ def generate_new_page_initial_draft(
                 run_id_prefix="codex_content_new_page_draft_",
                 hook="content_new_page_initial_draft",
             ),
-            output_blocker=lambda candidate: _output_blocker(
-                planning_input, proposal, candidate
-            ),
+            output_blocker=lambda candidate: _output_blocker(planning_input, proposal, candidate),
             response=lambda *, status, blocker, run, runtime: _blocked(
                 workspace,
                 proposal,
@@ -233,6 +231,7 @@ def _persist_new_page_initial_draft(
         work_item_id=foundation.work_item_id,
         proposal_id=proposal.proposal_id,
         run_id=run.id,
+        **initial_draft_packet_fields(proposal=proposal, revision=result.revision),
         revision=result.revision,
         runtime=runtime,
         safe_next_step="Przeczytaj dokładną rewizję i zapisz decyzję człowieka.",
@@ -373,6 +372,7 @@ def _blocked(
         work_item_id=workspace.work_item_id,
         proposal_id=proposal.proposal_id,
         run_id=run_id,
+        **initial_draft_packet_fields(proposal=proposal),
         runtime=runtime or ContentCodexRuntimeTrace(status="not_started"),
         blockers=[effective_blocker],
         safe_next_step=next_step,

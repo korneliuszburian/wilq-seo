@@ -117,6 +117,8 @@ describe("ContentReusableProductionPanel", () => {
 
     const blocker = await screen.findByTestId("content-classified-production-blocker");
     expect(blocker).toHaveTextContent(safeStep);
+    expect(screen.getByTestId("content-s1-identity-readiness")).toHaveTextContent("Tożsamość S1: niegotowa");
+    expect(screen.getByTestId("content-s1-identity-readiness")).toHaveTextContent("S1 nie uruchamia generowania treści.");
     expect(screen.queryByTestId("content-reusable-production-panel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /przygotuj/i })).not.toBeInTheDocument();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
@@ -208,11 +210,12 @@ function reuseSelectedWorkspace(documentStatus: "ready" | "blocked" = "ready") {
 
   return ContentSelectedWorkspaceSchema.parse({
     response_type: "content_selected_workspace",
-    contract_version: "content_selected_workspace_v2",
+    contract_version: "content_selected_workspace_v3",
     status: "ready",
     work_item_id: currentWorkItemId,
     requested_work_item_id: retainedWorkItemId,
     production_decision: decision,
+    identity_readiness: { status: "missing", binding_id: null, reason_pl: "Brakuje S1.", safe_next_step_pl: "Zarejestruj S1.", generation_allowed: false },
     operator_journey: operatorJourney(),
     workspace: currentWorkspace(reason),
     reason,
@@ -235,7 +238,7 @@ function guardedSelectedWorkspace(decision: "refresh" | "write" | "blocked") {
 
   return ContentSelectedWorkspaceSchema.parse({
     response_type: "content_selected_workspace",
-    contract_version: "content_selected_workspace_v2",
+    contract_version: "content_selected_workspace_v3",
     status: "ready",
     work_item_id: currentWorkItemId,
     requested_work_item_id: currentWorkItemId,
@@ -249,6 +252,7 @@ function guardedSelectedWorkspace(decision: "refresh" | "write" | "blocked") {
       }),
       blockers
     },
+    identity_readiness: { status: "missing", binding_id: null, reason_pl: "Brakuje S1.", safe_next_step_pl: "Zarejestruj S1.", generation_allowed: false },
     operator_journey: operatorJourney(),
     workspace: currentWorkspace(reason),
     reason,

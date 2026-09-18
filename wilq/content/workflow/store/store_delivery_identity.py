@@ -142,6 +142,33 @@ class ContentDeliveryIdentityStoreMixin:
             ).fetchone()
         return None if row is None else binding_from_row(row)
 
+    def list_content_delivery_identity_bindings(self) -> list[ContentDeliveryIdentityBinding]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM content_delivery_identity_bindings "
+                "ORDER BY canonical_path, recorded_at, binding_id"
+            ).fetchall()
+        return [binding_from_row(row) for row in rows]
+
+    def list_content_delivery_identity_current_projections(
+        self,
+    ) -> list[ContentDeliveryIdentityCurrentProjection]:
+        with self._connect() as connection:
+            latest = load_latest_production_classification_from_connection(connection)
+            rows = connection.execute(
+                "SELECT * FROM content_delivery_identity_bindings "
+                "ORDER BY canonical_path, recorded_at, binding_id"
+            ).fetchall()
+            assessed_at = datetime.now(UTC)
+            return [
+                build_content_delivery_identity_current_projection(
+                    binding_from_row(row),
+                    _classification_lookup_for_binding(latest, binding_from_row(row)),
+                    assessed_at=assessed_at,
+                )
+                for row in rows
+            ]
+
     def load_content_delivery_identity_record(
         self, binding_id: str
     ) -> ContentDeliveryIdentityRecordResult | None:

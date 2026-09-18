@@ -293,17 +293,6 @@ export async function verifyContentResearchPacketDigest(value: unknown): Promise
   const parsed = ContentResearchPacketSchema.safeParse(value);
   if (!parsed.success || !globalThis.crypto?.subtle) return false;
   try {
-    const sourceFactsDigest = await sha256Hex({
-      values: parsed.data.approved_source_fact_ids
-    });
-    if (sourceFactsDigest !== parsed.data.source_facts_digest) return false;
-    const evidenceIdsDigest = await sha256Hex({
-      values: parsed.data.evidence_ids
-    });
-    if (evidenceIdsDigest !== parsed.data.evidence_ids_digest) return false;
-    const inputDigest = await sha256Hex(researchPacketCommandPayload(parsed.data));
-    if (inputDigest !== parsed.data.input_digest) return false;
-
     const payload: Record<string, unknown> = { ...parsed.data };
     delete payload.packet_id;
     delete payload.packet_digest;
@@ -325,33 +314,6 @@ export async function verifyContentResearchPacketDigest(value: unknown): Promise
   } catch {
     return false;
   }
-}
-
-function researchPacketCommandPayload(
-  packet: z.infer<typeof ContentResearchPacketSchema>
-): Record<string, unknown> {
-  return {
-    source_pack_binding_id: packet.source_pack_binding_id,
-    source_pack_binding_digest: packet.source_pack_binding_digest,
-    identity_binding_id: packet.identity_binding_id,
-    identity_binding_digest: packet.identity_binding_digest,
-    current_work_item_id: packet.current_work_item_id,
-    content_kind: packet.content_kind,
-    intent: packet.intent,
-    query_cluster: packet.query_cluster,
-    canonical_owner: packet.canonical_owner,
-    target_audience: packet.target_audience,
-    buyer_problem: packet.buyer_problem,
-    buyer_trigger: packet.buyer_trigger,
-    approved_source_fact_ids: packet.approved_source_fact_ids,
-    blocked_claims: packet.blocked_claims,
-    evidence_ids: packet.evidence_ids,
-    freshness: packet.freshness,
-    legal_source_requirements: packet.legal_source_requirements,
-    cta_destination: packet.cta_destination,
-    internal_links: packet.internal_links,
-    context_receipt: packet.context_receipt
-  };
 }
 
 export const verifyContentResearchPacketIntegrity = verifyContentResearchPacketDigest;

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Literal
+
 from wilq.connectors.registry import list_connector_statuses
 from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.workflow.evidence_acquisition_snapshot import (
+    current_page_receipt_is_fresh,
+)
 from wilq.operator_labels import source_connector_labels
-from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState
+from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState, utc_now
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+
+if TYPE_CHECKING:
+    from wilq.content.workflow.evidence_acquisition_coordinator import EvidenceAcquisitionRun
 
 METRIC_EVIDENCE_CONNECTORS = (
     "google_ads",
@@ -57,7 +66,11 @@ def list_evidence() -> list[Evidence]:
     refresh_evidence = [
         _refresh_run_evidence(run) for run in local_state_store().list_connector_refresh_runs()
     ]
-    known_evidence_ids = {evidence.id for evidence in [*connector_evidence, *refresh_evidence]}
+    acquisition_evidence = _evidence_acquisition_evidence()
+    known_evidence_ids = {
+        evidence.id
+        for evidence in [*connector_evidence, *refresh_evidence, *acquisition_evidence]
+    }
     metric_evidence = [
         evidence for evidence in _metric_fact_evidence() if evidence.id not in known_evidence_ids
     ]
@@ -66,6 +79,7 @@ def list_evidence() -> list[Evidence]:
         *service_profile_evidence,
         *connector_evidence,
         *refresh_evidence,
+        *acquisition_evidence,
         *metric_evidence,
         *regulatory_evidence,
     ]
@@ -110,6 +124,9 @@ def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
         if evidence_id not in requested_id_set:
             continue
         evidence_by_id[evidence_id] = _refresh_run_evidence(run)
+
+    for evidence in _evidence_acquisition_evidence_for_ids(requested_id_set):
+        evidence_by_id.setdefault(evidence.id, evidence)
 
     missing_metric_evidence_ids = [
         evidence_id for evidence_id in requested_ids if evidence_id not in evidence_by_id
@@ -165,6 +182,64 @@ def _official_regulatory_source_fact_evidence() -> list[Evidence]:
 def get_evidence(evidence_id: str) -> Evidence | None:
     evidence = list_evidence_by_ids([evidence_id])
     return evidence[0] if evidence else None
+
+
+def _evidence_acquisition_evidence() -> list[Evidence]:
+    from wilq.content.workflow.store.store import content_workflow_store
+
+    runs = content_workflow_store().list_evidence_acquisition_runs()
+    return _evidence_acquisition_evidence_for_runs(runs)
+
+
+def _evidence_acquisition_evidence_for_ids(evidence_ids: set[str]) -> list[Evidence]:
+    if not any(value.startswith("ev_content_current_page_") for value in evidence_ids):
+        return []
+    from wilq.content.workflow.store.store import content_workflow_store
+
+    return _evidence_acquisition_evidence_for_runs(
+        content_workflow_store().list_evidence_acquisition_runs(), evidence_ids=evidence_ids
+    )
+
+
+def _evidence_acquisition_evidence_for_runs(
+    runs: Sequence[EvidenceAcquisitionRun],
+    *,
+    evidence_ids: set[str] | None = None,
+) -> list[Evidence]:
+    now = utc_now()
+    projected: list[Evidence] = []
+    for run in runs:
+        observation = getattr(run, "observation", None)
+        if observation is None:
+            continue
+        for evidence_id in observation.evidence_ids:
+            if evidence_ids is not None and evidence_id not in evidence_ids:
+                continue
+            freshness: Literal["fresh", "stale"] = (
+                "fresh" if current_page_receipt_is_fresh(observation, now=now) else "stale"
+            )
+            projected.append(
+                Evidence(
+                    id=evidence_id,
+                    source_connector=observation.source_connectors[0],
+                    source_type="current_page_observation",
+                    source_id=observation.observation_id,
+                    source_url=observation.source_url,
+                    collected_at=observation.read_at,
+                    freshness=FreshnessState(
+                        state=freshness,
+                        last_success_at=observation.read_at,
+                        checked_at=now,
+                        notes=(
+                            "Exact public-page observation; body retained only by digest, "
+                            "with a bounded sanitized excerpt."
+                        ),
+                    ),
+                    summary=observation.sanitized_excerpt,
+                    raw_ref=f"content_evidence_acquisition_runs:{run.run_id}",
+                )
+            )
+    return projected
 
 
 def _service_profile_source_facts_evidence() -> Evidence:

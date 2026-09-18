@@ -8,7 +8,18 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_initial_draft
+from tests.content.initial_draft_authority_fakes import ready_store
 from wilq.content.drafts import initial_draft_queue
+from wilq.content.drafts.initial_draft_authority import (
+    InitialDraftAuthorityBlocked,
+    InitialDraftAuthorityConflict,
+    StatusRead,
+)
+from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftBlocker,
+    ContentInitialDraftResponse,
+)
+from wilq.content.workflow.decisions.production import WAVE0_PRODUCTION_ACCEPTANCE_POLICY
 from wilq.schemas import CodexRun
 
 
@@ -26,6 +37,187 @@ def test_legacy_completed_run_requires_exact_revision_lineage() -> None:
     assert content_initial_draft._legacy_run_matches_revision(run, proposal, revision)
     revision.proposal_metadata.codex_run_id = "other-run"
     assert not content_initial_draft._legacy_run_matches_revision(run, proposal, revision)
+
+
+def test_status_reads_authorized_refresh_for_exact_current_preparation_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolution = _blocked_status_resolution(
+        classification_decision="blocked",
+        source_codes=("current_content_binding_missing",),
+    )
+    reader_response = _refresh_reader_response()
+    calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_canonical_initial_draft_authority_resolver",
+        lambda *_args: resolution,
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "read_authorized_refresh_initial_draft_status",
+        lambda **kwargs: calls.append(kwargs) or reader_response,
+    )
+
+    result = content_initial_draft._read_initial_draft_status(
+        "current",
+        refresh_authority_factory=lambda: object(),  # type: ignore[return-value]
+    )
+
+    assert result is reader_response
+    assert len(calls) == 1
+
+
+def test_status_preserves_exact_current_preparation_guard_when_refresh_read_is_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolution = _blocked_status_resolution(
+        classification_decision="blocked",
+        source_codes=("current_content_binding_missing",),
+    )
+    calls = 0
+
+    def reader(**_kwargs: object) -> None:
+        nonlocal calls
+        calls += 1
+        return None
+
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_canonical_initial_draft_authority_resolver",
+        lambda *_args: resolution,
+    )
+    monkeypatch.setattr(
+        content_initial_draft, "read_authorized_refresh_initial_draft_status", reader
+    )
+
+    result = content_initial_draft._read_initial_draft_status(
+        "current",
+        refresh_authority_factory=lambda: object(),  # type: ignore[return-value]
+    )
+
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "production_generation_disabled"
+    assert calls == 1
+
+
+@pytest.mark.parametrize(
+    ("classification_decision", "source_codes"),
+    [
+        ("blocked", ("current_content_binding_missing", "additional")),
+        ("blocked", ("different",)),
+        ("write", ("current_content_binding_missing",)),
+    ],
+)
+def test_status_does_not_read_refresh_for_other_blocked_or_write_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    classification_decision: str,
+    source_codes: tuple[str, ...],
+) -> None:
+    resolution = _blocked_status_resolution(
+        classification_decision=classification_decision,
+        source_codes=source_codes,
+    )
+    calls = 0
+
+    def reader(**_kwargs: object) -> None:
+        nonlocal calls
+        calls += 1
+        return None
+
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_canonical_initial_draft_authority_resolver",
+        lambda *_args: resolution,
+    )
+    monkeypatch.setattr(
+        content_initial_draft, "read_authorized_refresh_initial_draft_status", reader
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_canonical_refresh_preparation_authority",
+        lambda: (_ for _ in ()).throw(AssertionError("refresh reader must not be built")),
+    )
+
+    result = content_initial_draft._read_initial_draft_status("current")
+
+    assert result.status == "blocked"
+    assert result.blockers[0].code == "production_generation_disabled"
+    assert calls == 0
+
+
+def test_status_does_not_read_refresh_for_conflict_or_reuse(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    store = ready_store(tmp_path / "status-reuse.sqlite3")
+    reused = store.resolve_initial_draft_authority(
+        WAVE0_PRODUCTION_ACCEPTANCE_POLICY.protected_binding.current_work_item_id,
+        StatusRead(),
+    )
+    assert reused.status == "reused"
+    conflict = InitialDraftAuthorityConflict(
+        requested_work_item_id="conflict",
+        code="production_classification_digest_required",
+    )
+    calls = 0
+
+    def reader(**_kwargs: object) -> None:
+        nonlocal calls
+        calls += 1
+        return None
+
+    monkeypatch.setattr(
+        content_initial_draft, "read_authorized_refresh_initial_draft_status", reader
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "_canonical_refresh_preparation_authority",
+        lambda: (_ for _ in ()).throw(AssertionError("refresh reader must not be built")),
+    )
+    for resolution in (reused, conflict):
+        monkeypatch.setattr(
+            content_initial_draft,
+            "_canonical_initial_draft_authority_resolver",
+            lambda *_args, resolution=resolution: resolution,
+        )
+        result = content_initial_draft._read_initial_draft_status("current")
+        assert result.status in {"reused", "conflict"}
+    assert calls == 0
+
+
+def _blocked_status_resolution(
+    *,
+    classification_decision: str,
+    source_codes: tuple[str, ...],
+) -> InitialDraftAuthorityBlocked:
+    return InitialDraftAuthorityBlocked(
+        requested_work_item_id="current",
+        code="production_generation_disabled",
+        reason_pl="blocked",
+        safe_next_step_pl="next",
+        source_codes=source_codes,
+        classification_decision=classification_decision,  # type: ignore[arg-type]
+    )
+
+
+def _refresh_reader_response() -> ContentInitialDraftResponse:
+    return ContentInitialDraftResponse(
+        status="generating",
+        work_item_id="current",
+        proposal_id="proposal",
+        run_id="run",
+        blockers=[
+            ContentInitialDraftBlocker(
+                code="generation_in_progress",
+                label="generating",
+                reason="generating",
+                next_step="next",
+            )
+        ],
+        safe_next_step="reader",
+    )
 
 
 def test_canonical_revision_run_precedes_later_retry(monkeypatch) -> None:

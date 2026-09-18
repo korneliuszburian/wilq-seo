@@ -2624,6 +2624,46 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "competitor_page" not in json.dumps(context_payload, ensure_ascii=False)
 
 
+def test_ahrefs_diagnostics_does_not_present_persisted_stale_facts_as_current(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_stale_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_stale_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    stale_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_stale_readiness_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=datetime.now(UTC) - timedelta(hours=72),
+        evidence_ids=["ev_refresh_ahrefs_stale_readiness_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        summary="Ahrefs stale diagnostics fixture with persisted facts.",
+    )
+    local_state_store().save_connector_refresh_run(stale_run)
+    metric_store().save_connector_refresh_metrics(
+        stale_run,
+        detailed_facts=[VendorMetricFact("domain_rating", 42)],
+    )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["connector"]["freshness"]["state"] == "stale"
+    assert payload["authority_fact_count"] == 1
+    readiness = payload["data_readiness"]
+    assert readiness["state"] == "refresh_available"
+    assert readiness["factual_metric_count"] == 0
+    assert readiness["factual_metrics"] == []
+    assert readiness["latest_refresh_id"] == stale_run.id
+    assert "ev_refresh_ahrefs_stale_readiness_test" in readiness["evidence_ids"]
+
+
 def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

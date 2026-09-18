@@ -85,6 +85,7 @@ function ProductionAwareDocumentWorkspace({
                 leadingPanel={<ContentClassifiedProductionBlockerPanel
                   reason={productionDecision.reusable_document.reason_pl}
                   safeNextStep={productionDecision.reusable_document.safe_next_step_pl}
+                  identityReadiness={selected.identity_readiness}
                 />}
               />;
             default:
@@ -101,6 +102,7 @@ function ProductionAwareDocumentWorkspace({
             leadingPanel={<ContentClassifiedProductionBlockerPanel
               reason={productionDecision.reason_pl}
               safeNextStep={productionDecision.safe_next_step_pl}
+              identityReadiness={selected.identity_readiness}
             />}
           />;
         default:

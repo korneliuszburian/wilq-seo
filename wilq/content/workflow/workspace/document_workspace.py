@@ -263,7 +263,11 @@ def _persisted_material_from_item(
         acf_field_names=item.wordpress_acf_field_names,
         acf_section_headings=item.wordpress_acf_section_headings,
         extraction_region=item.wordpress_content_extraction_region,
-        material_confidence=item.wordpress_content_material_confidence,
+        evidence_id=None,
+        inventory_observation_evidence_id=None,
+        material_observation_evidence_id=None,
+        material_lineage_status="inventory_selection_only",
+        material_confidence="review_required",
         source_field_lineage=item.wordpress_content_source_field_lineage,
     )
 
@@ -356,7 +360,7 @@ def _source_snapshot(
             faq_status="unavailable",
             cta_status="unavailable",
             caveats=[context.source_public.reason],
-            evidence_ids=list(context.source_public.material.evidence_ids),
+            evidence_ids=[],
         )
     headings = material.acf_section_headings or material.section_headings
     text = (material.content_text or "").strip()
@@ -405,15 +409,11 @@ def _source_snapshot(
                 else ["Aktualność materiału sprawdź w ocenie świeżości źródeł dla tej pracy."]
             ),
         ],
-        evidence_ids=list(
-            dict.fromkeys(
-                value
-                for value in [
-                    material.evidence_id,
-                    *context.source_public.material.evidence_ids,
-                ]
-                if value
-            )
+        evidence_ids=(
+            [material.material_observation_evidence_id]
+            if material.material_lineage_status == "inventory_observation_bound"
+            and material.material_observation_evidence_id is not None
+            else []
         ),
     )
 

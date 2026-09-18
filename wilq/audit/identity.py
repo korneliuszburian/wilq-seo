@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-LocalAuditTrustLevel = Literal["local_unverified"]
+LocalAuditTrustLevel = Literal["local_unverified", "local_confirmed"]
 
 
 @dataclass(frozen=True, slots=True)

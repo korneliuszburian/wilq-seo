@@ -17,6 +17,7 @@ import {
   getGa4Diagnostics
 } from "../lib/api";
 import { BlockerNotice } from "../components/OperatorPrimitives";
+import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
 import {
   CompactStatTile,
   DashboardToolbar,
@@ -98,6 +99,8 @@ export function AdsDoctorSurface() {
         description="Tu sprawdzasz Ads, GA4 i Demand Gen bez skracania bramek pomiaru. WILQ pokazuje tylko to, co wynika z aktualnych dowodów."
         dateLabel={dateLabel(data.generated_at ?? ga4Data?.generated_at)}
       />
+
+      <DiagnosticDataReadinessPanel readiness={data.data_readiness} />
 
       <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <CompactStatTile

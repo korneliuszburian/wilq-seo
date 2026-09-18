@@ -79,7 +79,9 @@ from wilq.actions.audit_store import (
 from wilq.actions.audit_store import (
     persisted_mutation_audits_for_action as _persisted_mutation_audits_for_action,
 )
-from wilq.actions.authority_audit_context import stamp_authority_audit_context
+from wilq.actions.authority_audit_context import (
+    stamp_authority_audit_context,
+)
 from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
 from wilq.actions.content_refresh import (
     content_contract_label,
@@ -236,6 +238,10 @@ from wilq.actions.wordpress_preview import (
     wordpress_draft_payload_preview_card,
 )
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
+from wilq.audit.trusted_local_confirmation import (
+    TrustedLocalPrincipalReceipt,
+    trusted_local_confirmation_authority,
+)
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.registry import get_connector_status
 from wilq.content.workflow.current_disposition_authority import (
@@ -245,6 +251,15 @@ from wilq.content.workflow.current_disposition_authority import (
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
     execute_delivery_identity_authority,
+)
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+    CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
+    ContentResearchFactPromotionExecutionContext,
+    ContentResearchFactPromotionSnapshot,
+    execute_research_fact_promotion,
+    promotion_action_payload_digest,
+    research_promotion_execution_context_digest,
 )
 from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
@@ -342,6 +357,10 @@ def record_action_review(
     request: ActionReviewRequest,
 ) -> ActionReviewResult:
     submitted_actor_label = request.reviewed_by
+    trusted_principal_receipt = _trusted_promotion_principal_receipt(
+        action,
+        request.trusted_local_confirmation_grant,
+    )
     bound_request = request.model_copy(
         update={"reviewed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
     )
@@ -355,7 +374,11 @@ def record_action_review(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
-    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _stamp_local_audit_identity(
+        result.audit_event,
+        submitted_actor_label,
+        trusted_principal_receipt=trusted_principal_receipt,
+    )
     stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
@@ -409,6 +432,10 @@ def confirm_action(
     request: ActionConfirmRequest,
 ) -> ActionConfirmResult:
     submitted_actor_label = request.confirmed_by
+    trusted_principal_receipt = _trusted_promotion_principal_receipt(
+        action,
+        request.trusted_local_confirmation_grant,
+    )
     bound_request = request.model_copy(
         update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
     )
@@ -430,7 +457,11 @@ def confirm_action(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
-    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _stamp_local_audit_identity(
+        result.audit_event,
+        submitted_actor_label,
+        trusted_principal_receipt=trusted_principal_receipt,
+    )
     stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
@@ -454,6 +485,10 @@ def impact_check_action(
     request: ActionImpactCheckRequest,
 ) -> ActionImpactCheckResult:
     submitted_actor_label = request.checked_by
+    trusted_principal_receipt = _trusted_promotion_principal_receipt(
+        action,
+        request.trusted_local_confirmation_grant,
+    )
     bound_request = request.model_copy(
         update={"checked_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id}
     )
@@ -469,7 +504,11 @@ def impact_check_action(
         audit_event_label=_audit_event_with_operator_label,
         review_gate_labels=_review_gate_with_operator_labels,
     )
-    _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+    _stamp_local_audit_identity(
+        result.audit_event,
+        submitted_actor_label,
+        trusted_principal_receipt=trusted_principal_receipt,
+    )
     stamp_authority_audit_context(action, result.audit_event)
     _persist_action_audit(result.audit_event)
     return result
@@ -480,6 +519,10 @@ def apply_action(
     request: ActionApplyRequest | None = None,
 ) -> ActionApplyResult:
     submitted_actor_label = None if request is None else request.confirmed_by
+    trusted_principal_receipt = _trusted_promotion_principal_receipt(
+        action,
+        None if request is None else request.trusted_local_confirmation_grant,
+    )
     bound_request = (
         None
         if request is None
@@ -487,9 +530,19 @@ def apply_action(
         if submitted_actor_label is None
         else request.model_copy(update={"confirmed_by": LOCAL_PILOT_AUDIT_IDENTITY.principal_id})
     )
-    result = apply_action_lifecycle(action, bound_request, dependencies=_apply_dependencies())
+    result = apply_action_lifecycle(
+        action,
+        bound_request,
+        dependencies=_apply_dependencies(
+            trusted_principal_receipt=trusted_principal_receipt,
+        ),
+    )
     if submitted_actor_label is not None:
-        _stamp_local_audit_identity(result.audit_event, submitted_actor_label)
+        _stamp_local_audit_identity(
+            result.audit_event,
+            submitted_actor_label,
+            trusted_principal_receipt=trusted_principal_receipt,
+        )
         result.mutation_audit.principal_id = result.audit_event.principal_id
         result.mutation_audit.workspace_id = result.audit_event.workspace_id
         result.mutation_audit.trust_level = result.audit_event.trust_level
@@ -499,13 +552,23 @@ def apply_action(
     return result
 
 
-def _apply_dependencies() -> ApplyDependencies:
+def _apply_dependencies(
+    *,
+    trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
+) -> ApplyDependencies:
     workflow_store = action_content_workflow_store()
     return ApplyDependencies(
         review_gate=_action_review_gate,
         wordpress_apply_capability=wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
-        execute_mutation_adapter=_execute_supported_mutation_adapter,
+        execute_mutation_adapter=lambda action, mutation_adapter, wordpress_capability: (
+            _execute_supported_mutation_adapter(
+                action,
+                mutation_adapter,
+                wordpress_capability,
+                trusted_principal_receipt=trusted_principal_receipt,
+            )
+        ),
         connector_status=get_connector_status,
         impact_status=_impact_status_from_event,
         wordpress_apply_claim=workflow_store.claim_wordpress_revision_apply,
@@ -519,12 +582,36 @@ def _execute_supported_mutation_adapter(
     action: ActionObject,
     mutation_adapter: str,
     wordpress_capability: Any = None,
+    *,
+    trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
     if mutation_adapter == SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER:
         return execute_content_source_fact_authority(
             action,
             store=action_content_workflow_store(),
             audit_events=action.audit_events,
+        )
+    if mutation_adapter == CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER:
+        workflow_store = action_content_workflow_store()
+        audit_store = local_state_store()
+        promotion_store_identity = str(workflow_store.path)
+        audit_store_identity = str(audit_store.path)
+        return execute_research_fact_promotion(
+            action,
+            context=ContentResearchFactPromotionExecutionContext(
+                promotion_store=workflow_store,
+                persisted_audit_events=tuple(
+                    audit_store.list_audit_events(action_id=action.id)
+                ),
+                promotion_store_identity=promotion_store_identity,
+                audit_store_identity=audit_store_identity,
+                context_digest=research_promotion_execution_context_digest(
+                    action.id,
+                    promotion_store_identity=promotion_store_identity,
+                    audit_store_identity=audit_store_identity,
+                ),
+                trusted_principal_receipt=trusted_principal_receipt,
+            ),
         )
     if mutation_adapter == CURRENT_DISPOSITION_MUTATION_ADAPTER:
         return execute_current_disposition_authority(
@@ -562,12 +649,62 @@ def _persist_action_audit_pair(
 def _stamp_local_audit_identity(
     event: AuditEvent,
     submitted_actor_label: str | None,
+    *,
+    trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
 ) -> None:
-    event.actor = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
-    event.principal_id = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
-    event.workspace_id = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
-    event.trust_level = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
+    if trusted_principal_receipt is None:
+        event.actor = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+        event.principal_id = LOCAL_PILOT_AUDIT_IDENTITY.principal_id
+        event.workspace_id = LOCAL_PILOT_AUDIT_IDENTITY.workspace_id
+        event.trust_level = LOCAL_PILOT_AUDIT_IDENTITY.trust_level
+    else:
+        event.actor = trusted_principal_receipt.principal_id
+        event.principal_id = trusted_principal_receipt.principal_id
+        event.workspace_id = trusted_principal_receipt.workspace_id
+        event.trust_level = trusted_principal_receipt.trust_level
+        event.details = {
+            **event.details,
+            "trusted_local_principal_receipt_id": trusted_principal_receipt.receipt_id,
+            "trusted_local_confirmation_grant_digest": trusted_principal_receipt.grant_digest,
+        }
     event.submitted_actor_label = submitted_actor_label
+
+
+def _trusted_promotion_principal_receipt(
+    action: ActionObject,
+    grant_token: str | None,
+) -> TrustedLocalPrincipalReceipt | None:
+    if action.payload.get("action_type") != CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
+        return None
+    try:
+        snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+            action.payload.get("promotion_snapshot", {})
+        )
+    except Exception:
+        return None
+    authority = trusted_local_confirmation_authority()
+    binding = {
+        "action_id": action.id,
+        "payload_digest": promotion_action_payload_digest(action),
+        "snapshot_digest": snapshot.context_digest,
+        "workspace_id": LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+    }
+    if grant_token is not None:
+        return authority.consume(
+            grant_token,
+            action_id=action.id,
+            payload_digest=binding["payload_digest"],
+            snapshot_digest=snapshot.context_digest,
+            workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+            principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+        )
+    return authority.receipt_for(
+        action_id=action.id,
+        payload_digest=binding["payload_digest"],
+        snapshot_digest=snapshot.context_digest,
+        workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+        principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+    )
 
 
 def mutation_readiness_action(action: ActionObject) -> ActionMutationReadinessResponse:
@@ -838,13 +975,21 @@ def _operator_audit_summary_text(summary: str) -> str:
 
 
 def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:
-    if payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE:
-        snapshot = payload.get("source_fact_authority")
+    if payload.get("action_type") in {
+        CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+        SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+    }:
+        snapshot_key = (
+            "promotion_snapshot"
+            if payload.get("action_type") == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE
+            else "source_fact_authority"
+        )
+        snapshot = payload.get(snapshot_key)
         without_snapshot = {
-            key: value for key, value in payload.items() if key != "source_fact_authority"
+            key: value for key, value in payload.items() if key != snapshot_key
         }
         enriched = payload_with_operator_labels(without_snapshot)
-        enriched["source_fact_authority"] = snapshot
+        enriched[snapshot_key] = snapshot
         return enriched
     return payload_with_operator_labels(payload)
 

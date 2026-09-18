@@ -43,6 +43,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     validate_delivery_identity_authority_action_payload,
 )
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+    validate_research_fact_promotion_action_payload,
+)
 from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     validate_source_fact_authority_action_payload,
@@ -80,6 +84,10 @@ _LOCAL_ACTION_VALIDATORS: dict[
     SOURCE_FACT_AUTHORITY_ACTION_TYPE: (
         "Authority źródeł",
         validate_source_fact_authority_action_payload,
+    ),
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE: (
+        "Research promotion",
+        validate_research_fact_promotion_action_payload,
     ),
     CURRENT_DISPOSITION_ACTION_TYPE: (
         "Disposition treści",

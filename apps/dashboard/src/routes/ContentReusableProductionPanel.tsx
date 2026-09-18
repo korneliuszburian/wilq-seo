@@ -58,10 +58,12 @@ export function ContentReusableProductionPanel({
 
 export function ContentClassifiedProductionBlockerPanel({
   reason,
-  safeNextStep
+  safeNextStep,
+  identityReadiness
 }: {
   reason: string;
   safeNextStep: string;
+  identityReadiness?: ContentSelectedWorkspace["identity_readiness"];
 }) {
   return (
     <article
@@ -75,6 +77,12 @@ export function ContentClassifiedProductionBlockerPanel({
         Nie uruchamiam planowania ani generowania
       </h2>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-ink/75">{reason}</p>
+      {identityReadiness ? <div className="mt-4 rounded-xl border border-line bg-slate-50 p-4" data-testid="content-s1-identity-readiness">
+        <p className="text-sm font-semibold text-ink">Tożsamość S1: {identityReadiness.status === "bound" ? "związana" : "niegotowa"}</p>
+        <p className="mt-1 text-sm leading-6 text-ink/75">{identityReadiness.reason_pl}</p>
+        <p className="mt-1 text-sm leading-6 text-ink/75">{identityReadiness.safe_next_step_pl}</p>
+        <p className="mt-2 text-xs font-semibold text-slate-600">S1 nie uruchamia generowania treści.</p>
+      </div> : null}
       <div className="mt-4 rounded-xl border border-wait/25 bg-wait/5 p-4">
         <p className="text-sm font-semibold text-ink">Bezpieczny następny krok</p>
         <p className="mt-1 text-sm leading-6 text-ink/75">{safeNextStep}</p>

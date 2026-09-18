@@ -9,6 +9,9 @@ from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSIT
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+)
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -97,10 +100,7 @@ MUTATION_READINESS_BLOCKER_COPY: dict[str, tuple[str, str, str]] = {
             "Adapter nie może tworzyć wpisu z samego ActionObject; potrzebuje "
             "zatwierdzonej paczki treści."
         ),
-        (
-            "Przygotuj draft package z claim ledgerem, sekcjami i dowodami, "
-            "potem wróć do handoffu."
-        ),
+        ("Przygotuj draft package z claim ledgerem, sekcjami i dowodami, potem wróć do handoffu."),
     ),
     "wordpress_draft_target_content_ready": (
         "Target treści nie przeszedł jeszcze gotowości szkicu",
@@ -195,6 +195,7 @@ def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) ->
         action.payload.get("action_type")
         in {
             SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
             CURRENT_DISPOSITION_ACTION_TYPE,
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
         }

@@ -77,6 +77,7 @@ export type {
   ContentWorkItemLearningProposalResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
+  DiagnosticDataReadiness,
   DemandGenReadinessContract,
   Evidence,
   ExpertRule,

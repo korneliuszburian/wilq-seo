@@ -95,6 +95,21 @@ export const merchantDiagnostics = {
   latest_refresh_status_label: "zakończony",
   live_data_available: true,
   live_data_status_label: "metryki pliku produktowego dostępne",
+  data_readiness: {
+    state: "refresh_available",
+    state_label: "Dane wymagają odświeżenia",
+    reason:
+      "WILQ ma wcześniejszy odczyt, ale nie traktuje go jako bieżącej podstawy liczb ani rekomendacji.",
+    coverage_label: "Metryki z wcześniejszego odczytu nie są pokazane jako bieżące.",
+    refresh_allowed: true,
+    safe_next_step: "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy aktualnego stanu produktów.",
+    factual_metric_count: 0,
+    factual_metrics: [],
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    connector_id: "google_merchant_center",
+    connector_label: "Merchant Center",
+    latest_refresh_id: "refresh_google_merchant_center_test"
+  },
   product_count: 10900,
   issue_count: 23,
   freshness_assessment: {

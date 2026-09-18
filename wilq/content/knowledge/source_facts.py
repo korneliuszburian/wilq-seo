@@ -267,12 +267,17 @@ def ekologus_source_facts() -> tuple[ContentSourceFact, ...]:
         for fact in seed_facts
         if fact.source_id not in approved_private_source_ids | approved_public_source_ids
     )
-    return (
+    base_facts = (
         *active_seed_facts,
         *approved_private_facts,
         *approved_public_facts,
         *regulatory_source_review_store().approved_source_facts(),
     )
+    from wilq.content.workflow.research_promotion_registry import (
+        approved_research_promotion_facts,
+    )
+
+    return (*base_facts, *approved_research_promotion_facts(base_facts))
 
 
 def ekologus_source_fact_registry() -> ContentSourceFactRegistry:

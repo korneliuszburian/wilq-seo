@@ -8,6 +8,9 @@ from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSIT
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+)
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
@@ -118,6 +121,7 @@ def action_impact_check_blockers(
         or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_research_fact_promotion_action(action)
     ):
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
@@ -176,6 +180,7 @@ def action_apply_preflight_blockers(
         _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_research_fact_promotion_action(action)
     ):
         blockers.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
@@ -266,12 +271,20 @@ def _is_local_delivery_identity_authority_action(action: ActionObject) -> bool:
     )
 
 
+def _is_local_research_fact_promotion_action(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    )
+
+
 def _requires_approved_action_review(action: ActionObject) -> bool:
     return (
         _is_content_dev_draft_action(action)
         or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_research_fact_promotion_action(action)
     )
 
 

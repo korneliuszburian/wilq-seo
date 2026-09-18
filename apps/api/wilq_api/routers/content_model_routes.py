@@ -13,6 +13,9 @@ from apps.api.wilq_api.routers.content_current_disposition_authority import (
 from apps.api.wilq_api.routers.content_current_inventory_reconciliation import (
     register_content_current_inventory_reconciliation_route,
 )
+from apps.api.wilq_api.routers.content_current_verification import (
+    register_content_current_verification_routes,
+)
 from apps.api.wilq_api.routers.content_delivery_identity import (
     register_content_delivery_identity_routes,
 )
@@ -24,6 +27,9 @@ from apps.api.wilq_api.routers.content_dev_draft_cleanup import (
 )
 from apps.api.wilq_api.routers.content_editorial_integrity import (
     register_content_editorial_integrity_route,
+)
+from apps.api.wilq_api.routers.content_evidence_acquisition import (
+    register_content_evidence_acquisition_routes,
 )
 from apps.api.wilq_api.routers.content_independent_review import (
     register_content_independent_review_routes,
@@ -101,6 +107,8 @@ def register_content_model_routes(
     register_content_regulatory_source_review_routes(router)
     register_content_delivery_identity_routes(router)
     register_content_delivery_identity_authority_routes(router)
+    register_content_evidence_acquisition_routes(router)
+    register_content_current_verification_routes(router)
     register_content_current_inventory_reconciliation_route(router)
     register_content_current_disposition_authority_routes(router)
     register_content_source_pack_binding_routes(router)

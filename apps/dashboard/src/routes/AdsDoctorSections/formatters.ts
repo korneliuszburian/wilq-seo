@@ -1,4 +1,5 @@
 import type { AdsDiagnosticsResponse, DemandGenReadinessContract } from "../../lib/api";
+import { adsMissingDateLabel } from "../../lib/adsLabels";
 
 type AdsDecision = AdsDiagnosticsResponse["decision_queue"][number];
 
@@ -43,9 +44,9 @@ export function formatCost(totalCostMicros: number, currencyCode?: string | null
 }
 
 export function dateLabel(value?: string | null) {
-  if (!value) return "Dzisiaj";
+  if (!value) return adsMissingDateLabel;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Dzisiaj";
+  if (Number.isNaN(date.getTime())) return adsMissingDateLabel;
   return new Intl.DateTimeFormat("pl-PL", {
     day: "numeric",
     month: "long",

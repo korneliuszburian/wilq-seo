@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { DiagnosticDataReadiness } from "@wilq/shared-schemas";
 
+import { DiagnosticDataReadinessPanel } from "./DiagnosticDataReadinessPanel";
 import { BlockerNotice, LoadingBand } from "./OperatorPrimitives";
 
 export function DiagnosticPage<TData>({
@@ -9,6 +11,7 @@ export function DiagnosticPage<TData>({
   description,
   unavailableMessage,
   metrics,
+  readiness,
   children
 }: {
   query: UseQueryResult<TData>;
@@ -16,6 +19,7 @@ export function DiagnosticPage<TData>({
   description: string;
   unavailableMessage: string;
   metrics?: (data: TData) => ReactNode;
+  readiness?: (data: TData) => DiagnosticDataReadiness;
   children: (data: TData) => ReactNode;
 }) {
   if (query.isLoading) return <LoadingBand />;
@@ -28,6 +32,7 @@ export function DiagnosticPage<TData>({
       title={title}
       description={description}
       metrics={metrics ? metrics(query.data) : undefined}
+      readiness={readiness ? readiness(query.data) : undefined}
     >
       {children(query.data)}
     </DiagnosticSurfaceShell>
@@ -38,11 +43,13 @@ export function DiagnosticSurfaceShell({
   title,
   description,
   metrics,
+  readiness,
   children
 }: {
   title: string;
   description: string;
   metrics?: ReactNode;
+  readiness?: DiagnosticDataReadiness;
   children: ReactNode;
 }) {
   return (
@@ -56,6 +63,7 @@ export function DiagnosticSurfaceShell({
         </div>
         {metrics}
       </div>
+      {readiness ? <DiagnosticDataReadinessPanel readiness={readiness} /> : null}
       {children}
     </main>
   );

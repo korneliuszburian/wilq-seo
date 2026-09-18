@@ -10,6 +10,10 @@ from __future__ import annotations
 import sqlite3
 from typing import cast
 
+from wilq.content.workflow.research_promotion_authority import (
+    ContentResearchFactPromotionProposal,
+    ContentResearchFactPromotionReceipt,
+)
 from wilq.content.workflow.source_fact_authority import (
     ContentSourceFactAuthorityPreviewCommand,
     ContentSourceFactAuthorityProposal,
@@ -212,3 +216,130 @@ class ContentSourceFactAuthorityStoreMixin:
         )
         del source_fact_ids
         return receipts[-1] if receipts else None
+
+    def record_research_fact_promotion_proposal(
+        self, proposal: ContentResearchFactPromotionProposal
+    ) -> ContentResearchFactPromotionProposal:
+        accepted = ContentResearchFactPromotionProposal.model_validate_json(
+            proposal.model_dump_json(), strict=True
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_proposals "
+                "WHERE action_id = ?",
+                (accepted.action_id,),
+            ).fetchone()
+            if existing is not None:
+                return ContentResearchFactPromotionProposal.model_validate_json(
+                    cast(str, existing["payload_json"]), strict=True
+                )
+            connection.execute(
+                """
+                INSERT INTO content_research_fact_promotion_proposals (
+                  action_id, proposal_digest, snapshot_json, prepared_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    accepted.action_id,
+                    accepted.proposal_digest,
+                    model_json(accepted.snapshot),
+                    accepted.prepared_at.isoformat(),
+                    model_json(accepted),
+                ),
+            )
+        return accepted
+
+    def load_research_fact_promotion_proposal(
+        self, action_id: str
+    ) -> ContentResearchFactPromotionProposal | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_proposals "
+                "WHERE action_id = ?",
+                (action_id,),
+            ).fetchone()
+        return (
+            None
+            if row is None
+            else ContentResearchFactPromotionProposal.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
+        )
+
+    def record_research_fact_promotion_receipt(
+        self, receipt: ContentResearchFactPromotionReceipt
+    ) -> tuple[str, ContentResearchFactPromotionReceipt]:
+        accepted = ContentResearchFactPromotionReceipt.model_validate_json(
+            receipt.model_dump_json(), strict=True
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_receipts "
+                "WHERE action_id = ?",
+                (accepted.action_id,),
+            ).fetchone()
+            if existing is not None:
+                stored = ContentResearchFactPromotionReceipt.model_validate_json(
+                    cast(str, existing["payload_json"]), strict=True
+                )
+                if stored.action_payload_digest != accepted.action_payload_digest:
+                    return "conflict", stored
+                return "idempotent", stored
+            connection.execute(
+                """
+                INSERT INTO content_research_fact_promotion_receipts (
+                  receipt_id, receipt_digest, action_id, action_payload_digest,
+                  proposal_id, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    accepted.receipt_id,
+                    accepted.receipt_digest,
+                    accepted.action_id,
+                    accepted.action_payload_digest,
+                    accepted.snapshot.proposal_id,
+                    model_json(accepted),
+                ),
+            )
+        return "created", accepted
+
+    def load_research_fact_promotion_receipt(
+        self, action_id: str
+    ) -> ContentResearchFactPromotionReceipt | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_receipts "
+                "WHERE action_id = ?",
+                (action_id,),
+            ).fetchone()
+        return (
+            None
+            if row is None
+            else ContentResearchFactPromotionReceipt.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
+        )
+
+    def list_research_fact_promotion_receipts(
+        self,
+    ) -> list[ContentResearchFactPromotionReceipt]:
+        """Read valid immutable promotion receipts without turning bad rows into facts."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_receipts "
+                "ORDER BY action_id"
+            ).fetchall()
+        receipts: list[ContentResearchFactPromotionReceipt] = []
+        for row in rows:
+            try:
+                receipts.append(
+                    ContentResearchFactPromotionReceipt.model_validate_json(
+                        cast(str, row["payload_json"]), strict=True
+                    )
+                )
+            except Exception:
+                continue
+        return receipts

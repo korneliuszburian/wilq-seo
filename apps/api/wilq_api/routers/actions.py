@@ -20,6 +20,7 @@ from wilq.actions.service import (
     validate_action,
 )
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
+from wilq.audit.trusted_local_confirmation import TrustedLocalConfirmationError
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
 )
@@ -269,7 +270,13 @@ def _review_action_endpoint(
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = record_action_review(action, request)
+    try:
+        result = record_action_review(action, request)
+    except TrustedLocalConfirmationError as error:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": error.code, "message": str(error)},
+        ) from error
     clear_api_view_model_caches()
     return result
 
@@ -433,7 +440,13 @@ def _confirm_action_endpoint(
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = confirm_action(action, request)
+    try:
+        result = confirm_action(action, request)
+    except TrustedLocalConfirmationError as error:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": error.code, "message": str(error)},
+        ) from error
     clear_api_view_model_caches()
     return result
 
@@ -447,7 +460,13 @@ def _impact_check_action_endpoint(
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = impact_check_action(action, request)
+    try:
+        result = impact_check_action(action, request)
+    except TrustedLocalConfirmationError as error:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": error.code, "message": str(error)},
+        ) from error
     clear_api_view_model_caches()
     return result
 
@@ -481,7 +500,13 @@ def _apply_action_endpoint(
                 "external_write_attempted": False,
             },
         )
-    result = apply_action(action, request)
+    try:
+        result = apply_action(action, request)
+    except TrustedLocalConfirmationError as error:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": error.code, "message": str(error)},
+        ) from error
     clear_api_view_model_caches()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))

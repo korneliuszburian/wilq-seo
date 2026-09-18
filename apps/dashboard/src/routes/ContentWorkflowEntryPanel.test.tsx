@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, getContentNewPageTopicRecommendations, getContentRevisionPublicDeployment, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
+import { createContentNewPageDeliveryAction, createContentNewPageFoundation, createContentNewPageInitialDraft, createContentNewPagePlanningProposal, getContentNewPageBriefWorkspace, getContentNewPageCanonicalDocument, getContentNewPageDeliveryReadiness, getContentNewPagePlanningProposal, getContentNewPageTopicRecommendations, getContentRevisionPublicDeployment, refreshConnector, reviewContentNewPageRevision, type ContentDiagnosticsResponse, type ContentInventoryCatalogResponse, type ContentNewPageBriefWorkspace, type ContentNewPageCanonicalDocumentWorkspace, type ContentNewPagePlanningProposalWorkspace, type ContentWorkflowEntryResponse } from "../lib/api";
 import { ContentWorkflowEntryPanel } from "./ContentWorkflowEntryPanel";
 
 vi.mock("../lib/api", async (importOriginal) => {
@@ -40,6 +40,308 @@ const entry: ContentWorkflowEntryResponse = {
   search_results: [],
   browse_inventory_label: "Przeglądaj cały serwis"
 };
+
+const inventoryCatalogItem: ContentInventoryCatalogResponse["items"][number] = {
+  catalog_id: "catalog_coverage_test",
+  work_item_id: "content_work_item_coverage_test",
+  url: "https://www.ekologus.pl/coverage-test/",
+  path: "/coverage-test/",
+  title: "Strona testowa",
+  content_type: "page",
+  content_summary: "Strona testowa",
+  content_word_count: 120,
+  section_count: 0,
+  acf_section_count: 0,
+  acf_field_names: [],
+  acf_section_headings: [],
+  material_status: "content_summary",
+  source_connector: "wordpress_ekologus",
+  evidence_id: "ev_coverage_test",
+  collected_at: "2026-09-12T00:00:00Z",
+  metrics_status: "missing",
+  metrics_evidence_ids: [],
+  metrics_query_count: 0,
+  metrics_clicks: 0,
+  metrics_impressions: 0
+};
+
+const blockedEvidenceReadiness: NonNullable<ContentInventoryCatalogResponse["journal_readiness"]>["rows"][number]["content_evidence_readiness"] = {
+  status: "blocked",
+  status_label: "Zablokowane",
+  authoring_inventory_receipt: {
+    status: "missing",
+    receipt_id: null,
+    receipt_digest: null,
+    evidence_id: null,
+    collected_at: null,
+    freshness: "missing"
+  },
+  evidence_acquisition: {
+    recorded_status: "missing",
+    current_status: "missing",
+    run_id: null,
+    run_digest: null,
+    evidence_ids: [],
+    subject_kind: null,
+    subject_id: null,
+    freshness: "missing",
+    blockers: [],
+    safe_next_step: "Uruchom exact evidence acquisition."
+  },
+  research_proposal: {
+    status: "missing",
+    proposal_id: null,
+    proposal_digest: null,
+    acquisition_run_id: null,
+    review_required: false,
+    approved: false,
+    blockers: [],
+    safe_next_step: "Najpierw uzyskaj acquisition."
+  },
+  identity: {
+    status: "missing",
+    binding_id: null,
+    binding_digest: null,
+    blockers: [],
+    safe_next_step: "Zwiąż exact identity."
+  },
+  service_card: {
+    status: "missing",
+    card_id: null,
+    card_status: null,
+    evidence_ids: [],
+    source_connectors: [],
+    blockers: [{ code: "service_card_missing", reason: "Brak exact card.", evidence_ids: [], safe_next_step: "Zweryfikuj card." }],
+    safe_next_step: "Zweryfikuj card."
+  },
+  promotion: {
+    status: "blocked",
+    receipt_id: null,
+    source_fact_id: null,
+    blockers: [{ code: "promotion_identity_required", reason: "Brak identity.", evidence_ids: [], safe_next_step: "Zwiąż identity." }],
+    safe_next_step: "Zwiąż identity."
+  },
+  blockers: [{ code: "current_catalog_observation_missing", reason: "Brak obserwacji.", evidence_ids: [], safe_next_step: "Odśwież inventory." }],
+  generation_allowed: false,
+  safe_next_step: "Odśwież inventory."
+};
+
+const blockedEvidenceReadinessSummary: NonNullable<ContentInventoryCatalogResponse["journal_readiness"]>["content_evidence_readiness"] = {
+  total_count: 214,
+  blocked_count: 214,
+  review_required_count: 0,
+  ready_for_researcher_count: 0,
+  missing_count: 0,
+  authoring_receipt_current_count: 0,
+  authoring_receipt_stale_count: 0,
+  authoring_receipt_missing_count: 214,
+  acquisition_ready_count: 0,
+  acquisition_blocked_count: 0,
+  acquisition_missing_count: 214,
+  research_ready_count: 0,
+  research_blocked_count: 0,
+  research_missing_count: 214,
+  identity_exact_current_count: 0,
+  identity_blocked_count: 0,
+  identity_missing_count: 214,
+  service_card_approved_current_count: 0,
+  service_card_review_required_count: 0,
+  promotion_approved_current_count: 0,
+  generation_allowed: false
+};
+
+const homepageEvidenceReadiness: typeof blockedEvidenceReadiness = {
+  ...blockedEvidenceReadiness,
+  authoring_inventory_receipt: {
+    status: "current",
+    receipt_id: "content_authoring_inventory_home",
+    receipt_digest: "a".repeat(64),
+    evidence_id: "ev_wp_home",
+    collected_at: "2026-09-13T10:00:00Z",
+    freshness: "fresh"
+  },
+  evidence_acquisition: {
+    recorded_status: "ready_for_researcher",
+    current_status: "ready_for_researcher",
+    run_id: "content_evidence_acquisition_home",
+    run_digest: "b".repeat(64),
+    evidence_ids: ["ev_home_observation"],
+    subject_kind: "identity_binding",
+    subject_id: "content_delivery_identity_home",
+    freshness: "fresh",
+    blockers: [],
+    safe_next_step: "Przekaż exact observation do researchera."
+  },
+  research_proposal: {
+    status: "ready_for_review",
+    proposal_id: "content_research_proposal_91afbb4d56b5f6ac696b237b",
+    proposal_digest: "c".repeat(64),
+    acquisition_run_id: "content_evidence_acquisition_home",
+    review_required: true,
+    approved: false,
+    blockers: [],
+    safe_next_step: "Przekaż propozycję do human review."
+  },
+  identity: {
+    status: "exact_current",
+    binding_id: "content_delivery_identity_home",
+    binding_digest: "d".repeat(64),
+    blockers: [],
+    safe_next_step: "Exact current identity is available."
+  },
+  service_card: {
+    status: "review_required",
+    card_id: "ekologus_service_homepage_overview",
+    card_status: "source_backed_review_required",
+    evidence_ids: ["ev_content_service_profile_source_facts"],
+    source_connectors: ["public_site"],
+    blockers: [{ code: "service_card_review_required", reason: "Exact Service Profile card wymaga review.", evidence_ids: ["ev_content_service_profile_source_facts"], safe_next_step: "Zatwierdź exact Service Profile card przez człowieka." }],
+    safe_next_step: "Zatwierdź exact Service Profile card przez człowieka."
+  },
+  promotion: {
+    status: "blocked",
+    receipt_id: null,
+    source_fact_id: null,
+    blockers: [{ code: "service_card_review_required", reason: "Promotion czeka na zatwierdzenie card.", evidence_ids: ["ev_content_service_profile_source_facts"], safe_next_step: "Zatwierdź exact Service Profile card przez człowieka." }],
+    safe_next_step: "Zatwierdź exact Service Profile card przez człowieka."
+  },
+  blockers: [{ code: "service_card_review_required", reason: "Exact Service Profile card wymaga review.", evidence_ids: ["ev_content_service_profile_source_facts"], safe_next_step: "Zatwierdź exact Service Profile card przez człowieka." }],
+  safe_next_step: "Zatwierdź exact Service Profile card przez człowieka."
+};
+
+const bdoEvidenceReadiness: typeof blockedEvidenceReadiness = {
+  ...blockedEvidenceReadiness,
+  authoring_inventory_receipt: {
+    status: "current",
+    receipt_id: "content_authoring_inventory_bdo",
+    receipt_digest: "e".repeat(64),
+    evidence_id: "ev_wp_bdo",
+    collected_at: "2026-09-13T10:00:00Z",
+    freshness: "fresh"
+  },
+  evidence_acquisition: {
+    recorded_status: "ready_for_researcher",
+    current_status: "ready_for_researcher",
+    run_id: "content_evidence_acquisition_bdo",
+    run_digest: "f".repeat(64),
+    evidence_ids: ["ev_bdo_observation"],
+    subject_kind: "authoring_inventory_receipt",
+    subject_id: "content_authoring_inventory_bdo",
+    freshness: "fresh",
+    blockers: [],
+    safe_next_step: "Przekaż exact observation do researchera."
+  },
+  research_proposal: {
+    status: "ready_for_review",
+    proposal_id: "content_research_proposal_2813b551069e5bc8dfd46dad",
+    proposal_digest: "1".repeat(64),
+    acquisition_run_id: "content_evidence_acquisition_bdo",
+    review_required: true,
+    approved: false,
+    blockers: [],
+    safe_next_step: "Przekaż propozycję do human review."
+  },
+  identity: {
+    status: "missing",
+    binding_id: null,
+    binding_digest: null,
+    blockers: [],
+    safe_next_step: "Zwiąż exact current identity binding."
+  },
+  service_card: {
+    status: "approved_current",
+    card_id: "ekologus_service_bdo_reporting",
+    card_status: "approved_current",
+    evidence_ids: ["ev_content_service_profile_source_facts"],
+    source_connectors: ["public_site"],
+    blockers: [],
+    safe_next_step: "Exact Service Profile card is current."
+  },
+  promotion: {
+    status: "blocked",
+    receipt_id: null,
+    source_fact_id: null,
+    blockers: [{ code: "promotion_identity_required", reason: "Promotion wymaga exact identity.", evidence_ids: [], safe_next_step: "Zwiąż exact current identity binding." }],
+    safe_next_step: "Zwiąż exact current identity binding."
+  },
+  blockers: [{ code: "identity_binding_missing", reason: "Exact current identity binding is missing.", evidence_ids: [], safe_next_step: "Zwiąż exact current identity binding." }],
+  safe_next_step: "Zwiąż exact current identity binding."
+};
+
+const homepageCatalogItem: ContentInventoryCatalogResponse["items"][number] = {
+  ...inventoryCatalogItem,
+  catalog_id: "catalog_homepage",
+  work_item_id: "content_work_item_homepage",
+  url: "https://www.ekologus.pl/",
+  path: "/",
+  title: "Strona główna",
+  evidence_id: "ev_wp_home"
+};
+
+const bdoCatalogItem: ContentInventoryCatalogResponse["items"][number] = {
+  ...inventoryCatalogItem,
+  catalog_id: "catalog_bdo",
+  work_item_id: "content_work_item_bdo",
+  url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+  path: "/bdo-co-musi-wiedziec-przedsiebiorca/",
+  title: "BDO dla przedsiębiorcy",
+  evidence_id: "ev_wp_bdo"
+};
+
+const exactEvidenceReadinessSummary = {
+  ...blockedEvidenceReadinessSummary,
+  total_count: 2,
+  blocked_count: 2,
+  authoring_receipt_current_count: 2,
+  authoring_receipt_missing_count: 0,
+  acquisition_ready_count: 2,
+  acquisition_missing_count: 0,
+  research_ready_count: 2,
+  research_missing_count: 0,
+  identity_exact_current_count: 1,
+  identity_missing_count: 1,
+  service_card_approved_current_count: 1,
+  service_card_review_required_count: 1
+};
+
+function inventoryCatalog(
+  coverage: ContentInventoryCatalogResponse["coverage"],
+  journalReconciliation: ContentInventoryCatalogResponse["journal_reconciliation"] = null,
+  journalReadiness: ContentInventoryCatalogResponse["journal_readiness"] = null,
+  items: ContentInventoryCatalogResponse["items"] = [inventoryCatalogItem]
+): ContentInventoryCatalogResponse {
+  return {
+    status: "ready",
+    total_count: coverage.status === "complete" ? items.length : 139,
+    ready_count: items.length,
+    partial_count: 0,
+    blocked_count: 0,
+    items,
+    source_connectors: ["wordpress_ekologus"],
+    evidence_ids: ["ev_coverage_test"],
+    coverage,
+    journal_reconciliation: journalReconciliation,
+    journal_readiness: journalReadiness
+  };
+}
+
+function journalEvidenceRow(
+  canonical_path: string,
+  content_evidence_readiness: NonNullable<ContentInventoryCatalogResponse["journal_readiness"]>["rows"][number]["content_evidence_readiness"]
+) {
+  return {
+    canonical_path,
+    historical_as_of: "2026-08-28",
+    content_kind: "service" as const,
+    final_disposition: "keep" as const,
+    historical_next_action: "review",
+    operational_owner: "WILQ content workflow" as const,
+    production_cohort: true,
+    current_catalog_state: "exact_path_observed" as const,
+    current_catalog_observation: null,
+    content_evidence_readiness
+  };
+}
 
 function renderEntry(overrides: Partial<ComponentProps<typeof ContentWorkflowEntryPanel>> = {}) {
   const props: ComponentProps<typeof ContentWorkflowEntryPanel> = {
@@ -126,6 +428,148 @@ describe("ContentWorkflowEntryPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /zacznij od briefu/i }));
     expect(props.onOpenNewPage).toHaveBeenCalledOnce();
+  });
+
+  it("states when the inventory browse range is incomplete and preserves the complete label", () => {
+    const caveat = "Ostatni odczyt sitemap był częściowy albo niedostępny; nie traktuj inventory jako pełnego.";
+    const journalRows = Array.from({ length: 214 }, (_, index) => ({
+      canonical_path: index === 0 ? "/coverage-test" : `/historyczna-pozycja-${index}`,
+      historical_as_of: "2026-08-28",
+      content_kind: "editorial",
+      final_disposition: "keep" as const,
+      historical_next_action: "review",
+      operational_owner: "WILQ content workflow" as const,
+      production_cohort: true,
+      current_catalog_state: index === 0 ? "not_observed" as const : index === 1 ? "ambiguous" as const : "exact_path_observed" as const,
+      current_catalog_observation: null,
+      content_evidence_readiness: blockedEvidenceReadiness
+    }));
+
+    renderEntry({
+      browseInventory: true,
+      inventory: inventoryCatalog(
+        { status: "unknown", returned_count: 1, caveat },
+        {
+          status: "incomplete",
+          journal_record_count: 214,
+          matched_catalog_count: 127,
+          missing_inventory_binding_count: 87,
+          catalog_outside_journal_count: 12,
+          matched_authoring_source_count: 175,
+          missing_authoring_source_count: 39,
+          missing_inventory_by_content_kind: { service: 44, taxonomy_or_system: 38 },
+          caveat: "Część kanonicznych URL-i nie ma dokładnego typed inventory.",
+          safe_next_step: "Zarejestruj exact inventory bindingi."
+        },
+        {
+          status: "blocked",
+          journal_record_count: 214,
+          catalog_coverage_status: "unknown",
+          content_evidence_readiness: blockedEvidenceReadinessSummary,
+          rows: journalRows,
+          caveat: "Historyczne decyzje nie są bieżącą authority.",
+          safe_next_step: "Uzupełnij bieżący inventory."
+        }
+      )
+    });
+
+    expect(screen.getByTestId("content-workflow-inventory-coverage-warning")).toHaveTextContent(caveat);
+    expect(screen.getByText("Zakres katalogu nie jest pełny")).toBeInTheDocument();
+    expect(screen.queryByText("Przeglądaj cały serwis")).not.toBeInTheDocument();
+    expect(screen.queryByText("Publiczne strony do odświeżenia")).not.toBeInTheDocument();
+    expect(screen.getByText("Wyniki: 1 z 139 wykrytych adresów")).toBeInTheDocument();
+    expect(screen.getByTestId("content-workflow-inventory-journal-reconciliation")).toHaveTextContent("127 z 214");
+    expect(screen.getByTestId("content-workflow-inventory-journal-reconciliation")).toHaveTextContent("87 bez exact inventory binding");
+    expect(screen.getByTestId("content-workflow-inventory-journal-reconciliation")).toHaveTextContent("175 URL-i ma bezpieczny odczyt authoring");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("214 URL-i");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("212 ma bieżącą exact obserwację");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("1 bez bieżącej exact obserwacji");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("1 niejednoznaczna");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("nie są bieżącą authority");
+    expect(screen.getByText("Zablokowane")).toHaveAttribute("data-state", "blocked");
+    const details = screen.getByText("Pokaż blocker i źródła").closest("details");
+    expect(details).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Pokaż blocker i źródła"));
+    expect(details).toHaveAttribute("open");
+    expect(screen.queryByText("content_work_item_coverage_test")).not.toBeInTheDocument();
+
+    cleanup();
+    renderEntry({
+      browseInventory: true,
+      inventory: inventoryCatalog({ status: "complete", returned_count: 1, caveat: "" })
+    });
+
+    expect(screen.getByText("Przeglądaj cały serwis")).toBeInTheDocument();
+    expect(screen.getByText("Publiczne strony do odświeżenia")).toBeInTheDocument();
+    expect(screen.queryByTestId("content-workflow-inventory-coverage-warning")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("content-workflow-inventory-journal-reconciliation")).not.toBeInTheDocument();
+    expect(screen.getByText("Wyniki: 1 z 1 adresów")).toBeInTheDocument();
+  });
+
+  it("renders exact homepage and BDO blockers from the evidence projection", () => {
+    const journalReadiness: NonNullable<ContentInventoryCatalogResponse["journal_readiness"]> = {
+      status: "blocked",
+      journal_record_count: 2,
+      catalog_coverage_status: "partial",
+      rows: [
+        journalEvidenceRow("/", homepageEvidenceReadiness),
+        journalEvidenceRow("/bdo-co-musi-wiedziec-przedsiebiorca", bdoEvidenceReadiness)
+      ],
+      content_evidence_readiness: exactEvidenceReadinessSummary,
+      caveat: "Historyczne decyzje nie są bieżącą authority.",
+      safe_next_step: "Usuń exact blocker przed kolejnym krokiem."
+    };
+
+    renderEntry({
+      browseInventory: true,
+      inventory: inventoryCatalog(
+        { status: "unknown", returned_count: 2, caveat: "Katalog jest niepełny." },
+        null,
+        journalReadiness,
+        [homepageCatalogItem, bdoCatalogItem]
+      )
+    });
+
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("Gotowość dowodowa: 2 URL-i");
+    expect(screen.getByTestId("content-workflow-inventory-journal-readiness")).toHaveTextContent("Blokady — identity: 1; karta: 1; promocja: 2");
+    expect(screen.getByText("Exact Service Profile card wymaga review.")).toBeInTheDocument();
+    expect(screen.getByText("Exact current identity binding is missing.")).toBeInTheDocument();
+    expect(screen.getAllByText("Zablokowane")).toHaveLength(2);
+  });
+
+  it("does not use partial journal rows as full observation counts", () => {
+    renderEntry({
+      browseInventory: true,
+      inventory: inventoryCatalog(
+        { status: "unknown", returned_count: 1, caveat: "Katalog jest niepełny." },
+        null,
+        {
+          status: "blocked",
+          journal_record_count: 214,
+          catalog_coverage_status: "unknown",
+          rows: [{
+            canonical_path: "/jedna-pozycja",
+            historical_as_of: "2026-08-28",
+            content_kind: "editorial",
+            final_disposition: "keep",
+            historical_next_action: "review",
+            operational_owner: "WILQ content workflow",
+            production_cohort: true,
+            current_catalog_state: "not_observed",
+            current_catalog_observation: null,
+            content_evidence_readiness: blockedEvidenceReadiness
+          }],
+          content_evidence_readiness: blockedEvidenceReadinessSummary,
+          caveat: "Brak pełnego zestawu journalu.",
+          safe_next_step: "Przywróć kompletny odczyt."
+        }
+      )
+    });
+
+    const readiness = screen.getByTestId("content-workflow-inventory-journal-readiness");
+    expect(readiness).toHaveTextContent("przekazał tylko 1 z 214 oczekiwanych rekordów");
+    expect(readiness).toHaveTextContent("nie używaj liczników obserwacji do decyzji");
+    expect(readiness).not.toHaveTextContent("1 bez bieżącej exact obserwacji");
   });
 
   it("prefills only an exact evidence-bound topic and preserves the manual brief path", async () => {

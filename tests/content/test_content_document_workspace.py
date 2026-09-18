@@ -90,6 +90,9 @@ def test_document_workspace_keeps_public_source_visible_when_no_revision_exists(
         content_text="Pierwszy akapit obecnej strony.\n\nDrugi akapit.",
         section_headings=["Kto powinien sprawdzić obowiązek?", "Ewidencja odpadów"],
         evidence_id="ev_wp_bdo",
+        inventory_observation_evidence_id="ev_wp_bdo",
+        material_observation_evidence_id="ev_wp_bdo",
+        material_lineage_status="inventory_observation_bound",
         extraction_region="wordpress_rest.content",
     )
     monkeypatch.setattr(
@@ -157,6 +160,9 @@ def test_document_workspace_projects_claim_ledger_onto_full_revision(
         title="BDO dla firm",
         content_text="Aktualny materiał strony.",
         evidence_id="ev_wp_bdo",
+        inventory_observation_evidence_id="ev_wp_bdo",
+        material_observation_evidence_id="ev_wp_bdo",
+        material_lineage_status="inventory_observation_bound",
     )
     revision = _full_revision()
     item = ContentWorkItem(
@@ -275,6 +281,9 @@ def test_document_workspace_route_projects_ledger_only_for_full_revision(
         title="BDO dla firm",
         content_text="Aktualny materiał strony.",
         evidence_id="ev_wp_bdo",
+        inventory_observation_evidence_id="ev_wp_bdo",
+        material_observation_evidence_id="ev_wp_bdo",
+        material_lineage_status="inventory_observation_bound",
     )
     legacy_revision = ContentDraftRevision(
         revision_id="content_revision_bdo_legacy_route",
@@ -369,6 +378,8 @@ def test_source_snapshot_projects_api_owned_label_for_each_status() -> None:
         url=SOURCE_URL,
         source_kind="wordpress_rest",
         content_text="Aktualny materiał strony.",
+        material_confidence="review_required",
+        material_lineage_status="inventory_selection_only",
     )
     partial_material = available_material.model_copy(update={"content_text": None})
 
@@ -396,6 +407,37 @@ def test_persisted_material_does_not_promote_summary_only_metadata() -> None:
     material = workspace_module._persisted_material_from_item(item, url=SOURCE_URL)
 
     assert material is None
+
+
+def test_persisted_material_requires_typed_wordpress_inventory_lineage() -> None:
+    mixed = ContentWorkItem(
+        id=WORK_ITEM_ID,
+        topic="BDO dla firm",
+        wordpress_content_text="Persisted body.",
+        wordpress_content_source_kind="wordpress_inventory_snapshot",
+        wordpress_content_inventory_status="available",
+        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+    )
+    mixed_material = workspace_module._persisted_material_from_item(mixed, url=SOURCE_URL)
+    assert mixed_material is not None
+    assert mixed_material.material_lineage_status == "inventory_selection_only"
+    assert mixed_material.material_observation_evidence_id is None
+    assert mixed_material.material_confidence == "review_required"
+
+    typed = mixed.model_copy(
+        update={
+            "evidence_ids": ["ev_wp_bdo"],
+            "source_connectors": ["wordpress_ekologus"],
+            "wordpress_content_source_kind": "wordpress_inventory_snapshot",
+        }
+    )
+    typed_material = workspace_module._persisted_material_from_item(typed, url=SOURCE_URL)
+    assert typed_material is not None
+    assert typed_material.material_lineage_status == "inventory_selection_only"
+    assert typed_material.inventory_observation_evidence_id is None
+    assert typed_material.material_observation_evidence_id is None
+    assert typed_material.material_confidence == "review_required"
 
 
 def test_document_workspace_projects_one_repair_action_after_human_changes() -> None:
@@ -544,6 +586,9 @@ def test_document_workspace_exposes_only_exact_heading_pairs_for_comparison(
         ),
         section_headings=["Ewidencja odpadów", "Ewidencja odpadów"],
         evidence_id="ev_wp_bdo",
+        inventory_observation_evidence_id="ev_wp_bdo",
+        material_observation_evidence_id="ev_wp_bdo",
+        material_lineage_status="inventory_observation_bound",
         extraction_region="wordpress_rest.content",
     )
     revision = SimpleNamespace(

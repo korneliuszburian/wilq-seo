@@ -196,9 +196,7 @@ def test_schema_v9_store_upgrades_research_packet_table(tmp_path: Path) -> None:
     assert store.load_content_research_packet("missing") is None
 
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone() == (
-            SQLITE_SCHEMA_VERSION,
-        )
+        assert connection.execute("PRAGMA user_version").fetchone() == (SQLITE_SCHEMA_VERSION,)
         assert connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'content_research_packets'"
         ).fetchone() == (1,)
@@ -260,9 +258,7 @@ def test_preparation_receipt_readback_rejects_payload_tamper(tmp_path: Path) -> 
     assert receipt_id is not None
 
     with sqlite3.connect(store.path) as connection:
-        connection.execute(
-            "DROP TRIGGER content_research_packet_preparation_receipts_no_update"
-        )
+        connection.execute("DROP TRIGGER content_research_packet_preparation_receipts_no_update")
         row = connection.execute(
             "SELECT payload_json FROM content_research_packet_preparation_receipts "
             "WHERE receipt_id = ?",
@@ -288,9 +284,7 @@ def test_preparation_receipt_readback_rejects_scalar_tamper(tmp_path: Path) -> N
     assert receipt_id is not None
 
     with sqlite3.connect(store.path) as connection:
-        connection.execute(
-            "DROP TRIGGER content_research_packet_preparation_receipts_no_update"
-        )
+        connection.execute("DROP TRIGGER content_research_packet_preparation_receipts_no_update")
         connection.execute(
             "UPDATE content_research_packet_preparation_receipts "
             "SET input_digest = ? WHERE receipt_id = ?",
@@ -312,9 +306,9 @@ def test_preparation_receipt_replay_from_another_command_is_blocked(tmp_path: Pa
     assert result.packet.blocker is not None
     assert result.packet.blocker.reason == "preparation_receipt_mismatch"
     with sqlite3.connect(store.path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM content_research_packets"
-        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM content_research_packets").fetchone() == (
+            0,
+        )
 
 
 def test_preparation_receipt_is_readable_from_an_independent_store_instance(
@@ -361,9 +355,9 @@ def test_direct_store_requires_a_server_owned_preparation_receipt(tmp_path: Path
     assert result.packet.blocker is not None
     assert result.packet.blocker.reason == "preparation_receipt_missing"
     with sqlite3.connect(store.path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM content_research_packets"
-        ).fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM content_research_packets").fetchone() == (
+            0,
+        )
 
 
 def test_exact_packet_without_context_receipt_is_typed_blocker(tmp_path: Path) -> None:
@@ -387,9 +381,7 @@ def test_context_receipt_evidence_is_an_assertion_not_a_new_authority(
     assert command.context_receipt is not None
     tampered_receipt = command.context_receipt.model_copy(
         update={
-            "evidence_ids": tuple(
-                sorted((*source_pack.evidence_ids, "ev_outside_context_receipt"))
-            )
+            "evidence_ids": tuple(sorted((*source_pack.evidence_ids, "ev_outside_context_receipt")))
         }
     )
 
@@ -433,9 +425,7 @@ def test_direct_reconciliation_rejects_context_cta_digest_drift(tmp_path: Path) 
     store, identity = _setup_store(tmp_path)
     command, _source_pack = _packet_command(store, identity, legacy_exact=True)
     assert command.context_receipt is not None
-    tampered_receipt = command.context_receipt.model_copy(
-        update={"cta_destination": "/inna/"}
-    )
+    tampered_receipt = command.context_receipt.model_copy(update={"cta_destination": "/inna/"})
 
     result = store.record_content_research_packet(
         command.model_copy(update={"context_receipt": tampered_receipt})
@@ -499,9 +489,7 @@ def test_unbound_source_fact_and_identity_mismatch_fail_closed(tmp_path: Path) -
     )
     identity_mismatch = command.model_copy(update={"identity_binding_digest": "a" * 64})
 
-    unbound_result = store.record_content_research_packet(
-        _with_preparation_receipt(store, unbound)
-    )
+    unbound_result = store.record_content_research_packet(_with_preparation_receipt(store, unbound))
     identity_result = store.record_content_research_packet(identity_mismatch)
 
     assert unbound_result.packet.blocker is not None
@@ -671,9 +659,7 @@ def test_long_approved_fact_identifier_survives_redaction_boundary(tmp_path: Pat
     command, _ = _packet_command(store, identity, legacy_exact=True)
     long_fact_id = "ekologus_" + "a" * 32 + "-v1"
     payload = command.model_dump(mode="json")
-    payload["approved_source_fact_ids"] = sorted(
-        (*command.approved_source_fact_ids, long_fact_id)
-    )
+    payload["approved_source_fact_ids"] = sorted((*command.approved_source_fact_ids, long_fact_id))
 
     result = store.record_content_research_packet(
         _with_preparation_receipt(

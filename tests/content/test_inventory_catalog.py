@@ -335,6 +335,63 @@ def test_partial_sitemap_refresh_never_projects_complete_inventory_coverage(monk
     assert "częściowy" in coverage.caveat
 
 
+def test_partial_catalog_is_blocked_until_inventory_coverage_is_proven(monkeypatch):
+    row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": "https://www.ekologus.pl/bdo/"},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp_partial",
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
+    )
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=[],
+        metric_summary={
+            "inventory_coverage_status": "partial",
+            "sitemap_url_count": 218,
+            "sitemap_url_source_count": 218,
+            "sitemap_url_returned_count": 218,
+            "sitemap_url_limit": 2000,
+            "public_sitemap_url_source_count": 788,
+            "public_sitemap_url_returned_count": 788,
+            "public_sitemap_url_limit": 2000,
+            "public_sitemap_url_truncated": False,
+        },
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "metric_store",
+        lambda: SimpleNamespace(
+            list_metric_facts=lambda connector_id, **_kwargs: (
+                [row] if connector_id == "wordpress_ekologus" else []
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [latest_run]
+        ),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert result.status == "blocked"
+    assert result.total_count == 1
+    assert result.coverage.status == "unknown"
+    assert result.coverage.returned_count == 218
+    assert result.coverage.public_sitemap_source_count == 788
+    assert result.coverage.public_sitemap_returned_count == 788
+    assert result.coverage.public_sitemap_limit == 2000
+    assert result.coverage.public_sitemap_truncated is False
+    assert result.coverage.caveat == (
+        "Ostatni odczyt sitemap był częściowy albo niedostępny; "
+        "nie traktuj inventory jako pełnego."
+    )
+
+
 def test_inventory_metric_facts_do_not_mix_search_refresh_history(monkeypatch):
     page_url = "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/"
     old_fact = SimpleNamespace(
@@ -694,13 +751,32 @@ def test_inventory_binding_is_stable_and_evidence_bound(monkeypatch):
             list_metric_facts_for_content_url=lambda *_args, **_kwargs: [],
         ),
     )
+    monkeypatch.setattr(
+        catalog_module,
+        "read_content_inventory_material",
+        lambda _url, *, catalog: SimpleNamespace(
+            status="ready",
+            content_text="Treść artykułu.",
+            title="News",
+            section_headings=[],
+            acf_field_names=[],
+            source_kind="wordpress_rest",
+            material_confidence="review_required",
+            extraction_region="wordpress_rest.content",
+            source_field_lineage=["wordpress_rest.content"],
+            inventory_observation_evidence_id="ev_wp",
+            material_observation_evidence_id=None,
+            material_lineage_status="live_material_not_evidence_bound",
+        ),
+    )
 
     first = bind_content_inventory_item("https://www.ekologus.pl/news/")
     second = bind_content_inventory_item("https://www.ekologus.pl/news")
 
     assert first.status == "ready"
     assert first.work_item_id == second.work_item_id
-    assert first.evidence_id == "ev_wp"
+    assert first.evidence_id is None
+    assert first.inventory_observation_evidence_id == "ev_wp"
 
 
 def test_inventory_binding_resolves_public_material_for_url_only_row(monkeypatch):
@@ -742,6 +818,52 @@ def test_inventory_binding_resolves_public_material_for_url_only_row(monkeypatch
     assert result.material_confidence == "review_required"
     assert result.extraction_region == "the_content"
     assert result.source_field_lineage == ["public_html.main_or_article"]
+    assert result.evidence_id is None
+    assert result.inventory_observation_evidence_id == "ev_wp"
+    assert result.material_observation_evidence_id is None
+    assert result.material_lineage_status == "live_material_not_evidence_bound"
+
+
+def test_inventory_binding_propagates_live_material_identity_blocker(monkeypatch):
+    url = "https://www.ekologus.pl/oferta/doradztwo/"
+    row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": url},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp",
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
+    )
+    monkeypatch.setattr(catalog_module, "_inventory_catalog_cache", None)
+    monkeypatch.setattr(
+        "wilq.content.workflow.workspace.catalog.metric_store",
+        lambda: SimpleNamespace(
+            list_metric_facts=lambda *_args, **_kwargs: [row],
+            list_metric_facts_for_content_url=lambda *_args, **_kwargs: [],
+        ),
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "read_content_inventory_material",
+        lambda _url, *, catalog: SimpleNamespace(
+            status="blocked",
+            source_kind=None,
+            material_confidence=None,
+            extraction_region=None,
+            source_field_lineage=[],
+            inventory_observation_evidence_id="ev_wp",
+            material_observation_evidence_id=None,
+            material_lineage_status="live_material_not_evidence_bound",
+            blocker_code="material_identity_mismatch",
+            blocker="foreign path",
+        ),
+    )
+
+    result = bind_content_inventory_item(url)
+
+    assert result.status == "blocked"
+    assert result.blocker_code == "material_identity_mismatch"
+    assert result.inventory_observation_evidence_id == "ev_wp"
+    assert result.material_observation_evidence_id is None
 
 
 def test_inventory_decision_reuses_the_current_catalog_for_material_read(monkeypatch):
@@ -957,7 +1079,15 @@ def test_inventory_material_cache_reuses_read_only_wordpress_material(monkeypatc
     second = catalog_module.read_content_inventory_material(url, catalog=catalog)
 
     assert first.content_text == second.content_text == "Treść artykułu."
-    assert first.evidence_id == second.evidence_id == "ev_new"
+    assert first.evidence_id is None
+    assert second.evidence_id is None
+    assert (
+        first.inventory_observation_evidence_id
+        == second.inventory_observation_evidence_id
+        == "ev_new"
+    )
+    assert first.material_observation_evidence_id is None
+    assert second.material_observation_evidence_id is None
     assert calls == 1
 
 

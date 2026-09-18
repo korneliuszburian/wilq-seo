@@ -16,9 +16,7 @@ from scripts._change_contract_model import TestReport as _TestReport
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CHECK_SCRIPT = REPOSITORY_ROOT / "scripts/check_change_contract.py"
-KNOWN_CONTRACT = (
-    "connector-refresh-recovery:bodyless-api-and-full-payload-cas-red->green"
-)
+KNOWN_CONTRACT = "connector-refresh-recovery:bodyless-api-and-full-payload-cas-red->green"
 GATE_CONTRACT = "change-contract-gate:cli-acceptance-red->green"
 KNOWN_PROOF = (
     "scripts/test.sh",
@@ -26,9 +24,7 @@ KNOWN_PROOF = (
     "tests/api_contracts/test_connector_refresh_recovery_contract.py",
 )
 GATE_PROOF = ("scripts/test.sh", "tests/scripts/test_changes_check.py")
-EMBEDDED_RUNTIME_CONTRACT = (
-    "embedded-runtime-policy:terra-max-fail-closed-red->green"
-)
+EMBEDDED_RUNTIME_CONTRACT = "embedded-runtime-policy:terra-max-fail-closed-red->green"
 EMBEDDED_RUNTIME_PROOF = (
     "scripts/test.sh",
     "tests/content/test_codex_app_server_transport.py",
@@ -40,14 +36,14 @@ EMBEDDED_RUNTIME_PROOF = (
 INVENTORY_CLASSIFICATION_CONTRACT = (
     "inventory-classification:exact-current-receipt-lineage-red->green"
 )
-CURRENT_DISPOSITION_CONTRACT = (
-    "current-disposition:exact-persisted-authority-chain-red->green"
-)
-SOURCE_FACT_SOURCE_PACK_CONTRACT = (
-    "source-fact-source-pack:exact-reviewed-row-consumption-red->green"
-)
+CURRENT_DISPOSITION_CONTRACT = "current-disposition:exact-persisted-authority-chain-red->green"
+CURRENT_DISPOSITION_CARD_CONTRACT = "current-disposition:operator-decision-card-red->green"
 CURRENT_DISPOSITION_APPROVAL_CONTRACT = (
     "current-disposition:server-owned-approval-command-red->green"
+)
+CURRENT_PREPARATION_CONTRACT = "current-preparation:exact-downstream-receipts-red->green"
+CONTENT_RESEARCH_PACKET_CONTRACT = (
+    "content-research-packet:server-owned-exact-plan-draft-red->green"
 )
 CONTENT_REVIEW_CONTRACT = "content-review:exact-packet-revision-red->green"
 INVENTORY_CLASSIFICATION_PROOF = (
@@ -76,25 +72,52 @@ CURRENT_DISPOSITION_PROOF = (
     "tests/api_contracts/test_redaction_contracts.py",
     "tests/storage/test_sqlite_schema_inventory.py::test_current_disposition_schema_hunks_are_exact",
 )
+CURRENT_DISPOSITION_CARD_PROOF = (
+    "pnpm",
+    "--filter",
+    "@wilq/dashboard",
+    "exec",
+    "vitest",
+    "run",
+    "src/routes/ActionDetailRoute.test.tsx",
+)
 CURRENT_DISPOSITION_APPROVAL_PROOF = (
     "scripts/test.sh",
     "tests/content/test_current_disposition_authority.py",
     "tests/content/test_current_disposition_approval.py",
     "tests/scripts/test_changes_check.py",
 )
-SOURCE_FACT_SOURCE_PACK_PROOF = (
+CURRENT_PREPARATION_PROOF = (
     "scripts/test.sh",
-    "tests/content/test_source_fact_authority.py",
-    "tests/content/test_source_pack_binding.py",
-    "tests/content/test_source_pack_binding_api.py",
-    "tests/storage/test_sqlite_schema_inventory.py::test_source_fact_authority_schema_hunks_are_exact",
-    "tests/api_contracts/test_redaction_contracts.py",
+    "tests/content/test_current_preparation_readiness.py",
+    "tests/content/test_refresh_preparation_authority.py::test_runtime_requires_exact_authorization_and_proposal_binding",
+    "tests/content/test_content_selected_workspace_production_decision.py::test_selected_workspace_rejects_mismatched_production_identity",
+    "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_plan_and_revision_writers_accept_ready_blocked_row_with_readback",
+    "tests/content/test_refresh_preparation_atomic_current_reads.py::test_real_writers_reject_distinct_attempts_after_newer_blocked_pack",
+    "tests/content/test_initial_draft_production_authority.py::test_authorized_current_preparation_bypasses_canonical_guard_without_duplicate_resolve",
+    "tests/content/test_initial_draft_status_read_path.py::test_status_reads_authorized_refresh_for_exact_current_preparation_blocker",
+    "tests/content/test_initial_draft_status_read_path.py::test_status_preserves_exact_current_preparation_guard_when_refresh_read_is_none",
+    "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_other_blocked_or_write_rows",
+    "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_conflict_or_reuse",
+)
+CONTENT_RESEARCH_PACKET_PROOF = (
+    "scripts/test.sh",
+    "tests/content/test_packet_plan_draft_binding.py",
+    "tests/content/test_research_packet.py",
+    "tests/content/test_packet_plan_draft_contracts.py",
+    "tests/content/test_packet_plan_draft_http.py",
+    "tests/content/test_selected_source_pack_projection.py",
+    "tests/content/test_regulatory_planning_lineage.py",
+    "tests/content/test_initial_draft_editorial_packet_guard.py",
+    "tests/content/test_editorial_planning_pipeline.py",
+    "tests/content/test_regulated_draft_finalization.py",
 )
 CONTENT_REVIEW_PROOF = (
     "scripts/test.sh",
     "tests/content/test_packet_bound_reviews.py",
     "tests/content/test_packet_bound_review_public_api.py",
     "tests/content/test_packet_bound_review_races.py",
+    "tests/content/test_semantic_review_refresh_change_contract.py",
     "tests/content/test_semantic_review_refresh_binding.py",
     "tests/content/test_semantic_content_review_api.py::test_existing_exact_review_wins_over_retry_preflight_and_polling",
     "tests/content/test_independent_review_runs.py::test_api_records_run_and_critical_disposition",
@@ -243,8 +266,7 @@ def test_changes_check_maps_embedded_runtime_policy_to_exact_focused_proof(
         tmp_path,
         changed_path="wilq/example.py",
         message=(
-            f"feat: mapped embedded runtime proof\n\n"
-            f"Change-contract: {EMBEDDED_RUNTIME_CONTRACT}\n"
+            f"feat: mapped embedded runtime proof\n\nChange-contract: {EMBEDDED_RUNTIME_CONTRACT}\n"
         ),
     )
     calls: list[tuple[str, ...]] = []
@@ -337,6 +359,40 @@ def test_changes_check_maps_current_disposition_to_exact_focused_proof(
     assert calls == [CURRENT_DISPOSITION_PROOF]
 
 
+def test_changes_check_maps_current_disposition_card_to_exact_dashboard_proof(
+    tmp_path: Path,
+) -> None:
+    repo = _make_repo(
+        tmp_path,
+        changed_path="apps/dashboard/src/routes/DetailPanels.tsx",
+        message=(
+            "feat: map current disposition card proof\n\n"
+            f"Change-contract: {CURRENT_DISPOSITION_CARD_CONTRACT}\n"
+        ),
+    )
+    calls: list[tuple[str, ...]] = []
+
+    def proof_runner(command: tuple[str, ...]) -> bool:
+        calls.append(command)
+        return True
+
+    result = check_change_contract.check_commit(
+        "HEAD",
+        repository_root=repo,
+        proof_runner=proof_runner,
+    )
+
+    descriptor = change_contract_model.MAPPINGS[("current-disposition", "operator-decision-card")]
+    assert result == 0
+    assert calls == [CURRENT_DISPOSITION_CARD_PROOF]
+    assert descriptor.selectors == (
+        "tests/dashboard/test_current_disposition_card_change_contract.py",
+    )
+    assert descriptor.observer_paths == descriptor.selectors
+    assert descriptor.expectation == "red-green"
+    assert descriptor.allow_new_mapping is True
+
+
 def test_changes_check_maps_server_owned_current_disposition_approval_to_backend_proof(
     tmp_path: Path,
 ) -> None:
@@ -404,6 +460,23 @@ def test_changes_check_maps_current_preparation_to_focused_receipt_proof(
     assert descriptor.allow_new_mapping is True
 
 
+def test_content_review_mapping_keeps_parent_safe_semantic_refresh_observer() -> None:
+    descriptor = change_contract_model.MAPPINGS[("content-review", "exact-packet-revision")]
+
+    assert descriptor.selectors == (
+        "tests/content/test_semantic_review_refresh_change_contract.py::"
+        "test_semantic_refresh_source_contract",
+        "tests/content/test_packet_bound_reviews.py::"
+        "test_public_packet_bound_revision_reaches_semantic_and_independent_reviews",
+    )
+    assert descriptor.observer_paths == (
+        "tests/__init__.py",
+        "tests/content/test_semantic_review_refresh_change_contract.py",
+    )
+    assert descriptor.expectation == "red-green"
+    assert descriptor.allow_new_mapping is True
+
+
 def test_current_preparation_observer_is_red_then_green(tmp_path: Path) -> None:
     repo = tmp_path / "current-preparation-counterfactual"
     repo.mkdir()
@@ -427,6 +500,8 @@ def test_current_preparation_observer_is_red_then_green(tmp_path: Path) -> None:
         "wilq/content/workflow/workspace/production_decision.py",
         "wilq/content/workflow/workspace/selected_workspace.py",
         "apps/api/wilq_api/routers/content_selected_workspace.py",
+        "apps/api/wilq_api/routers/content_initial_draft.py",
+        "apps/api/wilq_api/routers/content_initial_draft_refresh.py",
     )
     for relative in descriptor.observer_paths:
         path = repo / relative
@@ -486,6 +561,195 @@ def test_current_preparation_observer_is_red_then_green(tmp_path: Path) -> None:
     assert result.reason == "green"
 
 
+def test_content_review_observer_is_red_then_green(tmp_path: Path) -> None:
+    repo = tmp_path / "content-review-counterfactual"
+    snapshot.archive_tree(REPOSITORY_ROOT, "HEAD", repo)
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "content review observer")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    candidate_sources = (
+        "apps/api/wilq_api/routers/content_workflow.py",
+        "scripts/_change_contract_model.py",
+        "tests/content/test_semantic_review_refresh_change_contract.py",
+    )
+    for relative in candidate_sources:
+        source = REPOSITORY_ROOT / relative
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    descriptor = change_contract_model.MAPPINGS[("content-review", "exact-packet-revision")]
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("content-review", "exact-packet-revision"),
+    )
+
+    assert result.ok is True, result.reason
+    assert result.infrastructure is False
+    assert result.reason == "green"
+
+
+def _research_packet_target_sources() -> tuple[str, ...]:
+    return (
+        "wilq/content/workflow/research_packet_contracts.py",
+        "wilq/content/workflow/research_packet_derivation.py",
+        "wilq/content/workflow/research_packet_preparation.py",
+        "wilq/content/planning/source_pack_projection.py",
+        "wilq/content/planning/packet_model_projection.py",
+        "wilq/content/planning/proposal_packet_binding.py",
+        "wilq/content/planning/route_packet_binding.py",
+        "wilq/content/planning/generated_proposal_turn.py",
+        "wilq/content/planning/proposal_read.py",
+        "apps/api/wilq_api/routers/content_planning_proposals.py",
+        "wilq/content/regulatory/profiles.json",
+        "wilq/content/regulatory/candidates.json",
+        "wilq/content/regulatory/source_reviews.py",
+        "wilq/content/regulatory/planning.py",
+        "wilq/content/drafts/draft_alteration.py",
+        "wilq/content/drafts/draft_assurance.py",
+        "wilq/content/drafts/draft_assurance_runtime.py",
+        "wilq/content/drafts/initial_draft_readability.py",
+        "wilq/content/drafts/initial_full_draft.py",
+        "wilq/content/drafts/initial_full_draft_turn.py",
+        "wilq/content/quality/semantic_review_turn.py",
+    )
+
+
+def _build_research_packet_counterfactual_snapshots(
+    repo: Path,
+    candidate_sources: tuple[str, ...],
+) -> tuple[str, str]:
+    for relative in dict.fromkeys(candidate_sources):
+        source = REPOSITORY_ROOT / relative
+        destination = repo / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+
+    finalizer = repo / "wilq/content/drafts/draft_alteration.py"
+    candidate_finalizer = finalizer.read_text(encoding="utf-8")
+    ready_result = (
+        "        return DraftAlterationResult(\n"
+        '            status="ready", output=output, trace=trace, assurance=assurance\n'
+        "        )\n"
+    )
+    blocked_result = (
+        "        return DraftAlterationResult(\n"
+        '            status="blocked",\n'
+        "            output=output,\n"
+        "            trace=trace,\n"
+        "            blocker=_finalization_budget_blocker(),\n"
+        "        )\n"
+    )
+    assert candidate_finalizer.count(ready_result) == 1
+    finalizer.write_text(
+        candidate_finalizer.replace(ready_result, blocked_result),
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    finalizer.write_bytes(
+        (REPOSITORY_ROOT / "wilq/content/drafts/draft_alteration.py").read_bytes()
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return parent, candidate
+
+
+def test_server_owned_research_packet_observer_is_red_then_green(tmp_path: Path) -> None:
+    repo = tmp_path / "content-research-packet-counterfactual"
+    snapshot.archive_tree(REPOSITORY_ROOT, "HEAD", repo)
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "research packet observer")
+
+    descriptor = change_contract_model.MAPPINGS[
+        ("content-research-packet", "server-owned-exact-plan-draft")
+    ]
+    candidate_sources = (
+        *descriptor.observer_paths,
+        descriptor.mapping_path,
+        *_research_packet_target_sources(),
+    )
+    parent, candidate = _build_research_packet_counterfactual_snapshots(repo, candidate_sources)
+
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("content-research-packet", "server-owned-exact-plan-draft"),
+    )
+
+    assert result.ok is True, result.reason
+    assert result.infrastructure is False
+    assert result.reason == "green"
+    assert descriptor.selectors == (
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_research_packet_identifier_contract_keeps_regulatory_prefix_and_secret_guard",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_research_packet_cta_fallback_contract_is_exact_and_evidence_bound",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_research_packet_freshness_projection_contract_is_complete",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_selected_source_pack_projection_is_exact_and_editorial_only",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_bdo_profile_owns_the_editorial_canonical_path",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_packet_context_partitions_use_the_projected_planning_input",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_editorial_initial_draft_requires_a_current_research_packet",
+        "tests/content/test_packet_plan_draft_change_contract.py::"
+        "test_packet_bound_refresh_status_reads_exact_projected_job",
+        "tests/content/test_regulated_draft_finalization.py::"
+        "test_regulated_finalization_repairs_exact_scope_before_its_only_passing_critic",
+    )
+    assert descriptor.observer_paths == (
+        "tests/__init__.py",
+        "tests/content/test_packet_plan_draft_change_contract.py",
+        "tests/content/test_regulated_draft_finalization.py",
+    )
+    assert descriptor.proof == CONTENT_RESEARCH_PACKET_PROOF
+    assert descriptor.expectation == "red-green"
+    assert descriptor.allow_new_mapping is True
+
+
 def test_server_owned_current_disposition_approval_observer_is_red_then_green(
     tmp_path: Path,
 ) -> None:
@@ -528,8 +792,7 @@ def test_server_owned_current_disposition_approval_observer_is_red_then_green(
     observer_path.parent.mkdir(parents=True, exist_ok=True)
     observer_path.write_text(
         (
-            REPOSITORY_ROOT
-            / "tests/content/test_current_disposition_approval_change_contract.py"
+            REPOSITORY_ROOT / "tests/content/test_current_disposition_approval_change_contract.py"
         ).read_text(encoding="utf-8"),
         encoding="utf-8",
     )
@@ -628,15 +891,87 @@ def test_allow_new_mapping_still_requires_candidate_mapping_presence(
     assert result.reason == "mapping-missing-candidate"
 
 
-def test_changes_check_maps_source_fact_source_pack_to_exact_focused_proof(
+def test_current_disposition_card_mapping_observes_parent_red_candidate_green(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "counterfactual"
+    repo.mkdir()
+    _git(repo, "init", "--quiet")
+    _git(repo, "config", "user.email", "tests@example.invalid")
+    _git(repo, "config", "user.name", "current disposition counterfactual")
+
+    detail_panels = repo / "apps/dashboard/src/routes/DetailPanels.tsx"
+    observer_file = repo / "tests/dashboard/test_current_disposition_card_change_contract.py"
+    reporter = repo / "scripts/trusted_test_report.py"
+    detail_panels.parent.mkdir(parents=True)
+    observer_file.parent.mkdir(parents=True)
+    reporter.parent.mkdir(parents=True)
+    detail_panels.write_text(
+        "const proposedFinalDisposition = authority.proposed_final_disposition;\n",
+        encoding="utf-8",
+    )
+    observer_file.write_text(
+        (
+            REPOSITORY_ROOT / "tests/dashboard/test_current_disposition_card_change_contract.py"
+        ).read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    reporter.write_bytes((REPOSITORY_ROOT / "scripts/trusted_test_report.py").read_bytes())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "base")
+    parent = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    detail_panels.write_text(
+        (REPOSITORY_ROOT / "apps/dashboard/src/routes/DetailPanels.tsx").read_text(
+            encoding="utf-8"
+        ),
+        encoding="utf-8",
+    )
+    mapping = repo / "scripts/_change_contract_model.py"
+    mapping.parent.mkdir(parents=True, exist_ok=True)
+    mapping.write_text(
+        "('current-disposition', 'operator-decision-card')\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".")
+    _git(repo, "commit", "--quiet", "-m", "candidate")
+    candidate = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    descriptor = change_contract_model.MAPPINGS[("current-disposition", "operator-decision-card")]
+    result = observer.counterfactual(
+        repo,
+        candidate,
+        parent,
+        descriptor,
+        ("current-disposition", "operator-decision-card"),
+    )
+
+    assert result.ok is True, result.reason
+    assert result.infrastructure is False
+    assert result.reason == "green"
+
+
+def test_changes_check_maps_content_research_packet_to_exact_focused_proof(
     tmp_path: Path,
 ) -> None:
     repo = _make_repo(
         tmp_path,
         changed_path="wilq/example.py",
         message=(
-            "feat: mapped source fact source pack proof\n\n"
-            f"Change-contract: {SOURCE_FACT_SOURCE_PACK_CONTRACT}\n"
+            "feat: mapped content research packet proof\n\n"
+            f"Change-contract: {CONTENT_RESEARCH_PACKET_CONTRACT}\n"
         ),
     )
     calls: list[tuple[str, ...]] = []
@@ -652,7 +987,7 @@ def test_changes_check_maps_source_fact_source_pack_to_exact_focused_proof(
     )
 
     assert result == 0
-    assert calls == [SOURCE_FACT_SOURCE_PACK_PROOF]
+    assert calls == [CONTENT_RESEARCH_PACKET_PROOF]
 
 
 def test_changes_check_maps_content_review_to_exact_packet_revision_proof(
@@ -662,8 +997,7 @@ def test_changes_check_maps_content_review_to_exact_packet_revision_proof(
         tmp_path,
         changed_path="wilq/content/quality/review_packet_binding.py",
         message=(
-            "feat: mapped content review proof\n\n"
-            f"Change-contract: {CONTENT_REVIEW_CONTRACT}\n"
+            f"feat: mapped content review proof\n\nChange-contract: {CONTENT_REVIEW_CONTRACT}\n"
         ),
     )
     calls: list[tuple[str, ...]] = []
@@ -782,6 +1116,8 @@ def test_changes_check_rejects_an_invalid_commit_ref(tmp_path: Path) -> None:
     result = _run_cli(repo, "does-not-exist")
 
     assert result.returncode == 2
+
+
 def test_changes_check_observes_before_state_through_candidate_snapshot(
     tmp_path: Path,
 ) -> None:
@@ -795,8 +1131,7 @@ def test_changes_check_observes_before_state_through_candidate_snapshot(
     checker = fixture / "tools" / "check.py"
     checker.parent.mkdir()
     checker.write_text(
-        "import argparse\n"
-        "argparse.ArgumentParser().parse_args()\n",
+        "import argparse\nargparse.ArgumentParser().parse_args()\n",
         encoding="utf-8",
     )
     _git(fixture, "add", ".")
@@ -809,9 +1144,7 @@ def test_changes_check_observes_before_state_through_candidate_snapshot(
         text=True,
     ).stdout.strip()
 
-    candidate_source = Path("scripts/check_change_contract.py").read_text(
-        encoding="utf-8"
-    )
+    candidate_source = Path("scripts/check_change_contract.py").read_text(encoding="utf-8")
     candidate_source = candidate_source.replace(
         "from scripts._change_contract_", "from _change_contract_"
     )
@@ -860,7 +1193,7 @@ def test_before_state_missing_parent_production_is_error_not_red(
     test_file.parent.mkdir()
     test_file.write_text(
         "from missing_parent import VALUE\n\n"
-        "# (\"missing-production\", \"module\")\n"
+        '# ("missing-production", "module")\n'
         "def test_value_is_fixed():\n"
         "    assert VALUE == 2\n",
         encoding="utf-8",
@@ -972,9 +1305,7 @@ def test_counterfactual_uses_candidate_bound_reporter_for_both_snapshots(
     test_file = repo / "tests" / "test_value.py"
     test_file.parent.mkdir()
     test_file.write_text(
-        "# (\"candidate-reporter\", \"test\")\n"
-        "def test_value():\n"
-        "    assert True\n",
+        '# ("candidate-reporter", "test")\ndef test_value():\n    assert True\n',
         encoding="utf-8",
     )
     helper = repo / "scripts" / "trusted_test_report.py"
@@ -1069,10 +1400,10 @@ def test_counterfactual_missing_snapshot_module_is_collection_error_not_live_gre
     test_file = repo / "tests" / "test_import.py"
     test_file.parent.mkdir()
     test_file.write_text(
-        "# (\"import-isolation\", \"test\")\n"
+        '# ("import-isolation", "test")\n'
         "import scripts.check_change_contract as checker\n\n"
         "def test_import_does_not_escape_snapshot():\n"
-        "    assert hasattr(checker, \"_MAPPINGS\")\n",
+        '    assert hasattr(checker, "_MAPPINGS")\n',
         encoding="utf-8",
     )
     helper = repo / "scripts" / "trusted_test_report.py"

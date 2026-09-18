@@ -42,6 +42,7 @@ export function Ga4DiagnosticSurface() {
           <MetricTile label="Blokady decyzji" value={data.decision_blocker_count} />
         </div>
       )}
+      readiness={(data) => data.data_readiness}
     >
       {(data) => <Ga4DiagnosticBody data={data} actions={actions} />}
     </DiagnosticPage>

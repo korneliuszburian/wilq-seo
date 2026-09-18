@@ -78,6 +78,9 @@ def _bdo_material() -> ContentInventoryMaterialResponse:
         content_word_count=120,
         section_headings=["Kogo dotyczy BDO", "Jak zacząć"],
         evidence_id="ev_wp_bdo",
+        inventory_observation_evidence_id="ev_wp_bdo",
+        material_observation_evidence_id="ev_wp_bdo",
+        material_lineage_status="inventory_observation_bound",
         extraction_region="wordpress_rest.content",
     )
 def _stale_gsc_freshness() -> ContentFreshnessAssessment:

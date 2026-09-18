@@ -35,6 +35,7 @@ export function LocaloDiagnosticSurface() {
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
       )}
+      readiness={(data) => data.data_readiness}
     >
       {(data) => <LocaloDiagnosticBody data={data} />}
     </DiagnosticPage>

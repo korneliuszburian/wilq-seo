@@ -7,6 +7,7 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
+    regulatory_assertion_matches,
     regulatory_requirement_assertion_errors,
 )
 
@@ -177,9 +178,7 @@ def canonicalize_regulatory_section_assertions(
             for requirement_id in section.regulatory_requirement_ids
             if (requirement := requirements_by_id.get(requirement_id)) is not None
             for assertion in requirement.document_assertions
-            if not any(
-                term.casefold() in section_text.casefold() for term in assertion.required_any_of
-            )
+            if not regulatory_assertion_matches(text=section_text, assertion=assertion)
         ]
         if not missing_terms:
             sections.append(section)

@@ -34,6 +34,7 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningCtaBlock,
     ContentPlanningModelOutput,
     ContentPlanningModelSection,
+    ContentPlanningProposalBlocker,
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
@@ -243,12 +244,12 @@ def test_planning_get_does_not_let_a_failed_historical_job_shadow_current_input(
             update={
                 "status": "failed",
                 "blockers": [
-                    {
-                        "code": "runtime_failed",
-                        "label": "Stary błąd",
-                        "reason": "To jest historyczny job.",
-                        "next_step": "Odczytaj bieżące wejście.",
-                    }
+                    ContentPlanningProposalBlocker(
+                        code="runtime_failed",
+                        label="Stary błąd",
+                        reason="To jest historyczny job.",
+                        next_step="Odczytaj bieżące wejście.",
+                    )
                 ],
             }
         ),

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionObject } from "../lib/api";
 import { ga4Diagnostics } from "./ga4Diagnostics.fixture";
@@ -32,16 +32,26 @@ const ga4Action = vi.hoisted(() => ({
   audit_events: []
 } as unknown as ActionObject));
 
+const apiMocks = vi.hoisted(() => ({
+  getGa4Diagnostics: vi.fn(),
+  getActions: vi.fn()
+}));
+
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    getGa4Diagnostics: vi.fn().mockResolvedValue(ga4Diagnostics),
-    getActions: vi.fn().mockResolvedValue([ga4Action])
+    getGa4Diagnostics: apiMocks.getGa4Diagnostics,
+    getActions: apiMocks.getActions
   };
 });
 
 describe("Ga4DiagnosticSurface", () => {
+  beforeEach(() => {
+    apiMocks.getGa4Diagnostics.mockReset().mockResolvedValue(ga4Diagnostics);
+    apiMocks.getActions.mockReset().mockResolvedValue([ga4Action]);
+  });
+
   it("gives the marketer a safe measurement decision before technical details", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -61,6 +71,41 @@ describe("Ga4DiagnosticSurface", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd GA4" }));
     expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
+  });
+
+  it("keeps API readiness visible when the actions guard fails", async () => {
+    apiMocks.getGa4Diagnostics.mockResolvedValueOnce({
+      ...ga4Diagnostics,
+      data_readiness: {
+        state: "refresh_available",
+        state_label: "Dane wymagają odświeżenia",
+        reason:
+          "WILQ ma wcześniejszy odczyt, ale nie traktuje go jako bieżącej podstawy liczb ani rekomendacji.",
+        coverage_label: "Metryki z wcześniejszego odczytu nie są pokazane jako bieżące.",
+        refresh_allowed: true,
+        safe_next_step: "Uruchom odczyt danych GA4 przed decyzją.",
+        factual_metric_count: 0,
+        factual_metrics: [],
+        evidence_ids: ["ev_refresh_ga4"],
+        connector_id: "google_analytics_4",
+        connector_label: "Google Analytics 4",
+        latest_refresh_id: "refresh_google_analytics_4_test"
+      }
+    });
+    apiMocks.getActions.mockRejectedValueOnce(new Error("actions unavailable"));
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Ga4DiagnosticSurface />
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(screen.getByText("Dane wymagają odświeżenia")).toBeInTheDocument());
+    expect(screen.getByText(/WILQ ma wcześniejszy odczyt/)).toBeInTheDocument();
+    expect(screen.getByText("Metryki z wcześniejszego odczytu nie są pokazane jako bieżące.")).toBeInTheDocument();
+    expect(screen.getByText("Uruchom odczyt danych GA4 przed decyzją.")).toBeInTheDocument();
+    expect(screen.getByText(/Nie udało się pobrać akcji do sprawdzenia/)).toBeInTheDocument();
   });
 
   it("keeps the GA4 measurement contract typed and review-only", () => {

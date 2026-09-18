@@ -3,6 +3,7 @@ import { ClipboardCheck } from "lucide-react";
 
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
 import { DiagnosticDecisionCard } from "../components/DiagnosticDecisionCard";
+import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
 import {
   DiagnosticSurfaceShell,
   DiagnosticSurfaceUnavailable
@@ -47,6 +48,8 @@ export function AhrefsDiagnosticSurface() {
         </div>
       }
     >
+
+      <DiagnosticDataReadinessPanel readiness={data.data_readiness} />
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">

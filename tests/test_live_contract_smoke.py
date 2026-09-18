@@ -133,6 +133,34 @@ def test_live_contract_smoke_accepts_variable_metric_values() -> None:
     assert high_value_errors == []
 
 
+def test_live_contract_smoke_allows_dev_url_in_content_preview_field() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    payloads["content_diagnostics"]["decision_queue"] = [
+        {"preview_url": "https://ekologus.dev.proudsite.pl/bdo/"}
+    ]
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert errors == []
+
+
+def test_live_contract_smoke_rejects_legacy_url_fields_with_dev_url() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    payloads["content_diagnostics"]["decision_queue"] = [
+        {
+            "target_site_url": "https://ekologus.dev.proudsite.pl/bdo/",
+            "mapping_review_status": "https://ekologus.dev.proudsite.pl/bdo/",
+        }
+    ]
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert any("target_site_url" in error for error in errors)
+    assert any("mapping_review_status" in error for error in errors)
+
+
 def test_live_contract_smoke_rejects_missing_evidence_and_decisions() -> None:
     smoke = _load_live_smoke_module()
     payloads = _payloads_with_metric_value(12)

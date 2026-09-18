@@ -50,6 +50,91 @@ a {
   box-shadow: 0 12px 28px rgb(23 32 42 / 8%);
 }
 
+.content-evidence-readiness {
+  display: flow-root;
+  margin-block-start: calc(var(--spacing) * 3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  padding: calc(var(--spacing) * 3);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  line-height: 1.5;
+}
+
+.content-evidence-readiness[data-state="blocked"] {
+  border-color: var(--color-risk);
+}
+
+.content-evidence-readiness__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.content-evidence-readiness__meta,
+.content-evidence-readiness__next-step {
+  margin-block-start: calc(var(--spacing) * 1);
+}
+
+.content-evidence-readiness__next-step {
+  font-weight: 600;
+}
+
+.content-evidence-row {
+  padding: calc(var(--spacing) * 3);
+}
+
+.content-evidence-row__badge {
+  display: inline-flex;
+  margin-block-start: calc(var(--spacing) * 2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-full);
+  padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 2);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.content-evidence-row__badge[data-state="ready_for_researcher"] {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.content-evidence-row__badge[data-state="blocked"] {
+  border-color: var(--color-risk);
+  color: var(--color-risk);
+}
+
+.content-evidence-row__details {
+  margin-block-start: calc(var(--spacing) * 2);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+}
+
+.content-evidence-row__summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.content-evidence-row__meta {
+  display: grid;
+  gap: calc(var(--spacing) * 1);
+  margin-block-start: calc(var(--spacing) * 2);
+}
+
+.content-evidence-row__meta p {
+  margin: 0;
+}
+
+.content-evidence-row__blockers {
+  margin: 0;
+  padding-inline-start: calc(var(--spacing) * 4);
+}
+
+.content-evidence-row__technical {
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
 .current-disposition-card {
   display: flow-root;
   border: 1px solid var(--color-line);

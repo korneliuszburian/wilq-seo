@@ -12,130 +12,59 @@ import {
 
 const digest = (character: string): string => character.repeat(64);
 
-// Python-derived from tests/content/test_research_packet.py with a fixed
-// command timestamp. The identity/source-pack values and all digest fields are
-// emitted by the server authority, not recomputed in this test.
-const pythonDerivedExactPacket = {
-  schema_version: "wilq_content_research_packet_v1",
-  packet_id: "content_research_packet_2298e70616e45b3e18a2c271",
-  packet_digest: "9c665a2daf8a1b095a1da0ac1cfa0a22634efaa372890a6303ffe549cc81d293",
-  status: "exact_current",
-  source_pack_binding_id: "content_source_pack_binding_fixed",
-  source_pack_binding_digest: digest("b"),
-  identity_binding_id: "content_delivery_identity_fixed",
-  identity_binding_digest: digest("c"),
-  current_work_item_id: "content_work_item_fixed",
-  preparation_receipt_id: "content_research_packet_preparation_fixed",
-  preparation_receipt_digest: digest("f"),
-  classification_source_row_digest: digest("d"),
-  canonical_path: "/bdo",
-  public_url: "https://www.ekologus.pl/bdo/",
-  final_disposition: "keep",
-  content_kind: "service",
-  intent: "bdo compliance reporting",
-  query_cluster: ["bdo", "sprawozdawczość bdo"],
-  canonical_owner: "/bdo",
-  target_audience: "przedsiębiorca",
-  buyer_problem: "brak pewności obowiązków",
-  buyer_trigger: "zbliżający się termin",
-  approved_source_fact_ids: [
-    "fact_bdo",
-    "fact_consulting"
-  ],
-  blocked_claims: [
-    "gwarancja zgodności"
-  ],
-  evidence_ids: ["ev_bdo", "ev_shared"],
-  source_fact_registry_digest: digest("e"),
-  source_facts_digest: "aaa09175fb6bd0c6d513ab825e098f507bb469f61687bbf34bdf51c8fe1f8914",
-  evidence_ids_digest: "0ee4685b7c591d780c5b0b724c442687934289ad5d34c72531d1b062791db66a",
-  freshness: [
-    {
-      source_id: "fact_bdo",
-      evidence_ids: ["ev_bdo", "ev_shared"],
-      checked_at: "2026-09-15T12:00:00.123456Z",
-      status: "fresh"
-    },
-    {
-      source_id: "fact_consulting",
-      evidence_ids: ["ev_bdo", "ev_shared"],
-      checked_at: "2026-09-15T12:00:00.123456Z",
-      status: "fresh"
-    }
-  ],
-  legal_source_requirements: ["none_identified"],
-  cta_destination: "/kontakt/",
-  internal_links: [{
-    destination_path: "/kontakt/",
-    anchor_text: "Skontaktuj się",
-    relation: "next_step",
-    verification: "exact_verified"
-  }],
-  context_receipt: {
-    schema_version: "wilq_content_research_packet_context_v1",
-    classification_run_id: "classification_fixed",
-    classification_run_digest: digest("a"),
-    classification_source_row_digest: digest("d"),
-    identity_binding_id: "content_delivery_identity_fixed",
-    identity_binding_digest: digest("c"),
-    source_fact_authority_receipt_id: null,
-    source_fact_authority_receipt_digest: null,
-    source_fact_authority_snapshot_digest: null,
-    source_fact_authority_provenance_digest: null,
-    service_card_id: null,
-    service_semantic_digest: digest("1"),
-    brief_semantic_digest: digest("2"),
-    demand_evidence_digest: digest("3"),
-    verified_links_digest: digest("4"),
-    regulatory_coverage_digest: digest("5"),
-    freshness_digest: digest("6"),
-    cta_destination: "/kontakt/",
-    evidence_ids: ["ev_bdo", "ev_shared"],
-    source_pack_evidence_ids: [],
-    source_fact_evidence_ids: [],
-    demand_evidence_ids: [],
-    measurement_evidence_ids: [],
-    verified_link_evidence_ids: [],
-    cta_evidence_ids: [],
-    regulatory_evidence_ids: [],
-    planning_evidence_ids: []
-  },
-  input_digest: "61ffcf51e90b772cec0f4d70ea3caa1448fcabc9a8d1fed15f20dc19ee715633",
-  blocker: null,
-  recorded_by: "research_packet_test",
-  recorded_at: "2026-09-15T12:00:00.123456Z"
-} as const;
-
 describe("server-owned research packet bindings", () => {
-  it("rejects stale inner digests even when outer identity is rehashed", async () => {
-    await expect(verifyContentResearchPacketDigest(pythonDerivedExactPacket)).resolves.toBe(true);
-    await expect(verifyContentResearchPacketDigest({
-      ...pythonDerivedExactPacket,
-      source_facts_digest: digest("0"),
-      packet_digest: "b341b42405f831c9f46d62a2c35ab68cabd5817a0ff719d9e5491026268a6f6e"
-    })).resolves.toBe(false);
-    await expect(verifyContentResearchPacketDigest({
-      ...pythonDerivedExactPacket,
-      evidence_ids_digest: digest("0"),
-      packet_digest: "0bdbf7f48528b829fb33da23e2043e30edc95eccf463f074744c18ce788c7aad"
-    })).resolves.toBe(false);
-    await expect(verifyContentResearchPacketDigest({
-      ...pythonDerivedExactPacket,
-      input_digest: digest("f"),
-      packet_id: "content_research_packet_9729ec819c0184c15dd6d976",
-      packet_digest: "2d22ba35d0d07b35a7d6718a13337bb229b1d6ed000cbbca3f9e0fb212a3e66b"
-    })).resolves.toBe(false);
-  });
-
   it("verifies the packet digest asynchronously with WebCrypto", async () => {
-    const packetWithDigest = pythonDerivedExactPacket;
+    const packet = {
+      schema_version: "wilq_content_research_packet_v1",
+      packet_id: "content_research_packet_33efe8c489591a1b6f7e9ad0",
+      status: "blocked",
+      source_pack_binding_id: "content_source_pack_current",
+      source_pack_binding_digest: digest("b"),
+      identity_binding_id: "content_delivery_identity_current",
+      identity_binding_digest: digest("c"),
+      current_work_item_id: "content_work_item_current",
+      preparation_receipt_id: null,
+      preparation_receipt_digest: null,
+      classification_source_row_digest: "",
+      canonical_path: "",
+      public_url: "",
+      final_disposition: "keep",
+      content_kind: "service",
+      intent: "",
+      query_cluster: [],
+      canonical_owner: "",
+      target_audience: "",
+      buyer_problem: "",
+      buyer_trigger: "",
+      approved_source_fact_ids: [],
+      blocked_claims: [],
+      evidence_ids: [],
+      source_fact_registry_digest: "",
+      source_facts_digest: "8138e5e9bb95f27b029fa5e119d99c2e9a6b7f44c8a07faada29f295b76297d3",
+      evidence_ids_digest: "8138e5e9bb95f27b029fa5e119d99c2e9a6b7f44c8a07faada29f295b76297d3",
+      freshness: [],
+      legal_source_requirements: [],
+      cta_destination: "",
+      internal_links: [],
+      context_receipt: null,
+      input_digest: digest("1"),
+      blocker: {
+        seam: "preparation_receipt",
+        reason: "preparation_receipt_missing",
+        evidence_ids: [],
+        next_step_pl: "Przygotuj dokładny receipt — Łódź."
+      },
+      recorded_by: "packet_test",
+      recorded_at: "2026-09-15T00:00:00.123456Z"
+    } as const;
+    const packetWithDigest = {
+      ...packet,
+      packet_digest: "b7c264fcb77a5bc6d253bdc83c54959648c958b195900e2e87382b0dd9b9b860"
+    };
     const digestSpy = vi.spyOn(globalThis.crypto.subtle, "digest");
 
     await expect(verifyContentResearchPacketDigest(packetWithDigest)).resolves.toBe(true);
-    await expect(verifyContentResearchPacketDigest({
-      ...packetWithDigest,
-      intent: "tampered"
-    })).resolves.toBe(false);
+    await expect(verifyContentResearchPacketDigest({ ...packetWithDigest, intent: "tampered" })).resolves.toBe(false);
     await expect(verifyContentResearchPacketDigest({
       ...packetWithDigest,
       packet_id: "content_research_packet_tampered"

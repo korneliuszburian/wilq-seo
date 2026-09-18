@@ -1,4 +1,4 @@
-"""Stamp server-derived current-disposition digests onto audit events."""
+"""Stamp server-derived authority digests onto canonical action audit events."""
 
 from __future__ import annotations
 
@@ -12,6 +12,11 @@ from wilq.content.workflow.delivery_identity_authority import (
     ContentDeliveryIdentityAuthoritySnapshot,
     delivery_identity_authority_action_payload_digest,
 )
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+    ContentResearchFactPromotionSnapshot,
+    promotion_action_payload_digest,
+)
 from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     parse_source_fact_authority_snapshot_json,
@@ -21,12 +26,15 @@ from wilq.schemas import ActionObject, AuditEvent
 
 
 def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> None:
-    """Add exact current-disposition snapshot/payload digests to an audit event."""
+    """Add exact authority snapshot/payload digests without changing audit identity."""
 
     action_type = action.payload.get("action_type")
     if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
         snapshot_payload = action.payload.get("delivery_identity_authority")
         if not isinstance(snapshot_payload, dict):
+            # A rebuilt action can be a typed blocked read when the current
+            # classification/receipt disappeared.  It has no authority
+            # digest to stamp, but lifecycle auditing must still be possible.
             return
         identity_snapshot = ContentDeliveryIdentityAuthoritySnapshot.model_validate(
             snapshot_payload
@@ -39,33 +47,47 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
             ),
         }
         return
-    if action_type == SOURCE_FACT_AUTHORITY_ACTION_TYPE:
-        snapshot_payload = action.payload.get("source_fact_authority")
-        if not isinstance(snapshot_payload, dict):
-            return
-        try:
-            authority_snapshot = parse_source_fact_authority_snapshot_json(snapshot_payload)
-        except Exception:
-            # Blocked previews intentionally have no exact snapshot.  Their
-            # generic ActionObject lifecycle must remain typed/HTTP-safe.
-            return
+    if action_type == CURRENT_DISPOSITION_ACTION_TYPE:
+        disposition_snapshot = ContentCurrentDispositionSnapshot.model_validate(
+            action.payload.get("current_disposition_authority", {})
+        )
         event.details = {
             **event.details,
-            "source_fact_authority_snapshot_digest": authority_snapshot.context_digest,
-            "source_fact_authority_action_payload_digest": (
-                source_fact_authority_action_payload_digest(action)
+            "current_disposition_snapshot_digest": disposition_snapshot.context_digest,
+            "current_disposition_action_payload_digest": current_disposition_action_payload_digest(
+                action
             ),
         }
         return
-    if action_type != CURRENT_DISPOSITION_ACTION_TYPE:
+    if action_type == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
+        promotion_snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+            action.payload.get("promotion_snapshot", {})
+        )
+        event.details = {
+            **event.details,
+            "research_promotion_snapshot_digest": promotion_snapshot.context_digest,
+            "research_promotion_action_payload_digest": promotion_action_payload_digest(action),
+            # These canonical digest keys survive the local audit redaction boundary;
+            # the descriptive keys above remain the operator-facing contract.
+            "context_digest": promotion_snapshot.context_digest,
+            "payload_digest": promotion_action_payload_digest(action),
+        }
         return
-    snapshot = ContentCurrentDispositionSnapshot.model_validate(
-        action.payload.get("current_disposition_authority", {})
-    )
+    if action_type != SOURCE_FACT_AUTHORITY_ACTION_TYPE:
+        return
+    snapshot_payload = action.payload.get("source_fact_authority")
+    if not isinstance(snapshot_payload, dict):
+        return
+    try:
+        authority_snapshot = parse_source_fact_authority_snapshot_json(snapshot_payload)
+    except Exception:
+        # Blocked previews intentionally have no exact snapshot.  Their
+        # generic ActionObject lifecycle must remain typed/HTTP-safe.
+        return
     event.details = {
         **event.details,
-        "current_disposition_snapshot_digest": snapshot.context_digest,
-        "current_disposition_action_payload_digest": current_disposition_action_payload_digest(
+        "source_fact_authority_snapshot_digest": authority_snapshot.context_digest,
+        "source_fact_authority_action_payload_digest": source_fact_authority_action_payload_digest(
             action
         ),
     }

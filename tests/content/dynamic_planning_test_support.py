@@ -43,6 +43,7 @@ class PlanningClient:
         self.fail = False
         self.planning_placement = "after_content"
         self.planning_cta_blocks = True
+        self.planning_inventory_only = False
         self.planning_link_target: str | None = None
         self.planning_link_evidence_ids: list[str] | None = None
         self.planning_link_claim_ids: list[str] | None = None
@@ -98,7 +99,20 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
     ] or [planning_input["inventory"]["sections"][0]["heading"]]
     cta_placements = ["after_lead", "after_content", *inventory_headings]
     inventory_heading = inventory_headings[0]
-    evidence_id = planning_input["evidence_ids"][0]
+    source_fact_evidence_ids = [
+        evidence_id
+        for fact in planning_input["source_facts"]
+        for evidence_id in fact["evidence_ids"]
+    ]
+    evidence_id = (
+        planning_input["evidence_ids"][0]
+        if client.planning_inventory_only
+        else (
+            source_fact_evidence_ids[0]
+            if source_fact_evidence_ids
+            else planning_input["evidence_ids"][0]
+        )
+    )
     query_rows = planning_input["query_portfolio"]["gsc_query_rows"]
     query_terms = [query_rows[0]["term"]] if query_rows else []
     allowed_claims = [
@@ -140,8 +154,15 @@ def _planning_output(client: PlanningClient, request: Any) -> dict[str, Any]:
         # the fake Codex output aligned with that contract instead of creating
         # a partial one-section proposal that must correctly be marked stale.
         "sections": [
-            _planning_section(heading, query_terms, lineage)
-            for heading in inventory_headings
+            _planning_section(
+                heading,
+                query_terms,
+                lineage,
+                inventory_disposition=(
+                    "merge" if client.planning_inventory_only and index == 0 else "rewrite"
+                ),
+            )
+            for index, heading in enumerate(inventory_headings)
         ],
         "faq": [_planning_faq(query_terms, lineage)],
         "cta_blocks": (
@@ -217,12 +238,14 @@ def _planning_section(
     inventory_heading: str,
     query_terms: list[str],
     lineage: dict[str, list[str]],
+    *,
+    inventory_disposition: str = "rewrite",
 ) -> dict[str, Any]:
     return {
         "heading": inventory_heading,
         "purpose": "Zachowaj użyteczną sekcję i doprecyzuj odpowiedź.",
         "reader_question": "Co trzeba sprawdzić przed działaniem?",
-        "inventory_disposition": "rewrite",
+        "inventory_disposition": inventory_disposition,
         "inventory_heading": inventory_heading,
         "query_terms": query_terms,
         **lineage,
@@ -671,8 +694,15 @@ def _patch_synthetic_inventory_material(monkeypatch: pytest.MonkeyPatch) -> None
             section_headings=headings,
             acf_section_headings=headings,
             evidence_id=None if item is None else item.evidence_id,
+            inventory_observation_evidence_id=None if item is None else item.evidence_id,
+            material_observation_evidence_id=None if item is None else item.evidence_id,
+            material_lineage_status=(
+                "inventory_observation_bound"
+                if item is not None and item.evidence_id
+                else "inventory_selection_only"
+            ),
             extraction_region="synthetic_test_fixture",
-            material_confidence="source_bound",
+            material_confidence="source_bound" if item is not None else "review_required",
             source_field_lineage=["synthetic_test_fixture"],
         )
 

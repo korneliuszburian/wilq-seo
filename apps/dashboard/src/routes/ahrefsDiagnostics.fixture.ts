@@ -72,6 +72,31 @@ export const ahrefsDiagnostics = {
   latest_refresh_status_label: "zakończony",
   live_data_status_label: "metryki Ahrefs dostępne",
   live_data_available: true,
+  data_readiness: {
+    state: "ready",
+    state_label: "Dane gotowe do użycia",
+    reason: "WILQ ma utrwalone fakty dla tego widoku.",
+    coverage_label: "Pokazane metryki są potwierdzone przez WILQ.",
+    refresh_allowed: false,
+    safe_next_step: "Przejrzyj fakty i podejmij tylko decyzję opartą na pokazanych dowodach.",
+    factual_metric_count: 2,
+    factual_metrics: [
+      {
+        name: "ahrefs_domain_rating",
+        metric_label: "Domain Rating",
+        value: 90,
+        period: "ahrefs_domain_rating",
+        period_label: "ostatni odczyt Ahrefs",
+        source_connector: "ahrefs",
+        source_connector_label: "Ahrefs",
+        evidence_id: "ev_refresh_refresh_ahrefs_test"
+      }
+    ],
+    evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    connector_id: "ahrefs",
+    connector_label: "Ahrefs",
+    latest_refresh_id: "refresh_ahrefs_test"
+  },
   authority_fact_count: 2,
   gap_fact_count: 0,
   gap_read_contract: {

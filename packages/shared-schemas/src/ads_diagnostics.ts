@@ -31,6 +31,7 @@ import { AdsKeywordPlannerReadContractSchema } from "./ads_keyword_planner_contr
 import { AdsCustomSegmentsReadContractSchema } from "./ads_custom_segments";
 import { AdsNegativeKeywordsReadContractSchema } from "./ads_negative_keywords";
 import { AdsDecisionItemSchema, AdsOperatorSummarySchema } from "./ads_decisions";
+import { DiagnosticDataReadinessSchema } from "./diagnostic_readiness";
 
 export const AdsFreshnessAssessmentSchema = z.object({
   state: z.enum(["fresh", "stale", "missing", "blocked"]),
@@ -70,6 +71,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
   connector_status_label: z.string().default(""),
+  data_readiness: DiagnosticDataReadinessSchema,
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   latest_refresh_status_label: z.string().nullable().optional(),
   live_data_status_label: z.string().default(""),

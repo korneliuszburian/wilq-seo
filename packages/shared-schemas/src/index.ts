@@ -6,6 +6,7 @@ export * from "./content_current_disposition";
 export * from "./content_diagnostics";
 export * from "./content_preflight";
 export * from "./connectors";
+export * from "./diagnostic_readiness";
 export * from "./actions";
 export * from "./marketing";
 export * from "./ads_campaigns";

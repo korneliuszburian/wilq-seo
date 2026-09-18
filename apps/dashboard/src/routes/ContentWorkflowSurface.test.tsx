@@ -1174,11 +1174,12 @@ function selectedWorkspace(
 ): ContentSelectedWorkspace {
   return {
     response_type: "content_selected_workspace",
-    contract_version: "content_selected_workspace_v2",
+    contract_version: "content_selected_workspace_v3",
     status: "ready",
     work_item_id: workspace.work_item_id,
     requested_work_item_id: workspace.work_item_id,
     production_decision: { status: "missing" },
+    identity_readiness: { status: "not_applicable", binding_id: null, reason_pl: "Brakuje bieżącej klasyfikacji.", safe_next_step_pl: "Uzyskaj bieżącą klasyfikację.", generation_allowed: false },
     operator_journey: contentOperatorJourney(workspace, devDraftReady),
     workspace,
     reason: "WILQ odczytał dokładny workspace wskazanej strony.",

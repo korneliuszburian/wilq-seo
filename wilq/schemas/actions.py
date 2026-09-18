@@ -20,7 +20,7 @@ class AuditEvent(BaseModel):
     actor: str
     principal_id: str | None = None
     workspace_id: str | None = None
-    trust_level: Literal["local_unverified"] | None = None
+    trust_level: Literal["local_unverified", "local_confirmed"] | None = None
     submitted_actor_label: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     summary: str
@@ -52,7 +52,7 @@ class ActionMutationAuditRecord(BaseModel):
     actor: str
     principal_id: str | None = None
     workspace_id: str | None = None
-    trust_level: Literal["local_unverified"] | None = None
+    trust_level: Literal["local_unverified", "local_confirmed"] | None = None
     submitted_actor_label: str | None = None
     created_at: datetime = Field(default_factory=utc_now)
     audit_event_id: str
@@ -195,6 +195,7 @@ class ActionReviewRequest(BaseModel):
     checked_items: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
     wordpress_draft: ContentDraftRevisionBinding | None = None
+    trusted_local_confirmation_grant: str | None = Field(default=None, min_length=1)
 
     @field_validator("checked_items", "blockers")
     @classmethod
@@ -420,6 +421,7 @@ class ActionConfirmRequest(BaseModel):
     target_roas: float | None = Field(default=None, gt=0)
     target_cpa_micros: int | None = Field(default=None, gt=0)
     wordpress_draft: ContentDraftRevisionBinding | None = None
+    trusted_local_confirmation_grant: str | None = Field(default=None, min_length=1)
 
 
 class ActionConfirmResult(BaseModel):
@@ -473,6 +475,7 @@ class ActionImpactCheckRequest(BaseModel):
     pre_window_days: int = Field(default=7, ge=1, le=90)
     post_window_days: int = Field(default=7, ge=1, le=90)
     wordpress_draft: ContentDraftRevisionBinding | None = None
+    trusted_local_confirmation_grant: str | None = Field(default=None, min_length=1)
 
 
 class ActionImpactCheckResult(BaseModel):
@@ -500,6 +503,7 @@ class ActionApplyRequest(BaseModel):
     confirmed_by: str | None = None
     wordpress_draft: ActionWordPressDraftApplyInput | None = None
     new_page_draft: ContentNewPageDraftBinding | None = None
+    trusted_local_confirmation_grant: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def require_one_apply_binding_kind(self) -> ActionApplyRequest:

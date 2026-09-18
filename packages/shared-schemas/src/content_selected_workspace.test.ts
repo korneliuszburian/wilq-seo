@@ -141,6 +141,20 @@ describe("ContentSelectedWorkspaceSchema", () => {
       connector_ids: ["wordpress_ekologus"]
     }
   };
+  const unavailableIdentityReadiness = {
+    status: "not_applicable",
+    binding_id: null,
+    reason_pl: "Brak bieżącej decyzji produkcyjnej do powiązania S1.",
+    safe_next_step_pl: "Najpierw odczytaj bieżącą klasyfikację.",
+    generation_allowed: false
+  };
+  const missingIdentityReadiness = {
+    status: "missing",
+    binding_id: null,
+    reason_pl: "Brakuje dokładnego powiązania S1 dla bieżącej decyzji.",
+    safe_next_step_pl: "Zarejestruj albo zweryfikuj dokładne powiązanie S1.",
+    generation_allowed: false
+  };
   const reuseDecision = {
     ...availableDecision,
     decision: "reuse",
@@ -176,6 +190,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
         work_item_id: "content_work_item_bdo",
         requested_work_item_id: "content_work_item_bdo",
         production_decision: { status: "missing" },
+        identity_readiness: unavailableIdentityReadiness,
         operator_journey: operatorJourney,
         workspace,
         reason: "Odczytano workspace.",
@@ -191,6 +206,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
         work_item_id: "content_work_item_missing",
         requested_work_item_id: "content_work_item_missing",
         production_decision: { status: "missing" },
+        identity_readiness: unavailableIdentityReadiness,
         operator_journey: operatorJourney,
         workspace: null,
         reason: "Nie znaleziono strony.",
@@ -203,6 +219,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
         work_item_id: "content_work_item_other",
         requested_work_item_id: "content_work_item_other",
         production_decision: { status: "missing" },
+        identity_readiness: unavailableIdentityReadiness,
         operator_journey: operatorJourney,
         workspace,
         reason: "Odczytano workspace.",
@@ -217,6 +234,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
       work_item_id: "content_work_item_bdo",
       requested_work_item_id: "content_work_item_bdo",
       production_decision: reuseDecision,
+      identity_readiness: missingIdentityReadiness,
       operator_journey: operatorJourney,
       workspace: guardedWorkspace,
       reason: availableDecision.reason_pl,
@@ -264,6 +282,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
       work_item_id: "content_work_item_bdo",
       requested_work_item_id: "content_work_item_bdo",
       production_decision: productionDecision,
+      identity_readiness: missingIdentityReadiness,
       operator_journey: operatorJourney,
       workspace: workspaceWithBlocker,
       reason: reusableBlocker.reason_pl,
@@ -285,6 +304,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
       work_item_id: "content_work_item_bdo",
       requested_work_item_id: "content_work_item_bdo",
       production_decision: reuseDecision,
+      identity_readiness: missingIdentityReadiness,
       operator_journey: operatorJourney,
       workspace: guardedWorkspace,
       reason: availableDecision.reason_pl,
@@ -386,6 +406,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
         work_item_id: "content_work_item_bdo",
         requested_work_item_id: "content_work_item_bdo",
         production_decision: projection,
+        identity_readiness: missingIdentityReadiness,
         operator_journey: operatorJourney,
         workspace: guardedWorkspace,
         reason: projection.reason_pl,

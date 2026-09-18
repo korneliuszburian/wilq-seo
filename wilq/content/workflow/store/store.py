@@ -49,6 +49,9 @@ from wilq.content.workflow.store.store_content_kind_receipt import (
 from wilq.content.workflow.store.store_current_disposition_authority import (
     ContentCurrentDispositionAuthorityStoreMixin,
 )
+from wilq.content.workflow.store.store_current_verification import (
+    ContentCurrentVerificationStoreMixin,
+)
 from wilq.content.workflow.store.store_delivery_identity import (
     ContentDeliveryIdentityStoreMixin,
 )
@@ -56,6 +59,9 @@ from wilq.content.workflow.store.store_delivery_identity_authority import (
     ContentDeliveryIdentityAuthorityStoreMixin,
 )
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
+from wilq.content.workflow.store.store_evidence_acquisition import (
+    EvidenceAcquisitionStoreMixin,
+)
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
 )
@@ -107,6 +113,7 @@ from wilq.content.workflow.store.store_refresh_preparation import (
 from wilq.content.workflow.store.store_research_packet import (
     ContentResearchPacketStoreMixin,
 )
+from wilq.content.workflow.store.store_research_proposal import ResearchProposalStoreMixin
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
 from wilq.content.workflow.store.store_source_fact_authority import (
@@ -626,11 +633,14 @@ class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
     ContentCurrentDispositionAuthorityStoreMixin,
+    ContentCurrentVerificationStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourceFactAuthorityStoreMixin,
     ContentSourcePackBindingStoreMixin,
+    EvidenceAcquisitionStoreMixin,
     ContentResearchPacketStoreMixin,
+    ResearchProposalStoreMixin,
     ContentLandingHubAuthorizationStoreMixin,
     InitialDraftAuthorityStoreMixin,
     ProductionClassificationStoreMixin,

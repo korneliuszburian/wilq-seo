@@ -214,36 +214,26 @@ def _research_packet_blocker(
     context_blocker = _context_receipt_blocker(command, identity, source_pack)
     if context_blocker is not None:
         return context_blocker
-    preparation_blocker = _preparation_receipt_blocker(command, preparation_receipt)
-    if preparation_blocker is not None:
-        return preparation_blocker
-    return (
-        _semantic_blocker(command, source_pack, identity, now)
-        or _source_fact_blocker(command, source_pack)
-        or _evidence_blocker(command, source_pack)
-        or _freshness_blocker(command, source_pack, now)
-    )
-
-
-def _preparation_receipt_blocker(
-    command: ContentResearchPacketCommand,
-    preparation_receipt: ContentResearchPacketPreparationReceipt | None,
-) -> ContentResearchPacketBlocker | None:
     if command.preparation_receipt_id is None or preparation_receipt is None:
         return _blocker(
             "preparation_receipt",
             "preparation_receipt_missing",
-            command.evidence_ids,
+            evidence,
             "Przygotuj server-owned preparation receipt przed zapisaniem packetu.",
         )
     if not preparation_receipt_matches_command(preparation_receipt, command):
         return _blocker(
             "preparation_receipt",
             "preparation_receipt_mismatch",
-            command.evidence_ids,
+            evidence,
             "Użyj preparation receipt wygenerowanego dla tego exact kontekstu.",
         )
-    return None
+    return (
+        _semantic_blocker(command, source_pack, identity, now)
+        or _source_fact_blocker(command, source_pack)
+        or _evidence_blocker(command, source_pack)
+        or _freshness_blocker(command, source_pack, now)
+    )
 
 
 def _context_receipt_blocker(

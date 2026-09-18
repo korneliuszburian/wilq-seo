@@ -535,19 +535,10 @@ def test_public_http_lifecycle_persists_exact_identity_and_no_vendor_write(
     monkeypatch.setattr(delivery_authority_router, "content_workflow_store", lambda: store)
     monkeypatch.setattr(delivery_identity_router, "content_workflow_store", lambda: store)
     monkeypatch.setattr(workflow_store_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(action_catalog, "content_workflow_store", lambda: store)
     monkeypatch.setattr(action_service, "action_content_workflow_store", lambda: store)
     monkeypatch.setattr(action_service, "local_state_store", lambda: audit_store)
-    monkeypatch.setattr(
-        action_service,
-        "get_connector_status",
-        lambda _connector: SimpleNamespace(configured=True, label="WordPress"),
-    )
     monkeypatch.setattr(action_validation_module, "local_state_store", lambda: audit_store)
-    monkeypatch.setattr(
-        action_validation_module,
-        "get_connector_status",
-        lambda _connector: SimpleNamespace(configured=True, label="WordPress"),
-    )
     monkeypatch.setattr(audit_store_module, "local_state_store", lambda: audit_store)
     monkeypatch.setattr(actions_router, "local_state_store", lambda: audit_store)
     client = TestClient(app)
