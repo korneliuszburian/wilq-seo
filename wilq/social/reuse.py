@@ -163,6 +163,30 @@ def social_history_inventory_digest(inventory: SocialHistoryInventory) -> str:
     return sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def build_social_reuse_review(
+    *,
+    proposal: SocialReuseProposal,
+    request: SocialReuseReviewRequest,
+    latest: SocialReuseReview | None,
+    now: datetime,
+) -> SocialReuseReview:
+    """Build the next append-only review with a server-owned number."""
+
+    number = 1 if latest is None else latest.review_number + 1
+    return SocialReuseReview(
+        review_id=f"social_review_{proposal.proposal_id}_{number}",
+        proposal_id=proposal.proposal_id,
+        proposal_digest=proposal.proposal_digest,
+        review_number=number,
+        decision=request.decision,
+        reviewed_by=request.reviewed_by,
+        notes=request.notes,
+        checked_items=request.checked_items,
+        evidence_ids=request.evidence_ids,
+        created_at=now,
+    )
+
+
 def build_social_reuse_proposal(
     request: SocialReuseProposalRequest,
     revision: ContentDraftRevision,

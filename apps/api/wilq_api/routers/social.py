@@ -18,11 +18,11 @@ from wilq.social.reuse import (
     SocialReuseProposalListResponse,
     SocialReuseProposalRequest,
     SocialReuseProposalResponse,
-    SocialReuseReview,
     SocialReuseReviewRequest,
     SocialReuseReviewResponse,
     SocialReuseRevisionRequest,
     build_social_reuse_proposal,
+    build_social_reuse_review,
     social_history_inventory_digest,
 )
 
@@ -235,20 +235,11 @@ def review_social_reuse_proposal(
             review=latest,
             next_step=_social_review_next_step(latest.decision),
         )
-    review = SocialReuseReview(
-        review_id=(
-            f"social_review_{proposal_id}_"
-            f"{1 if latest is None else latest.review_number + 1}"
-        ),
-        proposal_id=proposal_id,
-        proposal_digest=proposal.proposal_digest,
-        review_number=1 if latest is None else latest.review_number + 1,
-        decision=request.decision,
-        reviewed_by=request.reviewed_by,
-        notes=request.notes,
-        checked_items=request.checked_items,
-        evidence_ids=request.evidence_ids,
-        created_at=utc_now(),
+    review = build_social_reuse_review(
+        proposal=proposal,
+        request=request,
+        latest=latest,
+        now=utc_now(),
     )
     persisted = store.save_social_reuse_review(review)
     return SocialReuseReviewResponse(

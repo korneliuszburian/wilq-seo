@@ -179,6 +179,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/actions/test_ads_external_execution_ack.py",
         "tests/actions/test_ads_external_execution_domain.py",
     ),
+    ("social-review-policy", "domain-owned-append-only-numbering"): (
+        "scripts/test.sh",
+        "tests/content/test_social_reuse_proposal_api.py",
+        "tests/content/test_social_reuse_review_domain.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -300,6 +305,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("action-preview-cards", "api-owned-payload-narration"),
             ("revision-save-policy", "domain-owned-exact-validation"),
             ("ads-external-audit", "domain-owned-exact-binding"),
+            ("social-review-policy", "domain-owned-append-only-numbering"),
         },
     )
     for key, proof in _PROOFS.items()
