@@ -72,7 +72,7 @@ def test_authorized_stale_mapping_returns_reconciliation_without_model_turn(
     _unused, runtime = configure_planning_harness(monkeypatch, tmp_path)
     store = content_workflow_store()
     store.record_production_classification(_refresh_run())
-    client = _app_client(_authority(store))
+    client = _app_client(_authority(store), monkeypatch)
     authorization = _authorize(client)
     captured_flags: list[bool] = []
     stale_response = ContentPlanningProposalResponse(

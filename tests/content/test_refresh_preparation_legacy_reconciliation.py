@@ -32,7 +32,7 @@ def test_legacy_unbound_same_input_refresh_plan_requires_reconciliation_not_retr
 ) -> None:
     _unused, runtime = configure_planning_harness(monkeypatch, tmp_path)
     store = content_workflow_store()
-    client = _app_client(_authority(store))
+    client = _app_client(_authority(store), monkeypatch)
     initial_status = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals"
     )
