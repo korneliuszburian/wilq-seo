@@ -1,6 +1,6 @@
 # WILQ progress — current handoff
 
-Stan na: 2026-09-11. To jest krótki handoff codebase’u; nie zastępuje
+Stan na: 2026-09-18. To jest krótki handoff codebase’u; nie zastępuje
 `PLANS.md`, aktywnego Beada, canonical CSV ani WILQ API. Historyczne proofy i
 metryki zostają w git oraz w oznaczonych raportach.
 
@@ -13,6 +13,13 @@ metryki zostają w git oraz w oznaczonych raportach.
 - `scripts/lint.sh`, `scripts/typecheck.sh`, focused falsifiery nowych fal,
   managed API `8000` i dashboard `5173` są zaobserwowane jako zielone na tym
   punkcie;
+- findings audytu F-01 (data_readiness), F-03/F-04/F-05 (etykiety Ads i preview
+  cards), F-06/F-07/F-08/F-09 (reguły safety przeniesione do domeny), F-21
+  (kanoniczny workspace) oraz dokumenty current-state F-12..F-17 są zamknięte;
+- `scripts/marketer_language_guard.py`, `scripts/live_contract_smoke.py`
+  (`status: completed`, 0 błędów) i `scripts/dashboard_usefulness_audit.py`
+  (`pass: true`) są zielone; żywy pipeline `planning-proposals` dla BDO zwraca
+  typed blocker `stale_planning_sources` (fail-closed, wymaga refreshu źródeł);
 - `tests/content` ma ~43 czerwone testy **zastane już na bazie `c38140c2c`**
   (nie regresja tej fali; główny kandydat: harness dynamic planning nie tworzy
   source-pack binding wymaganego przez falę packet);
