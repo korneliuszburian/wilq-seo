@@ -302,7 +302,7 @@ def test_editor_save_route_rechecks_planning_digest_at_append(
     )
     monkeypatch.setattr(
         content_workflow_router,
-        "_validate_revision_sections",
+        "validate_revision_sections",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(

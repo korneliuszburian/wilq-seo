@@ -6,14 +6,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
 from pydantic import ValidationError
 
-from apps.api.wilq_api.routers.content_workflow import (
-    _build_editor_save_command,
-    _validate_canonical_html_alignment,
-    _validate_revision_sections,
-)
+from apps.api.wilq_api.routers.content_workflow import _build_editor_save_command
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
 from wilq.content.drafts.initial_full_draft_turn import initial_full_draft_output_schema
 from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
@@ -24,6 +19,10 @@ from wilq.content.workflow.documents.revision_children import build_child_draft_
 from wilq.content.workflow.documents.revision_persistence import (
     build_stored_draft_revision,
     draft_revision_content_digest,
+)
+from wilq.content.workflow.documents.revision_save_validation import (
+    validate_canonical_html_alignment,
+    validate_revision_sections,
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -449,11 +448,14 @@ def test_editor_child_can_merge_sections_and_repair_faq_with_existing_lineage() 
         )
     )
 
-    _validate_revision_sections(
-        request,
-        snapshot,
-        latest_revision=revision,
-        revision_context_current=True,
+    assert (
+        validate_revision_sections(
+            request,
+            snapshot,
+            latest_revision=revision,
+            revision_context_current=True,
+        )
+        is None
     )
     validate_full_document_child(
         request,
@@ -619,24 +621,26 @@ def test_editor_child_rejects_duplicate_edited_headings() -> None:
         )
     )
 
-    with pytest.raises(HTTPException, match="muszą być unikalne"):
-        _validate_revision_sections(
-            duplicate_request,
-            snapshot,
-            latest_revision=revision,
-            revision_context_current=True,
-        )
+    duplicate_violation = validate_revision_sections(
+        duplicate_request,
+        snapshot,
+        latest_revision=revision,
+        revision_context_current=True,
+    )
+    assert duplicate_violation is not None
+    assert "muszą być unikalne" in duplicate_violation.detail
 
     without_evidence = duplicate_request.model_copy(
         update={"sections": [request.sections[0].model_copy(update={"evidence_ids": []})]}
     )
-    with pytest.raises(HTTPException, match="wymaga dowodów"):
-        _validate_revision_sections(
-            without_evidence,
-            snapshot,
-            latest_revision=revision,
-            revision_context_current=True,
-        )
+    evidence_violation = validate_revision_sections(
+        without_evidence,
+        snapshot,
+        latest_revision=revision,
+        revision_context_current=True,
+    )
+    assert evidence_violation is not None
+    assert "wymaga dowodów" in evidence_violation.detail
 
 
 def test_full_document_fields_reject_legacy_revision_parent() -> None:
@@ -692,18 +696,22 @@ def test_canonical_html_alignment_can_change_only_derived_html() -> None:
         created_by="operator_local_dashboard",
     )
 
-    _validate_canonical_html_alignment(request, latest)
+    assert validate_canonical_html_alignment(request, latest) is None
 
-    with pytest.raises(HTTPException, match="pozostałych pól"):
-        _validate_canonical_html_alignment(request.model_copy(update={"faq": []}), latest)
+    faq_violation = validate_canonical_html_alignment(
+        request.model_copy(update={"faq": []}), latest
+    )
+    assert faq_violation is not None
+    assert "pozostałych pól" in faq_violation.detail
 
     changed_body = request.model_copy(
         update={
             "sections": [request.sections[0].model_copy(update={"body_markdown": "Inny tekst."})]
         }
     )
-    with pytest.raises(HTTPException, match="wyłącznie kanoniczne HTML"):
-        _validate_canonical_html_alignment(changed_body, latest)
+    body_violation = validate_canonical_html_alignment(changed_body, latest)
+    assert body_violation is not None
+    assert "wyłącznie kanoniczne HTML" in body_violation.detail
 
 
 def test_current_v2_child_validates_against_its_exact_parent_sections() -> None:
@@ -742,11 +750,14 @@ def test_current_v2_child_validates_against_its_exact_parent_sections() -> None:
         )
     )
 
-    _validate_revision_sections(
-        request,
-        snapshot,
-        latest_revision=latest,
-        revision_context_current=True,
+    assert (
+        validate_revision_sections(
+            request,
+            snapshot,
+            latest_revision=latest,
+            revision_context_current=True,
+        )
+        is None
     )
 
 

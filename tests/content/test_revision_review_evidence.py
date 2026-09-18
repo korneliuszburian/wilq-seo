@@ -3,11 +3,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import cast
 
-from apps.api.wilq_api.routers.content_workflow import _validate_review_evidence
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionReviewRequest,
     ContentWorkItemWorkflowSnapshotResponse,
 )
+from wilq.content.workflow.documents.revision_save_validation import validate_review_evidence
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 
@@ -29,6 +29,9 @@ def test_revision_review_accepts_lineage_from_all_page_assets() -> None:
         evidence_ids=["ev_section", "ev_faq", "ev_cta", "ev_link"],
     )
 
-    _validate_review_evidence(
-        request, cast(ContentWorkItemWorkflowSnapshotResponse, snapshot)
+    assert (
+        validate_review_evidence(
+            request, cast(ContentWorkItemWorkflowSnapshotResponse, snapshot)
+        )
+        is None
     )
