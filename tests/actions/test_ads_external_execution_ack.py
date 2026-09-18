@@ -25,16 +25,16 @@ def test_ads_external_execution_acknowledgement_persists_exact_measurement_bindi
         },
     )
 
-    import apps.api.wilq_api.routers.actions as actions_router
+    import wilq.actions.ads_external_execution as ads_external
 
     monkeypatch.setattr(
-        actions_router,
+        ads_external,
         "get_action",
         lambda requested_id: action if requested_id == action_id else None,
     )
     observed_evidence_id = "ev_ads_observation"
     monkeypatch.setattr(
-        actions_router,
+        ads_external,
         "list_evidence_by_ids",
         lambda evidence_ids: [
             SimpleNamespace(id=evidence_id)
