@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.schemas import AuditEvent, RecommendationLogRecord
 from wilq.storage.local_state import local_state_store
 
+# Product workspace label used across the daily-check/dossier surfaces. This is
+# deliberately distinct from the local audit identity (``ekologus_local_pilot``),
+# which only stamps ActionObject audit records.
+_ACTIVE_PRODUCT_WORKSPACE_ID = "ekologus"
+
 
 def assert_active_recommendation_workspace(workspace_id: str) -> None:
-    """Reject recommendation logs outside the canonical WILQ workspace."""
+    """Reject recommendation logs outside the active product workspace."""
 
-    if workspace_id != LOCAL_PILOT_AUDIT_IDENTITY.workspace_id:
+    if workspace_id != _ACTIVE_PRODUCT_WORKSPACE_ID:
         raise ValueError(
             "Recommendation log workspace is outside the active WILQ workspace."
         )

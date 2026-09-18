@@ -160,6 +160,7 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
     ("recommendation-log", "canonical-workspace-guard"): (
         "scripts/test.sh",
         "tests/test_recommendation_log_workspace.py",
+        "tests/api_contracts/test_daily_check_api.py",
     ),
     ("action-preview-cards", "api-owned-payload-narration"): (
         "pnpm",
