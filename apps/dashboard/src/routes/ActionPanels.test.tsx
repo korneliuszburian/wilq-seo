@@ -501,6 +501,65 @@ describe("ActionPanels", () => {
     expect(source).toContain("WILQ nie zgłosił błędów sprawdzenia");
     expect(source).toContain("nie oceniaj efektu bez źródła");
   });
+
+  it("renders API-owned action preview cards instead of assembling copy from the payload", () => {
+    renderWithQueryClient(
+      <ActionFocus
+        actions={[
+          {
+            id: "action_ads_review",
+            title: "Sprawdź kampanie Ads",
+            domain: "ads",
+            connector: "google_ads",
+            connector_label: "Google Ads",
+            mode: "prepare",
+            mode_label: "przygotowanie",
+            risk: "high",
+            risk_label: "wysokie ryzyko",
+            status: "ready",
+            status_label: "gotowe",
+            evidence_ids: ["evidence_ads"],
+            evidence_summary_label: "1 dowód",
+            metrics: [],
+            human_diagnosis: "Są kampanie do review.",
+            recommended_reason: "WILQ ma dowody.",
+            validation_status: "valid",
+            validation_status_label: "poprawna",
+            review_gate: {
+              status: "pending_validation",
+              status_label: "wymaga sprawdzenia",
+              summary: "Wymaga sprawdzenia w WILQ.",
+              operator_checklist_labels: [],
+              apply_blocker_summary_label: "brak blokad",
+              confirmation_required: true,
+              apply_allowed: false,
+              last_mutation_blockers: [],
+              last_mutation_blocker_labels: [],
+              last_mutation_blocker_summary_label: "brak blokad"
+            },
+            preview_cards: [
+              {
+                id: "card_campaign_bdo",
+                title_label: "Kampania BDO",
+                subtitle_label: "Google Ads",
+                status_label: "do review",
+                rows: [{ label: "Priorytet", value: "najpierw" }],
+                apply_state_label: "",
+                system_readiness_label: ""
+              }
+            ],
+            payload: { campaign_candidates: [{ campaign_name: "tylko-w-payloadzie" }] },
+            audit_events: []
+          } as unknown as ActionObject
+        ]}
+      />
+    );
+
+    expect(screen.getByText("Kampania BDO")).toBeInTheDocument();
+    expect(screen.getByText(/Priorytet: najpierw/)).toBeInTheDocument();
+    expect(screen.queryByText(/tylko-w-payloadzie/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Co obejmuje akcja")).not.toBeInTheDocument();
+  });
 });
 
 function renderWithQueryClient(ui: ReactElement) {

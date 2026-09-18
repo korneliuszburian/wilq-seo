@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { ActionTechnicalDataToggle } from "../components/ActionTechnicalDataToggle";
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice } from "../components/OperatorPrimitives";
@@ -8,7 +9,7 @@ import { TraceLine } from "../components/TraceLine";
 import { ActionReviewGatePanel } from "./ActionPanels/GatePanel";
 import { ActionPreviewControls } from "./ActionPanels/PreviewControls";
 import { ActionHumanReviewControls } from "./ActionPanels/ReviewControls";
-import type { ActionObject, PayloadRecord } from "./ActionPanels/shared";
+import type { ActionObject } from "./ActionPanels/shared";
 import {
   ActionNewPageDraftApplyControl,
   ActionValidationControls
@@ -61,7 +62,13 @@ export function ActionFocus({ actions }: { actions: ActionObject[] }) {
             ) : null}
             <ActionDecisionSummary action={action} />
             <ActionReviewGatePanel action={action} />
-            <ActionPayloadSummary action={action} />
+            {action.preview_cards.length > 0 ? (
+              <div className="mt-3 grid gap-2">
+                {action.preview_cards.map((card) => (
+                  <ActionPreviewCard key={card.id} card={card} />
+                ))}
+              </div>
+            ) : null}
             <ActionHumanReviewControls action={action} />
             <ActionPreviewControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
@@ -143,124 +150,6 @@ function ActionDecisionSummary({ action }: { action: ActionObject }) {
           label="Przed zapisem blokuje"
           values={writeBlockerSummary ? [writeBlockerSummary] : []}
           empty="WILQ nie podał blokad zapisu; nadal wymagaj podglądu i jawnej zgody."
-        />
-      </div>
-    </div>
-  );
-}
-
-function asRecord(value: unknown): PayloadRecord | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as PayloadRecord;
-}
-
-function recordsValue(record: PayloadRecord, key: string): PayloadRecord[] {
-  const value = record[key];
-  if (!Array.isArray(value)) return [];
-  return value.map(asRecord).filter((item): item is PayloadRecord => Boolean(item));
-}
-
-function stringValue(record: PayloadRecord | null, key: string): string {
-  const value = record?.[key];
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function stringListValue(record: PayloadRecord | null, key: string): string[] {
-  const value = record?.[key];
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-}
-
-function numberValue(record: PayloadRecord | null, key: string): number | null {
-  const value = record?.[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function ActionPayloadSummary({ action }: { action: ActionObject }) {
-  const payload = asRecord(action.payload);
-  if (!payload) return null;
-
-  const campaignCandidates = recordsValue(payload, "campaign_candidates");
-  if (campaignCandidates.length > 0) {
-    return <CampaignPayloadSummary candidates={campaignCandidates} />;
-  }
-
-  const recommendations = recordsValue(payload, "recommendations");
-  if (recommendations.length > 0) {
-    return <RecommendationPayloadSummary recommendations={recommendations} />;
-  }
-
-  return null;
-}
-
-function CampaignPayloadSummary({ candidates }: { candidates: PayloadRecord[] }) {
-  const first = candidates[0] ?? null;
-  const campaignName = stringValue(first, "campaign_name") || "kampania do sprawdzenia";
-  const reviewPriority = stringValue(first, "review_priority");
-  const reviewReason = stringValue(first, "review_reason");
-  const reviewScore = numberValue(first, "review_score");
-  const validationLabels = stringListValue(first, "human_review_gate_labels");
-  const blockedClaimLabels = stringListValue(first, "blocked_claim_labels");
-
-  return (
-    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-      <div className="font-semibold uppercase tracking-normal text-slate-600">
-        Co obejmuje akcja
-      </div>
-      <p className="mt-1">
-        {candidates.length === 1
-          ? `WILQ przygotował 1 kampanię do review: ${campaignName}.`
-          : `WILQ przygotował ${candidates.length} kampanii do review; pierwsza w kolejce: ${campaignName}.`}
-        {reviewPriority ? ` Priorytet: ${reviewPriority}.` : ""}
-        {reviewScore !== null ? ` Wynik review: ${reviewScore}/100.` : ""}
-      </p>
-      {reviewReason ? <p className="mt-1 text-slate-600">{reviewReason}</p> : null}
-      <div className="mt-2 grid gap-1">
-        <TraceLine
-          label="Wymagane sprawdzenia"
-          values={validationLabels.slice(0, 5)}
-          empty="WILQ nie podał listy sprawdzeń dla kampanii."
-        />
-        <TraceLine
-          label="Nie wolno twierdzić"
-          values={blockedClaimLabels.slice(0, 5)}
-          empty="WILQ nie podał osobnych blokad twierdzeń dla kampanii."
-        />
-      </div>
-    </div>
-  );
-}
-
-function RecommendationPayloadSummary({ recommendations }: { recommendations: PayloadRecord[] }) {
-  const first = recommendations[0] ?? null;
-  const preview = asRecord(first?.payload_preview);
-  const recommendationLabel =
-    stringValue(first, "recommendation_type_label") || "rekomendacja do sprawdzenia";
-  const previewReason = stringValue(preview, "reason");
-  const validationLabels = stringListValue(first, "required_validation_labels");
-  const blockedClaimLabels = stringListValue(first, "blocked_claim_labels");
-
-  return (
-    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-      <div className="font-semibold uppercase tracking-normal text-slate-600">
-        Co obejmuje akcja
-      </div>
-      <p className="mt-1">
-        {recommendations.length === 1
-          ? `WILQ przygotował 1 rekomendację Google Ads do review: ${recommendationLabel}.`
-          : `WILQ przygotował ${recommendations.length} rekomendacji Google Ads do review; pierwsza: ${recommendationLabel}.`}
-      </p>
-      {previewReason ? <p className="mt-1 text-slate-600">{previewReason}</p> : null}
-      <div className="mt-2 grid gap-1">
-        <TraceLine
-          label="Wymagane sprawdzenia"
-          values={validationLabels.slice(0, 5)}
-          empty="WILQ nie podał listy sprawdzeń rekomendacji."
-        />
-        <TraceLine
-          label="Nie wolno twierdzić"
-          values={blockedClaimLabels.slice(0, 5)}
-          empty="WILQ nie podał osobnych blokad twierdzeń rekomendacji."
         />
       </div>
     </div>
