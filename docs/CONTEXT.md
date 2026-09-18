@@ -208,6 +208,10 @@ uprawnieniem do kopiowania jego obietnic.
 
 ## Aktualna mapa możliwości
 
+> Historical snapshot (Stan na: 2026-09-10). Ten blok nie steruje bieżącą
+> decyzją; bieżące counts, gotowość i blokady są w `docs/content-status-214.csv`,
+> WILQ API oraz aktywnym Beadzie.
+
 | Capability | Stan realny | Działa | Brak / ryzyko |
 | --- | --- | --- | --- |
 | Daily Command | techniczny pilot działa | świeże dowody, priorytet, blocker i bezpieczne akcje | realny werdykt Wilka i zmierzona oszczędność czasu |
@@ -267,6 +271,10 @@ Aktywny graf:
 
 ## Aktualny dowód contentu
 
+> Historical snapshot (Stan na: 2026-09-10). Bieżące metryki per URL i kolejkę
+> utrzymuje wyłącznie `docs/content-status-214.csv` oraz WILQ API/aktywny Bead;
+> poniższe liczby nie są bieżącym źródłem prawdy.
+
 - `/content-workflow` jest jedynym głównym entrypointem.
 - Bieżący selected work item dotyczy strony BDO i jest na kroku `scope`.
 - Exact sekcja `Co wiemy z zapytań: bdo dla kogo` jest wybranym focusem sesji
@@ -300,10 +308,11 @@ nadana przez Codex, testy ani ownera kodu bez review treści.
 `/knowledge` pokazuje teraz najpierw rejestr realnych, zredagowanych faktów
 źródłowych. Legacy karty i playbooki pozostają pomocniczą warstwą operacyjną i
 nie są przedstawiane jako wypowiedzi Ekologusa. Odnaleziony zatwierdzony korpus
-15 plików z repozytorium materiałów jest opisany w
-`docs/research/approved-ekologus-materials-2026-07-17.md`; jego treść nie jest
-jeszcze kopiowana do WILQ. Import wymaga redakcji, lineage, hashy i review
-ownera. Panel pokazuje metadata-only manifest 15 materiałów jako `import
+15 plików z repozytorium materiałów jest reprezentowany w WILQ wyłącznie jako
+metadata-only manifest `import_pending`; jego treść nie jest jeszcze kopiowana
+do WILQ. Import wymaga redakcji, lineage, hashy i review ownera. Historyczny
+dokument opisujący korpus nie jest już obecny w tracked `docs/`; nie traktuj
+brakującej ścieżki jako źródła. Panel pokazuje metadata-only manifest 15 materiałów jako `import
 pending`, więc marketer widzi realny zakres korpusu bez dostępu do surowego
 tekstu; do tego czasu source-backed planning pozostaje jawnie `review_required`.
 

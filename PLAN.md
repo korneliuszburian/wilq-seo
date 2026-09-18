@@ -366,6 +366,10 @@ Known cleanup already started:
 
 ## 9. Current Goal
 
+> Historical reference. Ten dokument nie ustanawia bieżącego celu ani
+> kryterium stopu; właścicielem następnego wyniku jest wyłącznie aktywny Bead.
+> Poniższy tekst opisuje stan z momentu zapisu.
+
 Clean all active inconsistencies first, then continue product development.
 
 Immediate outcome:
@@ -531,6 +535,9 @@ Real marketer UAT or explicit owner deferral is required for usefulness claims.
 
 ## 15. Current Completion Definition
 
+> Historical reference. Kryterium stopu należy do aktywnego Beada; ten dokument
+> nie jest bieżącym kryterium ukończenia.
+
 This cleanup goal is complete when:
 
 - `PLAN.md`, `docs/goals/001-goal.md` and `docs/PROGRESS.md` no longer present
@@ -653,7 +660,8 @@ Verification:
 - `rtk git diff --check`.
 - Use `rtk scripts/verify.sh` before broad completion claims.
 
-Stop only when the current completion definition in `PLAN.md` is true, or when
-an exact blocker is recorded with missing input, evidence gathered, safe scope
-left and the implementation/input needed to unblock.
+Stop/next result należy do aktywnego Beada, nie do `PLAN.md`. Zapisz dokładny
+blocker (brakujące inputy, zebrane dowody, bezpieczny pozostały zakres, wymagany
+unblock) w tym Beadzie, zamiast traktować ten historyczny dokument jako
+kryterium stopu.
 ```
