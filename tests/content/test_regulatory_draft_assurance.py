@@ -265,7 +265,9 @@ def test_identical_assurance_fingerprint_calls_critic_once(monkeypatch) -> None:
     changed_input = planning_input.model_copy(
         update={
             "source_facts": [
-                planning_input.source_facts[0].model_copy(update={"summary": "Zmieniony fakt."})
+                planning_input.source_facts[0].model_copy(
+                    update={"summary": "KPO stosuje się warunkowo — zmieniony zapis."}
+                )
             ]
         }
     )
