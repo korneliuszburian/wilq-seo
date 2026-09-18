@@ -11,7 +11,10 @@ def test_current_disposition_card_source_contract() -> None:
     source = detail_panels.read_text(encoding="utf-8")
     required_fragments = (
         'proposedFinalDisposition !== "keep"',
-        '<article className="current-disposition-card" data-state={receipt.proposedFinalDisposition}>',
+        (
+            '<article className="current-disposition-card" '
+            "data-state={receipt.proposedFinalDisposition}>"
+        ),
         "Czy zachowujemy tę stronę do dalszej aktualizacji?",
         "event.action_id !== action.id",
         "!event.id.trim()",

@@ -84,7 +84,10 @@ def test_source_fact_authority_attempt_contract() -> None:
         "def execute_content_source_fact_authority(",
         "\ndef read_content_source_fact_authority(",
     )
-    assert 'if proposal.attempt:\n        action_payload["attempt"] = proposal.attempt' in build_action
+    assert (
+        'if proposal.attempt:\n        action_payload["attempt"] = proposal.attempt'
+        in build_action
+    )
     assert '_validate_attempt(payload.get("attempt", 0))' in validate_payload
     assert '_validate_attempt(action.payload.get("attempt", 0))' in execute_authority
 
