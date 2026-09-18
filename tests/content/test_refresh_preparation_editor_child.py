@@ -13,6 +13,7 @@ from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionSaveRequest,
     ContentDraftRevisionWorkspace,
+    ContentWorkItemWorkflowSnapshotResponse,
 )
 from wilq.content.workflow.decisions.production import (
     ContentProductionClassificationRow,
@@ -287,7 +288,7 @@ def _editor_client(
         can_review=False,
         safe_next_step="Zapisz poprawioną wersję.",
     )
-    snapshot = SimpleNamespace(
+    snapshot = ContentWorkItemWorkflowSnapshotResponse.model_construct(
         draft_package=SimpleNamespace(
             draft_package_result=SimpleNamespace(draft_package=SimpleNamespace())
         ),
@@ -318,7 +319,7 @@ def _editor_client(
             can_review=context_current,
             safe_next_step="Sprawdź poprawioną wersję.",
         )
-        return SimpleNamespace(**(snapshot.__dict__ | {"revision_workspace": refreshed_workspace}))
+        return snapshot.model_copy(update={"revision_workspace": refreshed_workspace})
 
     monkeypatch.setattr(
         workflow_router,
