@@ -17,6 +17,7 @@ import wilq.content.workflow.evidence_acquisition_coordinator as acquisition_mod
 import wilq.content.workflow.evidence_acquisition_snapshot as evidence_snapshot_module
 import wilq.content.workflow.research_promotion_authority as promotion_authority
 import wilq.content.workflow.research_promotion_candidate as promotion_candidate_module
+import wilq.content.workflow.research_promotion_registry as research_promotion_registry
 import wilq.content.workflow.store.store as workflow_store_module
 import wilq.evidence.registry as evidence_registry
 from apps.api.wilq_api.main import app
@@ -620,6 +621,7 @@ def test_current_page_adapter_issues_new_receipt_for_changed_body(tmp_path: Path
         classification_loader=workflow_store.load_production_classification_for_work_item,
         store=workflow_store,
         current_page_snapshot_reader=adapter.read,
+        clock=lambda: datetime(2026, 9, 13, 12, 1, tzinfo=UTC),
     )
 
     first = coordinator.start(
@@ -822,7 +824,7 @@ def test_default_coordinator_wires_snapshot_adapter_and_typed_blocker(
             content_text="Default adapter excerpt.",
             extraction_region="wordpress_rest.content",
         ),
-        clock=lambda: datetime(2026, 9, 13, 12, 0, tzinfo=UTC),
+        clock=lambda: datetime.now(UTC),
     )
 
     class FakeAdapter:
@@ -989,6 +991,7 @@ def test_research_proposal_is_server_lineaged_and_review_only(tmp_path: Path) ->
         acquisition_reader=acquisition.read,
         proposal_store=workflow_store,
         researcher=researcher,
+        clock=lambda: _read_time,
     )
 
     proposal = coordinator.start(run.run_id)
@@ -1600,6 +1603,13 @@ def test_approved_promotion_receipt_merges_into_exact_source_fact_registry(
     stored_payload_digest = stored_payload_check.pop("receipt_digest")
     stored_payload_check.pop("receipt_id")
     assert stored_payload_digest == canonical_json_digest(stored_payload_check)
+
+    class _FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz: object = None) -> datetime:
+            return read_time
+
+    monkeypatch.setattr(research_promotion_registry, "datetime", _FixedDateTime)
     facts = source_facts_module.ekologus_source_facts()
     dynamic_id = source_fact.source_id
     assert dynamic_id in {fact.source_id for fact in facts}
@@ -1797,13 +1807,14 @@ def test_research_model_only_and_legal_claims_are_typed_blockers(tmp_path: Path)
         acquisition_reader=acquisition.read,
         proposal_store=workflow_store,
         researcher=model_only,
+        clock=lambda: _read_time,
     )
     blocked_model = model_coordinator.start(run.run_id)
     assert blocked_model.status == "blocked"
     assert blocked_model.blockers[0].code == "research_model_only_claim"
 
-    workflow_store_legal, acquisition_legal, run_legal, _ = _ready_acquisition_fixture(
-        tmp_path / "legal"
+    workflow_store_legal, acquisition_legal, run_legal, legal_read_time = (
+        _ready_acquisition_fixture(tmp_path / "legal")
     )
     legal = _FakeResearcher(
         {
@@ -1818,6 +1829,7 @@ def test_research_model_only_and_legal_claims_are_typed_blockers(tmp_path: Path)
         acquisition_reader=acquisition_legal.read,
         proposal_store=workflow_store_legal,
         researcher=legal,
+        clock=lambda: legal_read_time,
     )
     blocked_legal = legal_coordinator.start(run_legal.run_id)
     assert blocked_legal.status == "blocked"
@@ -1854,6 +1866,7 @@ def test_research_output_normalization_blocks_excerpt_legal_and_secret_variants(
         acquisition_reader=acquisition.read,
         proposal_store=workflow_store,
         researcher=researcher,
+        clock=lambda: _read_time,
     )
 
     blocked = coordinator.start(run.run_id)
