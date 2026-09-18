@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
@@ -21,7 +19,7 @@ from apps.api.wilq_api.routers.content_snapshot import (
 from apps.api.wilq_api.routers.content_workflow_http import (
     revision_conflict_next_step,
 )
-from wilq.content.drafts.package import ContentDraftPackage, ContentDraftSection
+from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.measurement.deployment import ContentPublicDeployment
 from wilq.content.measurement.read_contracts import (
     ContentMeasurementReadResponse,
@@ -58,23 +56,26 @@ from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
 )
-from wilq.content.workflow.documents.content_html import content_html_from_markdown
 from wilq.content.workflow.documents.editor_child import (
     editor_child_official_source_references,
     editor_child_page_assets,
     request_has_full_document_fields,
-    revision_evidence_ids,
     validate_full_document_child,
 )
 from wilq.content.workflow.documents.editor_child import (
     editor_child_retained_lineage as retained_lineage,
+)
+from wilq.content.workflow.documents.revision_save_validation import (
+    RevisionValidationViolation,
+    validate_canonical_html_alignment,
+    validate_review_evidence,
+    validate_revision_sections,
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionConflict,
     ContentDraftRevisionReviewCommand,
-    ContentDraftRevisionSection,
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
@@ -421,13 +422,15 @@ def content_work_item_draft_revision_save(
             safe_next_step=workspace.safe_next_step,
         )
     if request.correction_reason == "canonical_html_alignment":
-        _validate_canonical_html_alignment(request, latest_revision)
+        _raise_revision_violation(validate_canonical_html_alignment(request, latest_revision))
     else:
-        _validate_revision_sections(
-            request,
-            snapshot,
-            latest_revision=latest_revision,
-            revision_context_current=workspace.context_current,
+        _raise_revision_violation(
+            validate_revision_sections(
+                request,
+                snapshot,
+                latest_revision=latest_revision,
+                revision_context_current=workspace.context_current,
+            )
         )
         _validate_full_document_request(request, latest_revision, workspace.context_current)
 
@@ -564,7 +567,7 @@ def content_work_item_draft_revision_review(
             snapshot=snapshot,
             safe_next_step=workspace.safe_next_step,
         )
-    _validate_review_evidence(request, snapshot)
+    _raise_revision_violation(validate_review_evidence(request, snapshot))
 
     result = content_workflow_store().review_draft_revision(
         ContentDraftRevisionReviewCommand(
@@ -751,169 +754,9 @@ def content_work_item_learning_proposal(
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-def _validate_revision_sections(
-    request: ContentDraftRevisionSaveRequest,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    *,
-    latest_revision: ContentDraftRevision | None,
-    revision_context_current: bool,
-) -> None:
-    draft_package = snapshot.draft_package.draft_package_result.draft_package
-    if draft_package is None:
-        raise HTTPException(status_code=422, detail="Brakuje pakietu sekcji do zapisu wersji.")
-    request_headings = [section.heading for section in request.sections]
-    # A current v2 child edits the exact immutable document. Its body can have
-    # been generated from a richer planning proposal than the legacy editor
-    # package, so validate its section contract against that exact parent.
-    # A stale parent remains bound to the current package and cannot bypass the
-    # normal current-context gate below.
-    expected_sections: Sequence[ContentDraftSection | ContentDraftRevisionSection] = (
-        latest_revision.sections
-        if (
-            latest_revision is not None
-            and latest_revision.schema_version == "wilq_content_draft_revision_v2"
-            and request.base_revision_id == latest_revision.revision_id
-            and revision_context_current
-        )
-        else draft_package.sections
-    )
-    current_revision = latest_revision
-    if (
-        current_revision is not None
-        and current_revision.schema_version == "wilq_content_draft_revision_v2"
-        and request.base_revision_id == current_revision.revision_id
-        and revision_context_current
-    ):
-        parent_ids = [section.section_id for section in current_revision.sections]
-        request_ids = [section.section_id for section in request.sections]
-        headings = [section.heading.strip() for section in request.sections]
-        if (
-            any(section_id is None for section_id in request_ids)
-            or len(request_ids) != len(set(request_ids))
-            or request_ids != [section_id for section_id in parent_ids if section_id in request_ids]
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail="Potomna wersja może zachować albo scalić sekcje bazowe w ich kolejności.",
-            )
-        if len(headings) != len(set(headings)):
-            raise HTTPException(
-                status_code=422,
-                detail="Nagłówki sekcji potomnej wersji muszą być unikalne.",
-            )
-        if any(not section.evidence_ids for section in request.sections):
-            raise HTTPException(
-                status_code=422,
-                detail="Każda sekcja potomnej wersji wymaga dowodów.",
-            )
-        allowed_evidence = revision_evidence_ids(current_revision)
-        if any(
-            set(section.evidence_ids).difference(allowed_evidence) for section in request.sections
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail="Sekcje potomnej wersji mogą używać tylko dowodów wersji bazowej.",
-            )
-        return
-    expected_headings = [section.heading for section in expected_sections]
-    if request_headings != expected_headings:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Zapisywana wersja musi zawierać dokładnie wszystkie sekcje "
-                "zatwierdzonego planu, w tej samej kolejności."
-            ),
-        )
-    for section, expected_section in zip(
-        request.sections,
-        expected_sections,
-        strict=True,
-    ):
-        if section.evidence_ids != expected_section.evidence_ids:
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "Dowody sekcji muszą dokładnie odpowiadać zatwierdzonemu planowi: "
-                    + section.heading
-                ),
-            )
-
-
-def _validate_canonical_html_alignment(
-    request: ContentDraftRevisionSaveRequest,
-    latest_revision: ContentDraftRevision | None,
-) -> None:
-    if (
-        request.page_assets is not None
-        or request.faq is not None
-        or request.official_source_references is not None
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail="Korekta HTML nie może zmieniać pozostałych pól dokumentu.",
-        )
-    if latest_revision is None or request.base_revision_id != latest_revision.revision_id:
-        raise HTTPException(
-            status_code=409,
-            detail="Korekta HTML wymaga aktualnej wersji bazowej.",
-        )
-    if request.title != latest_revision.title or len(request.sections) != len(
-        latest_revision.sections
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail="Korekta HTML nie może zmieniać zakresu wersji.",
-        )
-    changed_html = False
-    for submitted, current in zip(request.sections, latest_revision.sections, strict=True):
-        if (
-            submitted.section_id != current.section_id
-            or submitted.heading != current.heading
-            or submitted.body_markdown != current.body_markdown
-            or submitted.query_terms != current.query_terms
-            or submitted.evidence_ids != current.evidence_ids
-            or submitted.claim_ids != current.claim_ids
-            or submitted.source_material_ids != current.source_material_ids
-            or submitted.knowledge_card_ids != current.knowledge_card_ids
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail="Korekta HTML może zmienić wyłącznie kanoniczne HTML sekcji.",
-            )
-        expected_html = content_html_from_markdown(current.body_markdown)
-        if submitted.content_html != expected_html:
-            raise HTTPException(
-                status_code=422,
-                detail="Korekta HTML musi wynikać dokładnie z Markdownu wersji bazowej.",
-            )
-        changed_html = changed_html or current.content_html != expected_html
-    if not changed_html:
-        raise HTTPException(
-            status_code=422,
-            detail="Wersja bazowa nie wymaga korekty kanonicznego HTML.",
-        )
-
-
-def _validate_review_evidence(
-    request: ContentDraftRevisionReviewRequest,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-) -> None:
-    latest_revision = snapshot.revision_workspace.latest_revision
-    if latest_revision is None:
-        raise HTTPException(
-            status_code=422,
-            detail="Brakuje zapisanej wersji, której dowody można sprawdzić.",
-        )
-    allowed_evidence = revision_evidence_ids(latest_revision)
-    unknown_evidence = sorted(set(request.evidence_ids).difference(allowed_evidence))
-    if unknown_evidence:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Decyzja zawiera dowody spoza snapshotu tego zadania: "
-                + ", ".join(unknown_evidence)
-            ),
-        )
+def _raise_revision_violation(violation: RevisionValidationViolation | None) -> None:
+    if violation is not None:
+        raise HTTPException(status_code=violation.status_code, detail=violation.detail)
 
 
 def _review_request_matches_latest(

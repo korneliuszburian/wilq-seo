@@ -170,6 +170,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "run",
         "src/routes/ActionPanels.test.tsx",
     ),
+    ("revision-save-policy", "domain-owned-exact-validation"): (
+        "scripts/test.sh",
+        "tests/content/test_revision_save_validation_domain.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -289,6 +293,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("ads-operator-labels", "api-owned-priority-and-risk"),
             ("recommendation-log", "canonical-workspace-guard"),
             ("action-preview-cards", "api-owned-payload-narration"),
+            ("revision-save-policy", "domain-owned-exact-validation"),
         },
     )
     for key, proof in _PROOFS.items()
