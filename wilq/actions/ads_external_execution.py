@@ -56,7 +56,7 @@ def acknowledge_external_ads_execution(
         id=f"ads_external_execution_{uuid4().hex}",
         action_id=action_id,
         event_type="ads_external_execution_acknowledged",
-        event_type_label="Ręczne wykonanie zmiany Ads odnotowane",
+        event_type_label="Ręczna zmiana Ads odnotowana poza WILQ",
         actor=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
         principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
         workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
