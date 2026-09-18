@@ -6,13 +6,18 @@ metryki zostają w git oraz w oznaczonych raportach.
 
 ## Fixed point
 
-- aktywna gałąź: `agent/content-state-reconciliation`;
-- ostatni commit codebase’u: `93069e76` (`chore(repo): reconcile stale cleanup
-  surfaces`), poprzedzony `115407d9` z validator hardeningiem;
-- `scripts/verify.sh`, state-db validator dla `docs/content-status-214.csv`,
-  managed API `8000` i dashboard `5173` są ostatnio zaobserwowane jako ready;
-- S6.5 pozostaje otwarty do udanego advisory review DeepSeek V4.1 Flash;
-  ostatnie próby finalnego review zakończyły się timeoutem/przerwaniem limitu.
+- aktywna gałąź: `wip/dirty-integration-20260916` (integracyjna; `main` i
+  `origin` pozostają nietknięte do rozbicia checkpointu);
+- punkt odniesienia: recovery checkpoint `533b906fb` (112 plików brudnego
+  checkoutu) plus cohesive, change-contract-backed commity na wierzchu;
+- `scripts/lint.sh`, `scripts/typecheck.sh`, focused falsifiery nowych fal,
+  managed API `8000` i dashboard `5173` są zaobserwowane jako zielone na tym
+  punkcie;
+- `tests/content` ma ~43 czerwone testy **zastane już na bazie `c38140c2c`**
+  (nie regresja tej fali; główny kandydat: harness dynamic planning nie tworzy
+  source-pack binding wymaganego przez falę packet);
+- realna generacja treści pozostaje niezweryfikowana bez limitów Codex;
+  kontrakt `runtime_blocked` jest udowodniony focused testem.
 
 ## Cleanup
 
@@ -27,11 +32,13 @@ metryki zostają w git oraz w oznaczonych raportach.
 
 ## Następny ruch
 
-1. domknąć S6.5 po skutecznym, niezależnym review;
-2. rozstrzygnąć pozostałe stale current-state/review docs według referencji i
-   consumerów;
-3. przejść przez S8–S12 runtime gates;
-4. dopiero po zielonym codebase rozpocząć evidence-bound produkcję treści.
+1. rozbić checkpoint `533b906fb` na cohesive, zrecenzowane commity (WIP=1 na
+   `wilq-seo-90u5`) i przywrócić `.codex/config.toml` wspieraną ścieżką;
+2. rozstrzygnąć stale current-state/review docs według referencji i consumerów;
+3. naprawić zastane czerwone testy `tests/content` (m.in. source-pack binding w
+   harnessie dynamic planning);
+4. przejść przez S8–S12 runtime gates;
+5. dopiero po zielonym codebase rozpocząć evidence-bound produkcję treści.
 
 Nie wykonano publicznego WordPress publish/update/delete ani generowania treści
 w tym handoffie.

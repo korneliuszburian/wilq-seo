@@ -14,9 +14,10 @@ nie drugi dziennik produktu ani źródło per-URL statusu.
 
 Ostatni stan cleanupu:
 
-- dirty checkout został zintegrowany z `origin/main`; validator hardening jest
-  w `115407d9`, a cleanup/navigation w `93069e76`; bieżąca gałąź jest czysta po
-  synchronizacji Beads;
+- brudny checkout jest zabezpieczony na gałęzi `wip/dirty-integration-20260916`
+  jako recovery checkpoint `533b906fb` (112 plików) i rozbijany na cohesive
+  commity; `main`/`origin/main` pozostają nietknięte; `.codex/config.toml`
+  pozostaje poza commitem do przywrócenia wspieraną ścieżką;
 - niezarządzany Vite na `127.0.0.1:37621` został zatrzymany po potwierdzeniu,
   że canonical managed stack działa na API `8000` i dashboardzie `5173`;
 - worktrees z nie-scalonymi gałęziami są zachowane do osobnej decyzji; sama
@@ -31,6 +32,8 @@ SQLite, Beads, canonical CSV, evidence lineage ani plików używanych przez CI i
 managed runtime. Po każdym kroku wymagane są `git diff --check` oraz właściwy
 focused proof. Publiczne WordPress publish/update/delete pozostają poza zakresem.
 
-Następny krok jest w aktywnym Beadzie `wilq-seo-1oa.36.116`: dokończyć mapę
-referencji i dopiero na jej podstawie rozstrzygnąć, które stare dokumenty,
-artefakty i worktrees są rzeczywiście superseded.
+Następny krok jest w aktywnym Beadzie `wilq-seo-90u5`: rozbić zabezpieczony
+checkpoint `533b906fb` na cohesive, change-contract-backed commity i dopiero na
+tej podstawie rozstrzygnąć, które stare dokumenty, artefakty i worktrees są
+rzeczywiście superseded. `PLAN.md` i historyczne handoffy nie ustanawiają
+kryterium stopu.
