@@ -97,6 +97,8 @@ def test_shared_proposal_projection_preserves_both_legacy_outputs() -> None:
         "source_connectors",
         "source_material_ids",
         "knowledge_card_ids",
+        "research_packet_id",
+        "research_packet_digest",
     }
     assert compact_proposal(proposal, draftable_sections_only=False) == expected_draft
     assert compact_proposal(proposal, draftable_sections_only=True) == expected_semantic
