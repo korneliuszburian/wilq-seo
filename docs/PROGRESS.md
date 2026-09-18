@@ -14,15 +14,22 @@ metryki zostają w git oraz w oznaczonych raportach.
   managed API `8000` i dashboard `5173` są zaobserwowane jako zielone na tym
   punkcie;
 - findings audytu F-01 (data_readiness), F-03/F-04/F-05 (etykiety Ads i preview
-  cards), F-06/F-07/F-08/F-09 (reguły safety przeniesione do domeny), F-21
-  (kanoniczny workspace) oraz dokumenty current-state F-12..F-17 są zamknięte;
+  cards), F-06/F-07/F-08/F-09 (reguły safety przeniesione do domeny) oraz
+  dokumenty current-state F-12..F-17 są zamknięte; audytowy F-21 okazał się
+  false-positive — `"ekologus"` to workspace PRODUKTOWY, a
+  `"ekologus_local_pilot"` to tożsamość AUDYTOWA; walidacja logu rekomendacji
+  została przeniesiona do domeny, ale porównuje workspace produktowy;
 - `scripts/marketer_language_guard.py`, `scripts/live_contract_smoke.py`
   (`status: completed`, 0 błędów) i `scripts/dashboard_usefulness_audit.py`
   (`pass: true`) są zielone; żywy pipeline `planning-proposals` dla BDO zwraca
   typed blocker `stale_planning_sources` (fail-closed, wymaga refreshu źródeł);
-- `tests/content` ma ~43 czerwone testy **zastane już na bazie `c38140c2c`**
-  (nie regresja tej fali; główny kandydat: harness dynamic planning nie tworzy
-  source-pack binding wymaganego przez falę packet);
+- pełny `pytest tests`: **25 czerwonych, wszystkie w `tests/content`** (rodzina
+  bramki source-pack/refresh authority); **0 poza `tests/content`**. Naprawiono
+  2 realne bugi produktu (redakcja `*_digest` psująca schemat audytu;
+  keep-eligibility pin cascade po zmianie `source_facts.py`);
+- pozostałe 25 wymaga zbudowania pełnego łańcucha authority w syntetycznym
+  harnessie (klasyfikacja → tożsamość → row-authority receipt → source pack)
+  albo decyzji ownera o migracji legacy testów na `packet_plan_draft_fixtures`;
 - realna generacja treści pozostaje niezweryfikowana bez limitów Codex;
   kontrakt `runtime_blocked` jest udowodniony focused testem.
 
