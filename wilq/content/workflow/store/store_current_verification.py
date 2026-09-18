@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from wilq.content.workflow.current_verification import (
     ContentCurrentVerification,
@@ -19,10 +19,30 @@ from wilq.content.workflow.store.store_production_classification import (
 )
 from wilq.storage.model_json import model_json
 
+if TYPE_CHECKING:
+    from wilq.content.workflow._source_pack_binding_models import ContentSourcePackBinding
+    from wilq.content.workflow.decisions.production import (
+        ContentProductionClassificationProjection,
+    )
+    from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
+    from wilq.content.workflow.documents.revision_binding import (
+        ContentDraftRevisionBinding,
+    )
+    from wilq.content.workflow.store.store_evidence import ExactWordPressDraftApplyReceipt
+
 
 class ContentCurrentVerificationStoreMixin:
     def _connect(self) -> sqlite3.Connection:
         raise NotImplementedError
+
+    if TYPE_CHECKING:
+
+        def load_exact_wordpress_draft_apply_receipt(
+            self,
+            binding: ContentDraftRevisionBinding,
+            action_id: str,
+            mutation_audit_id: str,
+        ) -> ExactWordPressDraftApplyReceipt | None: ...
 
     def record_current_verification(
         self,
@@ -104,7 +124,9 @@ class ContentCurrentVerificationStoreMixin:
         )
 
 
-def _identity(connection: sqlite3.Connection, binding_id: str):
+def _identity(
+    connection: sqlite3.Connection, binding_id: str
+) -> ContentDeliveryIdentityBinding | None:
     from wilq.content.workflow.store.store_delivery_identity import binding_from_row
 
     row = connection.execute(
@@ -113,7 +135,9 @@ def _identity(connection: sqlite3.Connection, binding_id: str):
     return None if row is None else binding_from_row(row)
 
 
-def _source_pack(connection: sqlite3.Connection, binding_id: str):
+def _source_pack(
+    connection: sqlite3.Connection, binding_id: str
+) -> ContentSourcePackBinding | None:
     from wilq.content.workflow.store.store_source_pack_binding import _binding_from_source_pack_row
 
     row = connection.execute(
@@ -122,7 +146,10 @@ def _source_pack(connection: sqlite3.Connection, binding_id: str):
     return None if row is None else _binding_from_source_pack_row(row)
 
 
-def _classification(connection: sqlite3.Connection, identity):
+def _classification(
+    connection: sqlite3.Connection,
+    identity: ContentDeliveryIdentityBinding | None,
+) -> ContentProductionClassificationProjection | None:
     if identity is None:
         return None
     row = connection.execute(
@@ -138,7 +165,11 @@ def _classification(connection: sqlite3.Connection, identity):
     return None if len(matches) != 1 else project_content_production_classification(run, matches[0])
 
 
-def _review_matches(connection: sqlite3.Connection, command, identity) -> bool:
+def _review_matches(
+    connection: sqlite3.Connection,
+    command: ContentCurrentVerificationCommand,
+    identity: ContentDeliveryIdentityBinding | None,
+) -> bool:
     if identity is None:
         return False
     row = connection.execute(

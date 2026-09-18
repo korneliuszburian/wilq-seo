@@ -152,12 +152,14 @@ def reconcile_current_verification(
         "blocker": None if blocker is None else blocker.model_dump(mode="json"),
     }
     digest = canonical_json_digest(values)
-    return ContentCurrentVerification(
-        verification_id=f"content_current_verification_{digest[:24]}",
-        verification_digest=digest,
-        recorded_by=command.recorded_by,
-        recorded_at=command.recorded_at,
-        **values,
+    return ContentCurrentVerification.model_validate(
+        {
+            "verification_id": f"content_current_verification_{digest[:24]}",
+            "verification_digest": digest,
+            "recorded_by": command.recorded_by,
+            "recorded_at": command.recorded_at,
+            **values,
+        }
     )
 
 

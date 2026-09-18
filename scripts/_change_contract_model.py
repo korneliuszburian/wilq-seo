@@ -143,6 +143,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_other_blocked_or_write_rows",
         "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_conflict_or_reuse",
     ),
+    ("current-verification", "exact-draft-receipt-readback"): (
+        "scripts/test.sh",
+        "tests/content/test_current_verification_record.py",
+        "tests/content/test_wordpress_draft_apply_receipt.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -258,6 +263,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-preparation", "exact-downstream-receipts"),
+            ("current-verification", "exact-draft-receipt-readback"),
         },
     )
     for key, proof in _PROOFS.items()
