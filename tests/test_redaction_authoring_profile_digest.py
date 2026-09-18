@@ -33,3 +33,9 @@ def test_non_hex_authoring_profile_digest_is_still_redacted() -> None:
     )["new_page_draft_binding"]
 
     assert redacted["authoring_profile_digest"] == "[REDACTED]"
+
+
+def test_deployed_revision_digest_is_preserved() -> None:
+    redacted = redact_mapping({"deployed_revision_digest": "a" * 64})
+
+    assert redacted["deployed_revision_digest"] == "a" * 64
