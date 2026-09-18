@@ -7,7 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.canonical.landing_identity import LandingPageCandidate, match_landing_page
 from wilq.content.canonical.urls import content_is_safe_public_url
-from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
+    ContentDraftRevisionReview,
+)
 from wilq.schemas import MetricFact
 
 
@@ -99,6 +102,21 @@ def confirm_public_deployment(
         observed_at=observed_at,
         confirmed_by=command.confirmed_by,
         confirmed_at=confirmed_at,
+    )
+
+
+def revision_review_is_exact_approved(
+    review: ContentDraftRevisionReview | None,
+    revision: ContentDraftRevision,
+) -> bool:
+    """True only for an approved review bound to this exact revision."""
+
+    return bool(
+        review is not None
+        and review.decision == "approved"
+        and review.work_item_id == revision.work_item_id
+        and review.revision_id == revision.revision_id
+        and review.revision_digest == revision.content_digest
     )
 
 

@@ -10,6 +10,7 @@ from wilq.content.measurement.deployment import (
     ContentPublicDeploymentConfirmationCommand,
     confirm_public_deployment,
     public_deployment_observations,
+    revision_review_is_exact_approved,
 )
 from wilq.content.measurement.outcome import ContentMeasurementOutcomeInterpretation
 from wilq.content.measurement.window import (
@@ -66,13 +67,7 @@ def confirm_content_public_deployment(
     )
     if revision is None:
         raise HTTPException(status_code=404, detail="Nie znaleziono wskazanej rewizji dokumentu.")
-    if (
-        review is None
-        or review.decision != "approved"
-        or review.work_item_id != revision.work_item_id
-        or review.revision_id != revision.revision_id
-        or review.revision_digest != revision.content_digest
-    ):
+    if not revision_review_is_exact_approved(review, revision):
         raise HTTPException(
             status_code=409,
             detail="Publiczne wdrożenie można potwierdzić wyłącznie dla zatwierdzonej rewizji.",
@@ -123,13 +118,8 @@ def read_content_public_deployment(
             work_item_id=work_item_id, revision_id=revision_id
         )
     )
-    approved_exact_revision = (
-        revision is not None
-        and review is not None
-        and review.decision == "approved"
-        and review.work_item_id == revision.work_item_id
-        and review.revision_id == revision.revision_id
-        and review.revision_digest == revision.content_digest
+    approved_exact_revision = revision is not None and revision_review_is_exact_approved(
+        review, revision
     )
     observations = (
         public_deployment_observations(
