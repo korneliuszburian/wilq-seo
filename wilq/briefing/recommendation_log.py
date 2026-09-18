@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
 from wilq.schemas import AuditEvent, RecommendationLogRecord
 from wilq.storage.local_state import local_state_store
 
 
+def assert_active_recommendation_workspace(workspace_id: str) -> None:
+    """Reject recommendation logs outside the canonical WILQ workspace."""
+
+    if workspace_id != LOCAL_PILOT_AUDIT_IDENTITY.workspace_id:
+        raise ValueError(
+            "Recommendation log workspace is outside the active WILQ workspace."
+        )
+
+
 def save_recommendation_log(record: RecommendationLogRecord) -> RecommendationLogRecord:
+    assert_active_recommendation_workspace(record.workspace_id)
     event = AuditEvent(
         id=f"audit_recommendation_{record.id}",
         event_type="recommendation_recorded",

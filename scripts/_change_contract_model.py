@@ -157,6 +157,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "run",
         "src/routes/AdsDoctorSections/formatters.test.ts",
     ),
+    ("recommendation-log", "canonical-workspace-guard"): (
+        "scripts/test.sh",
+        "tests/test_recommendation_log_workspace.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -274,6 +278,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-preparation", "exact-downstream-receipts"),
             ("current-verification", "exact-draft-receipt-readback"),
             ("ads-operator-labels", "api-owned-priority-and-risk"),
+            ("recommendation-log", "canonical-workspace-guard"),
         },
     )
     for key, proof in _PROOFS.items()

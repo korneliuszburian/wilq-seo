@@ -59,12 +59,10 @@ def marketing_daily_check() -> DailyCheckResult:
     response_model=RecommendationLogRecord,
 )
 def log_daily_recommendation(record: RecommendationLogRecord) -> RecommendationLogRecord:
-    if record.workspace_id != "ekologus":
-        raise HTTPException(
-            status_code=400,
-            detail="Recommendation log workspace is outside the active WILQ workspace.",
-        )
-    return save_recommendation_log(record)
+    try:
+        return save_recommendation_log(record)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)
