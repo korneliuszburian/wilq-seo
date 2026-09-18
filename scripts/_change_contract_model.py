@@ -148,6 +148,15 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_verification_record.py",
         "tests/content/test_wordpress_draft_apply_receipt.py",
     ),
+    ("ads-operator-labels", "api-owned-priority-and-risk"): (
+        "pnpm",
+        "--filter",
+        "@wilq/dashboard",
+        "exec",
+        "vitest",
+        "run",
+        "src/routes/AdsDoctorSections/formatters.test.ts",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -264,6 +273,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-disposition", "server-owned-approval-command"),
             ("current-preparation", "exact-downstream-receipts"),
             ("current-verification", "exact-draft-receipt-readback"),
+            ("ads-operator-labels", "api-owned-priority-and-risk"),
         },
     )
     for key, proof in _PROOFS.items()

@@ -11,16 +11,16 @@ export function pickPrimaryDecision(data: AdsDiagnosticsResponse) {
   );
 }
 
-export function priorityFromDecision(decision: AdsDecision): "P1" | "P2" | "P3" | "-" {
-  if (decision.status === "blocked" || decision.priority <= 20) return "P1";
-  if (decision.priority <= 40) return "P2";
-  if (decision.priority <= 70) return "P3";
-  return "-";
+export function adsPriorityLabel(decision: AdsDecision): string {
+  return decision.priority_label.trim() || "brak priorytetu";
 }
 
-export function riskFromDecision(risk: AdsDecision["risk"]): "low" | "medium" | "high" | "blocked" {
-  if (risk === "critical") return "high";
-  return risk;
+export function adsRisk(decision: AdsDecision): AdsDecision["risk"] | "blocked" {
+  return decision.status === "blocked" ? "blocked" : decision.risk;
+}
+
+export function adsRiskLabel(decision: AdsDecision): string {
+  return decision.risk_label.trim() || decision.status_label.trim() || "status do sprawdzenia";
 }
 
 export function uniqueLabels(values: string[]) {

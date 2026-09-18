@@ -23,7 +23,6 @@ import {
   DashboardToolbar,
   DenseQueueTable,
   ForbiddenClaimsStrip,
-  PriorityBadge,
   RiskPill,
   SourceFreshnessStrip,
   StatusPill
@@ -33,12 +32,13 @@ import { CompactDiagnosticCard } from "./AdsDoctorSections/CompactDiagnosticCard
 import { MeasurementFirstBanner } from "./AdsDoctorSections/MeasurementFirstBanner";
 import { SafeWorkModes } from "./AdsDoctorSections/SafeWorkModes";
 import {
+  adsPriorityLabel,
+  adsRisk,
+  adsRiskLabel,
   dateLabel,
   formatCost,
   metricTileValue,
   pickPrimaryDecision,
-  priorityFromDecision,
-  riskFromDecision,
   uniqueLabels
 } from "./AdsDoctorSections/formatters";
 
@@ -178,7 +178,7 @@ export function AdsDoctorSurface() {
             {
               key: "priority",
               header: "Priorytet",
-              render: (decision) => <PriorityBadge value={priorityFromDecision(decision)} />
+              render: (decision) => <StatusPill label={adsPriorityLabel(decision)} tone="neutral" />
             },
             {
               key: "topic",
@@ -207,8 +207,8 @@ export function AdsDoctorSurface() {
               header: "Status",
               render: (decision) => (
                 <RiskPill
-                  label={decision.status_label || decision.risk_label || decision.status}
-                  risk={decision.status === "blocked" ? "blocked" : riskFromDecision(decision.risk)}
+                  label={adsRiskLabel(decision)}
+                  risk={adsRisk(decision)}
                 />
               )
             },

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 type Tone = "neutral" | "blue" | "green" | "amber" | "red" | "purple";
-type Risk = "low" | "medium" | "high" | "blocked" | "unknown";
+type Risk = "low" | "medium" | "high" | "critical" | "blocked" | "unknown";
 type Priority = "P1" | "P2" | "P3" | "-";
 
 type DashboardToolbarProps = {
@@ -418,6 +418,7 @@ const riskClasses: Record<Risk, string> = {
   low: "border-emerald-200 bg-white text-slate-700",
   medium: "border-amber-200 bg-white text-slate-700",
   high: "border-red-200 bg-white text-slate-700",
+  critical: "border-red-300 bg-red-50 text-risk",
   blocked: "border-red-200 bg-red-50 text-risk",
   unknown: "border-slate-200 bg-white text-slate-600"
 };
@@ -426,6 +427,7 @@ const riskDotClasses: Record<Risk, string> = {
   low: "bg-signal",
   medium: "bg-amber-500",
   high: "bg-risk",
+  critical: "bg-risk",
   blocked: "bg-risk",
   unknown: "bg-slate-400"
 };
