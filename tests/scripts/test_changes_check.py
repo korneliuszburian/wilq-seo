@@ -567,6 +567,14 @@ def test_content_review_observer_is_red_then_green(tmp_path: Path) -> None:
     _git(repo, "init", "--quiet")
     _git(repo, "config", "user.email", "tests@example.invalid")
     _git(repo, "config", "user.name", "content review observer")
+
+    implementation = repo / "apps/api/wilq_api/routers/content_workflow.py"
+    real_source = (
+        REPOSITORY_ROOT / "apps/api/wilq_api/routers/content_workflow.py"
+    ).read_text(encoding="utf-8")
+    old_source = real_source.replace('"can_review": False', '"can_review": bool(False)')
+    assert old_source != real_source
+    implementation.write_text(old_source, encoding="utf-8")
     _git(repo, "add", ".")
     _git(repo, "commit", "--quiet", "-m", "base")
     parent = subprocess.run(
@@ -577,16 +585,7 @@ def test_content_review_observer_is_red_then_green(tmp_path: Path) -> None:
         text=True,
     ).stdout.strip()
 
-    candidate_sources = (
-        "apps/api/wilq_api/routers/content_workflow.py",
-        "scripts/_change_contract_model.py",
-        "tests/content/test_semantic_review_refresh_change_contract.py",
-    )
-    for relative in candidate_sources:
-        source = REPOSITORY_ROOT / relative
-        destination = repo / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(source.read_bytes())
+    implementation.write_text(real_source, encoding="utf-8")
     _git(repo, "add", ".")
     _git(repo, "commit", "--quiet", "-m", "candidate")
     candidate = subprocess.run(
