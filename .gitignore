@@ -25,6 +25,7 @@ test-results/
 .turbo/
 .local-lab/
 .krn/runs/
+.playwright-cli/
 
 # Never commit access-pack secrets or OAuth credential dumps.
 ekologus-access-pack-*/
