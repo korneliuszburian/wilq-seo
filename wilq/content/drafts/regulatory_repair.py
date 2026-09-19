@@ -451,6 +451,16 @@ def ground_unmet_regulatory_assertions(
             protected_terms=protected_terms,
             prepared_plan=prepared_plan,
         )
+        if not semantic_requirement:
+            # One exact approved fact satisfies the assertion; appending every
+            # candidate would duplicate a paragraph and trip the readability
+            # gate. Keep the first fact whose reader-facing text carries the
+            # concept.
+            facts = [
+                fact
+                for fact in facts
+                if regulatory_assertion_matches(text=fact, assertion=assertion)
+            ][:1]
         if not facts:
             continue
         if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
