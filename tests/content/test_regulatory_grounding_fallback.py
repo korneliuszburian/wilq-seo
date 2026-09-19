@@ -205,3 +205,111 @@ def test_grounding_falls_back_when_prepared_fact_is_not_document_safe() -> None:
     assert regulatory_requirement_assertion_errors(requirement=requirement, text=body) == []
     assert "nie upoważnia" in body
     assert "example.com" not in body
+
+
+_PREFIX_TERM = "wyjaśnia"
+
+
+def test_grounding_keeps_requirement_wide_fact_when_prepared_text_drops_the_term() -> None:
+    """A prepared fact can lose its exact term during attribution stripping.
+
+    ``_approved_facts_for_requirement`` matches the raw summary, but
+    ``document_ready_fact_text`` removes the source-attribution prefix. When the
+    term only exists inside that prefix, the prepared text no longer satisfies
+    the assertion, so the requirement-wide approved fact must still be used.
+    """
+
+    requirement = ContentRegulatoryRequirement(
+        id="bdo_prefix_scope",
+        label="zakres opisu",
+        reason="Wymaga obserwowalnego pojęcia.",
+        document_assertions=[
+            ContentRegulatoryDocumentAssertion(
+                id="bdo_prefix_assertion",
+                label="pojęcie opisu",
+                required_any_of=[_PREFIX_TERM],
+            )
+        ],
+    )
+    section = ContentPlanningSection(
+        section_id="section_prefix",
+        heading="Zakres",
+        purpose="Wyjaśnij zakres.",
+        evidence_ids=["ev_prefix"],
+        regulatory_requirement_ids=[requirement.id],
+    )
+    planning_input = ContentPlanningInput.model_construct(
+        work_item_id="work_regulatory_prefix",
+        planning_input_digest="a" * 64,
+        source_facts=[],
+        regulatory_coverage=ContentRegulatoryCoverage.model_construct(
+            requirements=[requirement],
+            source_facts=[
+                ContentSourceFact.model_construct(
+                    source_id="regulatory_source_fact_prefix",
+                    extracted_fact="System wyjaśnia zasady zakresu.",
+                    review_status="approved",
+                    official_source=True,
+                    evidence_ids=["ev_prefix"],
+                    source_connectors=["official_regulatory_review"],
+                    regulatory_requirement_ids=[requirement.id],
+                )
+            ],
+        ),
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        work_item_id="work_regulatory_prefix",
+        planning_input_digest="a" * 64,
+        sections=[section],
+    )
+    prepared_plan = PreparedDraftPlan(
+        candidate=proposal,
+        exact_source_snapshot=planning_input,
+        body_targets=(section,),
+        target_supports=(
+            PreparedDraftTarget(
+                section=section,
+                source_facts=(
+                    PreparedSourceFact(
+                        fact_id="prepared_prefix",
+                        summary="Oficjalne źródło BDO wyjaśnia, że zakres jest opisany.",
+                        source_connector="official_regulatory_review",
+                        evidence_ids=("ev_prefix",),
+                        knowledge_card_ids=(),
+                        source_fact_ids=("regulatory_source_fact_prefix",),
+                        source_material_ids=(),
+                        regulatory_requirement_ids=(requirement.id,),
+                    ),
+                ),
+            ),
+        ),
+    )
+    output = ContentInitialDraftModelOutput(
+        page_assets=ContentDraftRevisionPageAssets(
+            wordpress_title="Tytuł",
+            meta_title="Meta",
+            meta_description="Opis",
+            h1="Nagłówek",
+            lead="Lead",
+        ),
+        sections=[
+            ContentInitialDraftSectionOutput(
+                section_id=section.section_id,
+                heading=section.heading,
+                body_markdown="Wprowadzenie.",
+            )
+        ],
+    )
+
+    grounded = ground_unmet_regulatory_assertions(
+        output,
+        planning_input=planning_input,
+        proposal=proposal,
+        missing_codes=[
+            f"regulatory_document_assertion:{requirement.id}:bdo_prefix_assertion"
+        ],
+        prepared_plan=prepared_plan,
+    )
+
+    body = grounded.sections[0].body_markdown
+    assert regulatory_requirement_assertion_errors(requirement=requirement, text=body) == []

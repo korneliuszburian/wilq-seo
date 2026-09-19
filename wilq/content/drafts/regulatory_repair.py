@@ -451,19 +451,6 @@ def ground_unmet_regulatory_assertions(
             protected_terms=protected_terms,
             prepared_plan=prepared_plan,
         )
-        if not facts and prepared_plan is not None:
-            # The prepared plan can carry a fact that matches the assertion but
-            # cannot become reader-facing text (for example an inline link).
-            # Fall back to the requirement-wide approved set preflight accepted
-            # instead of leaving the exact assertion unmet.
-            facts = _safe_grounding_fact_texts(
-                planning_input,
-                requirement_id=requirement_id,
-                section_id=target,
-                assertion_terms=assertion_terms,
-                protected_terms=protected_terms,
-                prepared_plan=None,
-            )
         if not facts:
             continue
         if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
@@ -586,27 +573,7 @@ def _approved_facts_for_requirement(
             term.lower() in summary.lower() for term in assertion_terms
         )
 
-    if prepared_plan is not None:
-        assigned_targets = (
-            target
-            for target in prepared_plan.target_supports
-            if section_id is None or target.section.section_id == section_id
-        )
-        prepared = [
-            fact.summary
-            for target in assigned_targets
-            for fact in target.source_facts
-            if requirement_id in fact.regulatory_requirement_ids and matches(fact.summary)
-        ]
-        if prepared:
-            return list(dict.fromkeys(prepared))
-        # The prepared plan binds a fact to one writable section. When it does
-        # not assign the exact approved fact that grounds this assertion, fall
-        # back to the requirement-wide approved set that
-        # ``regulatory_draft_preflight_errors`` already accepted for the same
-        # requirement. Never invent a fact or widen to another requirement.
-
-    return [
+    requirement_wide = [
         item.extracted_fact
         for item in regulatory_turn_context.approved_regulatory_source_facts(
             planning_input,
@@ -614,6 +581,26 @@ def _approved_facts_for_requirement(
         )
         if matches(item.extracted_fact)
     ]
+    if prepared_plan is None:
+        return requirement_wide
+    assigned_targets = (
+        target
+        for target in prepared_plan.target_supports
+        if section_id is None or target.section.section_id == section_id
+    )
+    prepared = [
+        fact.summary
+        for target in assigned_targets
+        for fact in target.source_facts
+        if requirement_id in fact.regulatory_requirement_ids and matches(fact.summary)
+    ]
+    # The prepared plan binds one fact to one writable section, but the exact
+    # approved fact that grounds the assertion may be assigned elsewhere or may
+    # not survive reader-facing projection. Keep the plan-scoped facts first and
+    # then the requirement-wide approved set that
+    # ``regulatory_draft_preflight_errors`` already validated, never inventing a
+    # fact or widening to another requirement.
+    return list(dict.fromkeys([*prepared, *requirement_wide]))
 
 
 def _assertion_codes_for_missing_requirements(
