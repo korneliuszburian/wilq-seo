@@ -9,6 +9,7 @@ from typing import Literal, cast
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
+    _digest,
     bind_research_packet_to_planning_input,
 )
 from wilq.content.planning.generated_proposal_contracts import (
@@ -22,6 +23,9 @@ from wilq.content.planning.source_pack_projection import (
     project_selected_source_pack_facts,
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.inventory_binding import (
+    content_kind_inventory_binding_for_work_item,
+)
 from wilq.content.workflow.refresh_preparation import (
     ContentRefreshPreparationAuthority,
     RefreshPreparationRuntimeAuthorized,
@@ -56,6 +60,8 @@ def prepare_and_bind_research_packet(
 ) -> ContentResearchPacketRouteBinding:
     """Prepare a packet on POST only, then carry its immutable binding onward."""
 
+    work_item_id = canonical_inventory_work_item_id(work_item_id)
+    planning_input = _planning_input_for_work_item(planning_input, work_item_id)
     workflow_store = store or content_workflow_store()
     has_source_pack = bool(
         request.source_pack_binding_id
@@ -157,10 +163,40 @@ def store_has_source_pack_for_work_item(
     *,
     store: ResearchPacketPreparationStore | None = None,
 ) -> bool:
+    work_item_id = canonical_inventory_work_item_id(work_item_id)
     return bool(
         (store or content_workflow_store()).list_content_source_pack_bindings(
             current_work_item_id=work_item_id
         )
+    )
+
+
+def canonical_inventory_work_item_id(work_item_id: str) -> str:
+    """Resolve a unique operational alias without guessing another page."""
+
+    inventory_binding = content_kind_inventory_binding_for_work_item(work_item_id)
+    return work_item_id if inventory_binding is None else inventory_binding.work_item_id
+
+
+def _planning_input_for_work_item(
+    planning_input: ContentPlanningInput,
+    work_item_id: str,
+) -> ContentPlanningInput:
+    if planning_input.work_item_id == work_item_id:
+        return planning_input
+    payload = planning_input.model_dump(mode="json")
+    payload.pop("planning_input_digest", None)
+    payload["work_item_id"] = work_item_id
+    digest = _digest(
+        {
+            "schema_name": "wilq_content_planning_input_v7",
+            "criteria_version": "wilq_people_first_planning_v5",
+            "inventory_mapping_policy": "wilq_inventory_mapping_v7",
+            **payload,
+        }
+    )
+    return planning_input.model_copy(
+        update={"work_item_id": work_item_id, "planning_input_digest": digest}
     )
 
 
@@ -374,6 +410,7 @@ __all__ = [
     "packet_blocked_model_response",
     "packet_generation_guard",
     "authorized_refresh_generation_context",
+    "canonical_inventory_work_item_id",
     "prepare_and_bind_research_packet",
     "store_has_source_pack_for_work_item",
 ]

@@ -200,6 +200,12 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_content_keep_eligibility.py",
     ),
+    ("packet-id-normalization", "operational-to-inventory"): (
+        "scripts/test.sh",
+        "tests/content/test_packet_plan_draft_binding.py",
+        "tests/content/test_packet_plan_draft_contracts.py",
+        "tests/content/test_packet_plan_draft_http.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -325,6 +331,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("public-deployment-gate", "domain-owned-exact-approval"),
             ("redaction-digest-allowlist", "authoring-profile-digest-preserved"),
             ("keep-eligibility-pin", "source-facts-sha-refresh"),
+            ("packet-id-normalization", "operational-to-inventory"),
         },
     )
     for key, proof in _PROOFS.items()

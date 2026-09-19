@@ -32,6 +32,9 @@ from wilq.content.planning.route_packet_binding import (
     authorized_refresh_generation_context as _authorized_refresh_generation_context,
 )
 from wilq.content.planning.route_packet_binding import (
+    canonical_inventory_work_item_id as _canonical_inventory_work_item_id,
+)
+from wilq.content.planning.route_packet_binding import (
     legacy_unbound_packet_response as _legacy_unbound_packet_response,
 )
 from wilq.content.planning.route_packet_binding import (
@@ -173,6 +176,7 @@ def _get_content_work_item_planning_proposal_status(
         content_kind_inventory_binding_for_work_item
     ),
 ) -> ContentPlanningProposalResponse:
+    work_item_id = _canonical_inventory_work_item_id(work_item_id)
     store = content_planning_proposal_store()
     authority = refresh_authority or _canonical_refresh_preparation_authority()
     reconciliation = _legacy_unbound_refresh_reconciliation_status(
@@ -430,6 +434,7 @@ def _generate_content_work_item_planning_proposal(
     snapshot_loader: ContentPlanningSnapshotLoader,
     refresh_authority: ContentRefreshPreparationAuthority | None = None,
 ) -> ContentPlanningProposalResponse | JSONResponse:
+    work_item_id = _canonical_inventory_work_item_id(work_item_id)
     authority = refresh_authority or _canonical_refresh_preparation_authority()
     refresh_resolution = authority.resolve_planning(work_item_id, request)
     refresh_block = authority.planning_block_response(refresh_resolution, request)

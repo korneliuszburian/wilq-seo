@@ -46,6 +46,7 @@ from wilq.content.planning.generated_proposal_turn import (
     compact_planning_input_for_model,
 )
 from wilq.content.planning.input_sources import (
+    ContentPlanningInventory,
     ContentPlanningSourceAssessment,
     ContentPlanningSourceFact,
 )
@@ -333,6 +334,79 @@ def test_editorial_packet_plan_route_persists_exact_current_packet_from_contact_
     assert packet.internal_links[0].destination_path == "/kontakt"
     assert packet.internal_links[0].verification == "exact_verified"
     assert bound_request.expected_research_packet_digest == packet.packet_digest
+
+
+def test_packet_route_resolves_operational_work_item_to_inventory_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    operational_work_item_id = (
+        "content_work_item_content_decision_https___www_ekologus_pl_bdo_co_musi_wiedziec"
+    )
+    planning_input = case.planning_input.model_copy(
+        update={
+            "work_item_id": operational_work_item_id,
+            "final_canonical_url": case.identity.public_url,
+            "inventory": ContentPlanningInventory(
+                status="available",
+                content_status="available",
+                acf_section_status="missing",
+            ),
+            "source_assessments": [
+                ContentPlanningSourceAssessment(source=source, status="missing", reason="test")
+                for source in (
+                    "wordpress",
+                    "service_profile",
+                    "gsc",
+                    "ga4",
+                    "google_ads",
+                    "ahrefs",
+                    "keyword_planner",
+                    "merchant",
+                    "localo",
+                    "social",
+                )
+            ],
+        }
+    )
+    monkeypatch.setattr(
+        route_packet_binding,
+        "content_kind_inventory_binding_for_work_item",
+        lambda work_item_id: (
+            SimpleNamespace(work_item_id=case.identity.current_work_item_id)
+            if work_item_id == operational_work_item_id
+            else None
+        ),
+    )
+    request = ContentPlanningProposalRequest(
+        content_kind="service",
+        service_card_id=planning_input.confirmed_service_card_id,
+        expected_planning_input_digest=planning_input.planning_input_digest,
+        requested_by="wilku",
+    )
+
+    result = route_packet_binding.prepare_and_bind_research_packet(
+        work_item_id=operational_work_item_id,
+        request=request,
+        planning_input=planning_input,
+        snapshot=case.snapshot,
+        store=case.store,
+    )
+
+    assert result.response is None
+    assert result.planning_input is not None
+    assert result.planning_input.work_item_id == case.identity.current_work_item_id
+    assert result.request.research_packet_id is not None
+    packet = case.store.load_content_research_packet(result.request.research_packet_id)
+    assert packet is not None
+    assert packet.current_work_item_id == case.identity.current_work_item_id
+    assert (
+        route_packet_binding.canonical_inventory_work_item_id(
+            "content_work_item_content_decision_unresolved"
+        )
+        == "content_work_item_content_decision_unresolved"
+    )
 
 
 def test_refresh_reader_rebinds_projected_editorial_packet_to_exact_queued_job(
