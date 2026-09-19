@@ -544,19 +544,30 @@ def _approved_facts_for_requirement(
 ) -> list[str]:
     """Return only exact approved facts, optionally narrowed to one assertion."""
 
+    def matches(summary: str) -> bool:
+        return assertion_terms is None or any(
+            term.lower() in summary.lower() for term in assertion_terms
+        )
+
     if prepared_plan is not None:
         assigned_targets = (
             target
             for target in prepared_plan.target_supports
             if section_id is None or target.section.section_id == section_id
         )
-        facts = [
-            fact
+        prepared = [
+            fact.summary
             for target in assigned_targets
             for fact in target.source_facts
-            if requirement_id in fact.regulatory_requirement_ids
+            if requirement_id in fact.regulatory_requirement_ids and matches(fact.summary)
         ]
-        return list(dict.fromkeys(fact.summary for fact in facts))
+        if prepared:
+            return list(dict.fromkeys(prepared))
+        # The prepared plan binds a fact to one writable section. When it does
+        # not assign the exact approved fact that grounds this assertion, fall
+        # back to the requirement-wide approved set that
+        # ``regulatory_draft_preflight_errors`` already accepted for the same
+        # requirement. Never invent a fact or widen to another requirement.
 
     return [
         item.extracted_fact
@@ -564,10 +575,7 @@ def _approved_facts_for_requirement(
             planning_input,
             {requirement_id},
         )
-        if (
-            assertion_terms is None
-            or any(term.lower() in item.extracted_fact.lower() for term in assertion_terms)
-        )
+        if matches(item.extracted_fact)
     ]
 
 
