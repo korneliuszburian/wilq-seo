@@ -517,7 +517,22 @@ def assure_readability_and_repair(
         blocking_issues = persistence_blocking_readability_issues(issues)
         blocker = output_blocker(output)
         if blocker is not None:
-            return output, trace, blocker
+            output, trace, blocker = _restore_deterministic_contract(
+                planning_input=planning_input,
+                proposal=proposal,
+                output=output,
+                trace=trace,
+                blocker=blocker,
+                client=client,
+                output_blocker=output_blocker,
+                prepared_plan=prepared_plan,
+            )
+            if blocker is not None:
+                return output, trace, blocker
+            issues = readability_issues_for_output(output)
+            blocking_issues = persistence_blocking_readability_issues(issues)
+            if not issues:
+                return output, trace, None
         if output is candidate and trace is not turn_input_trace and blocking_issues:
             return output, trace, _readability_repair_failed_blocker(trace)
         if not issues:
@@ -525,6 +540,47 @@ def assure_readability_and_repair(
     if blocking_issues := persistence_blocking_readability_issues(issues):
         return output, trace, _readability_blocker(blocking_issues)
     return output, trace, None
+
+
+def _restore_deterministic_contract(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    output: ContentInitialDraftModelOutput,
+    trace: ContentCodexRuntimeTrace,
+    blocker: ContentInitialDraftBlocker,
+    client: CodexAppServerClientProtocol,
+    output_blocker: Callable[
+        [ContentInitialDraftModelOutput], ContentInitialDraftBlocker | None
+    ],
+    prepared_plan: PreparedDraftPlan | None,
+) -> tuple[
+    ContentInitialDraftModelOutput,
+    ContentCodexRuntimeTrace,
+    ContentInitialDraftBlocker | None,
+]:
+    """Re-apply pure deterministic grounding after a model repair.
+
+    A readability turn can replace a section body and remove an exact regulatory
+    concept. ``repair_regulatory_assertions`` is deterministic for
+    ``document_scope_mismatch``, so re-apply it before treating the repaired
+    candidate as blocked instead of losing the concept the model had written.
+    """
+
+    if blocker.code != "document_scope_mismatch":
+        return output, trace, blocker
+    restored = repair_regulatory_assertions(
+        planning_input=planning_input,
+        proposal=proposal,
+        output=output,
+        blocker=blocker,
+        client=client,
+        prepared_plan=prepared_plan,
+    )
+    if restored is None:
+        return output, trace, blocker
+    restored_output, restored_trace = restored
+    return restored_output, restored_trace, output_blocker(restored_output)
 
 
 def _assurance_blocker(
