@@ -442,24 +442,28 @@ def ground_unmet_regulatory_assertions(
             if semantic_requirement
             else assertion.required_any_of
         )
-        facts = [
-            safe_fact
-            for item in _approved_facts_for_requirement(
+        assertion_terms = None if semantic_requirement else assertion.required_any_of
+        facts = _safe_grounding_fact_texts(
+            planning_input,
+            requirement_id=requirement_id,
+            section_id=target,
+            assertion_terms=assertion_terms,
+            protected_terms=protected_terms,
+            prepared_plan=prepared_plan,
+        )
+        if not facts and prepared_plan is not None:
+            # The prepared plan can carry a fact that matches the assertion but
+            # cannot become reader-facing text (for example an inline link).
+            # Fall back to the requirement-wide approved set preflight accepted
+            # instead of leaving the exact assertion unmet.
+            facts = _safe_grounding_fact_texts(
                 planning_input,
                 requirement_id=requirement_id,
                 section_id=target,
-                assertion_terms=(None if semantic_requirement else assertion.required_any_of),
-                prepared_plan=prepared_plan,
+                assertion_terms=assertion_terms,
+                protected_terms=protected_terms,
+                prepared_plan=None,
             )
-            if (
-                safe_fact := safe_document_ready_fact_text(
-                    item,
-                    protected_terms=protected_terms,
-                )
-            )
-            is not None
-        ]
-        facts = list(dict.fromkeys(fact for fact in facts if fact.strip()))
         if not facts:
             continue
         if replace_semantic_requirements and requirement_id in semantic_requirement_ids:
@@ -532,6 +536,39 @@ def _grounded_section_body(
     if additions:
         return existing + "\n\n" + "\n\n".join(dict.fromkeys(additions))
     return existing
+
+
+def _safe_grounding_fact_texts(
+    planning_input: ContentPlanningInput,
+    *,
+    requirement_id: str,
+    section_id: str | None,
+    assertion_terms: list[str] | None,
+    protected_terms: list[str],
+    prepared_plan: PreparedDraftPlan | None,
+) -> list[str]:
+    """Return de-duplicated, document-safe fact text for one assertion."""
+
+    return list(
+        dict.fromkeys(
+            safe_fact
+            for item in _approved_facts_for_requirement(
+                planning_input,
+                requirement_id=requirement_id,
+                section_id=section_id,
+                assertion_terms=assertion_terms,
+                prepared_plan=prepared_plan,
+            )
+            if (
+                safe_fact := safe_document_ready_fact_text(
+                    item,
+                    protected_terms=protected_terms,
+                )
+            )
+            is not None
+            and safe_fact.strip()
+        )
+    )
 
 
 def _approved_facts_for_requirement(
