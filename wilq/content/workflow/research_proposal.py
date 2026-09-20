@@ -23,8 +23,14 @@ from wilq.content.workflow.evidence_acquisition_contracts import (
     EvidenceAcquisitionCurrentProjection,
     EvidenceAcquisitionRun,
     EvidenceObservationReceipt,
+    OfficialGuidanceObservationReceipt,
 )
 from wilq.content.workflow.evidence_acquisition_snapshot import current_page_receipt_is_fresh
+from wilq.content.workflow.official_guidance import (
+    OfficialGuidanceCandidate,
+    official_guidance_receipt_is_fresh,
+    resolve_official_guidance_candidate,
+)
 from wilq.security.redaction import SECRET_VALUE_RE
 
 _HEX64 = r"^[0-9a-f]{64}$"
@@ -300,7 +306,7 @@ class EvidenceResearchCoordinator:
         existing = self._proposal_store.get_research_proposal_by_input_digest(input_digest)
         if existing is not None:
             return self._project_proposal(existing)
-        if run.observation is not None and not current_page_receipt_is_fresh(
+        if run.observation is not None and not _observation_is_fresh(
             run.observation, now=self._clock()
         ):
             return self._persist_blocked(
@@ -362,7 +368,16 @@ class EvidenceResearchCoordinator:
             )
         output = _normalize_research_output(output)
         output_digest = canonical_json_digest(output.model_dump(mode="json"))
-        output_blocker = _output_blocker(output, run.observation)
+        output_blocker = _output_blocker(
+            output,
+            run.observation,
+            candidate=(
+                resolve_official_guidance_candidate(run.official_guidance_candidate_id)
+                if run.source_intent == "official_primary"
+                and run.official_guidance_candidate_id is not None
+                else None
+            ),
+        )
         if output_blocker is not None:
             return self._persist_blocked(
                 acquisition_run_id=acquisition_run_id,
@@ -426,7 +441,7 @@ class EvidenceResearchCoordinator:
                 current_safe_next_step = missing.safe_next_step
             elif (
                 projection.recorded_run.observation is None
-                or not current_page_receipt_is_fresh(
+                or not _observation_is_fresh(
                     projection.recorded_run.observation, now=assessed_at
                 )
                 or projection.current_status != "ready_for_researcher"
@@ -488,13 +503,27 @@ class EvidenceResearchCoordinator:
         return self._project_proposal(self._proposal_store.save_research_proposal(proposal))
 
 
-def research_output_schema() -> dict[str, object]:
-    return {
+def research_output_schema(
+    *,
+    allowed_claims: Sequence[str] | None = None,
+    blocked_claims: Sequence[str] | None = None,
+    scope_label: str | None = None,
+) -> dict[str, object]:
+    proposed_claim: dict[str, object] = {
+        "type": ["string", "null"],
+        "maxLength": 1200,
+    }
+    if allowed_claims is not None:
+        proposed_claim["enum"] = [None, *allowed_claims]
+    scope: dict[str, object] = {"type": ["string", "null"], "maxLength": 600}
+    if scope_label is not None:
+        scope["enum"] = [scope_label]
+    schema: dict[str, object] = {
         "type": "object",
         "additionalProperties": False,
         "properties": {
-            "proposed_claim": {"type": ["string", "null"], "maxLength": 1200},
-            "scope": {"type": ["string", "null"], "maxLength": 600},
+            "proposed_claim": proposed_claim,
+            "scope": scope,
             "observation_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
             "contradictions": {"type": "array", "items": {"type": "string"}, "maxItems": 16},
             "unknowns": {"type": "array", "items": {"type": "string"}, "maxItems": 16},
@@ -507,27 +536,60 @@ def research_output_schema() -> dict[str, object]:
             "unknowns",
         ],
     }
+    if blocked_claims is not None:
+        schema["x_blocked_claims"] = list(blocked_claims)
+    return schema
+
+
+def _observation_is_fresh(
+    observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
+    *,
+    now: datetime,
+) -> bool:
+    if isinstance(observation, OfficialGuidanceObservationReceipt):
+        return official_guidance_receipt_is_fresh(observation, now=now)
+    return current_page_receipt_is_fresh(observation, now=now)
 
 
 def _research_request(
     run: EvidenceAcquisitionRun,
-    observation: EvidenceObservationReceipt,
+    observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
 ) -> tuple[CodexAppServerStructuredTurnRequest, str, str]:
-    schema = research_output_schema()
-    application_context = json.dumps(
-        {
-            "operation": "propose_evidence_bound_research_claim",
-            "research_question": run.research_question_safe,
-            "allowed_observation_ids": [observation.observation_id],
-            "invariants": {
-                "do_not_invent_facts": True,
-                "do_not_return_evidence_ids": True,
-                "do_not_return_source_urls": True,
-                "do_not_make_legal_claims_from_current_page": True,
-                "proposal_only": True,
-                "human_review_required": True,
-            },
+    candidate = (
+        resolve_official_guidance_candidate(run.official_guidance_candidate_id)
+        if run.source_intent == "official_primary"
+        and run.official_guidance_candidate_id is not None
+        else None
+    )
+    schema = research_output_schema(
+        allowed_claims=None if candidate is None else candidate.allowed_claim_scope,
+        blocked_claims=None if candidate is None else candidate.blocked_claims,
+        scope_label=None if candidate is None else candidate.title,
+    )
+    context_payload: dict[str, object] = {
+        "operation": "propose_evidence_bound_research_claim",
+        "research_question": run.research_question_safe,
+        "allowed_observation_ids": [observation.observation_id],
+        "invariants": {
+            "do_not_invent_facts": True,
+            "do_not_return_evidence_ids": True,
+            "do_not_return_source_urls": True,
+            "do_not_make_legal_claims_from_current_page": True,
+            "proposal_only": True,
+            "human_review_required": True,
         },
+    }
+    if candidate is not None:
+        context_payload["official_guidance_candidate"] = {
+            "candidate_id": candidate.candidate_id,
+            "canonical_path": candidate.canonical_path,
+            "source_url": candidate.source_url,
+            "scope_label": candidate.title,
+            "allowed_claim_scope": candidate.allowed_claim_scope,
+            "blocked_claims": candidate.blocked_claims,
+        }
+    application_context = json.dumps(
+        context_payload,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -545,6 +607,19 @@ def _research_request(
         "wskazywać observation_id z trusted context; jeśli materiał nie wystarcza, "
         "zwróć claim null i opisz unknowns. Nie formułuj twierdzeń prawnych."
     )
+    if candidate is not None:
+        instruction += (
+            " Dla official guidance pole proposed_claim może być wyłącznie jednym "
+            "z dokładnych stringów allowed_claim_scope albo null. Dokładny zakres "
+            "allowed_claim_scope to "
+            f"{json.dumps(candidate.allowed_claim_scope, ensure_ascii=False)}. "
+            "Pole scope może być wyłącznie exact server-owned scope_label: "
+            f"{candidate.title!r}. "
+            "Zablokowane są następujące zakresy: "
+            f"{json.dumps(candidate.blocked_claims, ensure_ascii=False)}. Nie używaj "
+            "certyfikacji, gwarancji zgodności z prawem, gwarancji zgodności "
+            "środowiskowej ani treści zakupionej normy."
+        )
     request = CodexAppServerStructuredTurnRequest(
         instruction=instruction,
         application_context=application_context,
@@ -637,7 +712,9 @@ def _contains_secret(value: str) -> bool:
 
 def _output_blocker(
     output: ResearcherStructuredOutput,
-    observation: EvidenceObservationReceipt,
+    observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
+    *,
+    candidate: OfficialGuidanceCandidate | None = None,
 ) -> ResearchProposalBlocker | None:
     values = [
         value
@@ -676,10 +753,39 @@ def _output_blocker(
             reason="Researcher referenced an observation outside the acquisition run.",
             safe_next_step="Użyj wyłącznie observation_id z bieżącego acquisition run.",
         )
+    if candidate is not None:
+        normalized_claim = _normalize_output_text(output.proposed_claim)
+        allowed_claims = tuple(
+            _normalize_output_text(item) for item in candidate.allowed_claim_scope
+        )
+        if normalized_claim is not None and normalized_claim not in allowed_claims:
+            return ResearchProposalBlocker(
+                code="official_guidance_scope_exceeded",
+                reason=(
+                    "Official-guidance proposed_claim must exactly match one "
+                    "server-owned allowed_claim_scope string."
+                ),
+                safe_next_step=(
+                    "Wybierz jeden exact allowed_claim_scope string albo pozostaw "
+                    "proposed_claim null."
+                ),
+            )
+        normalized_scope = _normalize_output_text(output.scope)
+        if normalized_scope != _normalize_output_text(candidate.title):
+            return ResearchProposalBlocker(
+                code="official_guidance_scope_exceeded",
+                reason=(
+                    "Official-guidance scope must exactly match the candidate "
+                    "server-owned scope label."
+                ),
+                safe_next_step=(
+                    "Użyj exact scope labelu kandydata."
+                ),
+            )
     legal_text = " ".join(
         value for value in (output.proposed_claim, output.scope) if value
     )
-    if _LEGAL_CLAIM_RE.search(_comparison_text(legal_text)):
+    if candidate is None and _LEGAL_CLAIM_RE.search(_comparison_text(legal_text)):
         return ResearchProposalBlocker(
             code="legal_claim_requires_official_source",
             reason="Current-page observation cannot authorize a legal claim.",
@@ -690,7 +796,7 @@ def _output_blocker(
 
 def _ready_proposal(
     run: EvidenceAcquisitionRun,
-    observation: EvidenceObservationReceipt,
+    observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
     output: ResearcherStructuredOutput,
     *,
     input_digest: str,

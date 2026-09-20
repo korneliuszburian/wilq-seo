@@ -22,6 +22,7 @@ from wilq.content.workflow.evidence_acquisition_contracts import (
     EvidenceAcquisitionSubject,
     EvidenceObservationReceipt,
     IdentityLoader,
+    OfficialGuidanceObservationReceipt,
     ServerClock,
     _finalize_run,
     _question_digest,
@@ -29,6 +30,10 @@ from wilq.content.workflow.evidence_acquisition_contracts import (
 )
 from wilq.content.workflow.evidence_acquisition_snapshot import (
     CurrentPageSnapshotReadError,
+)
+from wilq.content.workflow.official_guidance import (
+    OfficialGuidanceReadError,
+    resolve_official_guidance_candidate,
 )
 from wilq.security.redaction import SECRET_VALUE_RE
 
@@ -43,6 +48,7 @@ class EvidenceAcquisitionContext:
     classification_loader: ClassificationLoader
     store: EvidenceAcquisitionStore
     current_page_snapshot_reader: CurrentPageSnapshotReader | None
+    official_guidance_snapshot_reader: Callable[..., OfficialGuidanceObservationReceipt] | None
     catalog_loader: Callable[[], Any]
     clock: ServerClock
     project_run: Callable[..., EvidenceAcquisitionCurrentProjection]
@@ -115,6 +121,15 @@ def _start_identity_acquisition(
             context=context,
         )
     assert classification is not None
+    if command.source_intent == "official_primary":
+        return _start_official_primary(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            context=context,
+        )
     return _start_exact_current_page(
         command,
         question_safe=question_safe,
@@ -122,6 +137,188 @@ def _start_identity_acquisition(
         identity=identity,
         classification=classification,
         context=context,
+    )
+
+
+def _start_official_primary(
+    command: EvidenceAcquisitionStartCommand,
+    *,
+    question_safe: str,
+    request_digest: str,
+    identity: ContentDeliveryIdentityBinding,
+    classification: ContentProductionClassificationProjection,
+    context: EvidenceAcquisitionContext,
+) -> EvidenceAcquisitionCurrentProjection:
+    selector = command.source_selector
+    candidate = (
+        None
+        if selector is None
+        else resolve_official_guidance_candidate(selector.candidate_id)
+    )
+    if selector is None:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_selector_missing",
+                reason="Official-primary acquisition requires a server-owned candidate selector.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step="Wybierz exact official-guidance candidate po ID.",
+            ),
+            context=context,
+        )
+    if candidate is None:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_candidate_missing",
+                reason="The requested official-guidance candidate is not registered.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step="Użyj zarejestrowanego official-guidance candidate ID.",
+            ),
+            context=context,
+        )
+    if candidate.canonical_path != identity.canonical_path:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_candidate_path_mismatch",
+                reason="Official-guidance candidate is not bound to the exact content path.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step="Wybierz candidate przypisany do exact canonical pathu.",
+            ),
+            context=context,
+        )
+    if context.official_guidance_snapshot_reader is None:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            candidate=candidate,
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_transport_unavailable",
+                reason="No safe public-IP-pinned official-guidance transport is configured.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step=(
+                    "Skonfiguruj kontrolowany reader official guidance albo pozostań "
+                    "przy blockerze transportu."
+                ),
+            ),
+            context=context,
+        )
+    try:
+        observation = context.official_guidance_snapshot_reader(
+            candidate_id=candidate.candidate_id,
+            source_url=candidate.source_url,
+            canonical_path=candidate.canonical_path,
+        )
+    except OfficialGuidanceReadError as exc:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            candidate=candidate,
+            vendor_read_status="blocked",
+            blocker=EvidenceAcquisitionRunBlocker(
+                code=exc.code,
+                reason=str(exc),
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step=(
+                    "Sprawdź kontrolowany exact official-guidance read i spróbuj "
+                    "ponownie."
+                ),
+            ),
+            context=context,
+        )
+    except Exception:
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            candidate=candidate,
+            vendor_read_status="blocked",
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_transport_unavailable",
+                reason="Official-guidance transport did not complete safely.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step=(
+                    "Sprawdź kontrolowany exact official-guidance read i spróbuj "
+                    "ponownie."
+                ),
+            ),
+            context=context,
+        )
+    if not isinstance(observation, OfficialGuidanceObservationReceipt):
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            candidate=candidate,
+            vendor_read_status="blocked",
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_lineage_mismatch",
+                reason="Official-guidance reader returned the wrong observation type.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step="Użyj OfficialGuidanceObservationAdapter dla exact candidate read.",
+            ),
+            context=context,
+        )
+    if (
+        observation.candidate_id != candidate.candidate_id
+        or observation.candidate_digest != candidate.candidate_digest
+        or observation.source_url != candidate.source_url
+        or observation.canonical_path != candidate.canonical_path
+        or not set(observation.evidence_ids).isdisjoint(identity.inventory_evidence_ids)
+    ):
+        return _persist_blocked(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            candidate=candidate,
+            vendor_read_status="blocked",
+            blocker=EvidenceAcquisitionRunBlocker(
+                code="official_guidance_lineage_mismatch",
+                reason="Official-guidance observation is not bound to the exact candidate.",
+                evidence_ids=identity.inventory_evidence_ids,
+                safe_next_step=(
+                    "Wykonaj nowy exact official-guidance read bez reuse inventory "
+                    "evidence."
+                ),
+            ),
+            context=context,
+        )
+    return _persist(
+        _build_ready(
+            command,
+            question_safe=question_safe,
+            request_digest=request_digest,
+            identity=identity,
+            classification=classification,
+            observation=observation,
+            candidate=candidate,
+        ),
+        context,
     )
 
 
@@ -434,6 +631,7 @@ def _persist_blocked(
     context: EvidenceAcquisitionContext,
     identity: ContentDeliveryIdentityBinding | None = None,
     classification: ContentProductionClassificationProjection | None = None,
+    candidate: Any | None = None,
     vendor_read_status: Literal["not_attempted", "blocked"] = "not_attempted",
 ) -> EvidenceAcquisitionCurrentProjection:
     return _persist(
@@ -443,6 +641,7 @@ def _persist_blocked(
             request_digest=request_digest,
             identity=identity,
             classification=classification,
+            candidate=candidate,
             vendor_read_status=vendor_read_status,
             blocker=blocker,
         ),
@@ -508,6 +707,7 @@ def _build_blocked(
     blocker: EvidenceAcquisitionRunBlocker,
     identity: ContentDeliveryIdentityBinding | None = None,
     classification: ContentProductionClassificationProjection | None = None,
+    candidate: Any | None = None,
     vendor_read_status: Literal["not_attempted", "blocked"] = "not_attempted",
     receipt: Any | None = None,
     catalog_item: Any | None = None,
@@ -561,6 +761,18 @@ def _build_blocked(
         "classification_source_row_digest": (
             None if classification is None else classification.row.source_packet_row_digest
         ),
+        "official_guidance_candidate_id": (
+            candidate.candidate_id
+            if candidate is not None
+            else (
+                command.source_selector.candidate_id
+                if command.source_selector is not None
+                else None
+            )
+        ),
+        "official_guidance_candidate_digest": (
+            None if candidate is None else candidate.candidate_digest
+        ),
         "inventory_evidence_ids": () if identity is None else identity.inventory_evidence_ids,
         "research_question_safe": question_safe,
         "question_digest": _question_digest(question_safe),
@@ -582,7 +794,8 @@ def _build_ready(
     request_digest: str,
     identity: ContentDeliveryIdentityBinding,
     classification: ContentProductionClassificationProjection,
-    observation: EvidenceObservationReceipt,
+    observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
+    candidate: Any | None = None,
 ) -> EvidenceAcquisitionRun:
     payload: dict[str, Any] = {
         "response_type": "content_evidence_acquisition_run",
@@ -602,6 +815,12 @@ def _build_ready(
         "classification_run_id": classification.run_id,
         "classification_run_digest": classification.run_digest,
         "classification_source_row_digest": classification.row.source_packet_row_digest,
+        "official_guidance_candidate_id": (
+            None if candidate is None else candidate.candidate_id
+        ),
+        "official_guidance_candidate_digest": (
+            None if candidate is None else candidate.candidate_digest
+        ),
         "inventory_evidence_ids": identity.inventory_evidence_ids,
         "authoring_inventory_receipt_id": None,
         "authoring_inventory_receipt_digest": None,

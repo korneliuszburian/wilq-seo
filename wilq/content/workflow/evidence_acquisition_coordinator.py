@@ -35,6 +35,7 @@ from wilq.content.workflow.evidence_acquisition_subjects import (
     sanitize_research_question,
     start_acquisition,
 )
+from wilq.content.workflow.official_guidance import OfficialGuidanceObservationAdapter
 
 
 class EvidenceAcquisitionCoordinator:
@@ -47,6 +48,7 @@ class EvidenceAcquisitionCoordinator:
         classification_loader: ClassificationLoader,
         store: EvidenceAcquisitionStore,
         current_page_snapshot_reader: CurrentPageSnapshotReader | None = None,
+        official_guidance_snapshot_reader: Callable[..., Any] | None = None,
         catalog_loader: Callable[[], Any] | None = None,
         clock: ServerClock | None = None,
     ) -> None:
@@ -58,6 +60,7 @@ class EvidenceAcquisitionCoordinator:
             classification_loader=classification_loader,
             store=store,
             current_page_snapshot_reader=current_page_snapshot_reader,
+            official_guidance_snapshot_reader=official_guidance_snapshot_reader,
             catalog_loader=catalog_loader or _default_inventory_catalog,
             clock=clock or (lambda: datetime.now(UTC)),
             project_run=_project_run,
@@ -87,6 +90,7 @@ def build_default_evidence_acquisition_coordinator() -> EvidenceAcquisitionCoord
         classification_loader=store.load_production_classification_for_work_item,
         store=store,
         current_page_snapshot_reader=WordPressCurrentPageSnapshotAdapter().read,
+        official_guidance_snapshot_reader=OfficialGuidanceObservationAdapter().read,
     )
 
 

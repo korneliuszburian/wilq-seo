@@ -19,10 +19,12 @@ from wilq.content.workflow.evidence_acquisition_contracts import (
     EvidenceAcquisitionStartCommand,
     EvidenceAcquisitionStore,
     IdentityLoader,
+    OfficialGuidanceObservationReceipt,
     ServerClock,
     _request_digest,
 )
 from wilq.content.workflow.evidence_acquisition_snapshot import current_page_receipt_is_fresh
+from wilq.content.workflow.official_guidance import official_guidance_receipt_is_fresh
 
 if TYPE_CHECKING:
     from wilq.content.workflow.authoring_inventory_receipt import (
@@ -68,7 +70,12 @@ def _project_run(
             current_blockers = (authoring_blocker,)
             current_safe_next_step = authoring_blocker.safe_next_step
     if current_status == "ready_for_researcher" and run.observation is not None:
-        if current_page_receipt_is_fresh(run.observation, now=assessed_at):
+        observation_is_fresh = (
+            official_guidance_receipt_is_fresh(run.observation, now=assessed_at)
+            if isinstance(run.observation, OfficialGuidanceObservationReceipt)
+            else current_page_receipt_is_fresh(run.observation, now=assessed_at)
+        )
+        if observation_is_fresh:
             freshness = "fresh"
         else:
             freshness = "stale"

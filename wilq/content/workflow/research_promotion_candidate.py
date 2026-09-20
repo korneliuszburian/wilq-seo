@@ -156,6 +156,21 @@ def build_research_promotion_candidate_projection(
         blockers.extend(
             _blocker(item.code, item.reason) for item in proposal.current_blockers
         )
+    elif acquisition_run is not None and acquisition_run.source_intent == "official_primary":
+        blockers.append(
+            _blocker(
+                "official_guidance_promotion_unsupported",
+                (
+                    "Official-guidance proposals remain review-only and cannot enter "
+                    "the existing public_site source-fact promotion path."
+                ),
+                evidence_ids=evidence_ids,
+                next_step=(
+                    "Zachowaj propozycję do osobnego review official guidance; "
+                    "nie uruchamiaj public_site promotion."
+                ),
+            )
+        )
     elif acquisition_run is None:
         blockers.append(_blocker("acquisition_run_missing", "Acquisition run is missing."))
     elif identity is None:

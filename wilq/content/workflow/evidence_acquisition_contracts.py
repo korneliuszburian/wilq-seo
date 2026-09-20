@@ -119,6 +119,102 @@ class EvidenceObservationReceipt(BaseModel):
         return self
 
 
+class OfficialGuidanceObservationReceipt(BaseModel):
+    """Exact, sanitized receipt for the server-selected ISO guidance candidate."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    observation_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    source_type: Literal["official_guidance_observation"] = "official_guidance_observation"
+    quality_tier: Literal["exact_official_guidance_observation"] = (
+        "exact_official_guidance_observation"
+    )
+    candidate_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    candidate_digest: str = Field(pattern=_HEX64)
+    source_url: str = Field(min_length=1, max_length=2048)
+    canonical_path: str = Field(min_length=1, max_length=2048)
+    source_snapshot_digest: str = Field(pattern=_HEX64)
+    body_digest: str = Field(pattern=_HEX64)
+    excerpt_digest: str = Field(pattern=_HEX64)
+    collected_at: datetime
+    read_at: datetime
+    freshness_date: str = Field(min_length=1, max_length=64)
+    evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=256)
+    source_connectors: tuple[str, ...] = Field(min_length=1, max_length=64)
+    extraction_region: str = Field(min_length=1, max_length=240)
+    sanitized_excerpt: str = Field(min_length=1, max_length=_MAX_EXCERPT_CHARS)
+    excerpt_derivation: Literal["normalized_sanitized_text_prefix_v1"] = _EXCERPT_DERIVATION
+    redaction_status: Literal["sanitized"] = "sanitized"
+    verification_status: Literal["observed_not_verified"] = "observed_not_verified"
+    raw_content_retained: Literal[False] = False
+
+    @field_validator("collected_at", "read_at")
+    @classmethod
+    def require_aware_time(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Official-guidance receipt timestamps must be timezone-aware.")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def require_exact_safe_receipt(self) -> OfficialGuidanceObservationReceipt:
+        from wilq.content.workflow.official_guidance import (
+            OFFICIAL_GUIDANCE_CONNECTOR_ID,
+            resolve_official_guidance_candidate,
+        )
+
+        candidate = resolve_official_guidance_candidate(self.candidate_id)
+        if candidate is None:
+            raise ValueError("Official-guidance receipt references an unknown candidate.")
+        if (
+            self.source_type != "official_guidance_observation"
+            or self.quality_tier != "exact_official_guidance_observation"
+            or self.redaction_status != "sanitized"
+            or self.raw_content_retained is not False
+            or self.candidate_digest != candidate.candidate_digest
+            or self.source_url != candidate.source_url
+            or self.canonical_path != candidate.canonical_path
+            or self.source_connectors != (OFFICIAL_GUIDANCE_CONNECTOR_ID,)
+        ):
+            raise ValueError("Official-guidance receipt is not bound to its exact candidate.")
+        if self.evidence_ids != tuple(sorted(set(self.evidence_ids))):
+            raise ValueError("Official-guidance evidence IDs must be sorted and unique.")
+        if any(not value.strip() for value in self.evidence_ids):
+            raise ValueError("Official-guidance evidence IDs cannot be blank.")
+        if self.excerpt_derivation != _EXCERPT_DERIVATION:
+            raise ValueError("Official-guidance excerpt derivation is fixed.")
+        if _sanitized_text(self.sanitized_excerpt) != self.sanitized_excerpt:
+            raise ValueError("Official-guidance excerpt must be normalized and sanitized.")
+        if sha256(self.sanitized_excerpt.encode("utf-8")).hexdigest() != self.excerpt_digest:
+            raise ValueError("Official-guidance excerpt digest does not match its excerpt.")
+        expected_snapshot_digest = canonical_json_digest(
+            _official_guidance_snapshot_digest_payload(
+                candidate_id=self.candidate_id,
+                candidate_digest=self.candidate_digest,
+                source_url=self.source_url,
+                canonical_path=self.canonical_path,
+                body_digest=self.body_digest,
+                excerpt_digest=self.excerpt_digest,
+                extraction_region=self.extraction_region,
+                read_at=self.read_at,
+            )
+        )
+        if self.source_snapshot_digest != expected_snapshot_digest:
+            raise ValueError("Official-guidance snapshot digest does not match its receipt.")
+        expected_evidence_id = f"ev_content_official_guidance_{expected_snapshot_digest[:24]}"
+        expected_observation_id = (
+            f"content_official_guidance_observation_{expected_snapshot_digest[:24]}"
+        )
+        if self.evidence_ids != (expected_evidence_id,):
+            raise ValueError("Official-guidance evidence ID does not match its receipt.")
+        if self.observation_id != expected_observation_id:
+            raise ValueError("Official-guidance observation ID does not match its receipt.")
+        if self.collected_at != self.read_at:
+            raise ValueError("Official-guidance collected_at must equal read_at.")
+        if self.freshness_date != self.read_at.date().isoformat():
+            raise ValueError("Official-guidance freshness date must match read_at.")
+        return self
+
+
 def _sanitized_text(value: Any) -> str:
     if not isinstance(value, str):
         return ""
@@ -150,6 +246,33 @@ def _snapshot_digest_payload(
     }
 
 
+def _official_guidance_snapshot_digest_payload(
+    *,
+    candidate_id: str,
+    candidate_digest: str,
+    source_url: str,
+    canonical_path: str,
+    body_digest: str,
+    excerpt_digest: str,
+    extraction_region: str,
+    read_at: datetime,
+) -> dict[str, str]:
+    return {
+        "body_digest": body_digest,
+        "candidate_digest": candidate_digest,
+        "candidate_id": candidate_id,
+        "canonical_path": canonical_path,
+        "connector": "official_guidance",
+        "excerpt_digest": excerpt_digest,
+        "extraction_region": extraction_region,
+        "quality_tier": "exact_official_guidance_observation",
+        "read_at": read_at.isoformat(),
+        "redaction_status": "sanitized",
+        "source_type": "official_guidance_observation",
+        "source_url": source_url,
+    }
+
+
 class EvidenceAcquisitionIdentitySubject(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -166,9 +289,29 @@ class EvidenceAcquisitionAuthoringInventorySubject(BaseModel):
     )
 
 
+class OfficialGuidanceSourceSelector(BaseModel):
+    """Server-resolved official-primary selector; it carries no caller URL."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    selector_kind: Literal["official_primary"] = "official_primary"
+    candidate_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+
+
+EvidenceAcquisitionSourceSelector = Annotated[
+    OfficialGuidanceSourceSelector,
+    Field(discriminator="selector_kind"),
+]
+
+
 EvidenceAcquisitionSubject = Annotated[
     EvidenceAcquisitionIdentitySubject | EvidenceAcquisitionAuthoringInventorySubject,
     Field(discriminator="subject_kind"),
+]
+
+EvidenceObservation = Annotated[
+    EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
+    Field(discriminator="source_type"),
 ]
 
 
@@ -185,6 +328,15 @@ class EvidenceAcquisitionStartCommand(BaseModel):
         "reviewed_ekologus",
         "credible_external",
     ] = "current_page"
+    source_selector: EvidenceAcquisitionSourceSelector | None = None
+
+    @model_validator(mode="after")
+    def require_selector_intent(self) -> Self:
+        if self.source_selector is not None and self.source_intent != "official_primary":
+            raise ValueError(
+                "Official-guidance source selector is valid only for official_primary."
+            )
+        return self
 
 
 class EvidenceAcquisitionRunBlocker(BaseModel):
@@ -232,11 +384,15 @@ class EvidenceAcquisitionRun(BaseModel):
     classification_run_id: str | None = None
     classification_run_digest: str | None = Field(default=None, pattern=_HEX64)
     classification_source_row_digest: str | None = Field(default=None, pattern=_HEX64)
+    official_guidance_candidate_id: str | None = Field(
+        default=None, max_length=240, pattern=_SAFE_IDENTIFIER
+    )
+    official_guidance_candidate_digest: str | None = Field(default=None, pattern=_HEX64)
     inventory_evidence_ids: tuple[str, ...] = ()
     research_question_safe: str = Field(min_length=5, max_length=1000)
     question_digest: str = Field(pattern=_HEX64)
     source_intent: str = Field(min_length=1)
-    observation: EvidenceObservationReceipt | None = None
+    observation: EvidenceObservation | None = None
     proposed_facts: tuple[()] = ()
     vendor_read_status: Literal["not_attempted", "completed", "blocked"] = "not_attempted"
     researcher_executor_status: Literal["missing"] = "missing"
@@ -245,6 +401,23 @@ class EvidenceAcquisitionRun(BaseModel):
 
     @model_validator(mode="after")
     def require_state(self) -> Self:
+        if self.source_intent == "official_primary":
+            if self.status == "ready_for_researcher" and (
+                not self.official_guidance_candidate_id
+                or not self.official_guidance_candidate_digest
+                or not isinstance(self.observation, OfficialGuidanceObservationReceipt)
+            ):
+                raise ValueError(
+                    "Ready official-primary runs require exact official-guidance lineage."
+                )
+        elif (
+            self.official_guidance_candidate_id is not None
+            or self.official_guidance_candidate_digest is not None
+            or isinstance(self.observation, OfficialGuidanceObservationReceipt)
+        ):
+            raise ValueError(
+                "Official-guidance lineage is valid only for official_primary runs."
+            )
         if self.subject_kind == "identity_binding":
             if not self.identity_binding_id:
                 raise ValueError("Identity acquisition runs require identity_binding_id.")
@@ -385,6 +558,7 @@ ClassificationLoader = Callable[
     [str], ContentProductionClassificationProjection | None
 ]
 CurrentPageSnapshotReader = Callable[..., EvidenceObservationReceipt]
+OfficialGuidanceSnapshotReader = Callable[..., OfficialGuidanceObservationReceipt]
 ServerClock = Callable[[], datetime]
 
 
@@ -443,6 +617,8 @@ def _request_digest(
         )
         payload["authoring_catalog_context_digest"] = catalog_context_digest
         payload["authoring_receipt_freshness"] = receipt_freshness
+    if command.source_selector is not None:
+        payload["source_selector"] = command.source_selector.model_dump(mode="json")
     return canonical_json_digest(payload)
 
 
@@ -450,6 +626,12 @@ def _run_digest(run: EvidenceAcquisitionRun | Mapping[str, object]) -> str:
     payload = run.model_dump(mode="json") if isinstance(run, BaseModel) else dict(run)
     if payload.get("authoring_catalog_context_digest") is None:
         payload.pop("authoring_catalog_context_digest", None)
+    for field_name in (
+        "official_guidance_candidate_id",
+        "official_guidance_candidate_digest",
+    ):
+        if payload.get(field_name) is None:
+            payload.pop(field_name, None)
     if payload.get("subject_kind", "identity_binding") == "identity_binding":
         for field_name in (
             "subject_kind",
@@ -494,6 +676,7 @@ def _finalize_run(payload: dict[str, Any]) -> EvidenceAcquisitionRun:
 __all__ = [
     "ClassificationLoader",
     "CurrentPageSnapshotReader",
+    "OfficialGuidanceSnapshotReader",
     "EvidenceAcquisitionAuthoringInventorySubject",
     "EvidenceAcquisitionCurrentProjection",
     "EvidenceAcquisitionIdentitySubject",
@@ -503,6 +686,10 @@ __all__ = [
     "EvidenceAcquisitionStore",
     "EvidenceAcquisitionSubject",
     "EvidenceObservationReceipt",
+    "EvidenceObservation",
+    "OfficialGuidanceObservationReceipt",
+    "OfficialGuidanceSourceSelector",
+    "EvidenceAcquisitionSourceSelector",
     "IdentityLoader",
     "ServerClock",
 ]

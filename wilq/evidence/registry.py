@@ -5,8 +5,14 @@ from typing import TYPE_CHECKING, Literal
 
 from wilq.connectors.registry import list_connector_statuses
 from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.workflow.evidence_acquisition_contracts import (
+    OfficialGuidanceObservationReceipt,
+)
 from wilq.content.workflow.evidence_acquisition_snapshot import (
     current_page_receipt_is_fresh,
+)
+from wilq.content.workflow.official_guidance import (
+    official_guidance_receipt_is_fresh,
 )
 from wilq.operator_labels import source_connector_labels
 from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState, utc_now
@@ -192,7 +198,10 @@ def _evidence_acquisition_evidence() -> list[Evidence]:
 
 
 def _evidence_acquisition_evidence_for_ids(evidence_ids: set[str]) -> list[Evidence]:
-    if not any(value.startswith("ev_content_current_page_") for value in evidence_ids):
+    if not any(
+        value.startswith(("ev_content_current_page_", "ev_content_official_guidance_"))
+        for value in evidence_ids
+    ):
         return []
     from wilq.content.workflow.store.store import content_workflow_store
 
@@ -215,14 +224,25 @@ def _evidence_acquisition_evidence_for_runs(
         for evidence_id in observation.evidence_ids:
             if evidence_ids is not None and evidence_id not in evidence_ids:
                 continue
+            is_official_guidance = isinstance(observation, OfficialGuidanceObservationReceipt)
             freshness: Literal["fresh", "stale"] = (
-                "fresh" if current_page_receipt_is_fresh(observation, now=now) else "stale"
+                "fresh"
+                if (
+                    official_guidance_receipt_is_fresh(observation, now=now)
+                    if is_official_guidance
+                    else current_page_receipt_is_fresh(observation, now=now)
+                )
+                else "stale"
             )
             projected.append(
                 Evidence(
                     id=evidence_id,
                     source_connector=observation.source_connectors[0],
-                    source_type="current_page_observation",
+                    source_type=(
+                        "official_guidance_observation"
+                        if is_official_guidance
+                        else "current_page_observation"
+                    ),
                     source_id=observation.observation_id,
                     source_url=observation.source_url,
                     collected_at=observation.read_at,
@@ -231,8 +251,12 @@ def _evidence_acquisition_evidence_for_runs(
                         last_success_at=observation.read_at,
                         checked_at=now,
                         notes=(
-                            "Exact public-page observation; body retained only by digest, "
-                            "with a bounded sanitized excerpt."
+                                "Exact ISO official-guidance observation selected from a "
+                                "server-owned candidate; body retained only by digest, "
+                                "with a bounded sanitized excerpt."
+                                if is_official_guidance
+                                else "Exact public-page observation; body retained only by digest, "
+                                "with a bounded sanitized excerpt."
                         ),
                     ),
                     summary=observation.sanitized_excerpt,
