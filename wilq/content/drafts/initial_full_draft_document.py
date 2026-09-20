@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from hashlib import sha256
 
 from pydantic import BaseModel
@@ -182,6 +183,21 @@ def _revision_sections(
     ]
 
 
+_EXACT_FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _exact_assurance_fingerprint(value: str | None) -> str | None:
+    """Persist assurance provenance only when it is a well-formed hash.
+
+    A malformed fingerprint must never block persistence of an otherwise
+    approved draft, and an invalid value must never reach immutable metadata.
+    """
+
+    if isinstance(value, str) and _EXACT_FINGERPRINT.fullmatch(value):
+        return value
+    return None
+
+
 def _revision_metadata(
     *,
     proposal: ContentPlanningProposal,
@@ -215,7 +231,7 @@ def _revision_metadata(
         regulatory_assurance_criteria_version=(
             None if regulatory_assurance is None else regulatory_assurance.criteria_version
         ),
-        regulatory_assurance_fingerprint=(
+        regulatory_assurance_fingerprint=_exact_assurance_fingerprint(
             None if regulatory_assurance is None else regulatory_assurance.assurance_fingerprint
         ),
         review_scope="persisted_full_document_and_declared_lineage",

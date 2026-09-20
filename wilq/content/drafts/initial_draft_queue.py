@@ -674,13 +674,17 @@ def safe_initial_draft_worker_error(error: Exception) -> str:
     from pydantic import ValidationError
 
     if isinstance(error, ValidationError):
-        locations = ",".join(
-            ".".join(str(part) for part in item.get("loc", ()))
+        details = ",".join(
+            (
+                ".".join(str(part) for part in item.get("loc", ())) or "<model>"
+            )
+            + ":"
+            + str(item.get("type", "unknown"))
             for item in error.errors()[:5]
         )
         return (
-            f"worker_exception:ValidationError:{locations}"
-            if locations
+            f"worker_exception:ValidationError:{details}"
+            if details
             else "worker_exception:ValidationError"
         )
     return f"worker_exception:{type(error).__name__}"
