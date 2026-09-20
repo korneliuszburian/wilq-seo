@@ -14,10 +14,14 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     bind_research_packet_to_planning_input,
     build_content_planning_input,
+)
+from wilq.content.planning.source_pack_projection import (
+    project_selected_source_pack_facts,
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -509,15 +513,9 @@ def _resolve_packet_bound(
     base = _build_base_input(snapshot, proposal, planning_input_builder)
     if isinstance(base, ContentReviewInputResolution):
         return base
-    try:
-        planning_input = bind_research_packet_to_planning_input(base, packet)
-    except (TypeError, ValueError):
-        return _blocked(
-            "research_packet_conflict",
-            "Research packet nie odpowiada dokładnej wersji",
-            "Nie można związać packetu z planning input tego persisted proposal.",
-            "Odśwież exact packet i wygeneruj nową wersję planu.",
-        )
+    planning_input = _project_and_bind_packet_input(base, packet)
+    if isinstance(planning_input, ContentReviewInputResolution):
+        return planning_input
     if (
         planning_input.planning_input_digest != revision.planning_input_digest
         or planning_input.planning_input_digest != proposal.planning_input_digest
@@ -568,6 +566,39 @@ def _resolve_packet_bound(
             current_packet=current,
         )
     )
+
+
+def _project_and_bind_packet_input(
+    base: ContentPlanningInput,
+    packet: ContentResearchPacket,
+) -> ContentPlanningInput | ContentReviewInputResolution:
+    try:
+        projected_input = project_selected_source_pack_facts(
+            base,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+    except ValueError:
+        return _packet_blocked(
+            ContentResearchPacketBlocker(
+                seam="source_facts",
+                reason="source_fact_not_registered",
+                evidence_ids=packet.evidence_ids,
+                next_step_pl=(
+                    "Odśwież source-fact registry i source-pack względem bieżących faktów."
+                ),
+            ),
+            packet,
+        )
+    try:
+        return bind_research_packet_to_planning_input(projected_input, packet)
+    except (TypeError, ValueError):
+        return _blocked(
+            "research_packet_conflict",
+            "Research packet nie odpowiada dokładnej wersji",
+            "Nie można związać packetu z planning input tego persisted proposal.",
+            "Odśwież exact packet i wygeneruj nową wersję planu.",
+        )
 
 
 def _resolve_unbound(

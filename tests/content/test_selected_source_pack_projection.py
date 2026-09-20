@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import wilq.content.quality.review_packet_binding as review_packet_binding
 import wilq.content.regulatory.policy as regulatory_policy
 import wilq.content.workflow.research_packet_derivation as packet_derivation
 from wilq.content.briefs.sales import ContentSalesBrief
@@ -12,7 +13,10 @@ from wilq.content.drafts.initial_full_draft_document import (
     official_source_references_for_planning_input,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
-from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.dynamic_input import (
+    ContentPlanningInput,
+    bind_research_packet_to_planning_input,
+)
 from wilq.content.planning.input_sources import (
     PLANNING_SOURCE_NAMES,
     ContentPlanningInventory,
@@ -24,6 +28,8 @@ from wilq.content.planning.source_pack_projection import (
 )
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.documents.revisions import ContentDraftRevision
 
 BDO_EDITORIAL_PATH = "/bdo-co-musi-wiedziec-przedsiebiorca"
 BDO_PROFILE_VERSION = "2026-07-31-r2"
@@ -195,6 +201,109 @@ def test_exact_bdo_editorial_pack_hydrates_authoritative_facts_and_coverage(
         if fact.source_fact_ids[0].startswith("regulatory_source_fact_")
     )
     assert projected.planning_input_digest != "0" * 64
+
+
+def test_packet_bound_review_rebuilds_exact_projected_source_pack_digest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    selected = _selected_bdo_facts()
+    foreign = _fact("foreign_bdo_fact")
+    registry = selected + (foreign,)
+    by_evidence = {evidence_id: fact for fact in registry for evidence_id in fact.evidence_ids}
+    monkeypatch.setattr(
+        regulatory_policy,
+        "list_evidence_by_ids",
+        lambda ids: [
+            SimpleNamespace(
+                id=evidence_id,
+                source_id=by_evidence[evidence_id].source_id,
+                raw_ref=by_evidence[evidence_id].source_url_or_path,
+            )
+            for evidence_id in ids
+        ],
+    )
+    base = _planning_input(*registry)
+    approved_source_fact_ids = tuple(sorted(fact.source_id for fact in selected))
+    packet = SimpleNamespace(
+        status="exact_current",
+        packet_id="content_research_packet_bdo_editorial",
+        packet_digest="a" * 64,
+        current_work_item_id=base.work_item_id,
+        approved_source_fact_ids=approved_source_fact_ids,
+        evidence_ids=tuple(
+            evidence_id for fact in selected for evidence_id in fact.evidence_ids
+        ),
+    )
+    expected = bind_research_packet_to_planning_input(
+        project_selected_source_pack_facts(base, approved_source_fact_ids, registry),
+        packet,
+    )
+    revision = ContentDraftRevision.model_construct(
+        schema_version="wilq_content_draft_revision_v2",
+        work_item_id=base.work_item_id,
+        revision_id="content_revision_bdo_editorial",
+        content_digest="b" * 64,
+        planning_digest="c" * 64,
+        planning_input_digest=expected.planning_input_digest,
+        content_kind="editorial",
+        service_card_id=None,
+        research_packet_id=packet.packet_id,
+        research_packet_digest=packet.packet_digest,
+        sections=[],
+    )
+    proposal = ContentPlanningProposal.model_construct(
+        proposal_id="content_planning_proposal_bdo_editorial",
+        work_item_id=base.work_item_id,
+        planning_digest=revision.planning_digest,
+        planning_input_digest=expected.planning_input_digest,
+        content_kind="editorial",
+        service_card_id=None,
+        research_packet_id=packet.packet_id,
+        research_packet_digest=packet.packet_digest,
+    )
+    snapshot = SimpleNamespace(
+        preflight=SimpleNamespace(item=SimpleNamespace(id=base.work_item_id)),
+        revision_workspace=SimpleNamespace(latest_revision=revision, context_current=True),
+        planning_workspace=SimpleNamespace(proposal=proposal),
+    )
+
+    class Store:
+        def load_content_research_packet(self, _packet_id: str) -> SimpleNamespace:
+            return packet
+
+    monkeypatch.setattr(
+        review_packet_binding,
+        "ekologus_source_facts",
+        lambda: registry,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        review_packet_binding,
+        "revalidate_content_research_packet",
+        lambda **_kwargs: SimpleNamespace(
+            status="current",
+            packet_id=packet.packet_id,
+            packet_digest=packet.packet_digest,
+            current_work_item_id=packet.current_work_item_id,
+        ),
+    )
+
+    resolution = review_packet_binding.resolve_content_review_inputs(
+        snapshot=snapshot,
+        revision_id=revision.revision_id,
+        expected_revision_digest=revision.content_digest,
+        workflow_store=Store(),
+        planning_input_builder=lambda _snapshot, **_kwargs: SimpleNamespace(
+            planning_input=base,
+            blockers=[],
+        ),
+    )
+
+    assert resolution.inputs is not None, resolution.blocker
+    assert resolution.inputs.planning_input.planning_input_digest == expected.planning_input_digest
+    assert [
+        source_fact.source_fact_ids for source_fact in resolution.inputs.planning_input.source_facts
+    ] == [[source_id] for source_id in approved_source_fact_ids]
 
 
 def test_projected_bdo_editorial_coverage_builds_exact_official_refs(

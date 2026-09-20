@@ -11,6 +11,7 @@ import wilq.content.quality.independent_review_service as independent_service
 import wilq.content.quality.semantic_review_queue as semantic_queue
 import wilq.content.quality.semantic_review_service as semantic_service
 from apps.api.wilq_api.routers import content_independent_review as independent_router
+from apps.api.wilq_api.routers import content_model_routes as model_routes
 from apps.api.wilq_api.routers import content_semantic_review as semantic_router
 from tests.content.packet_bound_review_fixtures import _packet_bound_snapshot
 from tests.content.test_independent_review_runs import _run
@@ -36,6 +37,39 @@ from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReviewRequest,
     ContentSemanticReviewResponse,
 )
+
+
+def test_content_model_routes_pass_review_snapshot_loader_to_research_packet_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[object | None] = []
+
+    def register_research_packet_routes(
+        _router: APIRouter,
+        *,
+        snapshot_loader: object | None = None,
+    ) -> None:
+        captured.append(snapshot_loader)
+
+    def snapshot_loader(_work_item_id: str) -> object:
+        return object()
+
+    def review_snapshot_loader(_work_item_id: str) -> object:
+        return object()
+
+    monkeypatch.setattr(
+        model_routes,
+        "register_content_research_packet_routes",
+        register_research_packet_routes,
+    )
+
+    model_routes.register_content_model_routes(
+        APIRouter(),
+        snapshot_loader=snapshot_loader,
+        semantic_review_snapshot_loader=review_snapshot_loader,
+    )
+
+    assert captured == [review_snapshot_loader]
 
 
 def test_embedded_semantic_post_preflights_packet_before_run_claim(

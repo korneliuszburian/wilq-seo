@@ -468,10 +468,16 @@ def test_content_review_mapping_keeps_parent_safe_semantic_refresh_observer() ->
         "test_semantic_refresh_source_contract",
         "tests/content/test_packet_bound_reviews.py::"
         "test_public_packet_bound_revision_reaches_semantic_and_independent_reviews",
+        "tests/content/test_packet_bound_review_public_api.py::"
+        "test_content_model_routes_pass_review_snapshot_loader_to_research_packet_read",
+        "tests/content/test_selected_source_pack_projection.py::"
+        "test_packet_bound_review_rebuilds_exact_projected_source_pack_digest",
     )
     assert descriptor.observer_paths == (
         "tests/__init__.py",
         "tests/content/test_semantic_review_refresh_change_contract.py",
+        "tests/content/test_packet_bound_review_public_api.py",
+        "tests/content/test_selected_source_pack_projection.py",
     )
     assert descriptor.expectation == "red-green"
     assert descriptor.allow_new_mapping is True
