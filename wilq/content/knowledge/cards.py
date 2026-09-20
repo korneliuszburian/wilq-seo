@@ -150,9 +150,13 @@ class ContentKnowledgeCardsResponse(BaseModel):
 
 @lru_cache(maxsize=1)
 def ekologus_content_knowledge_cards() -> tuple[ContentKnowledgeCard, ...]:
+    current_facts = ekologus_source_facts()
     return (
         *ekologus_seed_content_knowledge_cards(),
-        *compile_source_facts_to_knowledge_cards(ekologus_source_facts()),
+        *compile_source_facts_to_knowledge_cards(
+            current_facts,
+            current_registry_facts=current_facts,
+        ),
     )
 
 
@@ -347,6 +351,8 @@ def _live_evidence_requirement_card() -> ContentKnowledgeCard:
 
 def compile_source_facts_to_knowledge_cards(
     facts: Iterable[ContentSourceFact],
+    *,
+    current_registry_facts: tuple[ContentSourceFact, ...] | None = None,
 ) -> tuple[ContentKnowledgeCard, ...]:
     grouped: dict[str, list[ContentSourceFact]] = defaultdict(list)
     for fact in facts:
@@ -361,7 +367,10 @@ def compile_source_facts_to_knowledge_cards(
     cards: list[ContentKnowledgeCard] = []
     for card_id, card_facts in grouped.items():
         first = card_facts[0]
-        lifecycle_status = _combined_lifecycle_status(card_facts)
+        lifecycle_status = _combined_lifecycle_status(
+            card_facts,
+            current_registry_facts=current_registry_facts,
+        )
         freshness_date = max(fact.freshness_date for fact in card_facts)
         freshness_prefix = {
             "approved_current": "reviewed",
@@ -392,7 +401,11 @@ def compile_source_facts_to_knowledge_cards(
                 allowed_claims=unique(
                     claim for fact in card_facts for claim in fact.allowed_claims
                 ),
-                claims_needing_review=_source_fact_review_claim_rules(card_id, card_facts),
+                claims_needing_review=(
+                    []
+                    if lifecycle_status == "approved_current"
+                    else _source_fact_review_claim_rules(card_id, card_facts)
+                ),
                 forbidden_claims=_source_fact_forbidden_claim_rules(card_id, card_facts),
                 evidence_requirements=unique(
                     requirement for fact in card_facts for requirement in fact.evidence_requirements
@@ -721,8 +734,31 @@ def required_content_knowledge_card_ids(match: ContentKnowledgeCardMatch) -> lis
 
 def _combined_lifecycle_status(
     facts: Iterable[ContentSourceFact],
+    *,
+    current_registry_facts: tuple[ContentSourceFact, ...] | None = None,
 ) -> ContentKnowledgeLifecycleStatus:
-    statuses = {knowledge_lifecycle_from_review_status(fact.review_status) for fact in facts}
+    fact_list = tuple(facts)
+    statuses = {
+        knowledge_lifecycle_from_review_status(fact.review_status) for fact in fact_list
+    }
+    if current_registry_facts is not None and fact_list:
+        from wilq.content.knowledge.service_profile.review_receipts import (
+            current_service_profile_card_review_receipt,
+        )
+
+        receipt = current_service_profile_card_review_receipt(
+            fact_list[0].target_card_id,
+            fact_list,
+            current_facts=current_registry_facts,
+        )
+        if receipt is not None:
+            if receipt.decision == "approve":
+                return "approved_current"
+            if receipt.decision == "stale":
+                return "stale"
+            if receipt.decision == "reject":
+                return "rejected"
+            return "source_backed_review_required"
     if "source_backed_review_required" in statuses:
         return "source_backed_review_required"
     if "stale" in statuses:

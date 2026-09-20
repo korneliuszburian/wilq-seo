@@ -115,6 +115,9 @@ from wilq.content.workflow.store.store_research_packet import (
 )
 from wilq.content.workflow.store.store_research_proposal import ResearchProposalStoreMixin
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
+from wilq.content.workflow.store.store_service_profile_card_review import (
+    ContentServiceProfileCardReviewStoreMixin,
+)
 from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixin
 from wilq.content.workflow.store.store_source_fact_authority import (
     ContentSourceFactAuthorityStoreMixin,
@@ -637,6 +640,7 @@ class ContentWorkflowStore(
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourceFactAuthorityStoreMixin,
+    ContentServiceProfileCardReviewStoreMixin,
     ContentSourcePackBindingStoreMixin,
     EvidenceAcquisitionStoreMixin,
     ContentResearchPacketStoreMixin,

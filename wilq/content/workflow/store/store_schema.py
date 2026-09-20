@@ -917,6 +917,35 @@ _CONTENT_WORKFLOW_SCHEMA = (
     CREATE INDEX IF NOT EXISTS idx_content_new_page_apply_claim_work_item_status
     ON content_new_page_revision_apply_claims (work_item_id, status)
     """,
+    """
+    CREATE TABLE IF NOT EXISTS content_service_profile_card_review_receipts (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      action_id TEXT NOT NULL,
+      card_id TEXT NOT NULL,
+      source_fact_registry_digest TEXT NOT NULL,
+      source_set_digest TEXT NOT NULL,
+      decision TEXT NOT NULL CHECK (decision IN ('approve', 'needs_changes', 'stale', 'reject')),
+      reviewer TEXT NOT NULL,
+      reviewed_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (action_id, source_fact_registry_digest, source_set_digest)
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_service_profile_card_review_receipts_no_update
+    BEFORE UPDATE ON content_service_profile_card_review_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'service profile card review receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_service_profile_card_review_receipts_no_delete
+    BEFORE DELETE ON content_service_profile_card_review_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'service profile card review receipts are append-only');
+    END
+    """,
 )
 
 
