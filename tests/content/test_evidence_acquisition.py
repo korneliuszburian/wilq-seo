@@ -673,6 +673,46 @@ def test_current_page_adapter_issues_new_receipt_for_changed_body(tmp_path: Path
     assert first.observation.source_connectors == ("wordpress_ekologus",)
 
 
+def test_current_page_adapter_converges_public_email_and_protected_placeholder_digests() -> None:
+    source_url = "https://www.ekologus.pl/oferta/operat/"
+    canonical_path = "/oferta/operat"
+    read_time = datetime(2026, 9, 13, 12, 0, tzinfo=UTC)
+    rest_body = (
+        "Operat środowiskowy. Skontaktuj się z nami: kontakt@ekologus.pl "
+        "w sprawie szczegółów usługi."
+    )
+
+    def receipt_for(body: str) -> EvidenceObservationReceipt:
+        return WordPressCurrentPageSnapshotAdapter(
+            material_reader=lambda url: SimpleNamespace(
+                url=url,
+                content_text=body,
+                extraction_region="wordpress_rest.content",
+            ),
+            clock=lambda: read_time,
+        ).read(source_url=source_url, canonical_path=canonical_path)
+
+    rest_receipt = receipt_for(rest_body)
+    protected_receipts = [
+        receipt_for(rest_body.replace("kontakt@ekologus.pl", "[email protected]")),
+        receipt_for(rest_body.replace("kontakt@ekologus.pl", "[email\u00a0protected]")),
+        receipt_for(rest_body.replace("kontakt@ekologus.pl", "[email @ protected]")),
+    ]
+    domain_receipt = receipt_for(rest_body.replace("kontakt@ekologus.pl", "email@protected.com"))
+    ordinary_text_receipt = receipt_for(
+        rest_body.replace("kontakt@ekologus.pl", "email protected.com")
+    )
+
+    assert "kontakt@ekologus.pl" not in rest_receipt.model_dump_json()
+    for protected_receipt in protected_receipts:
+        assert protected_receipt.body_digest == rest_receipt.body_digest
+        assert protected_receipt.excerpt_digest == rest_receipt.excerpt_digest
+        assert "kontakt@ekologus.pl" not in protected_receipt.model_dump_json()
+        assert "[email protected]" not in protected_receipt.model_dump_json()
+    assert "email@protected.com" not in domain_receipt.model_dump_json()
+    assert ordinary_text_receipt.body_digest != rest_receipt.body_digest
+
+
 def test_tampered_observation_digest_fails_on_readback(tmp_path: Path) -> None:
     coordinator, identity = _coordinator(tmp_path)
     adapter = WordPressCurrentPageSnapshotAdapter(

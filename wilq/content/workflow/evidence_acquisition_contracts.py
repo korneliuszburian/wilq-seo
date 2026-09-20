@@ -31,6 +31,19 @@ _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 _SECRET_FIELD_RE = re.compile(
     r"(?i)(?:token|secret|password|credential|api[_-]?key)\s*[:=]\s*\S+"
 )
+_EMAIL_ADDRESS_RE = re.compile(
+    r"(?i)(?<![A-Za-z0-9._%+-])"
+    r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+"
+    r"(?![A-Za-z0-9._%+-])"
+)
+_PROTECTED_EMAIL_PLACEHOLDER_RE = re.compile(
+    r"(?i)(?:\[\s*)?email"
+    r"(?:\s*(?:@|\[at\]|\bat\b)\s*|\s+)protected"
+    r"(?:\s*\])?"
+    r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9])"
+)
 _WORDPRESS_CONNECTOR_ID = "wordpress_ekologus"
 _MAX_EXCERPT_CHARS = 2400
 _EXCERPT_DERIVATION: Literal["normalized_sanitized_text_prefix_v1"] = (
@@ -219,6 +232,8 @@ def _sanitized_text(value: Any) -> str:
     if not isinstance(value, str):
         return ""
     normalized = " ".join(value.strip().split())
+    normalized = _EMAIL_ADDRESS_RE.sub("[redacted]", normalized)
+    normalized = _PROTECTED_EMAIL_PLACEHOLDER_RE.sub("[redacted]", normalized)
     normalized = _SECRET_FIELD_RE.sub("[redacted]", normalized)
     return SECRET_VALUE_RE.sub("[redacted]", normalized)
 
