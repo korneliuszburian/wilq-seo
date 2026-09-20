@@ -40,6 +40,7 @@ ContentDraftRevisionDecision = Literal[
 ]
 ContentDraftRevisionCorrectionReason = Literal[
     "canonical_html_alignment",
+    "review_requested_changes",
     "lineage_cleanup",
     "official_source_lineage_rebase",
 ]

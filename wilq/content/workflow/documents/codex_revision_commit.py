@@ -139,6 +139,7 @@ def prepare_codex_completion(
         return None
     if command.correction_reason in {
         "canonical_html_alignment",
+        "review_requested_changes",
         "lineage_cleanup",
         "official_source_lineage_rebase",
     }:

@@ -41,7 +41,7 @@ def editor_child_retained_lineage(
     list[ContentDraftRevisionSourceProvenance],
     ContentDraftRevisionProposalMetadata | None,
 ]:
-    if correction_reason != "canonical_html_alignment":
+    if correction_reason not in {"canonical_html_alignment", "review_requested_changes"}:
         return [], None
     return latest_revision.source_provenance, latest_revision.proposal_metadata
 

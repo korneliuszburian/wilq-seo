@@ -51,6 +51,42 @@ def test_canonical_html_alignment_preserves_exact_lineage_as_a_non_codex_child(
     assert store.list_draft_revisions(parent.work_item_id)[0] == persisted_parent
 
 
+def test_review_requested_changes_preserve_exact_parent_lineage(tmp_path: Path) -> None:
+    store, parent, _persisted_parent = _canonical_lineage_parent(tmp_path)
+    revised_section = parent.sections[0].model_copy(
+        update={
+            "body_markdown": "Treść poprawiona zgodnie z review.",
+            "content_html": "<p>Treść poprawiona zgodnie z review.</p>",
+        }
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=parent.revision_id,
+        title=parent.title,
+        sections=[revised_section],
+        faq=parent.faq,
+        correction_reason="review_requested_changes",
+        created_by="delivery_loop_owner",
+    )
+
+    command = _build_editor_save_command(
+        work_item_id=parent.work_item_id,
+        request=request,
+        latest_revision=parent,
+        draft_package=None,
+        planning=None,
+        final_canonical_url=parent.final_canonical_url,
+        revision_context_current=True,
+    )
+    result = store.append_draft_revision(command)
+
+    assert result.status == "created"
+    assert result.revision is not None
+    assert result.revision.correction_reason == "review_requested_changes"
+    assert result.revision.source_provenance == parent.source_provenance
+    assert result.revision.proposal_metadata == parent.proposal_metadata
+    assert result.revision.official_source_references == parent.official_source_references
+
+
 def _canonical_lineage_parent(tmp_path: Path):
     store, persisted_parent = _bound_parent(tmp_path)
     metadata = persisted_parent.proposal_metadata

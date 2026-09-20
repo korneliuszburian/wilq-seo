@@ -74,7 +74,10 @@ from wilq.content.workflow.pipeline_steps.queue import (
 )
 from wilq.schemas import ContentFreshnessAssessment
 
-ContentDraftRevisionSaveCorrectionReason = Literal["canonical_html_alignment"]
+ContentDraftRevisionSaveCorrectionReason = Literal[
+    "canonical_html_alignment",
+    "review_requested_changes",
+]
 
 ContentDraftRevisionPublicConflictCode = Literal[
     "workspace_not_saveable",
