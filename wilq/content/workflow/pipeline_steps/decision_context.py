@@ -437,6 +437,10 @@ def _observed_material_surfaces(
         "wordpress_rest.content": "wordpress_rest_content",
         "wordpress_rest.acf": "wordpress_rest_acf",
         "public_html.main_or_article": "rendered_html",
+        "public_html.article_content": "rendered_html",
+        "public_html.article": "rendered_html",
+        "public_html.main": "rendered_html",
+        "public_html.body": "rendered_html",
     }
     surfaces = [mapping[region]] if region in mapping else []
     if material.acf_field_names or material.acf_section_headings:

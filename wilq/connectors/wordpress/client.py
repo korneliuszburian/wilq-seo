@@ -10,6 +10,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 
 from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.wordpress.html_material import HtmlMaterialParser
 from wilq.connectors.wordpress.inventory import (
     WORDPRESS_CONTENT_PER_PAGE,
     WORDPRESS_CONTENT_TYPES,
@@ -1170,8 +1171,11 @@ def _read_wordpress_material_from_html(
     if not observed_url:
         raise WordPressDraftReadError("WordPress nie zwrócił obserwowanego adresu materiału.")
     parser = _HtmlMetadataParser()
+    material_parser = HtmlMaterialParser()
     parser.feed(response.text[:200_000])
-    text = clean_metadata_text(" ".join(parser.main_text_chunks))
+    material_parser.feed(response.text[:200_000])
+    material_parser.close()
+    text, extraction_region, section_headings = material_parser.material
     if not text:
         raise WordPressDraftReadError("WordPress nie wystawił widocznego materiału treści.")
     return WordPressContentMaterial(
@@ -1181,17 +1185,13 @@ def _read_wordpress_material_from_html(
         content_text=text,
         content_summary=summary_text_limited(text, 240),
         content_word_count=len(text.split()),
-        section_headings=[
-            clean_metadata_text(value)
-            for value in parser.section_headings
-            if clean_metadata_text(value)
-        ],
+        section_headings=section_headings,
         acf_field_names=[],
         acf_section_headings=[],
         modified_gmt="",
-        extraction_region="main_or_article_visible_text",
+        extraction_region=extraction_region,
         material_confidence="review_required",
-        source_field_lineage=["public_html.main_or_article"],
+        source_field_lineage=[extraction_region],
     )
 
 

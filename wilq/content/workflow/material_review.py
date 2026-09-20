@@ -253,7 +253,14 @@ class MaterialReviewConflictError(ValueError):
 
 
 def material_review_source_field_lineage_digest(lineage: Sequence[str]) -> str:
-    return _digest_payload(tuple(lineage))
+    return _digest_payload(tuple(_canonical_material_source(value) for value in lineage))
+
+
+def _canonical_material_source(value: str) -> str:
+    return {
+        "public_html.article_content": "wordpress.article_content",
+        "wordpress_rest.content": "wordpress.article_content",
+    }.get(value, value)
 
 
 def material_review_preview_digest(preview: ContentMaterialReviewPreview) -> str:
@@ -300,7 +307,7 @@ def build_content_material_review_preview(
     now = _aware_now(clock)
     if not current_page_receipt_is_fresh(observation, now=now):
         raise MaterialReviewConflictError("content_material_review_observation_stale")
-    lineage = tuple(getattr(item, "wordpress_content_source_field_lineage", ()) or ())
+    lineage = (observation.extraction_region,)
     snapshot_evidence_ids = _sorted_unique(
         tuple(catalog.evidence_ids) or (catalog_item.evidence_id,),
         label="Catalog snapshot evidence IDs",
@@ -482,7 +489,7 @@ def revalidate_content_material_review_preview(
         raise MaterialReviewConflictError("content_material_review_observation_stale")
     if not current_page_receipt_is_fresh(current_observation, now=now):
         raise MaterialReviewConflictError("content_material_review_current_observation_stale")
-    lineage = tuple(getattr(item, "wordpress_content_source_field_lineage", ()) or ())
+    lineage = (current_observation.extraction_region,)
     blockers = _current_mismatch_blockers(
         preview,
         catalog=catalog,
@@ -526,7 +533,9 @@ def _current_mismatch_blockers(
         or current_observation.canonical_path != original.canonical_path
     ):
         blockers.append("content_material_review_url_or_path_changed")
-    if current_observation.extraction_region != original.extraction_region:
+    if _canonical_material_source(
+        current_observation.extraction_region
+    ) != _canonical_material_source(original.extraction_region):
         blockers.append("content_material_review_extraction_changed")
     if current_observation.source_connectors != original.source_connectors:
         blockers.append("content_material_review_source_connector_changed")

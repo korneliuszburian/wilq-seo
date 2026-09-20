@@ -127,6 +127,156 @@ def test_html_material_preserves_final_observed_url() -> None:
     material = _read_wordpress_material_from_html(Client(), url=requested_url)
 
     assert material.url == observed_url
+    assert material.content_text == "Materiał HTML."
+    assert material.extraction_region == "public_html.main"
+
+
+def test_html_material_prefers_article_boundary_over_layout_tail() -> None:
+    page_url = "https://www.ekologus.pl/material/"
+
+    class Response:
+        url = page_url
+        text = """
+            <html><body>
+              <header><img src="logo.png"><br></header>
+              <main>
+                <article class="post">
+                  <div class="post__content">
+                    <h1>Właściwy materiał</h1>
+                    <h2>Zakres artykułu</h2>
+                    <p>Kompletny tekst artykułu pozostaje w materiale.</p>
+                    <p>Nazwa HEKO może występować także we właściwym tekście.</p>
+                    <div><p>Zagnieżdżony fragment nadal należy do artykułu.</p></div>
+                    <p>Drugi akapit kończy właściwą treść.</p>
+                  </div>
+                </article>
+                <section class="related-posts">
+                  <h2>Rekomendowane wpisy</h2>
+                  <p>Podsumowanie powiązanego wpisu.</p>
+                </section>
+                <section class="testimonial">
+                  <h2>HEKO</h2>
+                  <p>Opinia klienta poza artykułem.</p>
+                </section>
+                <section class="service-navigation">
+                  <h2>Usługi</h2>
+                  <p>Nawigacja usługowa.</p>
+                </section>
+              </main>
+              <footer><p>Copyright poza materiałem.</p></footer>
+            </body></html>
+        """
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=page_url)
+
+    assert material.url == page_url
+    assert material.extraction_region == "public_html.article_content"
+    assert "Kompletny tekst artykułu pozostaje w materiale." in material.content_text
+    assert "Zagnieżdżony fragment nadal należy do artykułu." in material.content_text
+    assert "Drugi akapit kończy właściwą treść." in material.content_text
+    assert "Rekomendowane wpisy" not in material.content_text
+    assert "Opinia klienta poza artykułem." not in material.content_text
+    assert "Nawigacja usługowa" not in material.content_text
+    assert "Copyright poza materiałem" not in material.content_text
+    assert material.section_headings == ["Zakres artykułu"]
+
+
+def test_html_material_prefers_article_over_unrelated_content_class() -> None:
+    page_url = "https://www.ekologus.pl/material/"
+
+    class Response:
+        url = page_url
+        text = """
+            <main>
+              <article>
+                <h2>Właściwy nagłówek</h2>
+                <p>Właściwy artykuł ma jednoznaczną granicę semantyczną.</p>
+              </article>
+              <div class="entry-content">
+                <h2>Widget</h2><p>Ten widget nie jest artykułem.</p>
+              </div>
+              <div class="entry-content" hidden>
+                <p>Ukryty szablon nie może wygrać długością długością długością.</p>
+              </div>
+              <div class="entry-content" style="visibility: hidden">
+                <p>Drugi ukryty szablon również nie może zostać materiałem.</p>
+              </div>
+            </main>
+        """
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=page_url)
+
+    assert material.extraction_region == "public_html.article"
+    assert material.content_text == (
+        "Właściwy nagłówek Właściwy artykuł ma jednoznaczną granicę semantyczną."
+    )
+    assert material.section_headings == ["Właściwy nagłówek"]
+
+
+def test_html_material_uses_first_semantic_article_not_longer_related_card() -> None:
+    page_url = "https://www.ekologus.pl/material/"
+
+    class Response:
+        url = page_url
+        text = """
+            <main>
+              <article>
+                <p>Właściwy artykuł.</p>
+                <article><h1>Zagnieżdżona rekomendacja</h1><p>Nie jest materiałem.</p></article>
+              </article>
+              <article><p>Dłuższa karta rekomendacji poza właściwym materiałem strony.</p></article>
+            </main>
+        """
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=page_url)
+
+    assert material.extraction_region == "public_html.article"
+    assert material.content_text == "Właściwy artykuł."
+
+
+def test_html_material_prefers_specific_standalone_post_content() -> None:
+    page_url = "https://www.ekologus.pl/material/"
+
+    class Response:
+        url = page_url
+        text = """
+            <main>
+              <div class="entry-content">Widget przed treścią.</div>
+              <div class="post__content">Właściwy materiał strony.</div>
+            </main>
+        """
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=page_url)
+
+    assert material.content_text == "Właściwy materiał strony."
 
 
 @pytest.mark.parametrize(
