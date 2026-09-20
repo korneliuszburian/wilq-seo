@@ -566,6 +566,129 @@ export const ContentDocumentWorkspaceComparisonSchema = z.object({
   items: z.array(ContentDocumentWorkspaceComparisonItemSchema).default([])
 });
 
+export const ContentRegulatorySourceSelectorSchema = z.object({
+  kind: z.enum(["provision_range", "bounded_document", "heading_set"]),
+  start_anchor: z.string().min(1).nullable().optional(),
+  end_anchor: z.string().min(1).nullable().optional(),
+  required_anchors: z.array(z.string().min(1)).min(1),
+  excluded_anchors: z.array(z.string().min(1)).default([]),
+  residual_forbidden_anchors: z.array(z.string().min(1)).default([]),
+  excluded_ranges: z.array(z.object({
+    start_anchor: z.string().min(1),
+    end_anchor: z.string().min(1)
+  })).default([]),
+  max_chars: z.number().int(),
+  context_chars: z.number().int()
+}).superRefine((selector, context) => {
+  const requiredAnchors = selector.required_anchors.map((anchor) => anchor.trim());
+  const excludedAnchors = selector.excluded_anchors.map((anchor) => anchor.trim());
+  const residualForbiddenAnchors = selector.residual_forbidden_anchors.map((anchor) => anchor.trim());
+  const starts = selector.excluded_ranges.map((range) => range.start_anchor.trim());
+  const ends = selector.excluded_ranges.map((range) => range.end_anchor.trim());
+  if (requiredAnchors.some((anchor) => !anchor)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["required_anchors"],
+      message: "Source anchors cannot be blank after trimming"
+    });
+  }
+  if (excludedAnchors.some((anchor) => !anchor)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["excluded_anchors"],
+      message: "Source anchors cannot be blank after trimming"
+    });
+  }
+  if (residualForbiddenAnchors.some((anchor) => !anchor)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["residual_forbidden_anchors"],
+      message: "Source anchors cannot be blank after trimming"
+    });
+  }
+  if (starts.some((anchor) => !anchor) || ends.some((anchor) => !anchor)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["excluded_ranges"],
+      message: "Source range anchors cannot be blank after trimming"
+    });
+  }
+  if (selector.kind === "provision_range" && (
+    selector.start_anchor == null || selector.end_anchor == null
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["start_anchor", "end_anchor"],
+      message: "Provision-range selectors require start and end anchors"
+    });
+  }
+  if (selector.kind !== "provision_range" && (
+    selector.start_anchor != null || selector.end_anchor != null
+  )) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["start_anchor", "end_anchor"],
+      message: "Document and heading selectors cannot carry provision range anchors"
+    });
+  }
+  if (new Set(requiredAnchors).size !== requiredAnchors.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["required_anchors"],
+      message: "Required source anchors must be unique"
+    });
+  }
+  if (new Set(excludedAnchors).size !== excludedAnchors.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["excluded_anchors"],
+      message: "Excluded source anchors must be unique"
+    });
+  }
+  if (new Set(residualForbiddenAnchors).size !== residualForbiddenAnchors.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["residual_forbidden_anchors"],
+      message: "Residual-forbidden source anchors must be unique"
+    });
+  }
+  if (requiredAnchors.some((anchor) => excludedAnchors.includes(anchor))) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["excluded_anchors"],
+      message: "Required and excluded source anchors must be disjoint"
+    });
+  }
+  if (requiredAnchors.some((anchor) => residualForbiddenAnchors.includes(anchor))) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["residual_forbidden_anchors"],
+      message: "Required and residual-forbidden source anchors must be disjoint"
+    });
+  }
+  if (selector.max_chars < 1000 || selector.max_chars > 500000) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["max_chars"],
+      message: "Maximum source scope must be between 1000 and 500000 characters"
+    });
+  }
+  if (selector.context_chars < 0 || selector.context_chars > 100000) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["context_chars"],
+      message: "Source context must be between 0 and 100000 characters"
+    });
+  }
+  if (new Set(starts).size !== starts.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["excluded_ranges"],
+      message: "Excluded source range starts must be unique"
+    });
+  }
+});
+
 export const ContentRegulatoryReviewCandidateSchema = z.object({
   candidate_id: z.string().min(1),
   source_url: z.string().url(),
@@ -573,8 +696,18 @@ export const ContentRegulatoryReviewCandidateSchema = z.object({
   observed_on: z.string().min(1),
   requirement_ids: z.array(z.string().min(1)).min(1),
   requirement_labels: z.array(z.string().min(1)).min(1),
+  selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   review_status: z.literal("review_required"),
   safe_next_step: z.string().min(1)
+}).superRefine((candidate, context) => {
+  if (candidate.selector != null && candidate.as_of == null) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["as_of"],
+      message: "A bounded regulatory source selector requires an as-of date"
+    });
+  }
 });
 
 export const ContentDocumentWorkspaceSchema = z.object({
@@ -4331,6 +4464,8 @@ export const ContentRegulatorySourceReviewCommandSchema = z.object({
   expected_profile_version: z.string().trim().min(1),
   expected_source_snapshot_id: z.string().trim().min(1),
   expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  expected_as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   reviewed_fact: z.string().trim().min(20).max(2000),
   covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
   decision: z.enum(["accepted", "rejected"]),
@@ -4352,7 +4487,12 @@ export const ContentRegulatorySourceReviewSchema = ContentRegulatorySourceReview
   expected_source_url: true,
   expected_profile_version: true,
   expected_source_snapshot_id: true,
-  expected_source_snapshot_digest: true
+  expected_source_snapshot_digest: true,
+  expected_selector: true,
+  expected_as_of: true
+}).extend({
+  selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional()
 }).superRefine((review, context) => {
   if (review.service_card_ids.length === 0 && review.canonical_paths.length === 0) {
     context.addIssue({
@@ -4382,6 +4522,8 @@ export const ContentRegulatorySourceSnapshotSchema = z.object({
   content_digest: z.string().regex(/^[0-9a-f]{64}$/),
   content_type: z.string().trim().min(1),
   byte_length: z.number().int().positive().max(12 * 1024 * 1024),
+  selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   observed_at: z.string().datetime()
 });
 
@@ -4409,6 +4551,8 @@ export const ContentRegulatorySourceFactProposalSchema = z.object({
   source_snapshot_id: z.string().trim().min(1),
   source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
   observed_on: z.string().min(1),
+  selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   proposed_fact: z.string().trim().min(20).max(2000),
   covered_requirement_ids: z.array(z.string().trim().min(1)).min(1),
   codex_run_id: z.string().trim().min(1),
@@ -4431,6 +4575,8 @@ export const ContentRegulatorySourceFactProposalResponseSchema = z.object({
 export const ContentRegulatorySourceFactProposalReviewCommandSchema = z.object({
   expected_source_snapshot_id: z.string().trim().min(1),
   expected_source_snapshot_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  expected_selector: ContentRegulatorySourceSelectorSchema.nullable().optional(),
+  expected_as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   decision: z.enum(["accepted", "rejected"]),
   reviewer: z.string().trim().min(1).max(200)
 });

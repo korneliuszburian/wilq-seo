@@ -157,6 +157,9 @@ def _review_conflict(reason: str) -> ContentRegulatorySourceReviewConflict:
     elif "snapshot changed" in reason:
         code = "source_snapshot_changed"
         label = "Snapshot źródła jest nieaktualny"
+    elif "proposal scope changed" in reason:
+        code = "source_proposal_stale"
+        label = "Zakres propozycji źródła się zmienił"
     else:
         code = "candidate_changed"
         label = "Kandydat źródła zmienił się"

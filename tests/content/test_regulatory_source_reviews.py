@@ -44,6 +44,8 @@ def _command(
         expected_profile_version=candidate.profile_version,
         expected_source_snapshot_id=snapshot.snapshot_id,
         expected_source_snapshot_digest=snapshot.content_digest,
+        expected_selector=candidate.selector,
+        expected_as_of=candidate.as_of,
         reviewed_fact=(
             "Zatwierdzony reviewer potwierdził zakres informacji tylko dla wskazanego "
             "oficjalnego źródła i przypisanych wymagań profilu BDO."
@@ -296,6 +298,33 @@ def test_review_rejects_changed_candidate_or_unassigned_requirement(tmp_path) ->
             outside_requirement,
             snapshot_store=RegulatorySourceSnapshotStore(store.path),
         )
+
+
+def test_review_rejects_selector_scope_drift_before_persisting_decision(tmp_path) -> None:
+    store = RegulatorySourceReviewStore(tmp_path / "wilq.sqlite3")
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+    )
+    snapshot = _snapshot(store.path, candidate.candidate_id)
+    command = _command(candidate_id=candidate.candidate_id, snapshot=snapshot)
+    assert candidate.selector is not None
+    changed = candidate.model_copy(
+        update={
+            "selector": candidate.selector.model_copy(
+                update={"max_chars": candidate.selector.max_chars - 1}
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="candidate changed"):
+        store.record(
+            command,
+            candidates=(changed,),
+            snapshot_store=RegulatorySourceSnapshotStore(store.path),
+        )
+    assert store.list_reviews() == []
 
 
 def test_public_source_review_route_persists_only_human_decision(tmp_path, monkeypatch) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
+    ContentRegulatorySourceSelector,
     regulatory_source_candidates,
 )
 from wilq.content.regulatory.source_snapshots import (
@@ -39,6 +40,8 @@ class ContentRegulatorySourceReviewCommand(BaseModel):
     expected_profile_version: str = Field(min_length=1)
     expected_source_snapshot_id: str = Field(min_length=1)
     expected_source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_selector: ContentRegulatorySourceSelector | None = None
+    expected_as_of: date | None = None
     reviewed_fact: str = Field(min_length=20, max_length=2000)
     covered_requirement_ids: list[str] = Field(min_length=1)
     decision: Literal["accepted", "rejected"]
@@ -67,6 +70,8 @@ class ContentRegulatorySourceReview(BaseModel):
     observed_on: str = Field(min_length=1)
     source_snapshot_id: str = Field(min_length=1)
     source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    selector: ContentRegulatorySourceSelector | None = None
+    as_of: date | None = None
     reviewed_fact: str = Field(min_length=20)
     covered_requirement_ids: list[str] = Field(min_length=1)
     decision: Literal["accepted", "rejected"]
@@ -289,6 +294,8 @@ class RegulatorySourceReviewStore:
             and review.source_url == candidate.source_url
             and review.profile_id == candidate.profile_id
             and review.profile_version == candidate.profile_version
+            and review.selector == candidate.selector
+            and review.as_of == candidate.as_of
             and set(review.covered_requirement_ids).issubset(candidate.requirement_ids)
             and set(review.service_card_ids).issubset(candidate.service_card_ids)
             and set(review.canonical_paths).issubset(candidate.canonical_paths)
@@ -335,6 +342,8 @@ def _resolve_candidate(
     if (
         candidate.source_url != command.expected_source_url
         or candidate.profile_version != command.expected_profile_version
+        or candidate.selector != command.expected_selector
+        or candidate.as_of != command.expected_as_of
     ):
         raise ValueError("Regulatory source review candidate changed; read it again before review.")
     if not set(command.covered_requirement_ids).issubset(candidate.requirement_ids):
@@ -355,6 +364,8 @@ def proposal_matches_candidate(
         and proposal.profile_id == candidate.profile_id
         and proposal.profile_version == candidate.profile_version
         and proposal.source_url == candidate.source_url
+        and proposal.selector == candidate.selector
+        and proposal.as_of == candidate.as_of
         and proposal.covered_requirement_ids == sorted(candidate.requirement_ids)
     )
 
@@ -378,6 +389,8 @@ def _review_from_command(
         observed_on=snapshot.observed_on,
         source_snapshot_id=snapshot.snapshot_id,
         source_snapshot_digest=snapshot.content_digest,
+        selector=candidate.selector,
+        as_of=candidate.as_of,
         reviewed_fact=command.reviewed_fact.strip(),
         covered_requirement_ids=sorted(set(command.covered_requirement_ids)),
         decision=command.decision,
@@ -426,6 +439,8 @@ def _require_exact_snapshot(
         or snapshot.profile_id != candidate.profile_id
         or snapshot.profile_version != candidate.profile_version
         or snapshot.source_url != candidate.source_url
+        or snapshot.selector != candidate.selector
+        or snapshot.as_of != candidate.as_of
         or snapshot.content_digest != command.expected_source_snapshot_digest
     ):
         raise ValueError("Regulatory source snapshot changed; read the official source again.")

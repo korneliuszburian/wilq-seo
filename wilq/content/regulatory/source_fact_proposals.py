@@ -14,7 +14,7 @@ import re
 import sqlite3
 import subprocess  # nosec B404
 import unicodedata
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
@@ -31,6 +31,7 @@ from wilq.codex.app_server import (
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.regulatory.policy import (
     ContentRegulatorySourceCandidate,
+    ContentRegulatorySourceSelector,
     regulatory_candidate_profile,
     regulatory_source_candidates,
 )
@@ -39,6 +40,10 @@ from wilq.content.regulatory.source_reviews import (
     ContentRegulatorySourceReviewCommand,
     RegulatorySourceReviewStore,
     proposal_matches_candidate,
+)
+from wilq.content.regulatory.source_selection import (
+    RegulatorySourceSelectionError,
+    select_bounded_source_text,
 )
 from wilq.content.regulatory.source_snapshots import (
     ContentRegulatorySourceSnapshot,
@@ -100,6 +105,8 @@ class ContentRegulatorySourceFactProposal(BaseModel):
     source_snapshot_id: str = Field(min_length=1)
     source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     observed_on: str = Field(min_length=1)
+    selector: ContentRegulatorySourceSelector | None = None
+    as_of: date | None = None
     proposed_fact: str = Field(min_length=20, max_length=2000)
     covered_requirement_ids: list[str] = Field(min_length=1)
     codex_run_id: str = Field(min_length=1)
@@ -128,6 +135,8 @@ class ContentRegulatorySourceFactProposalReviewCommand(BaseModel):
 
     expected_source_snapshot_id: str = Field(min_length=1)
     expected_source_snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    expected_selector: ContentRegulatorySourceSelector | None = None
+    expected_as_of: date | None = None
     decision: Literal["accepted", "rejected"]
     reviewer: str = Field(min_length=1, max_length=200)
 
@@ -320,13 +329,9 @@ def _generate_from_snapshot(
     proposal_store: RegulatorySourceFactProposalStore,
     run_store: LocalStateStore,
 ) -> ContentRegulatorySourceFactProposalResponse:
-    try:
-        source_text = _source_text_for_proposal(snapshot, body)
-    except ValueError:
-        return _blocked(
-            "Materiał urzędowy nie zawiera bezpiecznie wyodrębnionej treści do review.",
-            "Otwórz inne aktualne źródło urzędowe albo zapisz własne review.",
-        )
+    source_text = _source_text_or_blocked(snapshot, body, candidate)
+    if not isinstance(source_text, str):
+        return source_text
     run = run_store.save_codex_run(
         CodexRun(
             id=f"codex_regulatory_source_fact_{uuid4().hex}",
@@ -392,6 +397,8 @@ def _generate_from_snapshot(
         source_snapshot_id=snapshot.snapshot_id,
         source_snapshot_digest=snapshot.content_digest,
         observed_on=snapshot.observed_on,
+        selector=candidate.selector,
+        as_of=candidate.as_of,
         proposed_fact=output.proposed_fact,
         covered_requirement_ids=output.covered_requirement_ids,
         codex_run_id=run.id,
@@ -424,6 +431,8 @@ def review_source_fact_proposal(
         or proposal.source_snapshot_digest != command.expected_source_snapshot_digest
     ):
         raise ValueError("Regulatory source fact proposal snapshot changed.")
+    if command.expected_selector != proposal.selector or command.expected_as_of != proposal.as_of:
+        raise ValueError("Regulatory source fact proposal scope changed.")
     return review_store.record_current_proposal(
         proposal,
         ContentRegulatorySourceReviewCommand(
@@ -432,6 +441,8 @@ def review_source_fact_proposal(
             expected_profile_version=proposal.profile_version,
             expected_source_snapshot_id=proposal.source_snapshot_id,
             expected_source_snapshot_digest=proposal.source_snapshot_digest,
+            expected_selector=proposal.selector,
+            expected_as_of=proposal.as_of,
             reviewed_fact=proposal.proposed_fact,
             covered_requirement_ids=proposal.covered_requirement_ids,
             decision=command.decision,
@@ -441,7 +452,31 @@ def review_source_fact_proposal(
     )
 
 
-def _source_text_for_proposal(snapshot: ContentRegulatorySourceSnapshot, body: bytes) -> str:
+def _source_text_or_blocked(
+    snapshot: ContentRegulatorySourceSnapshot,
+    body: bytes,
+    candidate: ContentRegulatorySourceCandidate,
+) -> str | ContentRegulatorySourceFactProposalResponse:
+    try:
+        return _source_text_for_proposal(snapshot, body, candidate=candidate)
+    except RegulatorySourceSelectionError as error:
+        return _blocked(
+            f"Materiał urzędowy nie ma jednoznacznego zakresu ({error.code}).",
+            "Otwórz bieżące źródło ponownie albo zapisz własne review z dokładnym zakresem.",
+        )
+    except ValueError:
+        return _blocked(
+            "Materiał urzędowy nie zawiera bezpiecznie wyodrębnionej treści do review.",
+            "Otwórz inne aktualne źródło urzędowe albo zapisz własne review.",
+        )
+
+
+def _source_text_for_proposal(
+    snapshot: ContentRegulatorySourceSnapshot,
+    body: bytes,
+    *,
+    candidate: ContentRegulatorySourceCandidate | None = None,
+) -> str:
     """Extract bounded text transiently; never write the official body to disk/state."""
 
     if snapshot.content_type == "application/pdf" or body.startswith(b"%PDF-"):
@@ -465,7 +500,9 @@ def _source_text_for_proposal(snapshot: ContentRegulatorySourceSnapshot, body: b
     text = text.strip()
     if not text:
         raise ValueError("Official source has no extractable text.")
-    return text[:500_000]
+    if candidate is not None and candidate.selector is not None:
+        return select_bounded_source_text(candidate, text)
+    return text
 
 
 class _HtmlMainTextExtractor(HTMLParser):
@@ -562,6 +599,12 @@ def _extract_html_main_text(html: str) -> str:
 
 def _relevant_source_text(candidate: ContentRegulatorySourceCandidate, source_text: str) -> str:
     """Reduce a long official document to deterministic candidate-relevant excerpts."""
+
+    # Selector-backed candidates were already reduced by
+    # ``_source_text_for_proposal`` after complete extraction.  Re-ranking that
+    # bounded result could drop a required late provision, so preserve it as-is.
+    if candidate.selector is not None:
+        return source_text
 
     profile = regulatory_candidate_profile(candidate)
     requirements = (
@@ -668,6 +711,12 @@ def _turn_request(
                 "profile_version": candidate.profile_version,
                 "source_url": candidate.source_url,
                 "source_snapshot_digest": snapshot.content_digest,
+                "selector": (
+                    None
+                    if candidate.selector is None
+                    else candidate.selector.model_dump(mode="json")
+                ),
+                "as_of": None if candidate.as_of is None else candidate.as_of.isoformat(),
                 "requirement_ids": sorted(candidate.requirement_ids),
                 "requirements": trusted_requirements,
             },
@@ -692,6 +741,8 @@ def _proposal_id(
             candidate.source_url,
             snapshot.snapshot_id,
             snapshot.content_digest,
+            None if candidate.selector is None else candidate.selector.model_dump(mode="json"),
+            None if candidate.as_of is None else candidate.as_of.isoformat(),
             output.proposed_fact,
             output.covered_requirement_ids,
         ],
@@ -744,6 +795,7 @@ __all__ = [
     "ContentRegulatorySourceFactProposal",
     "ContentRegulatorySourceFactProposalResponse",
     "ContentRegulatorySourceFactProposalReviewCommand",
+    "RegulatorySourceSelectionError",
     "RegulatorySourceFactProposalStore",
     "generate_source_fact_proposal",
     "read_source_fact_proposal",

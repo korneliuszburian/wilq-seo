@@ -229,6 +229,94 @@ def test_proposal_review_rejects_stale_snapshot_without_human_review(tmp_path) -
     assert review_store.list_reviews() == []
 
 
+def test_proposal_review_rejects_mismatched_scope_without_human_review(
+    tmp_path, monkeypatch
+) -> None:
+    candidate = next(
+        item
+        for item in regulatory_source_candidates()
+        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+    )
+    assert candidate.selector is not None
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    result = generate_source_fact_proposal(
+        candidate_id=candidate.candidate_id,
+        client=_Client(_ready_output(candidate)),
+        proposal_store=proposal_store,
+        snapshot_store=snapshot_store,
+        run_store=run_store,
+        reader=lambda _: _html_source(
+            "\n".join(
+                [
+                    "Art. 389. zakres pozwolenia",
+                    "Art. 390. wyjątki",
+                    "Art. 397. właściwy organ",
+                    "Art. 399. wniosek i operat",
+                    "Art. 400. okres obowiązywania",
+                    "Art. 407. zawartość operatu",
+                    "5. Aktualny ustęp 5.",
+                    "6. Aktualny ustęp 6.",
+                    "<4a) przyszła jednostka 2027 r.;>",
+                    "7. Aktualny ustęp 7.",
+                    "<5a. przyszła jednostka 2027 r..>",
+                    "8. Aktualny ustęp 8.",
+                    "<8. przyszła jednostka 2027 r..>",
+                    "9. Aktualny ustęp 9.",
+                    "Art. 408. forma operatu",
+                    "Art. 409. część opisowa i graficzna",
+                    "Dodany pkt 4a w art. 407 poz. 1156).",
+                    "Dodany ust. 5a w art. 407 poz. 1156).",
+                    "Oficjalne źródło opisuje obowiązek.",
+                ]
+            )
+            .replace("<", "&lt;")
+        ),
+    )
+
+    assert result.proposal is not None
+    with pytest.raises(ValueError, match="proposal scope changed"):
+        review_source_fact_proposal(
+            proposal_id=result.proposal.proposal_id,
+            command=ContentRegulatorySourceFactProposalReviewCommand(
+                expected_source_snapshot_id=result.proposal.source_snapshot_id,
+                expected_source_snapshot_digest=result.proposal.source_snapshot_digest,
+                expected_selector=candidate.selector.model_copy(update={"context_chars": 1}),
+                expected_as_of=result.proposal.as_of,
+                decision="accepted",
+                reviewer="Wilku",
+            ),
+            proposal_store=proposal_store,
+            review_store=review_store,
+        )
+
+    mismatched_selector = candidate.selector.model_copy(update={"context_chars": 1})
+    monkeypatch.setattr(
+        regulatory_router, "regulatory_source_fact_proposal_store", lambda: proposal_store
+    )
+    monkeypatch.setattr(regulatory_router, "regulatory_source_review_store", lambda: review_store)
+    app = FastAPI()
+    router = APIRouter()
+    register_content_regulatory_source_review_routes(router)
+    app.include_router(router)
+
+    assert result.proposal.as_of is not None
+    response = TestClient(app).post(
+        f"/api/content/regulatory-source-fact-proposals/{result.proposal.proposal_id}/review",
+        json={
+            "expected_source_snapshot_id": result.proposal.source_snapshot_id,
+            "expected_source_snapshot_digest": result.proposal.source_snapshot_digest,
+            "expected_selector": mismatched_selector.model_dump(mode="json"),
+            "expected_as_of": result.proposal.as_of.isoformat(),
+            "decision": "accepted",
+            "reviewer": "Wilku",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "source_proposal_stale"
+    assert review_store.list_reviews() == []
+
+
 def test_proposal_blocks_when_its_ephemeral_source_terms_are_not_in_exact_source(tmp_path) -> None:
     candidate = regulatory_source_candidates()[0]
     proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)

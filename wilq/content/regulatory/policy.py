@@ -331,6 +331,73 @@ class ContentRegulatoryCoverageGap(BaseModel):
     next_step: str = Field(min_length=1)
 
 
+class ContentRegulatorySourceExcludedRange(BaseModel):
+    """One literal source span that may be removed from a selected range."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_anchor: str = Field(min_length=1)
+    end_anchor: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_non_empty_anchors(self) -> ContentRegulatorySourceExcludedRange:
+        self.start_anchor = self.start_anchor.strip()
+        self.end_anchor = self.end_anchor.strip()
+        if not self.start_anchor or not self.end_anchor:
+            raise ValueError("Excluded source ranges require non-empty anchors.")
+        return self
+
+
+class ContentRegulatorySourceSelector(BaseModel):
+    """Server-owned bounded scope for extracting a large official source.
+
+    ``provision_range`` is for legal acts whose relevant provisions are far into
+    a PDF. ``bounded_document`` is for a registered official document whose
+    complete extracted body is the selected scope. ``heading_set`` is for an
+    official guidance page or fee table where a small set of exact headings/
+    labels is enough. Anchors are deliberately literal and occurrence-counted:
+    a missing or duplicated anchor must block the proposal instead of silently
+    selecting a plausible prefix, except that bounded documents only require
+    each required anchor to occur at least once.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["provision_range", "bounded_document", "heading_set"]
+    start_anchor: str | None = Field(default=None, min_length=1)
+    end_anchor: str | None = Field(default=None, min_length=1)
+    required_anchors: list[str] = Field(default_factory=list)
+    excluded_anchors: list[str] = Field(default_factory=list)
+    residual_forbidden_anchors: list[str] = Field(default_factory=list)
+    excluded_ranges: list[ContentRegulatorySourceExcludedRange] = Field(default_factory=list)
+    max_chars: int = Field(default=120_000, ge=1_000, le=500_000)
+    context_chars: int = Field(default=12_000, ge=0, le=100_000)
+
+    @model_validator(mode="after")
+    def require_bounded_anchor_shape(self) -> ContentRegulatorySourceSelector:
+        self.required_anchors = _clean_selector_anchors(self.required_anchors)
+        self.excluded_anchors = _clean_selector_anchors(self.excluded_anchors)
+        self.residual_forbidden_anchors = _clean_selector_anchors(
+            self.residual_forbidden_anchors
+        )
+        starts = [item.start_anchor for item in self.excluded_ranges]
+        if len(starts) != len(set(starts)):
+            raise ValueError("Excluded source range starts must be unique.")
+        if not self.required_anchors:
+            raise ValueError("Regulatory source selector requires at least one anchor.")
+        if set(self.required_anchors).intersection(self.excluded_anchors):
+            raise ValueError("Regulatory source selector cannot exclude a required anchor.")
+        if set(self.required_anchors).intersection(self.residual_forbidden_anchors):
+            raise ValueError("Regulatory source selector cannot forbid a required anchor.")
+        if self.kind == "provision_range" and not (self.start_anchor and self.end_anchor):
+            raise ValueError("Provision-range selectors require start and end anchors.")
+        if self.kind in {"bounded_document", "heading_set"} and (
+            self.start_anchor or self.end_anchor
+        ):
+            raise ValueError("Document and heading selectors cannot carry provision range anchors.")
+        return self
+
+
 class ContentRegulatorySourceCandidate(BaseModel):
     """Read-only official source awaiting human promotion into a SourceFact."""
 
@@ -345,6 +412,8 @@ class ContentRegulatorySourceCandidate(BaseModel):
     source_title: str = Field(min_length=1)
     observed_on: str = Field(min_length=1)
     requirement_ids: list[str] = Field(min_length=1)
+    selector: ContentRegulatorySourceSelector | None = None
+    as_of: date | None = None
     review_status: Literal["review_required"] = "review_required"
     safe_next_step: str = Field(min_length=1)
 
@@ -377,6 +446,8 @@ class ContentRegulatorySourceCandidate(BaseModel):
             raise ValueError(f"Regulatory source candidates require non-empty fields: {fields}")
         if not self.service_card_ids and not self.canonical_paths:
             raise ValueError("Regulatory source candidate requires an exact content subject.")
+        if self.selector is not None and self.as_of is None:
+            raise ValueError("A bounded regulatory source selector requires an as-of date.")
         try:
             date.fromisoformat(self.observed_on)
         except ValueError as exc:
@@ -393,8 +464,16 @@ class ContentRegulatoryReviewCandidate(BaseModel):
     observed_on: str = Field(min_length=1)
     requirement_ids: list[str] = Field(min_length=1)
     requirement_labels: list[str] = Field(min_length=1)
+    selector: ContentRegulatorySourceSelector | None = None
+    as_of: date | None = None
     review_status: Literal["review_required"] = "review_required"
     safe_next_step: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_bounded_scope_date(self) -> ContentRegulatoryReviewCandidate:
+        if self.selector is not None and self.as_of is None:
+            raise ValueError("A bounded regulatory source selector requires an as-of date.")
+        return self
 
 
 @lru_cache(maxsize=1)
@@ -582,6 +661,8 @@ def regulatory_review_candidates(
                 for requirement_id in candidate.requirement_ids
                 if requirement_id in missing_ids
             ],
+            selector=candidate.selector,
+            as_of=candidate.as_of,
             safe_next_step=candidate.safe_next_step,
         )
         for candidate in (candidates if candidates is not None else regulatory_source_candidates())
@@ -662,6 +743,15 @@ def _candidate_matches_profile(
         and urlsplit(candidate.source_url).hostname in profile.official_source_hosts
         and 0 <= age_days <= profile.max_source_age_days
     )
+
+
+def _clean_selector_anchors(values: list[str]) -> list[str]:
+    cleaned = [value.strip() for value in values]
+    if any(not value for value in cleaned):
+        raise ValueError("Regulatory source selector anchors cannot be blank.")
+    if len(cleaned) != len(set(cleaned)):
+        raise ValueError("Regulatory source selector anchors must be unique.")
+    return cleaned
 
 
 def regulatory_coverage_gap(

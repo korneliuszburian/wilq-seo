@@ -23,8 +23,15 @@ import {
   ContentPlanningInputReadinessResponseSchema,
   ContentPlanningInputSummarySchema,
   ContentRegulatorySourceReviewListSchema,
+  ContentRegulatoryReviewCandidateSchema,
+  ContentRegulatorySourceSelectorSchema,
   ContentRegulatorySourceReviewConflictSchema,
+  ContentRegulatorySourceReviewCommandSchema,
   ContentRegulatorySourceReviewSchema,
+  ContentRegulatorySourceFactProposalReviewCommandSchema,
+  ContentRegulatorySourceFactProposalResponseSchema,
+  ContentRegulatorySourceFactProposalSchema,
+  ContentRegulatorySourceSnapshotSchema,
   ContentRegulatorySourceSnapshotReadResponseSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningWorkspaceSchema,
@@ -113,6 +120,167 @@ describe("ContentKnowledgeCardSchema", () => {
       confidence: 0.8,
       freshness: "reviewed_2026-08-28"
     }).service_binding_urls).toEqual([]);
+  });
+});
+
+describe("ContentRegulatoryReviewCandidateSchema", () => {
+  it("preserves the server-owned selector and as-of scope", () => {
+    const candidate = ContentRegulatoryReviewCandidateSchema.parse({
+      candidate_id: "operat_prawo_wodne_2025_960_r1",
+      source_url: "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      source_title: "ELI: Prawo wodne",
+      observed_on: "2026-09-20",
+      requirement_ids: ["operat_application_and_contents"],
+      requirement_labels: ["wniosek i zawartość operatu"],
+      selector: {
+        kind: "provision_range",
+        start_anchor: "Art. 389.",
+        end_anchor: "Art. 409.",
+        required_anchors: ["Art. 389.", "Art. 409."],
+        excluded_anchors: ["Art. 407 ust. 5a"],
+        max_chars: 120000,
+        context_chars: 12000
+      },
+      as_of: "2026-09-20",
+      review_status: "review_required",
+      safe_next_step: "Sprawdź bieżący materiał urzędowy."
+    });
+
+    expect(candidate.selector?.kind).toBe("provision_range");
+    expect(candidate.as_of).toBe("2026-09-20");
+  });
+});
+
+describe("ContentRegulatory source scope schemas", () => {
+  const selector = {
+    kind: "bounded_document" as const,
+    required_anchors: ["Pozwolenie wodnoprawne", "operat wodnoprawny"],
+    excluded_anchors: [],
+    residual_forbidden_anchors: [],
+    excluded_ranges: [{ start_anchor: "<4a)", end_anchor: ";>" }],
+    max_chars: 75000,
+    context_chars: 0
+  };
+
+  it("round-trips selector and as-of fields through source records and commands", () => {
+    const snapshot = ContentRegulatorySourceSnapshotSchema.parse({
+      snapshot_id: "regulatory_snapshot_operat",
+      candidate_id: "operat_wody_polskie_2026_r1",
+      profile_id: "operat_wodnoprawny",
+      profile_version: "2026-09-20-r1",
+      source_url: "https://www.gov.pl/web/wody-polskie/pozwolenie-wodnoprawne",
+      content_digest: "a".repeat(64),
+      content_type: "text/html",
+      byte_length: 58623,
+      selector,
+      as_of: "2026-09-20",
+      observed_at: "2026-09-20T12:00:00Z"
+    });
+    expect(snapshot.selector).toEqual(selector);
+    expect(snapshot.as_of).toBe("2026-09-20");
+
+    const proposal = ContentRegulatorySourceFactProposalSchema.parse({
+      proposal_id: "regulatory_proposal_operat",
+      candidate_id: snapshot.candidate_id,
+      profile_id: snapshot.profile_id,
+      profile_version: snapshot.profile_version,
+      source_url: snapshot.source_url,
+      source_title: "Wody Polskie: pozwolenie wodnoprawne",
+      source_snapshot_id: snapshot.snapshot_id,
+      source_snapshot_digest: snapshot.content_digest,
+      observed_on: "2026-09-20",
+      selector,
+      as_of: "2026-09-20",
+      proposed_fact: "Fakt ograniczony do wskazanego źródła i zakresu wymaga review.",
+      covered_requirement_ids: ["operat_scope_and_exceptions"],
+      codex_run_id: "codex_regulatory_operat",
+      status: "ready",
+      human_review_required: true,
+      created_at: "2026-09-20T12:01:00Z"
+    });
+    expect(ContentRegulatorySourceFactProposalResponseSchema.parse({
+      status: "ready",
+      proposal,
+      reason: "Przygotowano propozycję.",
+      safe_next_step: "Sprawdź propozycję."
+    }).proposal?.selector).toEqual(selector);
+
+    expect(ContentRegulatorySourceReviewCommandSchema.parse({
+      candidate_id: snapshot.candidate_id,
+      expected_source_url: snapshot.source_url,
+      expected_profile_version: snapshot.profile_version,
+      expected_source_snapshot_id: snapshot.snapshot_id,
+      expected_source_snapshot_digest: snapshot.content_digest,
+      expected_selector: selector,
+      expected_as_of: "2026-09-20",
+      reviewed_fact: "Fakt ograniczony do wskazanego źródła i zakresu wymaga review.",
+      covered_requirement_ids: ["operat_scope_and_exceptions"],
+      decision: "accepted",
+      reviewer: "Wilku"
+    }).expected_selector).toEqual(selector);
+
+    expect(ContentRegulatorySourceFactProposalReviewCommandSchema.parse({
+      expected_source_snapshot_id: snapshot.snapshot_id,
+      expected_source_snapshot_digest: snapshot.content_digest,
+      expected_selector: selector,
+      expected_as_of: "2026-09-20",
+      decision: "accepted",
+      reviewer: "Wilku"
+    }).expected_as_of).toBe("2026-09-20");
+
+    const review = ContentRegulatorySourceReviewSchema.parse({
+      review_id: "regulatory_review_operat",
+      candidate_id: snapshot.candidate_id,
+      profile_id: snapshot.profile_id,
+      profile_version: snapshot.profile_version,
+      service_card_ids: [],
+      canonical_paths: ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      source_url: snapshot.source_url,
+      source_title: "Wody Polskie: pozwolenie wodnoprawne",
+      observed_on: "2026-09-20",
+      source_snapshot_id: snapshot.snapshot_id,
+      source_snapshot_digest: snapshot.content_digest,
+      selector,
+      as_of: "2026-09-20",
+      reviewed_fact: "Fakt ograniczony do wskazanego źródła i zakresu wymaga review.",
+      covered_requirement_ids: ["operat_scope_and_exceptions"],
+      decision: "accepted",
+      reviewer: "Wilku",
+      reviewed_at: "2026-09-20T12:02:00Z"
+    });
+    expect(ContentRegulatorySourceReviewListSchema.parse({ reviews: [review] }).reviews[0].as_of)
+      .toBe("2026-09-20");
+  });
+
+  it("rejects selector and candidate scope mismatches", () => {
+    expect(ContentRegulatorySourceSelectorSchema.safeParse({
+      ...selector,
+      kind: "provision_range",
+      start_anchor: "Art. 389."
+    }).success).toBe(false);
+    expect(ContentRegulatorySourceSelectorSchema.safeParse({
+      ...selector,
+      max_chars: 999
+    }).success).toBe(false);
+    expect(ContentRegulatorySourceSelectorSchema.safeParse({
+      ...selector,
+      required_anchors: ["   "]
+    }).success).toBe(false);
+    expect(ContentRegulatorySourceSelectorSchema.safeParse({
+      ...selector,
+      residual_forbidden_anchors: [" Pozwolenie wodnoprawne "]
+    }).success).toBe(false);
+    expect(ContentRegulatoryReviewCandidateSchema.safeParse({
+      candidate_id: "operat_wody_polskie_2026_r1",
+      source_url: "https://www.gov.pl/web/wody-polskie/pozwolenie-wodnoprawne",
+      source_title: "Wody Polskie: pozwolenie wodnoprawne",
+      observed_on: "2026-09-20",
+      requirement_ids: ["operat_scope_and_exceptions"],
+      requirement_labels: ["zakres operatu"],
+      selector,
+      review_status: "review_required",
+      safe_next_step: "Sprawdź bieżące źródło urzędowe."
+    }).success).toBe(false);
   });
 });
 

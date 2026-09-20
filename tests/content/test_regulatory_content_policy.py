@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 import wilq.content.regulatory.policy as regulatory_policy
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.regulatory.planning import regulatory_planning_source_facts
 from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     ContentRegulatoryRequirement,
+    ContentRegulatoryReviewCandidate,
     ContentRegulatorySourceCandidate,
     regulatory_content_coverage,
     regulatory_content_profile,
@@ -323,6 +326,64 @@ def test_environmental_assessment_is_a_data_profile_with_official_review_candida
     } == {requirement.id for requirement in profile.requirements}
 
 
+def test_operat_wodnoprawny_profile_binds_exact_canonical_path_and_official_sources() -> None:
+    canonical_path = "/operat-wodnoprawny-wszystko-co-musisz-wiedziec"
+    profile = regulatory_content_profile(canonical_path=canonical_path)
+
+    assert profile is not None
+    assert profile.id == "operat_wodnoprawny"
+    assert profile.canonical_paths == [canonical_path]
+    assert {requirement.id for requirement in profile.requirements} == {
+        "operat_scope_and_exceptions",
+        "operat_application_and_contents",
+        "operat_procedure_timing",
+        "operat_validity",
+        "operat_authority",
+        "operat_2026_administrative_charges",
+    }
+
+    candidates = [
+        candidate
+        for candidate in regulatory_source_candidates()
+        if candidate.profile_id == profile.id
+    ]
+    assert len(candidates) == 4
+    assert {
+        candidate.source_url for candidate in candidates
+    } == {
+        "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+        "https://eli.gov.pl/api/acts/DU/2025/1691/text/T/D20251691L.pdf",
+        "https://www.gov.pl/web/wody-polskie/pozwolenie-wodnoprawne",
+        "https://eli.gov.pl/api/acts/MP/2025/717/text/O/M20250717.pdf",
+    }
+    assert all(candidate.canonical_paths == [canonical_path] for candidate in candidates)
+    assert all(candidate.selector is not None for candidate in candidates)
+    assert all(candidate.as_of is not None for candidate in candidates)
+
+
+def test_operat_profile_does_not_admit_future_2027_clause_or_market_price_scope() -> None:
+    profile = regulatory_content_profile(
+        canonical_path="/operat-wodnoprawny-wszystko-co-musisz-wiedziec"
+    )
+    assert profile is not None
+    profile_text = " ".join(
+        [
+            requirement.label
+            + " "
+            + requirement.reason
+            + " "
+            + " ".join(
+                assertion.label + " " + " ".join(assertion.required_any_of)
+                for assertion in requirement.document_assertions
+            )
+            for requirement in profile.requirements
+        ]
+    ).casefold()
+    assert "2027" not in profile_text
+    assert "cena rynkowa" not in profile_text
+    assert "stawka opłaty administracyjnej" in profile_text
+
+
 def test_environmental_assessment_assertion_accepts_polish_case_used_in_heading() -> None:
     profile = regulatory_content_profile(
         service_card_id="ekologus_service_environmental_compliance_audit"
@@ -374,6 +435,27 @@ def test_review_candidates_are_current_exact_and_never_complete_coverage() -> No
     assert not coverage.complete
     assert [item.candidate_id for item in candidates] == ["water_permit_scope_candidate"]
     assert candidates[0].requirement_labels == ["zakres operatu"]
+
+
+def test_review_candidate_rejects_bounded_selector_without_as_of() -> None:
+    source_candidate = next(
+        candidate
+        for candidate in regulatory_source_candidates()
+        if candidate.selector is not None
+    )
+    assert source_candidate.selector is not None
+
+    with pytest.raises(ValueError, match="as-of"):
+        ContentRegulatoryReviewCandidate(
+            candidate_id=source_candidate.candidate_id,
+            source_url=source_candidate.source_url,
+            source_title=source_candidate.source_title,
+            observed_on=source_candidate.observed_on,
+            requirement_ids=source_candidate.requirement_ids,
+            requirement_labels=["Zakres źródła"],
+            selector=source_candidate.selector,
+            safe_next_step=source_candidate.safe_next_step,
+        )
 
 
 def test_unofficial_review_candidate_is_not_exposed_for_a_profile() -> None:

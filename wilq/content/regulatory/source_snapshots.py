@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Literal
@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from wilq.content.regulatory.policy import (
     ContentRegulatoryProfile,
     ContentRegulatorySourceCandidate,
+    ContentRegulatorySourceSelector,
     regulatory_candidate_profile,
     regulatory_source_candidates,
 )
@@ -44,6 +45,8 @@ class ContentRegulatorySourceSnapshot(BaseModel):
     content_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     content_type: str = Field(min_length=1)
     byte_length: int = Field(ge=1, le=_MAX_SNAPSHOT_BYTES)
+    selector: ContentRegulatorySourceSelector | None = None
+    as_of: date | None = None
     observed_at: datetime
 
     @model_validator(mode="after")
@@ -129,6 +132,8 @@ class RegulatorySourceSnapshotStore:
             content_digest=sha256(body).hexdigest(),
             content_type=content_type,
             byte_length=len(body),
+            selector=candidate.selector,
+            as_of=candidate.as_of,
             observed_at=observed_at,
         )
         with self._connect() as connection:
@@ -299,7 +304,19 @@ def _snapshot_id(
     candidate: ContentRegulatorySourceCandidate,
     observed_at: datetime,
 ) -> str:
-    payload = f"{candidate.candidate_id}:{observed_at.isoformat()}"
+    selector_scope = json.dumps(
+        {
+            "selector": (
+                None
+                if candidate.selector is None
+                else candidate.selector.model_dump(mode="json")
+            ),
+            "as_of": None if candidate.as_of is None else candidate.as_of.isoformat(),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    payload = f"{candidate.candidate_id}:{selector_scope}:{observed_at.isoformat()}"
     return f"regulatory_snapshot_{sha256(payload.encode('utf-8')).hexdigest()[:24]}"
 
 

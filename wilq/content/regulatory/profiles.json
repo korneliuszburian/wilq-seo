@@ -511,6 +511,72 @@
           ]
         }
       ]
+    },
+    {
+      "id": "operat_wodnoprawny",
+      "version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "official_source_hosts": ["eli.gov.pl", "www.gov.pl"],
+      "max_source_age_days": 365,
+      "requirements": [
+        {
+          "id": "operat_scope_and_exceptions",
+          "label": "zakres obowiązku i wyjątki pozwolenia wodnoprawnego",
+          "reason": "Treść musi rozróżniać przypadki wymagające pozwolenia wodnoprawnego od ustawowych wyjątków i nie może przedstawiać obowiązku jako uniwersalnego.",
+          "document_assertions": [
+            {"id": "permit_scope", "label": "zakres pozwolenia wodnoprawnego", "required_any_of": ["pozwolenie wodnoprawne", "wymagane pozwolenie"]},
+            {"id": "permit_exceptions", "label": "wyjątki od obowiązku", "required_any_of": ["nie wymaga pozwolenia", "zwolnien", "wyjątk"]}
+          ]
+        },
+        {
+          "id": "operat_application_and_contents",
+          "label": "wniosek i zawartość operatu wodnoprawnego",
+          "reason": "Treść musi opisywać wniosek oraz wymagane elementy operatu, w tym jego część opisową i graficzną, bez tworzenia zamkniętej listy poza źródłem.",
+          "document_assertions": [
+            {"id": "application", "label": "wniosek o pozwolenie", "required_any_of": ["wniosek o wydanie pozwolenia", "wniosek"]},
+            {"id": "operat", "label": "operat wodnoprawny", "required_any_of": ["operat wodnoprawny"]},
+            {"id": "operat_description", "label": "część opisowa operatu", "required_any_of": ["część opisowa"]},
+            {"id": "operat_graphics", "label": "część graficzna operatu", "required_any_of": ["część graficzna"]}
+          ]
+        },
+        {
+          "id": "operat_procedure_timing",
+          "label": "terminy postępowania administracyjnego",
+          "reason": "Terminy wymagają oparcia w aktualnym Kodeksie postępowania administracyjnego; nie wolno zastępować ich praktycznym przedziałem bez podstawy.",
+          "document_assertions": [
+            {"id": "one_month", "label": "termin miesiąca", "required_any_of": ["miesiąca", "w ciągu miesiąca"]},
+            {"id": "two_months", "label": "termin dwóch miesięcy", "required_any_of": ["dwóch miesięcy", "dwa miesiące"]}
+          ]
+        },
+        {
+          "id": "operat_validity",
+          "label": "warianty okresu obowiązywania pozwolenia",
+          "reason": "Okres obowiązywania zależy od rodzaju zgody i podstawy prawnej; liczby 10, 30, 4 i 5 lat oraz brak terminu trzeba przypisać do właściwego wariantu.",
+          "document_assertions": [
+            {"id": "validity_period", "label": "okres obowiązywania", "required_any_of": ["okres obowiązywania", "na czas oznaczony", "bezterminowo"]},
+            {"id": "validity_variants", "label": "warianty okresu", "required_any_of": ["10 lat", "30 lat", "4 lat", "5 lat"]}
+          ]
+        },
+        {
+          "id": "operat_authority",
+          "label": "właściwość organu",
+          "reason": "Treść musi wskazywać właściwy organ z zastrzeżeniem rodzaju sprawy i właściwości ustawowej, bez przypisywania jednej instytucji wszystkich decyzji.",
+          "document_assertions": [
+            {"id": "competent_authority", "label": "właściwy organ", "required_any_of": ["właściwy organ", "organ właściwy"]},
+            {"id": "polish_waters", "label": "Wody Polskie", "required_any_of": ["Wody Polskie"]}
+          ]
+        },
+        {
+          "id": "operat_2026_administrative_charges",
+          "label": "stawka opłaty administracyjnej w 2026 r.",
+          "reason": "Kwota ma pochodzić z urzędowej stawki opłaty za wydanie pozwolenia wodnoprawnego na 2026 r.; nie wolno zastępować jej opłatą skarbową ani ceną rynkową usługi.",
+          "document_assertions": [
+            {"id": "administrative_charge", "label": "stawka opłaty administracyjnej", "required_any_of": ["opłaty za wydanie pozwolenia wodnoprawnego", "opłatę za wydanie pozwolenia"]},
+            {"id": "fee_year", "label": "stawka na 2026 r.", "required_any_of": ["2026 r.", "2026 roku"]}
+          ]
+        }
+      ]
     }
   ]
 }

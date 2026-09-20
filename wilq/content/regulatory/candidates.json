@@ -424,6 +424,123 @@
       "requirement_ids": ["green_deal_sectoral_implementation"],
       "review_status": "review_required",
       "safe_next_step": "Potwierdź sektorowe wdrożenie przez odrębne akty i zachowaj warunkowy zakres dla konkretnej działalności firmy."
+    },
+    {
+      "candidate_id": "operat_prawo_wodne_2025_960_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
+      "observed_on": "2026-09-20",
+      "requirement_ids": [
+        "operat_scope_and_exceptions",
+        "operat_application_and_contents",
+        "operat_validity",
+        "operat_authority"
+      ],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 389.",
+        "end_anchor": "Art. 409.",
+        "required_anchors": [
+          "Art. 389.",
+          "Art. 390.",
+          "Art. 397.",
+          "Art. 399.",
+          "Art. 400.",
+          "Art. 407.",
+          "Art. 408.",
+          "Art. 409."
+        ],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "excluded_ranges": [
+          {"start_anchor": "<4a)", "end_anchor": ";>"},
+          {"start_anchor": "<5a.", "end_anchor": ".>"},
+          {"start_anchor": "<8.", "end_anchor": ".>"},
+          {"start_anchor": "Dodany pkt 4a w", "end_anchor": "poz. 1156)."},
+          {"start_anchor": "Dodany ust. 5a w", "end_anchor": "poz. 1156)."}
+        ],
+        "max_chars": 120000,
+        "context_chars": 12000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Sprawdź zakres obowiązku, wyjątki, właściwość organu, zawartość operatu i wariant okresu obowiązywania w aktualnym tekście ustawy."
+    },
+    {
+      "candidate_id": "operat_kpa_2025_1691_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/1691/text/T/D20251691L.pdf",
+      "source_title": "ELI: Kodeks postępowania administracyjnego — tekst jednolity Dz.U. 2025 poz. 1691",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_procedure_timing"],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 35.",
+        "end_anchor": "Art. 37.",
+        "required_anchors": ["Art. 35.", "Art. 36.", "Art. 37."],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "max_chars": 60000,
+        "context_chars": 8000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź terminy miesiąca i dwóch miesięcy oraz tryb zawiadomienia o zwłoce w aktualnym Kodeksie postępowania administracyjnego."
+    },
+    {
+      "candidate_id": "operat_wody_polskie_2026_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://www.gov.pl/web/wody-polskie/pozwolenie-wodnoprawne",
+      "source_title": "Wody Polskie: pozwolenie wodnoprawne",
+      "observed_on": "2026-09-20",
+      "requirement_ids": [
+        "operat_scope_and_exceptions",
+        "operat_application_and_contents",
+        "operat_authority"
+      ],
+      "selector": {
+        "kind": "bounded_document",
+        "required_anchors": ["Pozwolenie wodnoprawne", "operat wodnoprawny"],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "max_chars": 75000,
+        "context_chars": 0
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Sprawdź urzędowy opis zakresu pozwolenia, operatu i właściwego organu; zachowaj warunkowy charakter informacji."
+    },
+    {
+      "candidate_id": "operat_oplaty_2026_2025_717_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/MP/2025/717/text/O/M20250717.pdf",
+      "source_title": "ELI: stawka opłaty za wydanie pozwolenia wodnoprawnego w 2026 r. — M.P. 2025 poz. 717",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_2026_administrative_charges"],
+      "selector": {
+        "kind": "heading_set",
+        "required_anchors": ["opłaty za wydanie pozwolenia wodnoprawnego"],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "max_chars": 30000,
+        "context_chars": 14000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź wyłącznie urzędową stawkę administracyjną na 2026 r.; nie wpisuj ceny rynkowej przygotowania operatu."
     }
   ]
 }

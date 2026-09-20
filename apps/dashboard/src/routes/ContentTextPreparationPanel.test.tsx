@@ -20,6 +20,7 @@ vi.mock("../lib/api", async (importOriginal) => ({
 type PlanningInput = NonNullable<ContentPlanningProposalResponse["input_summary"]>;
 type PlanningProposal = ContentPlanningProposalResponse["proposal"];
 type GscQueryRow = PlanningInput["gsc_query_rows"][number];
+type RegulatorySourceSelector = NonNullable<PlanningInput["regulatory_review_candidates"][number]["selector"]>;
 
 function planningInput(overrides: Partial<PlanningInput> = {}): PlanningInput {
   return {
@@ -110,7 +111,9 @@ function renderEvidence(input: PlanningInput, proposal: PlanningProposal = null)
 
 function readyRegulatoryProposal(
   proposalId = "regulatory_fact_proposal_scope",
-  snapshotId = "regulatory_snapshot_scope"
+  snapshotId = "regulatory_snapshot_scope",
+  selector?: RegulatorySourceSelector,
+  asOf?: string
 ) {
   return {
     status: "ready",
@@ -129,7 +132,8 @@ function readyRegulatoryProposal(
       codex_run_id: `codex_${proposalId}`,
       status: "ready",
       human_review_required: true,
-      created_at: "2026-07-31T12:00:00Z"
+      created_at: "2026-07-31T12:00:00Z",
+      ...(selector ? { selector, as_of: asOf } : {})
     },
     reason: "Pobrano snapshot.",
     safe_next_step: "Sprawdź źródło."
@@ -207,6 +211,8 @@ describe("PlanningEvidenceDetails", () => {
       {
         expected_source_snapshot_id: "snapshot_p2",
         expected_source_snapshot_digest: "d".repeat(64),
+        expected_selector: null,
+        expected_as_of: null,
         decision: "accepted",
         reviewer: "Wilku"
       }
@@ -246,11 +252,47 @@ describe("PlanningEvidenceDetails", () => {
       {
         expected_source_snapshot_id: "snapshot_reload",
         expected_source_snapshot_digest: "d".repeat(64),
+        expected_selector: null,
+        expected_as_of: null,
         decision: "accepted",
         reviewer: "Wilku"
       }
     ));
     expect(postContentRegulatorySourceFactProposal).not.toHaveBeenCalled();
+  });
+
+  it("forwards the reviewed selector and as-of date when recording a scoped proposal", async () => {
+    const selector: RegulatorySourceSelector = {
+      kind: "bounded_document",
+      required_anchors: ["Pozwolenie wodnoprawne"],
+      excluded_anchors: [],
+      residual_forbidden_anchors: [],
+      excluded_ranges: [],
+      max_chars: 1000,
+      context_chars: 0
+    };
+    vi.mocked(getContentRegulatorySourceFactProposal).mockResolvedValue(
+      readyRegulatoryProposal("proposal_selector", "snapshot_selector", selector, "2026-09-20") as never
+    );
+    vi.mocked(postContentRegulatorySourceFactProposalReview).mockResolvedValue({} as never);
+    renderEvidence(planningInput({
+      regulatory_review_candidates: [regulatoryCandidate()]
+    }));
+
+    fireEvent.click(screen.getByText("Na jakich danych oprze się tekst"));
+    fireEvent.click(await screen.findByRole("button", { name: "Przyjmij propozycję po review" }));
+
+    await waitFor(() => expect(postContentRegulatorySourceFactProposalReview).toHaveBeenCalledWith(
+      "proposal_selector",
+      {
+        expected_source_snapshot_id: "snapshot_selector",
+        expected_source_snapshot_digest: "d".repeat(64),
+        expected_selector: selector,
+        expected_as_of: "2026-09-20",
+        decision: "accepted",
+        reviewer: "Wilku"
+      }
+    ));
   });
 
   it("shows only exact planning evidence and GSC queries used by the ready plan", () => {

@@ -153,6 +153,8 @@ function RegulatorySourceReviewCandidate({
       return postContentRegulatorySourceFactProposalReview(proposal.proposal_id, {
         expected_source_snapshot_id: proposal.source_snapshot_id,
         expected_source_snapshot_digest: proposal.source_snapshot_digest,
+        expected_selector: proposal.selector ?? null,
+        expected_as_of: proposal.as_of ?? null,
         decision,
         reviewer: "Wilku"
       });
