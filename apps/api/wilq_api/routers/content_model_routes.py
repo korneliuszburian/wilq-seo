@@ -40,6 +40,9 @@ from apps.api.wilq_api.routers.content_initial_draft import (
 from apps.api.wilq_api.routers.content_landing_hub_authorization import (
     register_content_landing_hub_authorization_routes,
 )
+from apps.api.wilq_api.routers.content_material_review import (
+    register_content_material_review_routes,
+)
 from apps.api.wilq_api.routers.content_new_page_brief import (
     register_content_new_page_brief_routes,
 )
@@ -119,6 +122,7 @@ def register_content_model_routes(
     register_content_service_profile_card_review_routes(router)
     register_content_research_packet_routes(router, snapshot_loader=review_snapshot_loader)
     register_content_landing_hub_authorization_routes(router)
+    register_content_material_review_routes(router)
     register_content_production_command_route(router, snapshot_loader=snapshot_loader)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)

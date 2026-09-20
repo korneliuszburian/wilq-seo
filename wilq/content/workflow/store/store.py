@@ -68,6 +68,9 @@ from wilq.content.workflow.store.store_initial_draft_authority import (
 from wilq.content.workflow.store.store_landing_hub import (
     ContentLandingHubAuthorizationStoreMixin,
 )
+from wilq.content.workflow.store.store_material_review import (
+    ContentMaterialReviewStoreMixin,
+)
 from wilq.content.workflow.store.store_production_classification import (
     ProductionClassificationStoreMixin,
 )
@@ -635,6 +638,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 class ContentWorkflowStore(
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
+    ContentMaterialReviewStoreMixin,
     ContentCurrentDispositionAuthorityStoreMixin,
     ContentCurrentVerificationStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,

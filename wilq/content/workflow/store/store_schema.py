@@ -373,6 +373,85 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_material_review_previews (
+      preview_id TEXT PRIMARY KEY,
+      preview_digest TEXT NOT NULL UNIQUE,
+      work_item_id TEXT NOT NULL,
+      catalog_id TEXT NOT NULL,
+      canonical_path TEXT NOT NULL,
+      public_url TEXT NOT NULL,
+      catalog_item_digest TEXT NOT NULL,
+      catalog_snapshot_digest TEXT NOT NULL,
+      prepared_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_previews_no_update
+    BEFORE UPDATE ON content_material_review_previews
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review previews are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_previews_no_delete
+    BEFORE DELETE ON content_material_review_previews
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review previews are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_previews_no_replace
+    BEFORE INSERT ON content_material_review_previews
+    WHEN EXISTS (
+      SELECT 1 FROM content_material_review_previews
+      WHERE preview_id = NEW.preview_id OR preview_digest = NEW.preview_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review previews are immutable');
+    END
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS content_material_review_receipts (
+      review_id TEXT PRIMARY KEY,
+      review_digest TEXT NOT NULL UNIQUE,
+      work_item_id TEXT NOT NULL,
+      preview_id TEXT NOT NULL,
+      preview_digest TEXT NOT NULL,
+      decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
+      reviewer TEXT NOT NULL,
+      reviewed_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      UNIQUE (work_item_id, preview_id)
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_receipts_no_update
+    BEFORE UPDATE ON content_material_review_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_receipts_no_delete
+    BEFORE DELETE ON content_material_review_receipts
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review receipts are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_material_review_receipts_no_replace
+    BEFORE INSERT ON content_material_review_receipts
+    WHEN EXISTS (
+      SELECT 1 FROM content_material_review_receipts
+      WHERE review_id = NEW.review_id OR review_digest = NEW.review_digest
+         OR (work_item_id = NEW.work_item_id AND preview_id = NEW.preview_id)
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content material review receipts are immutable');
+    END
+    """,
+    """
     CREATE TRIGGER IF NOT EXISTS content_current_verifications_no_update
     BEFORE UPDATE ON content_current_verifications
     BEGIN
@@ -1012,6 +1091,29 @@ def _content_workflow_schema_is_current(connection: sqlite3.Connection) -> bool:
             "catalog_snapshot_digest",
             "recorded_by",
             "recorded_at",
+            "payload_json",
+        },
+        "content_material_review_previews": {
+            "preview_id",
+            "preview_digest",
+            "work_item_id",
+            "catalog_id",
+            "canonical_path",
+            "public_url",
+            "catalog_item_digest",
+            "catalog_snapshot_digest",
+            "prepared_at",
+            "payload_json",
+        },
+        "content_material_review_receipts": {
+            "review_id",
+            "review_digest",
+            "work_item_id",
+            "preview_id",
+            "preview_digest",
+            "decision",
+            "reviewer",
+            "reviewed_at",
             "payload_json",
         },
         "content_human_reviews": {"updated_at"},

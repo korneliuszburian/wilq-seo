@@ -80,6 +80,7 @@ from wilq.content.workflow.documents.revisions import (
     ContentDraftRevisionState,
     content_draft_package_digest,
 )
+from wilq.content.workflow.material_review import read_content_material_review
 from wilq.content.workflow.pipeline_steps.entry import (
     ContentWorkflowEntryResponse,
     build_content_workflow_entry,
@@ -120,7 +121,12 @@ def semantic_review_snapshot_for_work_item_or_404(
     revision = revision_state.latest_revision
     binding = None if revision is None else revision.refresh_preparation_binding
     if binding is None:
-        return _snapshot_for_work_item_or_404(work_item_id)
+        assembled = _snapshot_for_work_item_or_404(work_item_id)
+        return _apply_semantic_material_gate(
+            assembled,
+            work_item_id=work_item_id,
+            revision_state=revision_state,
+        )
     canonical = _snapshot_for_work_item_or_404(
         work_item_id,
         revision_state_override=revision_state,
@@ -277,23 +283,92 @@ def _binding_aware_revision_workspace(
     package = resolved_snapshot.draft_package.draft_package_result.draft_package
     if planning is None or package is None:
         return canonical_snapshot.revision_workspace
-    workspace = build_content_draft_revision_workspace(
-        item=canonical_snapshot.preflight.item,
+    workspace = _recompute_semantic_revision_workspace(
+        assembled_snapshot=resolved_snapshot,
+        planning_snapshot=canonical_snapshot,
+        revision_state=revision_state,
+        work_item_id=getattr(canonical_snapshot.preflight.item, "id", ""),
+    )
+    return workspace
+
+
+def _apply_semantic_material_gate(
+    assembled_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    *,
+    work_item_id: str,
+    revision_state: ContentDraftRevisionState,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    """Rebuild the exact workspace once material review can change its gate."""
+
+    if (
+        assembled_snapshot.planning_workspace is None
+        or assembled_snapshot.revision_workspace is None
+    ):
+        return assembled_snapshot
+    workspace = _recompute_semantic_revision_workspace(
+        assembled_snapshot=assembled_snapshot,
+        planning_snapshot=assembled_snapshot,
+        revision_state=revision_state,
+        work_item_id=work_item_id,
+    )
+    return assembled_snapshot.model_copy(update={"revision_workspace": workspace})
+
+
+def _recompute_semantic_revision_workspace(
+    *,
+    assembled_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    planning_snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision_state: ContentDraftRevisionState,
+    work_item_id: str,
+) -> ContentDraftRevisionWorkspace:
+    planning = planning_snapshot.planning_workspace
+    package = assembled_snapshot.draft_package.draft_package_result.draft_package
+    workspace = planning_snapshot.revision_workspace
+    if planning is None or package is None or workspace is None:
+        raise ValueError("Semantic material gate requires planning, package and workspace.")
+    rebuilt_workspace = build_content_draft_revision_workspace(
+        item=planning_snapshot.preflight.item,
         draft_package=package,
         state=revision_state,
         structured_contract_present=(
-            canonical_snapshot.structured_generation.structured_generation_result.contract
+            planning_snapshot.structured_generation.structured_generation_result.contract
             is not None
         ),
-        planning_digest=planning.proposal.planning_digest,
+        planning_digest=(
+            planning.proposal.planning_digest
+            if getattr(planning, "section_map_current", True)
+            else None
+        ),
         planning_input_digest=planning.proposal.planning_input_digest,
         service_card_id=planning.proposal.service_card_id,
     )
     return _gate_revision_workspace(
-        workspace,
+        rebuilt_workspace,
         planning,
-        material_confidence=canonical_snapshot.preflight.item.wordpress_content_material_confidence,
+        material_confidence=_semantic_material_confidence(
+            work_item_id=work_item_id,
+            original_confidence=planning_snapshot.preflight.item.wordpress_content_material_confidence,
+        ),
     )
+
+
+def _semantic_material_confidence(
+    *,
+    work_item_id: str,
+    original_confidence: str | None,
+) -> str | None:
+    """Remove only the material blocker after exact current receipt evaluation."""
+
+    if original_confidence != "review_required" or not work_item_id:
+        return original_confidence
+    try:
+        current = read_content_material_review(
+            work_item_id=work_item_id,
+            store=content_workflow_store(),
+        )
+    except (LookupError, RuntimeError, ValueError):
+        return original_confidence
+    return None if current.status == "approved_current" else original_confidence
 
 
 @router.get(

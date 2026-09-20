@@ -40,6 +40,8 @@ SEED_SHA256 = "b" * 64
 EXPECTED_POST_S5_TABLES = frozenset(
     {
         "content_authoring_inventory_receipts",
+        "content_material_review_previews",
+        "content_material_review_receipts",
         "action_mutation_audits",
         "action_validation_states",
         "ads_strategy_reviews",
@@ -115,6 +117,12 @@ EXPECTED_POST_S5_TRIGGERS = frozenset(
         "content_authoring_inventory_receipts_no_delete",
         "content_authoring_inventory_receipts_no_replace",
         "content_authoring_inventory_receipts_no_update",
+        "content_material_review_previews_no_delete",
+        "content_material_review_previews_no_replace",
+        "content_material_review_previews_no_update",
+        "content_material_review_receipts_no_delete",
+        "content_material_review_receipts_no_replace",
+        "content_material_review_receipts_no_update",
         "content_current_disposition_proposals_no_delete",
         "content_current_disposition_proposals_no_replace",
         "content_current_disposition_proposals_no_update",
