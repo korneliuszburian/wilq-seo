@@ -150,6 +150,7 @@ class _FakePinnedSocket:
         self.connected_to: tuple[object, ...] | None = None
         self.request: bytes | None = None
         self.timeout: float | None = None
+        self.closed = False
 
     def settimeout(self, value: float) -> None:
         self.timeout = value
@@ -167,7 +168,17 @@ class _FakePinnedSocket:
         return value
 
     def close(self) -> None:
-        return None
+        self.closed = True
+
+
+class _FailingConnectSocket(_FakePinnedSocket):
+    def __init__(self, clock: _FakeClock) -> None:
+        super().__init__(b"")
+        self._clock = clock
+
+    def connect(self, address: tuple[object, ...]) -> None:
+        self._clock.value += 1.0
+        raise OSError(101, f"network unreachable: {address}")
 
 
 class _FakeTLSContext:
@@ -239,6 +250,66 @@ def test_pinned_reader_connects_to_validated_ip_and_extracts_visible_html() -> N
     assert b"GET /standard/75080.html HTTP/1.1" in sockets[0].request
     assert b"Host: www.iso.org\r\n" in sockets[0].request
     assert b"Accept-Encoding: identity\r\n" in sockets[0].request
+
+
+def test_pinned_reader_retries_next_validated_address_without_reresolving() -> None:
+    body = b"<html><body>ipv4 success</body></html>"
+    response = (
+        b"HTTP/1.1 200 OK\r\n"
+        b"Content-Type: text/html; charset=utf-8\r\n"
+        + f"Content-Length: {len(body)}\r\n\r\n".encode()
+        + body
+    )
+    clock = _FakeClock()
+    sockets: list[_FakePinnedSocket] = []
+    resolutions = 0
+
+    def resolver(*_args: object, **_kwargs: object):
+        nonlocal resolutions
+        resolutions += 1
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("93.184.216.34", 443),
+            ),
+            (
+                socket.AF_INET6,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("2606:4700:4700::1111", 443, 0, 0),
+            ),
+        ]
+
+    def socket_factory(family: int, *_args: object):
+        item: _FakePinnedSocket = (
+            _FailingConnectSocket(clock)
+            if family == socket.AF_INET
+            else _FakePinnedSocket(response)
+        )
+        sockets.append(item)
+        return item
+
+    reader = OfficialGuidanceHTTPSReader(
+        resolver=resolver,
+        socket_factory=socket_factory,
+        tls_context_factory=_FakeTLSContext,
+        clock=clock,
+        timeout_seconds=3.0,
+    )
+
+    material = reader.read(OFFICIAL_GUIDANCE_SOURCE_URL)
+
+    assert material.content_text == "ipv4 success"
+    assert resolutions == 1
+    assert len(sockets) == 2
+    assert sockets[0].closed is True
+    assert sockets[1].closed is True
+    assert sockets[1].connected_to == ("2606:4700:4700::1111", 443, 0, 0)
+    assert sockets[1].timeout is not None and sockets[1].timeout <= 2.0
 
 
 def test_pinned_reader_rejects_private_dns_before_connect() -> None:

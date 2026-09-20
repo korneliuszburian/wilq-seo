@@ -180,7 +180,7 @@ class OfficialGuidanceHTTPSReader:
     """Fetch one exact ISO URL over a pinned, direct HTTPS socket.
 
     DNS is resolved once. Every returned address must be globally routable,
-    and the selected IP is connected directly before TLS is wrapped with the
+    and each selected IP is connected directly before TLS is wrapped with the
     original hostname for certificate and SNI verification. No URL opener,
     proxy environment, cookie jar, redirect handler, or credential source is
     involved.
@@ -210,43 +210,58 @@ class OfficialGuidanceHTTPSReader:
     def read(self, source_url: str) -> OfficialGuidanceMaterial:
         parsed = _parse_exact_source_url(source_url)
         deadline = self._clock() + self._timeout_seconds
-        family, socktype, proto, sockaddr = self._resolve(
+        addresses = self._resolve(
             parsed.hostname or "",
             deadline=deadline,
         )
-        raw_socket: Any | None = None
-        tls_socket: Any | None = None
-        try:
-            raw_socket = self._socket_factory(family, socktype, proto)
-            raw_socket.settimeout(self._operation_timeout(deadline))
-            raw_socket.connect(sockaddr)
-            raw_socket.settimeout(self._operation_timeout(deadline))
-            context = self._tls_context_factory()
-            tls_socket = context.wrap_socket(
-                raw_socket,
-                server_hostname=parsed.hostname,
-            )
-            tls_socket.settimeout(self._operation_timeout(deadline))
-            tls_socket.sendall(_http_request(parsed.hostname or "", parsed.path))
-            body = _read_http_response(
-                tls_socket,
-                max_response_bytes=self._max_response_bytes,
-                deadline=deadline,
-                clock=self._clock,
-                operation_timeout=self._timeout_seconds,
-            )
-        except OfficialGuidanceReadError:
-            raise
-        except (OSError, ssl.SSLError, ValueError) as exc:
+        last_transport_error: BaseException | None = None
+        for family, socktype, proto, sockaddr in addresses:
+            raw_socket: Any | None = None
+            tls_socket: Any | None = None
+            try:
+                try:
+                    raw_socket = self._socket_factory(family, socktype, proto)
+                    raw_socket.settimeout(self._operation_timeout(deadline))
+                    raw_socket.connect(sockaddr)
+                    raw_socket.settimeout(self._operation_timeout(deadline))
+                    context = self._tls_context_factory()
+                    tls_socket = context.wrap_socket(
+                        raw_socket,
+                        server_hostname=parsed.hostname,
+                    )
+                    tls_socket.settimeout(self._operation_timeout(deadline))
+                except OfficialGuidanceReadError:
+                    raise
+                except (OSError, ssl.SSLError, ValueError) as exc:
+                    last_transport_error = exc
+                    continue
+                try:
+                    tls_socket.sendall(_http_request(parsed.hostname or "", parsed.path))
+                    body = _read_http_response(
+                        tls_socket,
+                        max_response_bytes=self._max_response_bytes,
+                        deadline=deadline,
+                        clock=self._clock,
+                        operation_timeout=self._timeout_seconds,
+                    )
+                except OfficialGuidanceReadError:
+                    raise
+                except (OSError, ssl.SSLError, ValueError) as exc:
+                    raise OfficialGuidanceReadError(
+                        "official_guidance_transport_unavailable",
+                        "Official-guidance HTTPS transport did not complete safely.",
+                    ) from exc
+                break
+            finally:
+                if tls_socket is not None:
+                    _close_quietly(tls_socket)
+                elif raw_socket is not None:
+                    _close_quietly(raw_socket)
+        else:
             raise OfficialGuidanceReadError(
                 "official_guidance_transport_unavailable",
-                "Official-guidance HTTPS transport did not complete safely.",
-            ) from exc
-        finally:
-            if tls_socket is not None:
-                _close_quietly(tls_socket)
-            elif raw_socket is not None:
-                _close_quietly(raw_socket)
+                "All validated official-guidance addresses failed before HTTP response bytes.",
+            ) from last_transport_error
         try:
             text = _decode_and_extract_html(body)
         except OfficialGuidanceReadError:
@@ -276,7 +291,7 @@ class OfficialGuidanceHTTPSReader:
         hostname: str,
         *,
         deadline: float,
-    ) -> tuple[int, int, int, tuple[Any, ...]]:
+    ) -> tuple[tuple[int, int, int, tuple[Any, ...]], ...]:
         remaining = self._operation_timeout(deadline)
         resolution = _DNS_EXECUTOR.submit(
             self._resolver,
@@ -340,11 +355,20 @@ class OfficialGuidanceHTTPSReader:
                 "official_guidance_transport_unavailable",
                 "Official-guidance DNS returned no usable global address.",
             )
-        family, socktype, proto, _packed, sockaddr = min(
+        ordered = sorted(
             validated,
-            key=lambda item: (item[3], item[0], item[1], item[2]),
+            key=lambda item: (
+                0 if item[0] == socket.AF_INET else 1,
+                item[3],
+                item[0],
+                item[1],
+                item[2],
+            ),
         )
-        return family, socktype, proto, sockaddr
+        return tuple(
+            (family, socktype, proto, sockaddr)
+            for family, socktype, proto, _packed, sockaddr in ordered
+        )
 
 
 class OfficialGuidanceObservationAdapter:
