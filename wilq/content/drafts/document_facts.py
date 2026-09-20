@@ -34,14 +34,18 @@ def document_ready_fact_text(
         sentence.strip() for sentence in _SENTENCE_BOUNDARY.split(stripped) if sentence.strip()
     ]
     normalized_terms = [term.casefold().strip() for term in (protected_terms or []) if term.strip()]
-    kept = [
-        sentence
-        for sentence in sentences
-        if not (
-            WORKING_NOTE.search(sentence)
-            and not any(term in sentence.casefold() for term in normalized_terms)
-        )
-    ]
+    kept: list[str] = []
+    for sentence in sentences:
+        if WORKING_NOTE.search(sentence) is None:
+            kept.append(sentence)
+            continue
+        if not any(term in sentence.casefold() for term in normalized_terms):
+            continue
+        # The sentence carries a protected concept, but a reader must never see
+        # the editorial working note itself. Strip only the note span.
+        cleaned = _without_working_note(sentence)
+        if cleaned:
+            kept.append(cleaned)
     result = " ".join(kept) if kept else stripped
     qualifier = _TRAILING_VERIFICATION_CLAUSE.search(result)
     if qualifier and not any(term in qualifier.group(0).casefold() for term in normalized_terms):
@@ -49,6 +53,17 @@ def document_ready_fact_text(
     if not result:
         return result
     return result[0].upper() + result[1:]
+
+
+def _without_working_note(sentence: str) -> str:
+    """Remove every editorial working-note span while keeping the rest."""
+
+    cleaned = sentence
+    while (match := WORKING_NOTE.search(cleaned)) is not None:
+        cleaned = cleaned[: match.start()] + cleaned[match.end() :]
+    cleaned = re.sub(r"\s*[,;]\s*(?=[.,;]|$)", "", cleaned)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip(" ,;")
+    return cleaned
 
 
 def safe_document_ready_fact_text(
