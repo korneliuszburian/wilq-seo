@@ -26,7 +26,6 @@ from wilq.content.planning.packet_model_projection import (
 from wilq.content.planning.source_pack_projection import (
     project_selected_source_pack_facts,
 )
-from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.research_packet import ContentResearchPacket
 
 # The persisted planning input is intentionally complete: its digest covers
@@ -86,6 +85,12 @@ def compact_planning_input_for_model(
     inventory = payload.get("inventory")
     if isinstance(inventory, dict):
         inventory["sections"] = _model_inventory_sections(inventory.get("sections"))
+    regulatory_coverage = payload.get("regulatory_coverage")
+    if isinstance(regulatory_coverage, dict):
+        # The same approved facts already live in the top-level ``source_facts``
+        # collection. Requirement coverage keeps their exact relationship, so
+        # repeating the full fact records here only inflates the model turn.
+        regulatory_coverage.pop("source_facts", None)
     portfolio = payload.get("query_portfolio")
     if not isinstance(portfolio, dict):
         return payload, {"rows_available": 0, "rows_included": 0}
@@ -141,9 +146,6 @@ def content_planning_turn_request(
                 "do_not_write_vendor": True,
                 "publish_ready": False,
             },
-            "regulatory_document_assertions": (
-                regulatory_turn_context.regulatory_document_assertion_context(planning_input)
-            ),
             "placement_contract": _placement_contract(planning_input),
         },
         ensure_ascii=False,

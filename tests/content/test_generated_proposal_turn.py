@@ -13,7 +13,7 @@ from wilq.content.regulatory.policy import (
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 
 
-def test_planning_turn_exposes_server_owned_regulatory_document_assertions() -> None:
+def test_planning_turn_keeps_document_assertions_out_of_claim_free_directives() -> None:
     planning_input = ContentPlanningInput.model_construct(
         work_item_id="content_work_item_regulated",
         planning_input_digest="a" * 64,
@@ -49,11 +49,4 @@ def test_planning_turn_exposes_server_owned_regulatory_document_assertions() -> 
 
     request = content_planning_turn_request(planning_input, operator_hint="")
 
-    assert json.loads(request.application_context)["regulatory_document_assertions"] == [
-        {
-            "requirement_id": "reporting",
-            "assertion_id": "deadline",
-            "label": "termin 15 marca",
-            "required_any_of": ["15 marca"],
-        }
-    ]
+    assert "regulatory_document_assertions" not in json.loads(request.application_context)

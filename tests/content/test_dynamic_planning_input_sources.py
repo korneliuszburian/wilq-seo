@@ -13,6 +13,7 @@ from wilq.content.briefs.sales import (
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.inventory.records import ContentInventoryRecord, ContentInventoryResolution
+from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.knowledge.work_item_service_profile import (
     ContentWorkItemServiceCandidate,
     ContentWorkItemServiceProfileContext,
@@ -33,10 +34,16 @@ from wilq.content.planning.input_sources import (
     ContentPlanningInventory,
     ContentPlanningInventorySection,
     ContentPlanningSourceAssessment,
+    ContentPlanningSourceFact,
     build_planning_inventory,
     build_source_assessments,
     build_source_facts,
     usable_query_portfolio,
+)
+from wilq.content.regulatory.policy import (
+    ContentRegulatoryCoverage,
+    ContentRegulatoryRequirement,
+    ContentRegulatoryRequirementCoverage,
 )
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.decisions.demand_evidence import (
@@ -87,6 +94,78 @@ def test_model_planning_envelope_compacts_repeated_query_lineage_without_droppin
     ]
     assert planning_input.query_portfolio.gsc_query_rows[0].evidence_ids == [
         f"ev_{index}" for index in range(8)
+    ]
+
+
+def test_model_planning_envelope_keeps_regulatory_facts_once_with_requirement_lineage() -> None:
+    planning_input = ContentPlanningInput.model_construct(
+        source_facts=[
+            ContentPlanningSourceFact(
+                fact_id="fact_deadline",
+                summary="Termin wynika z oficjalnego źródła.",
+                source_connector="official_regulatory_review",
+                source_fact_ids=["source_fact_deadline"],
+                evidence_ids=["ev_deadline"],
+            )
+        ],
+        regulatory_coverage=ContentRegulatoryCoverage(
+            applicability_status="required",
+            profile_id="regulated",
+            profile_version="2026-09",
+            canonical_path="/regulated",
+            requirements=[
+                ContentRegulatoryRequirement(
+                    id="reporting",
+                    label="sprawozdawczość",
+                    reason="Wymaga źródła urzędowego.",
+                )
+            ],
+            requirement_coverage=[
+                ContentRegulatoryRequirementCoverage(
+                    requirement_id="reporting",
+                    source_fact_ids=["source_fact_deadline"],
+                    evidence_ids=["ev_deadline"],
+                )
+            ],
+            source_fact_ids=["source_fact_deadline"],
+            evidence_ids=["ev_deadline"],
+            source_facts=[
+                ContentSourceFact(
+                    source_id="source_fact_deadline",
+                    source_type="legal_update",
+                    privacy_class="commit_safe",
+                    source_url_or_path="https://example.test/official",
+                    extracted_fact="Termin wynika z oficjalnego źródła.",
+                    scope="claim_policy",
+                    freshness_date="2026-09-20",
+                    confidence=1.0,
+                    review_status="approved",
+                    reviewer="Reviewer",
+                    evidence_ids=["ev_deadline"],
+                    source_connectors=["official_regulatory_review"],
+                    target_card_id="regulated_card",
+                    target_card_type="regulatory_source",
+                    target_card_title="Regulated source",
+                    official_source=True,
+                    regulatory_profile_id="regulated",
+                    regulatory_profile_version="2026-09",
+                    regulatory_requirement_ids=["reporting"],
+                    applicable_canonical_paths=["/regulated"],
+                )
+            ],
+        ),
+    )
+
+    compact, _ = compact_planning_input_for_model(planning_input)
+
+    assert compact["source_facts"][0]["fact_id"] == "fact_deadline"
+    assert "source_facts" not in compact["regulatory_coverage"]
+    assert compact["regulatory_coverage"]["requirement_coverage"] == [
+        {
+            "requirement_id": "reporting",
+            "source_fact_ids": ["source_fact_deadline"],
+            "evidence_ids": ["ev_deadline"],
+        }
     ]
 
 
