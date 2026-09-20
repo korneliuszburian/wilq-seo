@@ -63,7 +63,6 @@ from wilq.content.planning.planning_workspace_projection import (  # noqa: F401
     with_current_planning_workspace as _with_current_planning_workspace,
 )
 from wilq.content.planning.proposal_lineage import (
-    canonicalize_regulatory_section_assertions,
     canonicalize_regulatory_section_evidence,
     planning_output_lineage_errors,
 )
@@ -431,7 +430,6 @@ def _validated_planning_output(
         )
     output = canonicalize_model_inventory_headings(planning_input, output)
     output = canonicalize_regulatory_section_evidence(planning_input, output)
-    output = canonicalize_regulatory_section_assertions(planning_input, output)
     quality_errors = planning_output_quality_errors(output, planning_input=planning_input)
     if quality_errors:
         return output, _quality_gate_blocker(quality_errors)

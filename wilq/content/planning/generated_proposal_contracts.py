@@ -5,12 +5,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.planning.directive_policy import regulatory_directive_value_errors
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputBlockerCode,
     ContentPlanningInputSummary,
 )
 from wilq.content.planning.subject import PlanningContentKind, planning_subject_key
-from wilq.content.regulatory.policy import regulatory_requirement_assertion_errors
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningConditionalHypothesis,
     ContentPlanningCtaBlock,
@@ -93,21 +93,13 @@ def regulatory_response_lineage_errors(
             for section in matching_sections
         ):
             errors.append(f"regulatory_evidence:{requirement_id}")
-        requirement = next(
-            (item for item in input_summary.regulatory_requirements if item.id == requirement_id),
-            None,
+    errors.extend(
+        regulatory_directive_value_errors(
+            sections=proposal.sections,
+            faq_items=proposal.faq,
+            regulatory_evidence=set().union(*coverage.values()) if coverage else set(),
         )
-        if requirement is not None:
-            text = "\n".join(
-                "\n".join((section.heading, section.purpose, section.reader_question))
-                for section in matching_sections
-            )
-            errors.extend(
-                regulatory_requirement_assertion_errors(
-                    requirement=requirement,
-                    text=text,
-                )
-            )
+    )
     return errors
 
 

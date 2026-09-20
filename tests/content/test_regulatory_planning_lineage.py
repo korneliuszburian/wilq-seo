@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.content.planning.directive_policy import regulatory_directive_value_errors
 from wilq.content.planning.dynamic_input import ContentPlanningInput, ContentPlanningInputSummary
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
@@ -109,7 +110,7 @@ def test_declared_regulatory_requirement_gets_its_exact_server_owned_evidence() 
     assert regulatory_planning_lineage_errors(planning_input, normalized) == []
 
 
-def test_regulatory_requirement_needs_its_observable_document_concept() -> None:
+def test_regulatory_plan_keeps_observable_values_out_of_reader_directives() -> None:
     requirement = ContentRegulatoryRequirement(
         id="regulated_deadline",
         label="termin obowiązku",
@@ -147,13 +148,19 @@ def test_regulatory_requirement_needs_its_observable_document_concept() -> None:
         update={"purpose": "Wyjaśnij termin złożenia sprawozdania do 15 marca."}
     )
 
-    assert regulatory_planning_lineage_errors(planning_input, _output(generic)) == [
-        "regulatory_document_assertion:regulated_deadline:deadline_date"
-    ]
+    assert regulatory_planning_lineage_errors(planning_input, _output(generic)) == []
     assert regulatory_planning_lineage_errors(planning_input, _output(explicit)) == []
+    assert regulatory_directive_value_errors(
+        sections=[generic], faq_items=[], regulatory_evidence={"ev_deadline"}
+    ) == []
+    assert regulatory_directive_value_errors(
+        sections=[explicit], faq_items=[], regulatory_evidence={"ev_deadline"}
+    ) == [
+        "regulatory_directive_value:Gdzie skonsultować obowiązki?"
+    ]
 
 
-def test_regulatory_assertion_whitespace_is_shared_by_validation_and_canonicalization() -> None:
+def test_regulatory_assertion_canonicalization_does_not_rewrite_plan_purpose() -> None:
     requirement = ContentRegulatoryRequirement(
         id="regulated_deadline",
         label="termin obowiązku",
@@ -190,12 +197,19 @@ def test_regulatory_assertion_whitespace_is_shared_by_validation_and_canonicaliz
     output = _output(section)
 
     assert regulatory_planning_lineage_errors(planning_input, output) == []
+    assert regulatory_directive_value_errors(
+        sections=output.sections,
+        faq_items=output.faq,
+        regulatory_evidence={"ev_deadline"},
+    ) == [
+        "regulatory_directive_value:Obowiązki sprawozdawcze"
+    ]
     normalized = canonicalize_regulatory_section_assertions(planning_input, output)
 
     assert normalized.sections[0].purpose == section.purpose
 
 
-def test_declared_regulatory_requirement_gets_profile_owned_missing_terms() -> None:
+def test_declared_regulatory_requirement_does_not_copy_profile_terms_into_plan() -> None:
     requirement = ContentRegulatoryRequirement(
         id="regulated_deadline",
         label="termin obowiązku",
@@ -232,7 +246,7 @@ def test_declared_regulatory_requirement_gets_profile_owned_missing_terms() -> N
 
     normalized = canonicalize_regulatory_section_assertions(planning_input, _output(generic))
 
-    assert "15 marca" in normalized.sections[0].purpose
+    assert normalized.sections[0].purpose == generic.purpose
     assert regulatory_planning_lineage_errors(planning_input, normalized) == []
 
 
@@ -257,4 +271,15 @@ def test_public_response_lineage_rejects_missing_unknown_or_wrong_regulatory_evi
     assert regulatory_response_lineage_errors(summary, proposal) == [
         "regulatory_requirement_unknown:unknown_requirement",
         "regulatory_evidence:regulated_scope",
+    ]
+
+    numeric = ContentPlanningProposal.model_construct(
+        sections=[
+            _section(requirement_ids=["regulated_scope"], evidence_ids=["ev_scope"]).model_copy(
+                update={"purpose": "Wyjaśnij kwotę 10 000 zł.", "reader_question": "Co zrobić?"}
+            )
+        ]
+    )
+    assert regulatory_response_lineage_errors(summary, numeric) == [
+        "regulatory_directive_value:Obowiązki"
     ]

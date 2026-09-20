@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from wilq.content.planning.directive_policy import regulatory_directive_value_errors
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
@@ -7,8 +8,6 @@ from wilq.content.planning.generated_proposal_contracts import (
 )
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
-    regulatory_assertion_matches,
-    regulatory_requirement_assertion_errors,
 )
 
 
@@ -60,6 +59,18 @@ def planning_output_lineage_errors(
     errors.extend(_hypothesis_lineage_errors(planning_input, output))
     errors.extend(_measurement_lineage_errors(planning_input, output))
     errors.extend(regulatory_planning_lineage_errors(planning_input, output))
+    regulatory_evidence = {
+        evidence_id
+        for coverage in planning_input.regulatory_coverage.requirement_coverage
+        for evidence_id in coverage.evidence_ids
+    }
+    errors.extend(
+        regulatory_directive_value_errors(
+            sections=output.sections,
+            faq_items=output.faq,
+            regulatory_evidence=regulatory_evidence,
+        )
+    )
     return list(dict.fromkeys(errors))
 
 
@@ -99,7 +110,6 @@ def regulatory_planning_lineage_errors(
             for section in matching_sections
         ):
             errors.append(f"regulatory_evidence:{requirement.id}")
-        errors.extend(regulatory_requirement_text_errors(requirement, matching_sections))
     return errors
 
 
@@ -107,15 +117,10 @@ def regulatory_requirement_text_errors(
     requirement: ContentRegulatoryRequirement,
     sections: list[ContentPlanningModelSection],
 ) -> list[str]:
-    """Require each profile-owned concept in the plan section that owns it."""
+    """Keep plan directives claim-free; assertion coverage belongs to compiled facts."""
 
-    if not requirement.document_assertions:
-        return []
-    text = "\n".join(
-        "\n".join((section.heading, section.purpose, section.reader_question))
-        for section in sections
-    )
-    return regulatory_requirement_assertion_errors(requirement=requirement, text=text)
+    del requirement, sections
+    return []
 
 
 def canonicalize_regulatory_section_evidence(
@@ -157,45 +162,10 @@ def canonicalize_regulatory_section_assertions(
     planning_input: ContentPlanningInput,
     output: ContentPlanningModelOutput,
 ) -> ContentPlanningModelOutput:
-    """Make profile-owned observable concepts explicit in their declared plan section.
+    """Compatibility no-op: factual assertions are compiled from assigned source facts."""
 
-    The model still chooses which section owns a requirement. Once it makes that
-    binding, WILQ owns the narrow planning annotation needed to preserve the
-    profile's required concepts through the draft stage. This is not a new
-    claim: each term comes from the versioned regulatory profile already bound
-    to the exact planning input.
-    """
-
-    requirements_by_id = {
-        requirement.id: requirement
-        for requirement in planning_input.regulatory_coverage.requirements
-    }
-    sections = []
-    for section in output.sections:
-        section_text = "\n".join((section.heading, section.purpose, section.reader_question))
-        missing_terms = [
-            assertion.required_any_of[0]
-            for requirement_id in section.regulatory_requirement_ids
-            if (requirement := requirements_by_id.get(requirement_id)) is not None
-            for assertion in requirement.document_assertions
-            if not regulatory_assertion_matches(text=section_text, assertion=assertion)
-        ]
-        if not missing_terms:
-            sections.append(section)
-            continue
-        sections.append(
-            section.model_copy(
-                update={
-                    "purpose": (
-                        section.purpose.rstrip()
-                        + " W tej sekcji wyjaśnij także: "
-                        + ", ".join(dict.fromkeys(missing_terms))
-                        + "."
-                    )
-                }
-            )
-        )
-    return output.model_copy(update={"sections": sections})
+    del planning_input
+    return output
 
 
 def _section_lineage_errors(

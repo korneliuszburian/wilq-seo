@@ -104,7 +104,7 @@ CODEX_PROMPT_TEMPLATES: dict[str, CodexPromptTemplate] = {
     ),
     "planning_proposal": CodexPromptTemplate(
         id="planning_proposal",
-        version=1,
+        version=2,
         label="Propozycja planu treści",
         description=(
             "Buduje people-first plan istniejącej albo nowej strony z zachowaniem lineage "
@@ -116,11 +116,11 @@ CODEX_PROMPT_TEMPLATES: dict[str, CodexPromptTemplate] = {
             "{page_scope_rules}{query_inventory_rules}"
             "Nie dopisuj zapytań, dowodów, claimów, linków ani metryk spoza przekazanego "
             "wejścia. Jeśli wejście zawiera regulatory_coverage.requirements, każdemu "
-            "requirement_id przypisz sekcję z jego official evidence i opisz w nagłówku, "
-            "purpose albo reader_question wszystkie document_assertions tego wymagania. "
-            "Dla każdej pozycji z application_context.regulatory_document_assertions użyj "
-            "dosłownie co najmniej jednego wariantu z required_any_of w sekcji przypisanej "
-            "do tego requirement_id. Nie łącz niepowiązanych obowiązków pod ogólnym "
+            "requirement_id przypisz sekcję z jego official evidence. Purpose i "
+            "reader_question opisują wyłącznie cel odpowiedzi dla czytelnika; nie kopiuj "
+            "do nich kwot, terminów, wyjątków ani procedur z document_assertions. Te "
+            "szczegóły pozostają w exact source facts i są rozwijane dopiero w draft. "
+            "Nie łącz niepowiązanych obowiązków pod ogólnym "
             "nagłówkiem konsultacji. Każdy nagłówek sekcji ma nazywać konkretną odpowiedź "
             "lub problem czytelnika; nie używaj nagłówków prezentacyjnych, nawigacyjnych ani "
             "promocyjnych, takich jak 'Poniżej przedstawiamy', 'Dowiedz się więcej', "
@@ -128,8 +128,8 @@ CODEX_PROMPT_TEMPLATES: dict[str, CodexPromptTemplate] = {
             "sam plan, proces lub układ strony. Nigdy nie używaj w nagłówku daty, roku, nazwy "
             "wydarzenia, listy klientów ani sekcji typu 'zaufali nam'; takie elementy są "
             "materiałem do pominięcia albo review, nie strukturą odpowiedzi dla czytelnika. "
-            "Daty, terminy, kwoty i inne wartości z required_any_of umieszczaj w purpose, "
-            "reader_question albo body scope sekcji, nigdy w samym headingu. "
+            "Dat, terminów, kwot i innych wartości z required_any_of nie umieszczaj w "
+            "headingu, purpose ani reader_question planu. "
             "{placement_rules}Hipotezy Ads lub social są opcjonalne, zawsze review_required "
             "i wolno je zwrócić tylko przy exact evidence. Measurement plan nie może zawierać "
             "wymyślonych targetów. Nie zatwierdzaj treści, nie wykonuj write i zawsze zwróć "
