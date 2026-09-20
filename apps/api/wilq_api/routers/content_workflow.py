@@ -33,6 +33,7 @@ from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
 from wilq.content.planning.generated_proposal_contracts import ContentPlanningProposalRequest
+from wilq.content.planning.proposal_packet_binding import bind_research_packet
 from wilq.content.regulatory.source_reviews import regulatory_source_review_store
 from wilq.content.workflow.contracts.contracts import (
     ContentDraftRevisionConflictResponse,
@@ -333,6 +334,8 @@ def _build_editor_save_command(
             draft_package_digest=latest_revision.draft_package_digest,
             planning_digest=latest_revision.planning_digest,
             planning_input_digest=latest_revision.planning_input_digest,
+            research_packet_id=latest_revision.research_packet_id,
+            research_packet_digest=latest_revision.research_packet_digest,
             content_kind=latest_revision.content_kind,
             service_card_id=latest_revision.service_card_id,
             service_digest=latest_revision.service_digest,
@@ -525,6 +528,22 @@ def _editor_save_context(
         service_card_id=service_card_id,
     )
     planning_input = planning_result.planning_input
+    if planning_input is not None and proposal.research_packet_id is not None:
+        planning_input, packet_block = bind_research_packet(
+            snapshot=planning_snapshot,
+            planning_input=planning_input,
+            request=ContentPlanningProposalRequest(
+                content_kind=proposal.content_kind,
+                service_card_id=service_card_id,
+                expected_planning_input_digest=planning_input.planning_input_digest,
+                research_packet_id=proposal.research_packet_id,
+                expected_research_packet_digest=proposal.research_packet_digest,
+                requested_by="editor_save_context",
+            ),
+            require_packet=True,
+        )
+        if packet_block is not None:
+            return None
     if (
         planning_input is None
         or planning_input.planning_input_digest != proposal.planning_input_digest

@@ -235,6 +235,62 @@ def test_editor_save_context_guard_accepts_current_exact_binding(tmp_path: Path)
     assert result.revision.base_revision_id == first.revision_id
 
 
+def test_editor_save_context_reconstructs_packet_bound_planning_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    unbound_input = SimpleNamespace(planning_input_digest="a" * 64, inventory=object())
+    packet_bound_input = SimpleNamespace(planning_input_digest="b" * 64, inventory=object())
+    proposal = SimpleNamespace(
+        content_kind="editorial",
+        service_card_id=None,
+        planning_digest="c" * 64,
+        planning_input_digest=packet_bound_input.planning_input_digest,
+        research_packet_id="content_research_packet_current",
+        research_packet_digest="d" * 64,
+    )
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(proposal=proposal),
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(
+                draft_package=SimpleNamespace(id="draft_package_current")
+            )
+        ),
+        preflight=SimpleNamespace(
+            item=SimpleNamespace(
+                id="content_work_item_current",
+                final_canonical_url="https://www.ekologus.pl/bdo/",
+                intended_final_url=None,
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "build_content_planning_input",
+        lambda *_args, **_kwargs: SimpleNamespace(planning_input=unbound_input),
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "bind_research_packet",
+        lambda **_kwargs: (packet_bound_input, None),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_draft_package_digest",
+        lambda _: "e" * 64,
+    )
+    monkeypatch.setattr(
+        content_workflow_router,
+        "content_planning_inventory_digest",
+        lambda _: "f" * 64,
+    )
+
+    context = content_workflow_router._editor_save_context(snapshot)
+
+    assert context is not None
+    assert context.planning_input_digest == packet_bound_input.planning_input_digest
+
+
 def test_editor_save_context_change_during_atomic_append_returns_409_stale_context(
     tmp_path: Path,
 ) -> None:

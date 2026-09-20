@@ -87,6 +87,45 @@ def test_review_requested_changes_preserve_exact_parent_lineage(tmp_path: Path) 
     assert result.revision.official_source_references == parent.official_source_references
 
 
+def test_review_requested_changes_retain_packet_binding_in_append_command(
+    tmp_path: Path,
+) -> None:
+    _store, parent, _persisted_parent = _canonical_lineage_parent(tmp_path)
+    assert parent.proposal_metadata is not None
+    packet_parent = parent.model_copy(
+        update={
+            "research_packet_id": "content_research_packet_current",
+            "research_packet_digest": "d" * 64,
+            "proposal_metadata": parent.proposal_metadata.model_copy(
+                update={
+                    "research_packet_id": "content_research_packet_current",
+                    "research_packet_digest": "d" * 64,
+                }
+            ),
+        }
+    )
+    request = ContentDraftRevisionSaveRequest(
+        base_revision_id=packet_parent.revision_id,
+        title=packet_parent.title,
+        sections=packet_parent.sections,
+        correction_reason="review_requested_changes",
+        created_by="delivery_loop_owner",
+    )
+
+    command = _build_editor_save_command(
+        work_item_id=packet_parent.work_item_id,
+        request=request,
+        latest_revision=packet_parent,
+        draft_package=None,
+        planning=None,
+        final_canonical_url=packet_parent.final_canonical_url,
+        revision_context_current=True,
+    )
+
+    assert command.research_packet_id == packet_parent.research_packet_id
+    assert command.research_packet_digest == packet_parent.research_packet_digest
+
+
 def _canonical_lineage_parent(tmp_path: Path):
     store, persisted_parent = _bound_parent(tmp_path)
     metadata = persisted_parent.proposal_metadata
