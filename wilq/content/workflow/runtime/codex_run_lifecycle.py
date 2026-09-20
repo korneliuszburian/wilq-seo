@@ -12,7 +12,7 @@ from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import LocalStateStore
 from wilq.storage.local_state_runs import supports_run_transaction
 
-LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 180.0
+LEGACY_SEMANTIC_REVIEW_TIMEOUT_SECONDS = 900.0
 
 
 def effective_deadline(run: CodexRun) -> datetime:

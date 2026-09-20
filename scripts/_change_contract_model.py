@@ -226,6 +226,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_initial_draft_runtime_contract.py",
     ),
+    ("semantic-review-runtime", "terra-max-deadline"): (
+        "scripts/test.sh",
+        "tests/content/test_semantic_review_runtime_contract.py",
+    ),
     ("initial-draft-worker-error", "typed-field-locations"): (
         "scripts/test.sh",
         "tests/content/test_initial_draft_worker_error_signal.py",
@@ -384,6 +388,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("readability-regulatory-restore", "pure-grounding-after-model-repair"),
             ("assurance-turn-signal", "typed-transport-exception"),
             ("initial-draft-deadline", "covers-full-finalization"),
+            ("semantic-review-runtime", "terra-max-deadline"),
             ("initial-draft-worker-error", "typed-field-locations"),
             ("document-fact-working-note", "protected-term-strips-note"),
             ("assurance-turn-retry", "transient-failure-once"),
