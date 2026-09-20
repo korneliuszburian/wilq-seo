@@ -26,6 +26,14 @@ def test_redaction_preserves_known_authority_digests_only_for_exact_hex(
     assert redact_mapping({key: digest})[key] == digest
 
 
+def test_redaction_preserves_trusted_confirmation_grant_digest() -> None:
+    digest = "9" * 64
+
+    assert redact_mapping({"trusted_local_confirmation_grant_digest": digest}) == {
+        "trusted_local_confirmation_grant_digest": digest
+    }
+
+
 @pytest.mark.parametrize(
     ("key", "value"),
     [
@@ -35,7 +43,6 @@ def test_redaction_preserves_known_authority_digests_only_for_exact_hex(
             "current_disposition_action_payload_digest",
             "secret" + "x" * 40,  # pragma: allowlist secret
         ),
-        ("trusted_local_confirmation_grant_digest", "9" * 64),
         ("api_key_digest", "9" * 64),
         ("token_digest", "9" * 64),
     ],

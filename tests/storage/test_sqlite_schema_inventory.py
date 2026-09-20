@@ -84,6 +84,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_research_fact_promotion_proposals",
         "content_research_fact_promotion_receipts",
         "content_evidence_acquisition_runs",
+        "content_service_profile_card_review_receipts",
         "content_source_pack_bindings",
         "content_source_fact_authority_proposals",
         "content_source_fact_authority_receipts",
@@ -106,6 +107,60 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "social_reuse_proposals",
         "social_reuse_reviews",
         "workflow_runs",
+    }
+)
+
+EXPECTED_POST_S5_TRIGGERS = frozenset(
+    {
+        "content_authoring_inventory_receipts_no_delete",
+        "content_authoring_inventory_receipts_no_replace",
+        "content_authoring_inventory_receipts_no_update",
+        "content_current_disposition_proposals_no_delete",
+        "content_current_disposition_proposals_no_replace",
+        "content_current_disposition_proposals_no_update",
+        "content_current_disposition_receipts_no_delete",
+        "content_current_disposition_receipts_no_replace",
+        "content_current_disposition_receipts_no_update",
+        "content_current_verifications_no_delete",
+        "content_current_verifications_no_replace",
+        "content_current_verifications_no_update",
+        "content_delivery_identity_authority_proposals_no_delete",
+        "content_delivery_identity_authority_proposals_no_replace",
+        "content_delivery_identity_authority_proposals_no_update",
+        "content_delivery_identity_bindings_no_delete",
+        "content_delivery_identity_bindings_no_replace",
+        "content_delivery_identity_bindings_no_update",
+        "content_delivery_records_no_delete",
+        "content_delivery_records_no_replace",
+        "content_delivery_records_no_update",
+        "content_evidence_acquisition_runs_no_delete",
+        "content_evidence_acquisition_runs_no_update",
+        "content_landing_hub_authorizations_no_delete",
+        "content_landing_hub_authorizations_no_replace",
+        "content_landing_hub_authorizations_no_update",
+        "content_research_fact_promotion_proposals_no_delete",
+        "content_research_fact_promotion_proposals_no_update",
+        "content_research_fact_promotion_receipts_no_delete",
+        "content_research_fact_promotion_receipts_no_update",
+        "content_research_packet_preparation_receipts_no_delete",
+        "content_research_packet_preparation_receipts_no_replace",
+        "content_research_packet_preparation_receipts_no_update",
+        "content_research_packets_no_delete",
+        "content_research_packets_no_replace",
+        "content_research_packets_no_update",
+        "content_research_proposals_no_delete",
+        "content_research_proposals_no_update",
+        "content_service_profile_card_review_receipts_no_delete",
+        "content_service_profile_card_review_receipts_no_update",
+        "content_source_fact_authority_proposals_no_delete",
+        "content_source_fact_authority_proposals_no_replace",
+        "content_source_fact_authority_proposals_no_update",
+        "content_source_fact_authority_receipts_no_delete",
+        "content_source_fact_authority_receipts_no_replace",
+        "content_source_fact_authority_receipts_no_update",
+        "content_source_pack_bindings_no_delete",
+        "content_source_pack_bindings_no_replace",
+        "content_source_pack_bindings_no_update",
     }
 )
 
@@ -387,6 +442,7 @@ def test_post_s5_inventory_is_complete_lineage_bound_and_byte_exact(tmp_path: Pa
     expected_objects = _application_schema_objects(path)
 
     assert set(expected_objects["table"]) == EXPECTED_POST_S5_TABLES
+    assert set(expected_objects["trigger"]) == EXPECTED_POST_S5_TRIGGERS
 
     inventory = inspect_sqlite_schema(
         path,

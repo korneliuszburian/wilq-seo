@@ -358,6 +358,12 @@ def compile_source_facts_to_knowledge_cards(
     for fact in facts:
         if fact.review_status == "rejected":
             continue
+        # Official guidance is a scoped claim-policy input for the promotion
+        # workflow, not global knowledge.  Keeping it out of the compiler
+        # prevents a reviewed external claim from leaking into every card or
+        # service brief without an exact target-row decision.
+        if fact.source_type == "official_guidance":
+            continue
         # Approved, condensed internal excerpts are safe to compile into
         # lineage-preserving cards. Raw/private candidates remain excluded.
         if fact.privacy_class not in {"commit_safe", "redacted_only"}:

@@ -228,6 +228,10 @@ _CONTENT_WORKFLOW_SCHEMA = (
     )
     """,
     """
+    CREATE INDEX IF NOT EXISTS idx_content_research_fact_promotion_receipts_proposal_id
+    ON content_research_fact_promotion_receipts (proposal_id)
+    """,
+    """
     CREATE TRIGGER IF NOT EXISTS content_research_fact_promotion_receipts_no_update
     BEFORE UPDATE ON content_research_fact_promotion_receipts
     BEGIN SELECT RAISE(ABORT, 'research promotion receipts are append-only'); END

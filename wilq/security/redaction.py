@@ -325,6 +325,7 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "source_fact_authority_provenance_digest",
     "research_promotion_snapshot_digest",
     "research_promotion_action_payload_digest",
+    "trusted_local_confirmation_grant_digest",
     "source_fact_registry_digest",
     "fresh_context_digest",
     "research_packet_digest",

@@ -14,6 +14,7 @@ SourceFactType = Literal[
     "private_candidate",
     "legal_update",
     "uat_feedback",
+    "official_guidance",
 ]
 SourceFactPrivacyClass = Literal["commit_safe", "private_local", "redacted_only"]
 SourceFactScope = Literal[
@@ -31,6 +32,14 @@ SourceFactReviewStatus = Literal[
     "rejected",
     "stale",
 ]
+
+# Official guidance is a deliberately narrow, non-regulatory source-fact
+# branch.  Keep its target card server-owned so a promoted fact cannot be
+# smuggled into a service card by choosing a caller-controlled target.
+OFFICIAL_GUIDANCE_SOURCE_FACT_TYPE = "official_guidance"
+OFFICIAL_GUIDANCE_TARGET_CARD_ID = "ekologus_guidance_iso_37301_compliance"
+OFFICIAL_GUIDANCE_TARGET_CARD_TYPE = "claim_policy"
+OFFICIAL_GUIDANCE_TARGET_CARD_TITLE = "Wytyczne ISO 37301 — polityka claimów"
 ContentKnowledgeLifecycleStatus = Literal[
     "seeded_contract_proof",
     "source_backed_review_required",
@@ -158,6 +167,38 @@ class ContentSourceFact(BaseModel):
                 raise ValueError("approved source facts require source_connectors")
         if self.source_type == "public_site" and self.privacy_class != "commit_safe":
             raise ValueError("public site source facts must be commit_safe")
+        if self.source_type == OFFICIAL_GUIDANCE_SOURCE_FACT_TYPE:
+            if self.privacy_class != "commit_safe":
+                raise ValueError("official guidance source facts must be commit_safe")
+            if self.scope != "claim_policy":
+                raise ValueError("official guidance source facts must use claim_policy scope")
+            if self.official_source:
+                raise ValueError("official guidance source facts cannot be official_source")
+            if self.source_connectors != ["official_guidance"]:
+                raise ValueError(
+                    "official guidance source facts require the official_guidance connector"
+                )
+            if len(self.applicable_canonical_paths) != 1:
+                raise ValueError(
+                    "official guidance source facts require exactly one applicable canonical path"
+                )
+            if self.target_card_id != OFFICIAL_GUIDANCE_TARGET_CARD_ID:
+                raise ValueError("official guidance target card is server-owned")
+            if self.target_card_type != OFFICIAL_GUIDANCE_TARGET_CARD_TYPE:
+                raise ValueError("official guidance target card type is server-owned")
+            if self.target_card_title != OFFICIAL_GUIDANCE_TARGET_CARD_TITLE:
+                raise ValueError("official guidance target card title is server-owned")
+            if any(
+                (
+                    self.regulatory_profile_id is not None,
+                    self.regulatory_profile_version is not None,
+                    self.regulatory_requirement_ids,
+                    self.applicable_service_card_ids,
+                )
+            ):
+                raise ValueError(
+                    "official guidance source facts cannot carry regulatory or service IDs"
+                )
         if self.official_source and self.source_type != "legal_update":
             raise ValueError("official regulatory source facts must use legal_update")
         regulatory_fields_present = any(
@@ -168,7 +209,7 @@ class ContentSourceFact(BaseModel):
                 self.applicable_service_card_ids,
                 self.applicable_canonical_paths,
             )
-        )
+        ) and self.source_type != OFFICIAL_GUIDANCE_SOURCE_FACT_TYPE
         if regulatory_fields_present and not (
             self.official_source
             and self.regulatory_profile_id

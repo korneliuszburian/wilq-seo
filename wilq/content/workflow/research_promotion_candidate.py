@@ -9,15 +9,25 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import (
+    OFFICIAL_GUIDANCE_TARGET_CARD_ID,
+    OFFICIAL_GUIDANCE_TARGET_CARD_TITLE,
+    OFFICIAL_GUIDANCE_TARGET_CARD_TYPE,
     ContentSourceFact,
     SourceFactScope,
     ekologus_source_facts,
 )
-from wilq.content.workflow.decisions.production import ContentProductionClassificationProjection
+from wilq.content.workflow.decisions.production import (
+    ContentProductionClassificationProjection,
+    canonical_json_digest,
+)
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
+from wilq.content.workflow.evidence_acquisition_contracts import (
+    OfficialGuidanceObservationReceipt,
+)
 from wilq.content.workflow.evidence_acquisition_coordinator import (
     EvidenceAcquisitionRun,
 )
+from wilq.content.workflow.official_guidance import resolve_official_guidance_candidate
 from wilq.content.workflow.research_proposal import (
     ContentResearchProposalCurrentProjection,
     build_default_evidence_research_coordinator,
@@ -60,6 +70,22 @@ class ResearchPromotionPolicySnapshot(BaseModel):
     policy_source_digest: str = Field(pattern=_HEX64)
 
 
+class OfficialGuidanceResearchPromotionPolicySnapshot(ResearchPromotionPolicySnapshot):
+    """Server-owned claim policy for the explicit official-guidance branch."""
+
+    promotion_kind: Literal["official_guidance"] = "official_guidance"
+    policy_version: Literal["official_guidance_policy_v1"] = "official_guidance_policy_v1"
+    candidate_id: str = Field(min_length=1, max_length=240)
+    candidate_digest: str = Field(pattern=_HEX64)
+    candidate_canonical_path: str = Field(min_length=1, max_length=2048)
+    candidate_title: str = Field(min_length=1, max_length=600)
+    candidate_allowed_claims: tuple[str, ...] = Field(min_length=1, max_length=16)
+    candidate_blocked_claims: tuple[str, ...] = ()
+    classification_run_id: str = Field(min_length=1, max_length=240)
+    classification_decision_set_digest: str = Field(pattern=_HEX64)
+    classification_source_row_digest: str = Field(pattern=_HEX64)
+
+
 class ResearchPromotionCandidateProjection(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -85,7 +111,11 @@ class ResearchPromotionCandidateProjection(BaseModel):
     service_binding: ContentSourceFactAuthorityServiceBinding
     registry: ContentSourceFactAuthorityRegistryReceipt
     existing_scope_projection: ContentSourceFactAuthorityCandidateProjection | None = None
-    policy: ResearchPromotionPolicySnapshot | None = None
+    policy: (
+        ResearchPromotionPolicySnapshot
+        | OfficialGuidanceResearchPromotionPolicySnapshot
+        | None
+    ) = None
     proposed_claim: str | None
     proposed_scope_text: str | None
     required_human_decisions: tuple[ResearchPromotionRequiredDecision, ...] = ()
@@ -157,17 +187,38 @@ def build_research_promotion_candidate_projection(
             _blocker(item.code, item.reason) for item in proposal.current_blockers
         )
     elif acquisition_run is not None and acquisition_run.source_intent == "official_primary":
+        official = _official_guidance_candidate(
+            proposal=proposal,
+            acquisition_run=acquisition_run,
+            identity=identity,
+            classification=classification,
+            proposal_id=proposal_id,
+            proposal_digest=proposal_digest,
+            acquisition_run_id=acquisition_run_id,
+            acquisition_run_digest=acquisition_run_digest,
+            observation_id=observation_id,
+            freshness_date=freshness_date,
+            evidence_ids=evidence_ids,
+            source_url=source_url,
+            source_connectors=source_connectors,
+            proposed_claim=proposed_claim,
+            proposed_scope_text=proposed_scope_text,
+            registry=registry,
+            checked_at=checked_at,
+        )
+        if official is not None:
+            return official
         blockers.append(
             _blocker(
-                "official_guidance_promotion_unsupported",
+                "official_guidance_lineage_invalid",
                 (
-                    "Official-guidance proposals remain review-only and cannot enter "
-                    "the existing public_site source-fact promotion path."
+                    "Official-guidance candidate, observation, identity or classification "
+                    "is not exact."
                 ),
                 evidence_ids=evidence_ids,
                 next_step=(
-                    "Zachowaj propozycję do osobnego review official guidance; "
-                    "nie uruchamiaj public_site promotion."
+                    "Odśwież official-guidance observation i zwiąż ją z exact identity oraz "
+                    "bieżącą klasyfikacją przed promotion."
                 ),
             )
         )
@@ -353,6 +404,170 @@ def _policy(card: ContentKnowledgeCard) -> ResearchPromotionPolicySnapshot:
     )
 
 
+def _official_guidance_candidate(
+    *,
+    proposal: ContentResearchProposalCurrentProjection,
+    acquisition_run: EvidenceAcquisitionRun,
+    identity: ContentDeliveryIdentityBinding | None,
+    classification: ContentProductionClassificationProjection | None,
+    proposal_id: str,
+    proposal_digest: str | None,
+    acquisition_run_id: str,
+    acquisition_run_digest: str | None,
+    observation_id: str | None,
+    freshness_date: str | None,
+    evidence_ids: tuple[str, ...],
+    source_url: str | None,
+    source_connectors: tuple[str, ...],
+    proposed_claim: str | None,
+    proposed_scope_text: str | None,
+    registry: ContentSourceFactAuthorityRegistryReceipt,
+    checked_at: datetime,
+) -> ResearchPromotionCandidateProjection | None:
+    """Build the server-owned official branch without a service-card fallback."""
+
+    del proposal
+    candidate_id = acquisition_run.official_guidance_candidate_id
+    candidate = None if candidate_id is None else resolve_official_guidance_candidate(candidate_id)
+    observation = acquisition_run.observation
+    if (
+        candidate is None
+        or not isinstance(observation, OfficialGuidanceObservationReceipt)
+        or acquisition_run.official_guidance_candidate_digest != candidate.candidate_digest
+        or observation.candidate_id != candidate.candidate_id
+        or observation.candidate_digest != candidate.candidate_digest
+        or observation.canonical_path != candidate.canonical_path
+        or observation.source_url != candidate.source_url
+        or observation.observation_id != observation_id
+        or observation.evidence_ids != evidence_ids
+        or observation.source_connectors != source_connectors
+        or source_url != candidate.source_url
+    ):
+        return None
+    if identity is None or classification is None:
+        return None
+    if (
+        identity.status != "exact_current"
+        or identity.final_disposition != "keep"
+        or classification.freshness.requires_refresh
+        or classification.freshness.state != "fresh"
+        or acquisition_run.identity_binding_id is None
+        or acquisition_run.identity_binding_digest is None
+        or acquisition_run.identity_binding_id != identity.binding_id
+        or acquisition_run.identity_binding_digest != identity.binding_digest
+        or acquisition_run.current_work_item_id != identity.current_work_item_id
+        or acquisition_run.canonical_path != identity.canonical_path
+        or acquisition_run.public_url != identity.public_url
+        or identity.canonical_path != candidate.canonical_path
+        or acquisition_run.classification_run_id != classification.run_id
+        or acquisition_run.classification_run_digest != classification.run_digest
+        or identity.classification_run_id != classification.run_id
+        or identity.classification_run_digest != classification.run_digest
+        or identity.classification_decision_set_digest != classification.decision_set_digest
+        or identity.classification_source_row_digest != classification.row.source_packet_row_digest
+        or classification.row.canonical_path != candidate.canonical_path
+    ):
+        return None
+    policy_payload = {
+        "promotion_kind": "official_guidance",
+        "policy_version": "official_guidance_policy_v1",
+        "candidate_id": candidate.candidate_id,
+        "candidate_digest": candidate.candidate_digest,
+        "candidate_canonical_path": candidate.canonical_path,
+        "candidate_title": candidate.title,
+        "candidate_allowed_claims": candidate.allowed_claim_scope,
+        "candidate_blocked_claims": candidate.blocked_claims,
+        "target_card_id": OFFICIAL_GUIDANCE_TARGET_CARD_ID,
+        "target_card_type": OFFICIAL_GUIDANCE_TARGET_CARD_TYPE,
+        "target_card_title": OFFICIAL_GUIDANCE_TARGET_CARD_TITLE,
+        "allowed_claims": candidate.allowed_claim_scope,
+        "blocked_claims": candidate.blocked_claims,
+        "evidence_requirements": (
+            "exact_official_guidance_observation",
+            "human_review",
+        ),
+    }
+    policy = OfficialGuidanceResearchPromotionPolicySnapshot(
+        target_card_id=OFFICIAL_GUIDANCE_TARGET_CARD_ID,
+        target_card_type=OFFICIAL_GUIDANCE_TARGET_CARD_TYPE,
+        target_card_title=OFFICIAL_GUIDANCE_TARGET_CARD_TITLE,
+        card_status="approved_current",
+        card_freshness="official_guidance_policy_v1",
+        card_evidence_ids=tuple(sorted(set(evidence_ids))),
+        card_source_connectors=tuple(sorted(set(source_connectors))),
+        allowed_claims=tuple(candidate.allowed_claim_scope),
+        blocked_claims=tuple(candidate.blocked_claims),
+        evidence_requirements=(
+            "exact_official_guidance_observation",
+            "human_review",
+        ),
+        policy_source_digest=canonical_json_digest(policy_payload),
+        candidate_id=candidate.candidate_id,
+        candidate_digest=candidate.candidate_digest,
+        candidate_canonical_path=candidate.canonical_path,
+        candidate_title=candidate.title,
+        candidate_allowed_claims=tuple(candidate.allowed_claim_scope),
+        candidate_blocked_claims=tuple(candidate.blocked_claims),
+        classification_run_id=classification.run_id,
+        classification_decision_set_digest=classification.decision_set_digest,
+        classification_source_row_digest=classification.row.source_packet_row_digest,
+    )
+    if (
+        proposal_digest is None
+        or acquisition_run_digest is None
+        or observation_id is None
+        or freshness_date is None
+        or proposed_claim is None
+        or proposed_scope_text is None
+    ):
+        return None
+    return ResearchPromotionCandidateProjection(
+        status="ready_for_human_decisions",
+        proposal_id=proposal_id,
+        proposal_digest=proposal_digest,
+        acquisition_run_id=acquisition_run_id,
+        acquisition_run_digest=acquisition_run_digest,
+        observation_id=observation_id,
+        freshness_date=freshness_date,
+        evidence_ids=evidence_ids,
+        source_url=source_url,
+        source_connectors=source_connectors,
+        identity_binding_id=identity.binding_id,
+        identity_binding_digest=identity.binding_digest,
+        classification_run_digest=classification.run_digest,
+        service_binding=ContentSourceFactAuthorityServiceBinding(
+            status="exact_bound",
+            binding_url=identity.public_url,
+        ),
+        registry=registry,
+        policy=policy,
+        proposed_claim=proposed_claim,
+        proposed_scope_text=proposed_scope_text,
+        required_human_decisions=(
+            ResearchPromotionRequiredDecision(
+                field="scope",
+                allowed_values=("claim_policy",),
+                reason=(
+                    "Official guidance promotion fixes claim_policy; the reviewer cannot "
+                    "change it to a service or regulatory scope."
+                ),
+            ),
+            ResearchPromotionRequiredDecision(
+                field="confidence",
+                minimum=0.0,
+                maximum=1.0,
+                reason="Confidence requires an explicit human decision; no default is invented.",
+            ),
+        ),
+        blockers=(),
+        safe_next_step=(
+            "Sprawdź exact claim, zachowany blocked scope oraz lineage official guidance; "
+            "następnie przejdź promotion ActionObject."
+        ),
+        checked_at=checked_at,
+    )
+
+
 def _registry_projection(
     facts: tuple[ContentSourceFact, ...] | None,
     checked_at: datetime,
@@ -378,6 +593,7 @@ def _blocker(
 
 
 __all__ = [
+    "OfficialGuidanceResearchPromotionPolicySnapshot",
     "ResearchPromotionCandidateProjection",
     "ResearchPromotionPolicySnapshot",
     "ResearchPromotionRequiredDecision",

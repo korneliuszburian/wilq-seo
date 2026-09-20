@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.audit.trusted_local_confirmation import TrustedLocalPrincipalReceipt
-from wilq.content.knowledge.source_facts import ContentSourceFact, SourceFactScope
+from wilq.content.knowledge.source_facts import (
+    OFFICIAL_GUIDANCE_TARGET_CARD_ID,
+    OFFICIAL_GUIDANCE_TARGET_CARD_TITLE,
+    OFFICIAL_GUIDANCE_TARGET_CARD_TYPE,
+    ContentSourceFact,
+    SourceFactScope,
+)
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.research_promotion_candidate import (
+    OfficialGuidanceResearchPromotionPolicySnapshot,
     ResearchPromotionCandidateProjection,
     build_default_research_promotion_candidate,
 )
@@ -28,6 +36,9 @@ _HEX64 = r"^[0-9a-f]{64}$"
 _SAFE_IDENTIFIER = r"^[a-z][a-z0-9_-]{0,239}$"
 CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE = "content_research_fact_promotion"
 CONTENT_RESEARCH_FACT_PROMOTION_PREVIEW_CONTRACT = "content_research_fact_promotion_preview_v1"
+CONTENT_OFFICIAL_GUIDANCE_FACT_PROMOTION_PREVIEW_CONTRACT = (
+    "content_research_fact_promotion_official_guidance_preview_v1"
+)
 CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER = "content_research_fact_promotion_store"
 
 
@@ -104,6 +115,102 @@ class ContentResearchFactPromotionSnapshot(_FrozenModel):
         return self
 
 
+class ContentOfficialGuidanceFactPromotionSnapshot(_FrozenModel):
+    """Versioned snapshot for the server-owned official-guidance branch.
+
+    The public-site v1 snapshot above is intentionally left byte-for-byte
+    compatible.  Official guidance gets a distinct schema/discriminator so
+    its candidate and policy lineage cannot be silently interpreted as a
+    public-site fact.
+    """
+
+    schema_version: Literal[
+        "content_official_guidance_fact_promotion_snapshot_v1"
+    ] = "content_official_guidance_fact_promotion_snapshot_v1"
+    proposal_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    proposal_digest: str = Field(pattern=_HEX64)
+    acquisition_run_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    acquisition_run_digest: str = Field(pattern=_HEX64)
+    observation_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=64)
+    source_url: str = Field(min_length=1, max_length=2048)
+    source_connectors: tuple[str, ...] = Field(min_length=1, max_length=16)
+    identity_binding_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    identity_binding_digest: str = Field(pattern=_HEX64)
+    classification_run_digest: str = Field(pattern=_HEX64)
+    target_card_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    target_card_type: str = Field(min_length=1)
+    target_card_title: str = Field(min_length=1)
+    card_evidence_ids: tuple[str, ...] = ()
+    card_source_connectors: tuple[str, ...] = ()
+    card_freshness: str | None = None
+    freshness_date: str = Field(min_length=1, max_length=64)
+    registry_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    registry_digest: str = Field(pattern=_HEX64)
+    policy_source_digest: str = Field(pattern=_HEX64)
+    proposed_claim: str = Field(min_length=1, max_length=1200)
+    proposed_scope: SourceFactScope
+    proposed_confidence: float = Field(ge=0, le=1)
+    allowed_claims: tuple[str, ...] = ()
+    blocked_claims: tuple[str, ...] = ()
+    evidence_requirements: tuple[str, ...] = ()
+    context_digest: str = Field(pattern=_HEX64)
+    checked_at: datetime
+    promotion_kind: Literal["official_guidance"] = "official_guidance"
+    candidate_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    candidate_digest: str = Field(pattern=_HEX64)
+    candidate_canonical_path: str = Field(min_length=1, max_length=2048)
+    candidate_title: str = Field(min_length=1, max_length=600)
+    candidate_allowed_claims: tuple[str, ...] = Field(min_length=1, max_length=16)
+    candidate_blocked_claims: tuple[str, ...] = ()
+    classification_run_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
+    classification_decision_set_digest: str = Field(pattern=_HEX64)
+    classification_source_row_digest: str = Field(pattern=_HEX64)
+    policy_version: Literal["official_guidance_policy_v1"] = "official_guidance_policy_v1"
+
+    @model_validator(mode="after")
+    def require_self_authenticating_snapshot(self) -> Self:
+        payload = self.model_dump(mode="json")
+        payload.pop("context_digest")
+        expected = canonical_json_digest(payload)
+        if self.context_digest != expected:
+            raise ValueError("Research promotion snapshot digest does not match payload.")
+        if self.checked_at.tzinfo is None or self.checked_at.utcoffset() is None:
+            raise ValueError("Research promotion snapshot time must be timezone-aware.")
+        return self
+
+    @model_validator(mode="after")
+    def require_official_guidance_lineage(self) -> Self:
+        if self.proposed_scope != "claim_policy":
+            raise ValueError("Official-guidance promotion scope must be claim_policy.")
+        if self.candidate_blocked_claims != self.blocked_claims:
+            raise ValueError("Official-guidance blocked claims must be preserved exactly.")
+        if self.candidate_allowed_claims != self.allowed_claims:
+            raise ValueError("Official-guidance candidate policy must be preserved exactly.")
+        if self.observation_id == "":
+            raise ValueError("Official-guidance observation lineage is required.")
+        return self
+
+
+PromotionSnapshot = Annotated[
+    ContentResearchFactPromotionSnapshot | ContentOfficialGuidanceFactPromotionSnapshot,
+    Field(discriminator="schema_version"),
+]
+
+
+def parse_content_research_fact_promotion_snapshot(
+    payload: Mapping[str, Any],
+) -> ContentResearchFactPromotionSnapshot | ContentOfficialGuidanceFactPromotionSnapshot:
+    """Parse one explicit promotion snapshot version without reinterpretation."""
+
+    version = payload.get("schema_version")
+    if version == "content_research_fact_promotion_snapshot_v1":
+        return ContentResearchFactPromotionSnapshot.model_validate(payload)
+    if version == "content_official_guidance_fact_promotion_snapshot_v1":
+        return ContentOfficialGuidanceFactPromotionSnapshot.model_validate(payload)
+    raise ValueError("Unknown research promotion snapshot schema version.")
+
+
 class ContentResearchFactPromotionPreviewResponse(_FrozenModel):
     response_type: Literal["content_research_fact_promotion_preview"] = (
         "content_research_fact_promotion_preview"
@@ -111,7 +218,7 @@ class ContentResearchFactPromotionPreviewResponse(_FrozenModel):
     status: Literal["preview_ready", "blocked"]
     proposal_id: str = Field(min_length=1)
     action: ActionObject | None = None
-    snapshot: ContentResearchFactPromotionSnapshot | None = None
+    snapshot: PromotionSnapshot | None = None
     blockers: tuple[str, ...] = ()
     safe_next_step: str = Field(min_length=1)
 
@@ -127,7 +234,7 @@ class ContentResearchFactPromotionPreviewResponse(_FrozenModel):
 class ContentResearchFactPromotionProposal(_FrozenModel):
     action_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
     proposal_digest: str = Field(pattern=_HEX64)
-    snapshot: ContentResearchFactPromotionSnapshot
+    snapshot: PromotionSnapshot
     prepared_at: datetime
 
     @model_validator(mode="after")
@@ -145,7 +252,7 @@ class ContentResearchFactPromotionReceipt(_FrozenModel):
     receipt_digest: str = Field(pattern=_HEX64)
     action_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
     action_payload_digest: str = Field(pattern=_HEX64)
-    snapshot: ContentResearchFactPromotionSnapshot
+    snapshot: PromotionSnapshot
     source_fact: ContentSourceFact
     preview_audit_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
     review_audit_id: str = Field(min_length=1, max_length=240, pattern=_SAFE_IDENTIFIER)
@@ -173,6 +280,9 @@ def prepare_research_fact_promotion_preview(
     *,
     store: Any | None = None,
 ) -> ContentResearchFactPromotionPreviewResponse:
+    historical = _historical_official_guidance_preview(command, store=store)
+    if historical is not None:
+        return historical
     candidate = build_default_research_promotion_candidate(command.proposal_id)
     if candidate.status != "ready_for_human_decisions" or candidate.policy is None:
         blockers = tuple(
@@ -191,8 +301,35 @@ def prepare_research_fact_promotion_preview(
             blockers=("research_claim_missing: Research proposal has no non-blank claim.",),
             safe_next_step="Uzyskaj researcher claim przed przygotowaniem promotion preview.",
         )
+    if (
+        isinstance(candidate.policy, OfficialGuidanceResearchPromotionPolicySnapshot)
+        and command.proposed_scope != "claim_policy"
+    ):
+        return ContentResearchFactPromotionPreviewResponse(
+            status="blocked",
+            proposal_id=command.proposal_id,
+            blockers=(
+                "official_guidance_scope_fixed: Official-guidance promotion requires "
+                "the server-owned claim_policy scope.",
+            ),
+            safe_next_step="Użyj scope claim_policy dla official-guidance promotion.",
+        )
     snapshot = _snapshot(candidate, command)
     if store is not None:
+        if isinstance(snapshot, ContentOfficialGuidanceFactPromotionSnapshot) and hasattr(
+            store, "load_research_fact_promotion_proposal_for_proposal"
+        ):
+            existing = store.load_research_fact_promotion_proposal_for_proposal(
+                snapshot.proposal_id
+            )
+            if (
+                existing is not None
+                and isinstance(
+                    existing.snapshot, ContentOfficialGuidanceFactPromotionSnapshot
+                )
+                and _snapshot_content(existing.snapshot) == _snapshot_content(snapshot)
+            ):
+                snapshot = existing.snapshot
         proposal = ContentResearchFactPromotionProposal(
             action_id=_promotion_action_id(snapshot),
             proposal_digest=_promotion_snapshot_digest(snapshot),
@@ -214,10 +351,52 @@ def prepare_research_fact_promotion_preview(
     )
 
 
+def _historical_official_guidance_preview(
+    command: ContentResearchFactPromotionPreviewCommand,
+    *,
+    store: Any | None,
+) -> ContentResearchFactPromotionPreviewResponse | None:
+    if store is None or not hasattr(store, "load_research_fact_promotion_receipt_for_proposal"):
+        return None
+    receipt = store.load_research_fact_promotion_receipt_for_proposal(command.proposal_id)
+    if receipt is None or not isinstance(
+        receipt.snapshot, ContentOfficialGuidanceFactPromotionSnapshot
+    ):
+        return None
+    if not hasattr(store, "load_research_fact_promotion_proposal"):
+        return None
+    historical_proposal = store.load_research_fact_promotion_proposal(receipt.action_id)
+    if historical_proposal is None or historical_proposal.snapshot != receipt.snapshot:
+        return None
+    if not hasattr(store, "get_research_proposal"):
+        return None
+    research_proposal = store.get_research_proposal(command.proposal_id)
+    if research_proposal is None or research_proposal.proposal_digest != (
+        receipt.snapshot.proposal_digest
+    ):
+        return None
+    if (
+        command.proposed_scope != receipt.snapshot.proposed_scope
+        or command.proposed_confidence != receipt.snapshot.proposed_confidence
+    ):
+        return None
+    snapshot = receipt.snapshot
+    return ContentResearchFactPromotionPreviewResponse(
+        status="preview_ready",
+        proposal_id=command.proposal_id,
+        action=_action(snapshot),
+        snapshot=snapshot,
+        blockers=(),
+        safe_next_step=(
+            "To jest historyczny promotion preview; istniejący receipt pozostaje terminalny."
+        ),
+    )
+
+
 def _snapshot(
     candidate: ResearchPromotionCandidateProjection,
     command: ContentResearchFactPromotionPreviewCommand,
-) -> ContentResearchFactPromotionSnapshot:
+) -> ContentResearchFactPromotionSnapshot | ContentOfficialGuidanceFactPromotionSnapshot:
     if candidate.policy is None or candidate.observation_id is None:
         raise ValueError("Research promotion candidate lacks exact policy or observation.")
     payload: dict[str, Any] = {
@@ -251,6 +430,27 @@ def _snapshot(
         "evidence_requirements": candidate.policy.evidence_requirements,
         "checked_at": datetime.now(UTC),
     }
+    if isinstance(candidate.policy, OfficialGuidanceResearchPromotionPolicySnapshot):
+        payload.update(
+            {
+                "schema_version": "content_official_guidance_fact_promotion_snapshot_v1",
+                "promotion_kind": "official_guidance",
+                "candidate_id": candidate.policy.candidate_id,
+                "candidate_digest": candidate.policy.candidate_digest,
+                "candidate_canonical_path": candidate.policy.candidate_canonical_path,
+                "candidate_title": candidate.policy.candidate_title,
+                "candidate_allowed_claims": candidate.policy.candidate_allowed_claims,
+                "candidate_blocked_claims": candidate.policy.candidate_blocked_claims,
+                "classification_run_id": candidate.policy.classification_run_id,
+                "classification_decision_set_digest": (
+                    candidate.policy.classification_decision_set_digest
+                ),
+                "classification_source_row_digest": (
+                    candidate.policy.classification_source_row_digest
+                ),
+                "policy_version": "official_guidance_policy_v1",
+            }
+        )
     digest_payload = {
         **payload,
         "checked_at": payload["checked_at"].astimezone(UTC).isoformat().replace(
@@ -258,13 +458,18 @@ def _snapshot(
         ),
     }
     digest = canonical_json_digest(digest_payload)
-    return ContentResearchFactPromotionSnapshot(
-        **payload,
-        context_digest=digest,
+    snapshot_type = (
+        ContentOfficialGuidanceFactPromotionSnapshot
+        if isinstance(candidate.policy, OfficialGuidanceResearchPromotionPolicySnapshot)
+        else ContentResearchFactPromotionSnapshot
     )
+    return snapshot_type(**payload, context_digest=digest)
 
 
-def _action(snapshot: ContentResearchFactPromotionSnapshot) -> ActionObject:
+def _action(
+    snapshot: ContentResearchFactPromotionSnapshot
+    | ContentOfficialGuidanceFactPromotionSnapshot,
+) -> ActionObject:
     action_digest = canonical_json_digest(snapshot.model_dump(mode="json"))
     action_id = f"act_content_research_fact_promotion_{action_digest[:24]}"
     payload = {
@@ -279,6 +484,13 @@ def _action(snapshot: ContentResearchFactPromotionSnapshot) -> ActionObject:
         "promotion_snapshot": snapshot.model_dump(mode="json"),
         "runtime_blockers": [],
     }
+    if isinstance(snapshot, ContentOfficialGuidanceFactPromotionSnapshot):
+        payload.update(
+            {
+                "promotion_kind": "official_guidance",
+                "preview_contract": CONTENT_OFFICIAL_GUIDANCE_FACT_PROMOTION_PREVIEW_CONTRACT,
+            }
+        )
     evidence_ids = sorted(set(snapshot.evidence_ids) | set(snapshot.card_evidence_ids))
     return ActionObject(
         id=action_id,
@@ -300,22 +512,29 @@ def _action(snapshot: ContentResearchFactPromotionSnapshot) -> ActionObject:
     )
 
 
-def _promotion_snapshot_digest(snapshot: ContentResearchFactPromotionSnapshot) -> str:
+def _promotion_snapshot_digest(
+    snapshot: ContentResearchFactPromotionSnapshot
+    | ContentOfficialGuidanceFactPromotionSnapshot,
+) -> str:
     return canonical_json_digest(snapshot.model_dump(mode="json"))
 
 
-def _promotion_action_id(snapshot: ContentResearchFactPromotionSnapshot) -> str:
+def _promotion_action_id(
+    snapshot: ContentResearchFactPromotionSnapshot
+    | ContentOfficialGuidanceFactPromotionSnapshot,
+) -> str:
     return f"act_content_research_fact_promotion_{_promotion_snapshot_digest(snapshot)[:24]}"
 
 
 def promotion_action_payload_digest(action: ActionObject) -> str:
-    return canonical_json_digest(
-        {
-            "action_type": action.payload.get("action_type"),
-            "preview_contract": action.payload.get("preview_contract"),
-            "promotion_snapshot": action.payload.get("promotion_snapshot"),
-        }
-    )
+    payload = {
+        "action_type": action.payload.get("action_type"),
+        "preview_contract": action.payload.get("preview_contract"),
+        "promotion_snapshot": action.payload.get("promotion_snapshot"),
+    }
+    if action.payload.get("promotion_kind") == "official_guidance":
+        payload["promotion_kind"] = "official_guidance"
+    return canonical_json_digest(payload)
 
 
 def validate_research_fact_promotion_action_payload(payload: dict[str, Any]) -> list[str]:
@@ -328,7 +547,31 @@ def validate_research_fact_promotion_action_payload(payload: dict[str, Any]) -> 
         errors.append("Research promotion must remain local-only.")
     if payload.get("mode") != "apply":
         errors.append("Research promotion action must use apply mode.")
-    if payload.get("preview_contract") != CONTENT_RESEARCH_FACT_PROMOTION_PREVIEW_CONTRACT:
+    promotion_snapshot = payload.get("promotion_snapshot")
+    snapshot: (
+        ContentResearchFactPromotionSnapshot
+        | ContentOfficialGuidanceFactPromotionSnapshot
+        | None
+    ) = None
+    try:
+        if not isinstance(promotion_snapshot, dict):
+            raise ValueError("promotion snapshot must be an object")
+        snapshot = parse_content_research_fact_promotion_snapshot(promotion_snapshot)
+    except Exception:
+        errors.append("Research promotion snapshot is invalid.")
+    if isinstance(snapshot, ContentOfficialGuidanceFactPromotionSnapshot):
+        if payload.get("promotion_kind") != "official_guidance":
+            errors.append("Official-guidance promotion discriminator is missing.")
+        if (
+            payload.get("preview_contract")
+            != CONTENT_OFFICIAL_GUIDANCE_FACT_PROMOTION_PREVIEW_CONTRACT
+        ):
+            errors.append("Official-guidance promotion preview contract is invalid.")
+    elif (
+        snapshot is not None
+        and payload.get("preview_contract")
+        != CONTENT_RESEARCH_FACT_PROMOTION_PREVIEW_CONTRACT
+    ):
         errors.append("Research promotion preview contract is missing.")
     if payload.get("apply_allowed") is not True or payload.get("api_mutation_ready") is not True:
         errors.append("Research promotion apply contract is not ready.")
@@ -336,12 +579,6 @@ def validate_research_fact_promotion_action_payload(payload: dict[str, Any]) -> 
         errors.append("Research promotion cannot be destructive.")
     if payload.get("runtime_blockers") != []:
         errors.append("Research promotion action has runtime blockers.")
-    try:
-        ContentResearchFactPromotionSnapshot.model_validate(
-            payload.get("promotion_snapshot", {})
-        )
-    except Exception:
-        errors.append("Research promotion snapshot is invalid.")
     return errors
 
 
@@ -351,6 +588,11 @@ def load_content_research_fact_promotion_action(
     proposal = store.load_research_fact_promotion_proposal(action_id)
     if proposal is None:
         return None
+    # A persisted receipt is the terminal replay authority.  Re-reading the
+    # candidate after apply would include the newly promoted fact in the
+    # registry and make the exact original action appear to have drifted.
+    if store.load_research_fact_promotion_receipt(action_id) is not None:
+        return _action(proposal.snapshot)
     current = build_default_research_promotion_candidate(proposal.snapshot.proposal_id)
     if current.status != "ready_for_human_decisions" or current.policy is None:
         action = _action(proposal.snapshot)
@@ -391,7 +633,46 @@ def load_content_research_fact_promotion_action(
     return _action(proposal.snapshot)
 
 
-def _snapshot_content(snapshot: ContentResearchFactPromotionSnapshot) -> dict[str, Any]:
+def _official_guidance_source_fact(
+    snapshot: ContentOfficialGuidanceFactPromotionSnapshot,
+    reviewer: str,
+) -> ContentSourceFact:
+    """Reconstruct one exact claim-policy fact from the official snapshot."""
+
+    if snapshot.proposed_claim not in snapshot.candidate_allowed_claims:
+        raise ValueError("Official-guidance claim is outside the candidate policy.")
+    return ContentSourceFact(
+        source_id=f"research_proposal_fact_{snapshot.proposal_id}",
+        source_type="official_guidance",
+        privacy_class="commit_safe",
+        source_url_or_path=snapshot.source_url,
+        extracted_fact=snapshot.proposed_claim,
+        scope="claim_policy",
+        freshness_date=snapshot.freshness_date,
+        confidence=snapshot.proposed_confidence,
+        review_status="approved",
+        reviewer=reviewer,
+        evidence_ids=list(snapshot.evidence_ids),
+        source_connectors=list(snapshot.source_connectors),
+        blocked_claims=list(snapshot.candidate_blocked_claims),
+        target_card_id=OFFICIAL_GUIDANCE_TARGET_CARD_ID,
+        target_card_type=OFFICIAL_GUIDANCE_TARGET_CARD_TYPE,
+        target_card_title=OFFICIAL_GUIDANCE_TARGET_CARD_TITLE,
+        allowed_claims=[snapshot.proposed_claim],
+        evidence_requirements=list(snapshot.evidence_requirements),
+        usage_notes=[
+            "Promoted from exact official guidance via local ActionObject; "
+            "the claim remains scoped to its canonical path."
+        ],
+        official_source=False,
+        applicable_canonical_paths=[snapshot.candidate_canonical_path],
+    )
+
+
+def _snapshot_content(
+    snapshot: ContentResearchFactPromotionSnapshot
+    | ContentOfficialGuidanceFactPromotionSnapshot,
+) -> dict[str, Any]:
     return snapshot.model_dump(exclude={"checked_at", "context_digest"})
 
 
@@ -400,18 +681,25 @@ def execute_research_fact_promotion(
     *,
     context: ContentResearchFactPromotionExecutionContext,
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    store = context.promotion_store
+    existing_receipt = store.load_research_fact_promotion_receipt(action.id)
     action_errors = _canonical_action_errors(action)
+    if existing_receipt is not None and action.status == ActionStatus.applied:
+        action_errors = [
+            error
+            for error in action_errors
+            if error != "Research promotion action is not ready_to_apply."
+        ]
     if action_errors:
         return None, action_errors
     context_errors = _execution_context_errors(action, context)
     if context_errors:
         return None, context_errors
-    store = context.promotion_store
     proposal = store.load_research_fact_promotion_proposal(action.id)
     if proposal is None:
         return None, ["Research promotion proposal is missing."]
     try:
-        snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+        snapshot = parse_content_research_fact_promotion_snapshot(
             action.payload.get("promotion_snapshot", {})
         )
     except Exception:
@@ -419,11 +707,20 @@ def execute_research_fact_promotion(
     if snapshot != proposal.snapshot:
         return None, ["Research promotion snapshot changed before apply."]
     payload_digest = promotion_action_payload_digest(action)
+    audit_events = (
+        tuple(
+            event
+            for event in context.persisted_audit_events
+            if event.event_type != "apply_succeeded"
+        )
+        if existing_receipt is not None
+        else context.persisted_audit_events
+    )
     required, audit_errors = _persisted_promotion_audit_chain(
         action.id,
         snapshot,
         payload_digest,
-        context.persisted_audit_events,
+        audit_events,
     )
     if audit_errors:
         return None, audit_errors
@@ -439,6 +736,17 @@ def execute_research_fact_promotion(
         for event in required.values()
     ):
         return None, ["promotion_reviewer_identity_unverified"]
+    if existing_receipt is not None:
+        if (
+            existing_receipt.action_payload_digest != payload_digest
+            or existing_receipt.snapshot != snapshot
+        ):
+            return None, ["Research promotion receipt conflicts with this action."]
+        return {
+            "receipt_id": existing_receipt.receipt_id,
+            "status": "idempotent",
+            "external_write_attempted": False,
+        }, []
     current = build_default_research_promotion_candidate(snapshot.proposal_id)
     if current.status != "ready_for_human_decisions" or current.policy is None:
         return None, ["Research promotion candidate drifted or became stale."]
@@ -462,26 +770,30 @@ def execute_research_fact_promotion(
         and confirmation_event is not None
         and impact_event is not None
     )
-    source_fact = ContentSourceFact(
-        source_id=f"research_proposal_fact_{snapshot.proposal_id}",
-        source_type="public_site",
-        privacy_class="commit_safe",
-        source_url_or_path=snapshot.source_url,
-        extracted_fact=snapshot.proposed_claim,
-        scope=snapshot.proposed_scope,
-        freshness_date=snapshot.freshness_date,
-        confidence=snapshot.proposed_confidence,
-        review_status="approved",
-        reviewer=review_event.actor,
-        evidence_ids=list(snapshot.evidence_ids),
-        source_connectors=list(snapshot.source_connectors),
-        blocked_claims=list(snapshot.blocked_claims),
-        target_card_id=snapshot.target_card_id,
-        target_card_type=snapshot.target_card_type,
-        target_card_title=snapshot.target_card_title,
-        allowed_claims=list(snapshot.allowed_claims),
-        evidence_requirements=list(snapshot.evidence_requirements),
-        usage_notes=["Promoted from reviewed research proposal via local ActionObject."],
+    source_fact = (
+        _official_guidance_source_fact(snapshot, review_event.actor)
+        if isinstance(snapshot, ContentOfficialGuidanceFactPromotionSnapshot)
+        else ContentSourceFact(
+            source_id=f"research_proposal_fact_{snapshot.proposal_id}",
+            source_type="public_site",
+            privacy_class="commit_safe",
+            source_url_or_path=snapshot.source_url,
+            extracted_fact=snapshot.proposed_claim,
+            scope=snapshot.proposed_scope,
+            freshness_date=snapshot.freshness_date,
+            confidence=snapshot.proposed_confidence,
+            review_status="approved",
+            reviewer=review_event.actor,
+            evidence_ids=list(snapshot.evidence_ids),
+            source_connectors=list(snapshot.source_connectors),
+            blocked_claims=list(snapshot.blocked_claims),
+            target_card_id=snapshot.target_card_id,
+            target_card_type=snapshot.target_card_type,
+            target_card_title=snapshot.target_card_title,
+            allowed_claims=list(snapshot.allowed_claims),
+            evidence_requirements=list(snapshot.evidence_requirements),
+            usage_notes=["Promoted from reviewed research proposal via local ActionObject."],
+        )
     )
     recorded_at = datetime.now(UTC)
     receipt_payload: dict[str, Any] = {
@@ -585,7 +897,7 @@ def _trusted_promotion_audit_event(
 
 def _promotion_action_id_from_payload(payload: dict[str, Any]) -> str:
     try:
-        snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+        snapshot = parse_content_research_fact_promotion_snapshot(
             payload.get("promotion_snapshot", {})
         )
     except Exception:
@@ -595,7 +907,8 @@ def _promotion_action_id_from_payload(payload: dict[str, Any]) -> str:
 
 def _persisted_promotion_audit_chain(
     action_id: str,
-    snapshot: ContentResearchFactPromotionSnapshot,
+    snapshot: ContentResearchFactPromotionSnapshot
+    | ContentOfficialGuidanceFactPromotionSnapshot,
     payload_digest: str,
     events: tuple[AuditEvent, ...],
 ) -> tuple[dict[str, AuditEvent] | None, list[str]]:
@@ -656,17 +969,20 @@ def _persisted_promotion_audit_chain(
 __all__ = [
     "CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE",
     "CONTENT_RESEARCH_FACT_PROMOTION_PREVIEW_CONTRACT",
+    "CONTENT_OFFICIAL_GUIDANCE_FACT_PROMOTION_PREVIEW_CONTRACT",
     "CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER",
     "ContentResearchFactPromotionPreviewCommand",
     "ContentResearchFactPromotionPreviewRequest",
     "ContentResearchFactPromotionPreviewResponse",
     "ContentResearchFactPromotionSnapshot",
+    "ContentOfficialGuidanceFactPromotionSnapshot",
     "ContentResearchFactPromotionProposal",
     "ContentResearchFactPromotionReceipt",
     "ContentResearchFactPromotionExecutionContext",
     "execute_research_fact_promotion",
     "load_content_research_fact_promotion_action",
     "promotion_action_payload_digest",
+    "parse_content_research_fact_promotion_snapshot",
     "research_promotion_execution_context_digest",
     "prepare_research_fact_promotion_preview",
     "validate_research_fact_promotion_action_payload",

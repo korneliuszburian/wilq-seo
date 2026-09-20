@@ -256,8 +256,8 @@ from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
     ContentResearchFactPromotionExecutionContext,
-    ContentResearchFactPromotionSnapshot,
     execute_research_fact_promotion,
+    parse_content_research_fact_promotion_snapshot,
     promotion_action_payload_digest,
     research_promotion_execution_context_digest,
 )
@@ -677,7 +677,7 @@ def _trusted_promotion_principal_receipt(
     if action.payload.get("action_type") != CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
         return None
     try:
-        snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+        snapshot = parse_content_research_fact_promotion_snapshot(
             action.payload.get("promotion_snapshot", {})
         )
     except Exception:

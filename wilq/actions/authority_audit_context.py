@@ -14,7 +14,7 @@ from wilq.content.workflow.delivery_identity_authority import (
 )
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
-    ContentResearchFactPromotionSnapshot,
+    parse_content_research_fact_promotion_snapshot,
     promotion_action_payload_digest,
 )
 from wilq.content.workflow.source_fact_authority import (
@@ -60,7 +60,7 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
         }
         return
     if action_type == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
-        promotion_snapshot = ContentResearchFactPromotionSnapshot.model_validate(
+        promotion_snapshot = parse_content_research_fact_promotion_snapshot(
             action.payload.get("promotion_snapshot", {})
         )
         event.details = {

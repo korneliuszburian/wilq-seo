@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -11,6 +12,9 @@ from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+import apps.api.wilq_api.routers.actions as actions_router
+import wilq.actions.action_validation as action_validation_module
+import wilq.actions.audit_store as audit_store_module
 import wilq.content.knowledge.source_facts as source_facts_module
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.evidence_acquisition_coordinator as acquisition_module
@@ -22,6 +26,8 @@ import wilq.content.workflow.store.store as workflow_store_module
 import wilq.evidence.registry as evidence_registry
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_evidence_acquisition as acquisition_router
+from apps.api.wilq_api.routers import content_source_fact_authority as authority_router
+from apps.api.wilq_api.routers import content_source_pack_binding as source_pack_router
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from tests.content.test_authoring_inventory_receipt import _catalog as authoring_catalog
 from tests.content.test_authoring_inventory_receipt import _item as authoring_item
@@ -29,6 +35,12 @@ from tests.content.test_authoring_inventory_receipt import _receipt as authoring
 from tests.content.test_delivery_identity_binding import _command as identity_command
 from wilq.actions import action_catalog
 from wilq.actions import service as action_service
+from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY
+from wilq.audit.trusted_local_confirmation import (
+    TRUSTED_LOCAL_CONFIRMATION_PHRASE,
+    TrustedLocalConfirmationAuthority,
+    TrustedLocalConfirmationStore,
+)
 from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
@@ -36,6 +48,10 @@ from wilq.codex.app_server import (
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.workflow.decisions.production import canonical_json_digest
+from wilq.content.workflow.delivery_identity import (
+    ContentDeliveryIdentityCommand,
+    inventory_evidence_digest,
+)
 from wilq.content.workflow.evidence_acquisition_coordinator import (
     EvidenceAcquisitionCoordinator,
     EvidenceAcquisitionRun,
@@ -45,6 +61,11 @@ from wilq.content.workflow.evidence_acquisition_snapshot import (
     CurrentPageSnapshotReadError,
     EvidenceObservationReceipt,
     WordPressCurrentPageSnapshotAdapter,
+)
+from wilq.content.workflow.official_guidance import (
+    OFFICIAL_GUIDANCE_CANDIDATE_ID,
+    OFFICIAL_GUIDANCE_CANONICAL_PATH,
+    OfficialGuidanceObservationAdapter,
 )
 from wilq.content.workflow.research_promotion_authority import (
     ContentResearchFactPromotionPreviewCommand,
@@ -67,6 +88,7 @@ from wilq.content.workflow.store.store_schema import (
     ContentWorkflowSchemaMigrationError,
 )
 from wilq.schemas import AuditEvent
+from wilq.storage.local_state import LocalStateStore
 from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
 
 
@@ -975,6 +997,385 @@ class _FakeResearcher:
         )
 
 
+class _OfficialGuidanceResearcher:
+    def run_structured_turn(
+        self, request: CodexAppServerStructuredTurnRequest
+    ) -> CodexAppServerTurnResult:
+        context = json.loads(request.application_context)
+        observation_id = context["allowed_observation_ids"][0]
+        return CodexAppServerTurnResult(
+            status="completed",
+            output_text=json.dumps(
+                {
+                    "proposed_claim": (
+                        "ISO 37301 is a current international compliance management "
+                        "systems standard."
+                    ),
+                    "scope": "ISO 37301 — compliance management systems",
+                    "observation_ids": [observation_id],
+                    "contradictions": [],
+                    "unknowns": [],
+                }
+            ),
+            turn_id="official-guidance-promotion-test-turn",
+        )
+
+
+def _official_guidance_classification_run() -> production_module.ContentProductionClassificationRun:
+    """Persist a real classification aggregate whose exact row is the guidance target."""
+
+    baseline = exact_public_bdo_run()
+    row_payload = baseline.rows[0].model_dump(mode="python")
+    row_payload.update(
+        {
+            "canonical_path": OFFICIAL_GUIDANCE_CANONICAL_PATH,
+            "public_url": f"https://www.ekologus.pl{OFFICIAL_GUIDANCE_CANONICAL_PATH}/",
+            "decision": "refresh",
+            "revision_approved": False,
+            "revision_complete": False,
+            "retained_work_item_id": None,
+            "revision_id": None,
+            "revision_digest": None,
+            "retained_binding": None,
+            "verified_actions": (),
+            "verified_drafts": (),
+            "source_packet_row_digest": "d" * 64,
+        }
+    )
+    row = production_module.ContentProductionClassificationRow.model_validate(row_payload)
+    rows = tuple(sorted((row, baseline.rows[1]), key=lambda item: item.canonical_path))
+    return production_module._build_run(
+        input_receipt=baseline.input,
+        counts=production_module.classification_counts(rows),
+        freshness=baseline.freshness,
+        source_receipts=baseline.source_receipts,
+        judge_receipt=baseline.judge_receipt,
+        rows=rows,
+        audit=baseline.audit,
+    )
+
+
+def test_public_official_guidance_promotion_is_exact_and_row_scoped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise official acquisition through apply and back into row candidates."""
+
+    read_at = datetime.now(UTC)
+    workflow_store = ContentWorkflowStore(tmp_path / "official-workflow.sqlite3")
+    classification_run = _official_guidance_classification_run()
+    workflow_store.record_production_classification(classification_run)
+    official_row = classification_run.rows[0]
+    inventory_evidence_ids = tuple(sorted(official_row.primary_evidence_ids[:1]))
+    identity = workflow_store.record_content_delivery_identity(
+        ContentDeliveryIdentityCommand.model_validate(
+            {
+                "canonical_path": official_row.canonical_path,
+                "public_url": official_row.public_url,
+                "current_work_item_id": official_row.current_work_item_id,
+                "classification_run_id": classification_run.run_id,
+                "classification_run_digest": classification_run.run_digest,
+                "classification_decision_set_digest": classification_run.input.decision_set_digest,
+                "classification_source_row_digest": official_row.source_packet_row_digest,
+                "inventory_evidence_ids": inventory_evidence_ids,
+                "inventory_evidence_digest": inventory_evidence_digest(inventory_evidence_ids),
+                "final_disposition": "keep",
+                "retained_work_item_id": None,
+                "retained_usage": None,
+                "recorded_by": "official_guidance_test",
+                "recorded_at": datetime(2026, 9, 20, 12, 0, tzinfo=UTC),
+            }
+        )
+    ).binding
+    official_adapter = OfficialGuidanceObservationAdapter(
+        material_reader=lambda url: SimpleNamespace(
+            url=url,
+            content_text=(
+                "ISO 37301 is an international standard for compliance management "
+                "systems. It applies to organizations of any size."
+            ),
+            extraction_region="test.official_guidance.body",
+        ),
+        clock=lambda: read_at,
+    )
+    acquisition = EvidenceAcquisitionCoordinator(
+        identity_loader=workflow_store.load_content_delivery_identity,
+        classification_loader=workflow_store.load_production_classification_for_work_item,
+        store=workflow_store,
+        official_guidance_snapshot_reader=official_adapter.read,
+        clock=lambda: read_at,
+    )
+    researcher = EvidenceResearchCoordinator(
+        acquisition_reader=acquisition.read,
+        proposal_store=workflow_store,
+        researcher=_OfficialGuidanceResearcher(),
+        clock=lambda: read_at,
+    )
+    audit_store = LocalStateStore(tmp_path / "official-audit.sqlite3")
+    trusted_authority = TrustedLocalConfirmationAuthority(
+        store=TrustedLocalConfirmationStore(tmp_path / "official-grants.sqlite3"),
+        signing_key=b"official-guidance-test-signing-key",
+        clock=lambda: read_at,
+        uid_reader=os.getuid,
+    )
+    monkeypatch.setattr(
+        acquisition_router,
+        "build_default_evidence_acquisition_coordinator",
+        lambda: acquisition,
+    )
+    monkeypatch.setattr(
+        acquisition_router,
+        "build_default_evidence_research_coordinator",
+        lambda: researcher,
+    )
+    monkeypatch.setattr(acquisition_router, "content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(authority_router, "content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(source_pack_router, "content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(workflow_store_module, "content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(action_catalog, "content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(action_service, "action_content_workflow_store", lambda: workflow_store)
+    monkeypatch.setattr(action_service, "local_state_store", lambda: audit_store)
+    monkeypatch.setattr(action_validation_module, "local_state_store", lambda: audit_store)
+    monkeypatch.setattr(audit_store_module, "local_state_store", lambda: audit_store)
+    monkeypatch.setattr(actions_router, "local_state_store", lambda: audit_store)
+    monkeypatch.setattr(
+        action_service,
+        "trusted_local_confirmation_authority",
+        lambda: trusted_authority,
+    )
+    monkeypatch.setattr(
+        action_service,
+        "get_connector_status",
+        lambda _connector: SimpleNamespace(configured=True, label="Official guidance"),
+    )
+    action_catalog.clear_action_list_cache()
+
+    command = EvidenceAcquisitionStartCommand(
+        subject=_identity_subject(identity.binding_id),
+        research_question="Jaki zakres ma ISO 37301?",
+        source_intent="official_primary",
+        source_selector={
+            "selector_kind": "official_primary",
+            "candidate_id": OFFICIAL_GUIDANCE_CANDIDATE_ID,
+        },
+    )
+
+    with TestClient(app) as client:
+        acquired = client.post(
+            "/api/content/evidence-acquisition", json=command.model_dump(mode="json")
+        )
+        assert acquired.status_code == 200, acquired.text
+        acquired_payload = acquired.json()
+        assert acquired_payload["recorded_run"]["status"] == "ready_for_researcher"
+        assert acquired_payload["recorded_run"]["observation"]["canonical_path"] == (
+            OFFICIAL_GUIDANCE_CANONICAL_PATH
+        )
+        run_id = acquired_payload["run_id"]
+
+        proposal_response = client.post(f"/api/content/evidence-acquisition/{run_id}/research")
+        assert proposal_response.status_code == 200, proposal_response.text
+        proposal_payload = proposal_response.json()
+        proposal_id = proposal_payload["proposal_id"]
+        assert proposal_payload["current_status"] == "ready_for_review"
+        assert proposal_payload["recorded_proposal"]["approved"] is False
+
+        candidate_response = client.get(
+            f"/api/content/evidence-acquisition/research/{proposal_id}/promotion-candidate"
+        )
+        assert candidate_response.status_code == 200, candidate_response.text
+        candidate_payload = candidate_response.json()
+        assert candidate_payload["status"] == "ready_for_human_decisions"
+        assert candidate_payload["policy"]["promotion_kind"] == "official_guidance"
+        assert candidate_payload["policy"]["candidate_canonical_path"] == (
+            OFFICIAL_GUIDANCE_CANONICAL_PATH
+        )
+
+        promotion_response = client.post(
+            f"/api/content/evidence-acquisition/research/{proposal_id}/promotion-preview",
+            json={"proposed_scope": "claim_policy", "proposed_confidence": 0.91},
+        )
+        assert promotion_response.status_code == 200, promotion_response.text
+        promotion_payload = promotion_response.json()
+        assert promotion_payload["status"] == "preview_ready"
+        action_payload = promotion_payload["action"]
+        action_id = action_payload["id"]
+        snapshot = action_payload["payload"]["promotion_snapshot"]
+        assert action_payload["payload"]["promotion_kind"] == "official_guidance"
+        assert snapshot["candidate_canonical_path"] == OFFICIAL_GUIDANCE_CANONICAL_PATH
+        assert snapshot["proposed_claim"] == (
+            "ISO 37301 is a current international compliance management systems standard."
+        )
+        assert snapshot["proposed_scope"] == "claim_policy"
+        assert snapshot["candidate_blocked_claims"] == [
+            "certification",
+            "legal compliance guarantee",
+            "environmental compliance guarantee",
+            "purchased standard contents",
+        ]
+        assert snapshot["blocked_claims"] == snapshot["candidate_blocked_claims"]
+        assert len(snapshot["evidence_ids"]) == 1
+        assert snapshot["source_connectors"] == ["official_guidance"]
+        with sqlite3.connect(workflow_store.path) as connection:
+            stored_action_ids = [
+                row[0]
+                for row in connection.execute(
+                    "SELECT action_id FROM content_research_fact_promotion_proposals"
+                )
+            ]
+        assert stored_action_ids == [action_id]
+        action_read = client.get(f"/api/actions/{action_id}")
+        assert action_read.status_code == 200, action_read.text
+        assert action_read.json()["id"] == action_id
+
+        assert client.post(f"/api/actions/{action_id}/validate").json()["valid"] is True
+        assert client.post(f"/api/actions/{action_id}/preview", json={}).status_code == 200
+        grant = trusted_authority.issue(
+            principal_id=LOCAL_PILOT_AUDIT_IDENTITY.principal_id,
+            workspace_id=LOCAL_PILOT_AUDIT_IDENTITY.workspace_id,
+            action_id=action_id,
+            payload_digest=promotion_action_payload_digest(
+                promotion_authority.load_content_research_fact_promotion_action(
+                    action_id, store=workflow_store
+                )
+            ),
+            snapshot_digest=snapshot["context_digest"],
+            is_tty=True,
+            confirmation_phrase=TRUSTED_LOCAL_CONFIRMATION_PHRASE,
+        )
+        review = client.post(
+            f"/api/actions/{action_id}/review",
+            json={
+                "outcome": "approved_for_prepare",
+                "reviewed_by": "wilku",
+                "notes": "Sprawdzono exact official guidance.",
+                "trusted_local_confirmation_grant": grant,
+            },
+        )
+        assert review.status_code == 200, review.text
+        assert client.post(
+            f"/api/actions/{action_id}/confirm",
+            json={
+                "confirmed_by": "wilku",
+                "notes": "Potwierdzam lokalny promotion.",
+                "preview_acknowledged": True,
+            },
+        ).status_code == 200
+        assert client.post(
+            f"/api/actions/{action_id}/impact-check",
+            json={"checked_by": "wilku", "notes": "Sprawdzono wpływ lokalny."},
+        ).status_code == 200
+        applied = client.post(
+            f"/api/actions/{action_id}/apply",
+            json={"confirm": True, "confirmed_by": "wilku"},
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"] is True
+        assert applied.json()["adapter_result"]["external_write_attempted"] is False
+        historical_preview = client.post(
+            f"/api/content/evidence-acquisition/research/{proposal_id}/promotion-preview",
+            json={"proposed_scope": "claim_policy", "proposed_confidence": 0.91},
+        )
+        assert historical_preview.status_code == 200, historical_preview.text
+        historical_payload = historical_preview.json()
+        assert historical_payload["action"]["id"] == action_id
+        assert historical_payload["snapshot"] == promotion_payload["snapshot"]
+        assert len(workflow_store.list_research_fact_promotion_receipts()) == 1
+
+        facts = source_facts_module.ekologus_source_facts()
+        promoted = [fact for fact in facts if fact.source_type == "official_guidance"]
+        assert len(promoted) == 1
+        promoted_fact = promoted[0]
+        assert promoted_fact.source_url_or_path.startswith("https://committee.iso.org/")
+        assert promoted_fact.applicable_canonical_paths == [OFFICIAL_GUIDANCE_CANONICAL_PATH]
+        assert promoted_fact.extracted_fact == snapshot["proposed_claim"]
+        assert promoted_fact.evidence_ids == snapshot["evidence_ids"]
+        assert promoted_fact.blocked_claims == snapshot["blocked_claims"]
+        cards = ekologus_content_knowledge_cards()
+        assert promoted_fact.source_id not in {
+            source_fact_id for card in cards for source_fact_id in card.source_fact_ids
+        }
+
+        prerequisites = client.get(
+            f"/api/content/source-pack-bindings/prerequisites/{identity.binding_id}"
+        )
+        assert prerequisites.status_code == 200, prerequisites.text
+        prerequisite_payload = prerequisites.json()
+        assert prerequisite_payload["row_authority_status"] == "missing"
+        assert prerequisite_payload["row_authority_blocker_reason"] == (
+            "source_fact_row_binding_missing"
+        )
+        assert prerequisite_payload["approved_source_fact_ids"] == []
+
+        candidates = client.get(
+            f"/api/content/source-fact-authority-reviews/candidates/{identity.binding_id}"
+        )
+        assert candidates.status_code == 200, candidates.text
+        candidate_projection = candidates.json()
+        selectable = candidate_projection["eligible_candidates"]
+        assert len(selectable) == 1
+        assert selectable[0]["source_fact_id"] == promoted_fact.source_id
+        assert selectable[0]["source_type"] == "official_guidance"
+        assert selectable[0]["selectable"] is True
+        assert selectable[0]["evidence_ids"] == snapshot["evidence_ids"]
+        assert candidate_projection["review_required_candidates"] == []
+
+        receipt_count = len(workflow_store.list_research_fact_promotion_receipts())
+        facts_count = len(source_facts_module.ekologus_source_facts())
+        audits_before_replay = audit_store.list_audit_events(action_id=action_id)
+        replay = client.post(
+            f"/api/actions/{action_id}/apply",
+            json={"confirm": True, "confirmed_by": "wilku"},
+        )
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["applied"] is True
+        assert replay.json()["adapter_result"]["status"] == "idempotent"
+        assert replay.json()["adapter_result"]["external_write_attempted"] is False
+        assert replay.json()["mutation_audit"]["mutation_attempted"] is False
+        assert len(workflow_store.list_research_fact_promotion_receipts()) == receipt_count
+        assert len(source_facts_module.ekologus_source_facts()) == facts_count
+        audits_after_replay = audit_store.list_audit_events(action_id=action_id)
+        assert len(audits_after_replay) == len(audits_before_replay) + 1
+        replay_audits = [
+            event
+            for event in audits_after_replay
+            if event.id not in {item.id for item in audits_before_replay}
+        ]
+        assert len(replay_audits) == 1
+        assert replay_audits[0].event_type == "apply_succeeded"
+        initial_apply = next(
+            event for event in audits_before_replay if event.event_type == "apply_succeeded"
+        )
+        assert replay_audits[0].details["context_digest"] == initial_apply.details[
+            "context_digest"
+        ]
+        assert replay_audits[0].details["payload_digest"] == initial_apply.details[
+            "payload_digest"
+        ]
+        assert [event.event_type for event in audits_after_replay].count(
+            "action_preview_generated"
+        ) == [event.event_type for event in audits_before_replay].count(
+            "action_preview_generated"
+        )
+        assert [event.event_type for event in audits_after_replay].count(
+            "human_review_approved_for_prepare"
+        ) == [event.event_type for event in audits_before_replay].count(
+            "human_review_approved_for_prepare"
+        )
+        assert [event.event_type for event in audits_after_replay].count(
+            "action_apply_confirmed"
+        ) == [event.event_type for event in audits_before_replay].count(
+            "action_apply_confirmed"
+        )
+        assert [event.event_type for event in audits_after_replay].count(
+            "action_impact_check_completed"
+        ) == [event.event_type for event in audits_before_replay].count(
+            "action_impact_check_completed"
+        )
+
+    stored_proposal = workflow_store.get_research_proposal(proposal_id)
+    assert stored_proposal is not None
+    assert stored_proposal.approved is False
+
+
 def test_research_proposal_is_server_lineaged_and_review_only(tmp_path: Path) -> None:
     workflow_store, acquisition, run, _read_time = _ready_acquisition_fixture(tmp_path)
     assert run.observation is not None
@@ -1604,6 +2005,21 @@ def test_approved_promotion_receipt_merges_into_exact_source_fact_registry(
     stored_payload_check.pop("receipt_id")
     assert stored_payload_digest == canonical_json_digest(stored_payload_check)
 
+    duplicate_payload = {
+        **receipt_payload,
+        "action_id": "act_content_research_fact_promotion_duplicate",
+    }
+    duplicate_digest = canonical_json_digest(duplicate_payload)
+    duplicate_receipt = ContentResearchFactPromotionReceipt(
+        receipt_id=f"content_research_fact_promotion_{duplicate_digest[:24]}",
+        receipt_digest=duplicate_digest,
+        **duplicate_payload,
+    )
+    assert (
+        workflow_store.record_research_fact_promotion_receipt(duplicate_receipt)[0]
+        == "conflict"
+    )
+
     class _FixedDateTime(datetime):
         @classmethod
         def now(cls, tz: object = None) -> datetime:
@@ -1637,9 +2053,31 @@ def test_approved_promotion_receipt_merges_into_exact_source_fact_registry(
         fact for fact in baseline_facts if fact.source_id == collision_source_id
     )
     collision_fact = source_fact.model_copy(update={"source_id": collision_source_id})
+    collision_snapshot_payload = snapshot.model_dump(mode="json")
+    collision_snapshot_payload["proposal_id"] = "content_research_proposal_collision"
+    collision_snapshot_payload.pop("context_digest")
+    collision_snapshot_payload["context_digest"] = canonical_json_digest(
+        collision_snapshot_payload
+    )
+    collision_snapshot = type(snapshot).model_validate(collision_snapshot_payload)
+    collision_action_id = (
+        "act_content_research_fact_promotion_"
+        f"{canonical_json_digest(collision_snapshot.model_dump(mode='json'))[:24]}"
+    )
+    collision_action = preview.action.model_copy(
+        update={
+            "id": collision_action_id,
+            "payload": {
+                **preview.action.payload,
+                "promotion_snapshot": collision_snapshot.model_dump(mode="json"),
+            },
+        }
+    )
     collision_payload = {
         **receipt_payload,
-        "action_id": "act_content_research_fact_promotion_collision",
+        "action_id": collision_action_id,
+        "action_payload_digest": promotion_action_payload_digest(collision_action),
+        "snapshot": collision_snapshot.model_dump(mode="json"),
         "source_fact": collision_fact.model_dump(mode="json"),
     }
     collision_digest = canonical_json_digest(collision_payload)

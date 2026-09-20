@@ -267,6 +267,27 @@ class ContentSourceFactAuthorityStoreMixin:
             )
         )
 
+    def load_research_fact_promotion_proposal_for_proposal(
+        self, proposal_id: str
+    ) -> ContentResearchFactPromotionProposal | None:
+        """Read an existing promotion preview for semantic replay binding."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_proposals "
+                "ORDER BY rowid"
+            ).fetchall()
+        for row in rows:
+            try:
+                proposal = ContentResearchFactPromotionProposal.model_validate_json(
+                    cast(str, row["payload_json"]), strict=True
+                )
+            except Exception:
+                continue
+            if proposal.snapshot.proposal_id == proposal_id:
+                return proposal
+        return None
+
     def record_research_fact_promotion_receipt(
         self, receipt: ContentResearchFactPromotionReceipt
     ) -> tuple[str, ContentResearchFactPromotionReceipt]:
@@ -284,9 +305,29 @@ class ContentSourceFactAuthorityStoreMixin:
                 stored = ContentResearchFactPromotionReceipt.model_validate_json(
                     cast(str, existing["payload_json"]), strict=True
                 )
-                if stored.action_payload_digest != accepted.action_payload_digest:
+                if (
+                    stored.action_payload_digest != accepted.action_payload_digest
+                    or stored.receipt_digest != accepted.receipt_digest
+                    or stored.snapshot.proposal_id != accepted.snapshot.proposal_id
+                ):
                     return "conflict", stored
                 return "idempotent", stored
+            existing_for_proposal = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_receipts "
+                "WHERE proposal_id = ? ORDER BY rowid LIMIT 1",
+                (accepted.snapshot.proposal_id,),
+            ).fetchone()
+            if existing_for_proposal is not None:
+                stored = ContentResearchFactPromotionReceipt.model_validate_json(
+                    cast(str, existing_for_proposal["payload_json"]), strict=True
+                )
+                if (
+                    stored.action_id == accepted.action_id
+                    and stored.action_payload_digest == accepted.action_payload_digest
+                    and stored.receipt_digest == accepted.receipt_digest
+                ):
+                    return "idempotent", stored
+                return "conflict", stored
             connection.execute(
                 """
                 INSERT INTO content_research_fact_promotion_receipts (
@@ -313,6 +354,23 @@ class ContentSourceFactAuthorityStoreMixin:
                 "SELECT payload_json FROM content_research_fact_promotion_receipts "
                 "WHERE action_id = ?",
                 (action_id,),
+            ).fetchone()
+        return (
+            None
+            if row is None
+            else ContentResearchFactPromotionReceipt.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
+        )
+
+    def load_research_fact_promotion_receipt_for_proposal(
+        self, proposal_id: str
+    ) -> ContentResearchFactPromotionReceipt | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM content_research_fact_promotion_receipts "
+                "WHERE proposal_id = ? ORDER BY rowid LIMIT 1",
+                (proposal_id,),
             ).fetchone()
         return (
             None

@@ -40,6 +40,7 @@ _CREDIBLE_SOURCE_TYPES = {
     "legal_update",
     "connector_metric",
     "uat_feedback",
+    "official_guidance",
 }
 _CandidateOrigin = Literal[
     "exact_canonical_path",
@@ -482,6 +483,11 @@ def _scoped_candidates(
             for path in fact.applicable_canonical_paths
         ):
             origin = "exact_canonical_path"
+        elif fact.source_type == "official_guidance":
+            # Official guidance is never service-scoped.  A matching card or
+            # target ID must not turn a fact for another canonical path into a
+            # candidate for this row.
+            continue
         elif card is not None and (
             fact.source_id in card.source_fact_ids
             or fact.target_card_id == card.id

@@ -4,6 +4,9 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.research_promotion_authority import (
+    CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+)
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -40,6 +43,7 @@ def validate_action(
         not in {
             CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
             SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
         }
     ):
         errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
