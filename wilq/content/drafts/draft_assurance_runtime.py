@@ -219,6 +219,26 @@ def _run_assurance_turn(
     client: CodexAppServerClientProtocol,
     request: CodexAppServerStructuredTurnRequest,
 ) -> CodexAppServerTurnResult:
+    result = _run_assurance_turn_once(client, request)
+    if _assurance_turn_is_terminal(result):
+        return result
+    # One bounded retry tolerates a transient provider turn failure without
+    # changing a critic verdict or retrying a blocked external call.
+    return _run_assurance_turn_once(client, request)
+
+
+def _assurance_turn_is_terminal(result: CodexAppServerTurnResult) -> bool:
+    return (
+        result.status == "completed"
+        or result.external_call_attempted
+        or result.output_text is not None
+    )
+
+
+def _run_assurance_turn_once(
+    client: CodexAppServerClientProtocol,
+    request: CodexAppServerStructuredTurnRequest,
+) -> CodexAppServerTurnResult:
     try:
         return client.run_structured_turn(request)
     except Exception as error:
