@@ -10,6 +10,7 @@ from uuid import uuid4
 from wilq.codex.app_server import (
     CodexAppServerClientProtocol,
     CodexAppServerStructuredTurnRequest,
+    CodexAppServerTurnBlocker,
     CodexAppServerTurnResult,
 )
 from wilq.content.drafts.draft_assurance import (
@@ -220,8 +221,18 @@ def _run_assurance_turn(
 ) -> CodexAppServerTurnResult:
     try:
         return client.run_structured_turn(request)
-    except Exception:
-        return CodexAppServerTurnResult(status="failed")
+    except Exception as error:
+        # Keep one safe, typed signal instead of an empty blocker, so an
+        # unexpected transport failure stays diagnosable.
+        return CodexAppServerTurnResult(
+            status="failed",
+            blockers=(
+                CodexAppServerTurnBlocker(
+                    code=f"assurance_turn_{type(error).__name__.lower()}",
+                    message="Nie udało się bezpiecznie uruchomić tury krytyka.",
+                ),
+            ),
+        )
 
 
 def _invalid_assurance_output(

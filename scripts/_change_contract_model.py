@@ -218,6 +218,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_readability_regulatory_restore.py",
     ),
+    ("assurance-turn-signal", "typed-transport-exception"): (
+        "scripts/test.sh",
+        "tests/content/test_draft_assurance_runtime_signal.py",
+    ),
     ("content-research-packet", "server-owned-exact-plan-draft"): (
         "scripts/test.sh",
         "tests/content/test_packet_plan_draft_binding.py",
@@ -347,6 +351,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("planning-codex-deadline", "covers-full-turn"),
             ("regulatory-grounding-fallback", "requirement-wide-approved-facts"),
             ("readability-regulatory-restore", "pure-grounding-after-model-repair"),
+            ("assurance-turn-signal", "typed-transport-exception"),
         },
     )
     for key, proof in _PROOFS.items()
