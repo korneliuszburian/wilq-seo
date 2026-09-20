@@ -13,6 +13,9 @@ from wilq.codex.app_server import (
 )
 from wilq.content.drafts.initial_draft_persistence import InitialDraftPrePersistenceGuardError
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
+from wilq.content.drafts.initial_draft_runtime_contract import (
+    initial_draft_timeout_seconds,
+)
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftClaim,
     InitialDraftClaimContext,
@@ -60,7 +63,7 @@ class InitialDraftExecutor(Protocol):
     def submit(self, fn: Callable[..., object], /, *args: object, **kwargs: object) -> object: ...
 
 
-_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 2400.0
+_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = initial_draft_timeout_seconds()
 _INITIAL_DRAFT_QUEUE_RETRY_SECONDS = 5
 
 
@@ -386,7 +389,7 @@ def _prepare_initial_draft_queue_claim(
             planning_input_digest=planning_input_digest,
             evidence_ids=list(getattr(proposal, "evidence_ids", [])),
             source_material_ids=list(getattr(proposal, "source_material_ids", [])),
-            timeout_seconds=_DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS,
+            timeout_seconds=initial_draft_timeout_seconds(),
             context_digest=snapshot_initial_draft_context_digest(snapshot, proposal),
             research_packet_digest=getattr(proposal, "research_packet_digest", None),
             expected_base_revision_id=getattr(

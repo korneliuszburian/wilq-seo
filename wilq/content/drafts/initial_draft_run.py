@@ -14,6 +14,9 @@ from uuid import uuid4
 from wilq.codex.model_policy import embedded_codex_runtime_selection
 from wilq.codex.prompts import resolve_prompt_template
 from wilq.codex.safety import assess_codex_prompt
+from wilq.content.drafts.initial_draft_runtime_contract import (
+    initial_draft_timeout_seconds,
+)
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftBlocker
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import (
@@ -192,12 +195,9 @@ def _enrich_started_initial_draft_run(
         return enriched
 
 
-LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS = 2400.0
-
-
 def effective_initial_draft_deadline(run: CodexRun) -> datetime:
     return run.deadline_at or (
-        run.started_at + timedelta(seconds=LEGACY_INITIAL_DRAFT_TIMEOUT_SECONDS)
+        run.started_at + timedelta(seconds=initial_draft_timeout_seconds())
     )
 
 
