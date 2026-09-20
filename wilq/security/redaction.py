@@ -47,6 +47,7 @@ SAFE_IDENTIFIER_KEYS = {
     "action_ids",
     "authorization_id",
     "refresh_preparation_authorization_id",
+    "regulatory_assurance_fingerprint",
     "audit_event_id",
     "audit_event_ids",
     "approval_decision_id",
@@ -333,6 +334,7 @@ SAFE_DIGEST_IDENTIFIER_KEYS = {
     "demand_evidence_digest",
     "verified_links_digest",
     "regulatory_coverage_digest",
+    "regulatory_assurance_fingerprint",
     "freshness_digest",
 }
 CONTENT_TEXT_KEYS = {

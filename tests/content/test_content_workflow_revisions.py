@@ -19,12 +19,17 @@ from wilq.content.workflow.documents.codex_revision_commit import (
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionProposalMetadata,
+    ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionSection,
     ContentDraftRevisionState,
     ContentDraftRevisionWriteResult,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
+from wilq.schemas import CodexRun
+from wilq.schemas.core import utc_now
+from wilq.storage.local_state import LocalStateStore
 
 
 def test_draft_revisions_remain_append_only_and_queryable_after_reopen(
@@ -536,6 +541,58 @@ def test_numeric_package_digest_is_preserved_by_redaction(tmp_path: Path) -> Non
     )
 
     assert revision.draft_package_digest == "1" * 64
+
+
+def test_append_draft_revision_preserves_regulatory_assurance_fingerprint_after_redaction(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wilq.sqlite3"
+    workflow_store = ContentWorkflowStore(path)
+    run_store = LocalStateStore(path)
+    fingerprint = "a" * 64
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_run_bdo",
+        selected_section_headings=["Zakres obowiązków"],
+        section_lineage=[
+            ContentDraftRevisionProposalSectionLineage(
+                heading="Zakres obowiązków",
+                evidence_ids=["ev_gsc_bdo"],
+            )
+        ],
+        quality_verdict="ready_for_human_review",
+        regulatory_assurance_run_id="assurance_run_bdo",
+        regulatory_assurance_criteria_version="wilq_regulatory_draft_assurance_v1",
+        regulatory_assurance_fingerprint=fingerprint,
+    )
+    command = _append_command().model_copy(update={"proposal_metadata": metadata})
+    started_run = CodexRun(
+        id="codex_run_bdo",
+        skill="wilq-content-operator",
+        hook="content_revision_proposal",
+        source="wilq_api",
+        status="started",
+    )
+    run_store.save_codex_run(started_run)
+
+    try:
+        result = workflow_store.append_draft_revision(
+            command,
+            completed_codex_run=started_run.model_copy(
+                update={"status": "completed", "completed_at": utc_now()}
+            ),
+        )
+    except ValidationError as exc:
+        pytest.fail(
+            "A valid assurance fingerprint must survive draft-revision append: "
+            f"{exc}"
+        )
+
+    revision = _require_revision(result)
+    assert revision.proposal_metadata is not None
+    assert revision.proposal_metadata.regulatory_assurance_fingerprint == fingerprint
+    persisted = ContentWorkflowStore(path).list_draft_revisions(command.work_item_id)[0]
+    assert persisted.proposal_metadata is not None
+    assert persisted.proposal_metadata.regulatory_assurance_fingerprint == fingerprint
 
 
 def test_revision_digest_binds_work_item_package_url_title_and_ordered_sections(
