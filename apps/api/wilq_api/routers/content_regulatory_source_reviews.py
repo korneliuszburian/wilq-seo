@@ -5,7 +5,8 @@ from typing import Literal
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
+from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.content.regulatory.runtime_contract import regulatory_fact_proposal_timeout_seconds
 from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalResponse,
     ContentRegulatorySourceFactProposalReviewCommand,
@@ -73,7 +74,9 @@ def _register_candidate_routes(router: APIRouter) -> None:
     ) -> ContentRegulatorySourceFactProposalResponse:
         return generate_source_fact_proposal(
             candidate_id=candidate_id,
-            client=content_codex_app_server_client(),
+            client=StdioCodexAppServerClient(
+                timeout_seconds=regulatory_fact_proposal_timeout_seconds()
+            ),
             proposal_store=regulatory_source_fact_proposal_store(),
             snapshot_store=regulatory_source_snapshot_store(),
             run_store=local_state_store(),

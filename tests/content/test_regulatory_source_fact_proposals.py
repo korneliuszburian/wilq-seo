@@ -9,11 +9,16 @@ from fastapi.testclient import TestClient
 
 import apps.api.wilq_api.routers.content_regulatory_source_reviews as regulatory_router
 import wilq.content.regulatory.source_fact_proposals as proposals_module
+import wilq.content.regulatory.source_snapshots as source_snapshots_module
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.regulatory.policy import regulatory_source_candidates
+from wilq.content.regulatory.runtime_contract import (
+    DEFAULT_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS,
+    regulatory_fact_proposal_timeout_seconds,
+)
 from wilq.content.regulatory.source_fact_proposals import (
     ContentRegulatorySourceFactProposalReviewCommand,
     RegulatorySourceFactProposalStore,
@@ -61,6 +66,84 @@ def _ready_output(candidate) -> dict[str, object]:
         "source_terms": ["Oficjalne", "źródło", "obowiązek"],
         "covered_requirement_ids": list(candidate.requirement_ids),
     }
+
+
+def test_regulatory_fact_proposal_runtime_contract_uses_bounded_floor(monkeypatch) -> None:
+    monkeypatch.delenv("WILQ_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS", raising=False)
+    assert DEFAULT_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS == 900.0
+    assert regulatory_fact_proposal_timeout_seconds() == 900.0
+
+    monkeypatch.setenv("WILQ_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS", "123")
+    assert regulatory_fact_proposal_timeout_seconds() == 123.0
+
+    monkeypatch.setenv("WILQ_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS", "1")
+    assert regulatory_fact_proposal_timeout_seconds() == 5.0
+
+    for non_finite in ("inf", "nan"):
+        monkeypatch.setenv("WILQ_REGULATORY_FACT_PROPOSAL_TIMEOUT_SECONDS", non_finite)
+        assert regulatory_fact_proposal_timeout_seconds() == 900.0
+
+
+def test_public_fact_proposal_route_uses_bounded_codex_deadline(tmp_path, monkeypatch) -> None:
+    proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
+    timeouts: list[float] = []
+    turn_requests: list[object] = []
+
+    class _FakeClient:
+        def __init__(self, *, timeout_seconds: float) -> None:
+            timeouts.append(timeout_seconds)
+
+        def run_structured_turn(self, request):
+            turn_requests.append(request)
+            return CodexAppServerTurnResult(status="failed")
+
+    source = "\n".join(
+        [
+            "Art. 389. zakres pozwolenia",
+            "Art. 390. wyjątki",
+            "Art. 397. właściwy organ",
+            "Art. 399. wniosek i operat",
+            "Art. 400. okres obowiązywania",
+            "Art. 407. zawartość operatu",
+            "<4a) przyszła jednostka 2027 r.;>",
+            "<5a. przyszła jednostka 2027 r..>",
+            "<8. przyszła jednostka 2027 r..>",
+            "Art. 408. forma operatu",
+            "Art. 409. część opisowa i graficzna",
+            "Dodany pkt 4a w art. 407 poz. 1156).",
+            "Dodany ust. 5a w art. 407 poz. 1156).",
+        ]
+    )
+    monkeypatch.setattr(regulatory_router, "StdioCodexAppServerClient", _FakeClient)
+    monkeypatch.setattr(
+        regulatory_router, "regulatory_source_fact_proposal_store", lambda: proposal_store
+    )
+    monkeypatch.setattr(
+        regulatory_router, "regulatory_source_snapshot_store", lambda: snapshot_store
+    )
+    monkeypatch.setattr(regulatory_router, "regulatory_source_review_store", lambda: review_store)
+    monkeypatch.setattr(regulatory_router, "local_state_store", lambda: run_store)
+    monkeypatch.setattr(
+        source_snapshots_module,
+        "_read_official_source",
+        lambda _: _html_source(source.replace("<", "&lt;")),
+    )
+
+    app = FastAPI()
+    router = APIRouter()
+    register_content_regulatory_source_review_routes(router)
+    app.include_router(router)
+
+    response = TestClient(app).post(
+        "/api/content/regulatory-source-candidates/"
+        "operat_prawo_wodne_2025_960_r1/fact-proposal"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "blocked"
+    assert len(turn_requests) == 1
+    assert timeouts == [regulatory_fact_proposal_timeout_seconds()]
+    assert timeouts[0] > 120.0
 
 
 def test_fact_proposal_is_exact_human_gated_and_never_persists_raw_source_body(tmp_path) -> None:
