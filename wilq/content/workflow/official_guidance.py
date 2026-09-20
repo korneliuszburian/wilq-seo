@@ -34,8 +34,13 @@ OFFICIAL_GUIDANCE_CANDIDATE_ID = "iso_37301_official_guidance"
 OFFICIAL_GUIDANCE_CANONICAL_PATH = (
     "/dlaczego-mowimy-o-compliance-czyli-zarzadzaniu-zgodnoscia"
 )
-OFFICIAL_GUIDANCE_SOURCE_URL = "https://www.iso.org/standard/75080.html"
-OFFICIAL_GUIDANCE_SOURCE_HOST = "www.iso.org"
+OFFICIAL_GUIDANCE_SOURCE_PATH = (
+    "/sites/tc309/home/projects/published/iso-37301-compliance-management.html"
+)
+OFFICIAL_GUIDANCE_SOURCE_URL = (
+    f"https://committee.iso.org{OFFICIAL_GUIDANCE_SOURCE_PATH}"
+)
+OFFICIAL_GUIDANCE_SOURCE_HOST = "committee.iso.org"
 OFFICIAL_GUIDANCE_CONNECTOR_ID = "official_guidance"
 OFFICIAL_GUIDANCE_RECEIPT_MAX_AGE = timedelta(hours=24)
 _MAX_GUIDANCE_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -113,7 +118,7 @@ def _is_exact_https_url(value: object) -> bool:
         and port is None
         and not parsed.query
         and not parsed.fragment
-        and parsed.path == "/standard/75080.html"
+        and parsed.path == OFFICIAL_GUIDANCE_SOURCE_PATH
         and parsed.netloc == OFFICIAL_GUIDANCE_SOURCE_HOST
     )
 
@@ -504,7 +509,7 @@ def _parse_exact_source_url(source_url: str) -> SplitResult:
             "Official-guidance transport accepts only the exact ISO candidate URL.",
         )
     parsed = urlsplit(source_url)
-    if parsed.hostname is None or parsed.path != "/standard/75080.html":
+    if parsed.hostname is None or parsed.path != OFFICIAL_GUIDANCE_SOURCE_PATH:
         raise OfficialGuidanceReadError(
             "official_guidance_lineage_mismatch",
             "Official-guidance transport path does not match the candidate.",
@@ -945,6 +950,7 @@ __all__ = [
     "OFFICIAL_GUIDANCE_CONNECTOR_ID",
     "OFFICIAL_GUIDANCE_RECEIPT_MAX_AGE",
     "OFFICIAL_GUIDANCE_SOURCE_URL",
+    "OFFICIAL_GUIDANCE_SOURCE_PATH",
     "OfficialGuidanceCandidate",
     "OfficialGuidanceCandidateError",
     "OfficialGuidanceHTTPSReader",

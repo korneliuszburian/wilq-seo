@@ -31,6 +31,8 @@ from wilq.content.workflow.evidence_acquisition_coordinator import (
 from wilq.content.workflow.official_guidance import (
     OFFICIAL_GUIDANCE_CANDIDATE_ID,
     OFFICIAL_GUIDANCE_CANONICAL_PATH,
+    OFFICIAL_GUIDANCE_SOURCE_HOST,
+    OFFICIAL_GUIDANCE_SOURCE_PATH,
     OFFICIAL_GUIDANCE_SOURCE_URL,
     OfficialGuidanceHTTPSReader,
     OfficialGuidanceObservationAdapter,
@@ -52,7 +54,10 @@ def test_iso_official_guidance_candidate_is_exactly_bound_to_target_path() -> No
     )
 
     assert candidate.canonical_path == OFFICIAL_GUIDANCE_CANONICAL_PATH
-    assert candidate.source_url == "https://www.iso.org/standard/75080.html"
+    assert candidate.source_url == (
+        "https://committee.iso.org/sites/tc309/home/projects/published/"
+        "iso-37301-compliance-management.html"
+    )
     assert candidate.allowed_claim_scope
     assert all(
         forbidden not in " ".join(candidate.allowed_claim_scope).casefold()
@@ -245,10 +250,13 @@ def test_pinned_reader_connects_to_validated_ip_and_extracts_visible_html() -> N
     assert material.url == OFFICIAL_GUIDANCE_SOURCE_URL
     assert material.content_text == "ISO 37301 guidance"
     assert sockets[0].connected_to == ("93.184.216.34", 443)
-    assert contexts[0].server_hostname == "www.iso.org"
+    assert contexts[0].server_hostname == OFFICIAL_GUIDANCE_SOURCE_HOST
     assert sockets[0].request is not None
-    assert b"GET /standard/75080.html HTTP/1.1" in sockets[0].request
-    assert b"Host: www.iso.org\r\n" in sockets[0].request
+    assert (
+        f"GET {OFFICIAL_GUIDANCE_SOURCE_PATH} HTTP/1.1".encode()
+        in sockets[0].request
+    )
+    assert f"Host: {OFFICIAL_GUIDANCE_SOURCE_HOST}\r\n".encode() in sockets[0].request
     assert b"Accept-Encoding: identity\r\n" in sockets[0].request
 
 
@@ -363,7 +371,7 @@ def test_pinned_reader_rejects_non_candidate_url_before_dns() -> None:
 
     reader = OfficialGuidanceHTTPSReader(resolver=resolver)
     with pytest.raises(OfficialGuidanceReadError) as error:
-        reader.read("https://www.iso.org/standard/75080.html?redirect=1")
+        reader.read(f"{OFFICIAL_GUIDANCE_SOURCE_URL}?redirect=1")
 
     assert error.value.code == "official_guidance_lineage_mismatch"
     assert resolved is False
@@ -609,7 +617,8 @@ def test_public_official_guidance_acquisition_and_research_are_review_only(
             "official_guidance_observation"
         )
         assert run_payload["recorded_run"]["observation"]["source_url"] == (
-            "https://www.iso.org/standard/75080.html"
+                    "https://committee.iso.org/sites/tc309/home/projects/published/"
+                    "iso-37301-compliance-management.html"
         )
         run_id = run_payload["run_id"]
         repeated = client.post(
@@ -639,6 +648,7 @@ def test_public_official_guidance_acquisition_and_research_are_review_only(
         assert readback_payload["recorded_proposal"]["approved"] is False
         assert readback_payload["recorded_proposal"]["review_required"] is True
         assert readback_payload["recorded_proposal"]["source_url"] == (
-            "https://www.iso.org/standard/75080.html"
+            "https://committee.iso.org/sites/tc309/home/projects/published/"
+            "iso-37301-compliance-management.html"
         )
         assert "secret" not in json.dumps(readback_payload).casefold()
