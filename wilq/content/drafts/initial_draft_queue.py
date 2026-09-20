@@ -664,11 +664,33 @@ def _persist_terminal_preflight_run(
     )
 
 
+def safe_initial_draft_worker_error(error: Exception) -> str:
+    """Return a safe worker-error code with structured field locations.
+
+    A validation failure must stay diagnosable without retaining any candidate
+    text, so only the exception class and the failing field paths are recorded.
+    """
+
+    from pydantic import ValidationError
+
+    if isinstance(error, ValidationError):
+        locations = ",".join(
+            ".".join(str(part) for part in item.get("loc", ()))
+            for item in error.errors()[:5]
+        )
+        return (
+            f"worker_exception:ValidationError:{locations}"
+            if locations
+            else "worker_exception:ValidationError"
+        )
+    return f"worker_exception:{type(error).__name__}"
+
+
 def _mark_initial_draft_run_failed(run_id: str, error: Exception) -> None:
     store = local_state_store()
     run = next((item for item in store.list_codex_runs() if item.id == run_id), None)
     if run is None or run.status != "started":
         return
     transition_initial_draft_run_if_status(
-        store, run, status="failed", error=f"worker_exception:{type(error).__name__}"
+        store, run, status="failed", error=safe_initial_draft_worker_error(error)
     )
