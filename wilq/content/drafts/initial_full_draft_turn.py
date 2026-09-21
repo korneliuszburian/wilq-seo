@@ -19,7 +19,10 @@ from wilq.content.drafts.fact_selection import (
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
 )
-from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.drafts.initial_full_draft_scope import (
+    draftable_planning_proposal,
+    draftable_planning_sections,
+)
 from wilq.content.drafts.regulatory_repair import (
     regulatory_assertion_repair_output_schema,
     regulatory_section_repair_modes,
@@ -69,7 +72,9 @@ def initial_full_draft_turn_request(
     ):
         raise ValueError("Prepared draft plan does not match the planning input.")
     draftable_proposal = (
-        prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+        prepared_plan.draftable_proposal
+        if prepared_plan is not None
+        else draftable_planning_proposal(proposal)
     )
     packet = current_research_packet_for_model(planning_input)
     if packet is not None:
@@ -174,7 +179,7 @@ def _initial_full_draft_contexts(
                 "excluded_section_ids": [
                     section.section_id
                     for section in proposal.sections
-                    if section.inventory_disposition == "remove_review_required"
+                    if section.inventory_disposition in {"remove_review_required", "merge"}
                 ],
             },
             "approved_source_facts_by_section": (

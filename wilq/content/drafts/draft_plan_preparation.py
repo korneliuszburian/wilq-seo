@@ -22,12 +22,18 @@ from wilq.content.workflow.decisions.planning import (
 
 DraftPlanBlockerCode = Literal[
     "draft_plan_source_support_missing",
-    "draft_plan_merge_target_missing",
     "draft_plan_no_writable_targets",
 ]
 
 _NON_BODY_TARGET_DISPOSITIONS = frozenset(
-    {"remove", "remove_review_required", "defer", "deferred", "defer_review_required"}
+    {
+        "merge",
+        "remove",
+        "remove_review_required",
+        "defer",
+        "deferred",
+        "defer_review_required",
+    }
 )
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _MISSING_REQUIREMENT_DEFINITION_ASSERTION_ID = "missing_requirement_definition"
@@ -155,27 +161,10 @@ def prepare_draft_plan(
             "draft_plan_no_writable_targets",
             "Plan nie ma żadnego celu body do zapisania.",
             (
-                "Pozostaw sekcje remove/defer poza szkicem albo przygotuj nowy plan "
+                "Pozostaw sekcje merge/remove/defer poza szkicem albo przygotuj nowy plan "
                 "z exact celem body."
             ),
             ("draft_plan_no_writable_targets",),
-        )
-
-    merge_targets = tuple(
-        _target_code(section)
-        for section in body_targets
-        if section.inventory_disposition == "merge"
-    )
-    if merge_targets:
-        return _blocked(
-            "draft_plan_merge_target_missing",
-            "Plan zawiera scalanie bez jawnego kontraktu destination dla docelowej strony.",
-            (
-                "inventory_section_id oznacza źródłową sekcję inventory, a nie destination. "
-                "Uzupełnij osobny exact kontrakt celu scalania albo oznacz sekcję do "
-                "osobnego review; scalanie nie może stać się osobnym celem body."
-            ),
-            merge_targets,
         )
 
     exact_facts = _exact_source_facts(exact_source_snapshot)

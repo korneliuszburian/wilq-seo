@@ -211,7 +211,8 @@ def _planning_instruction(planning_input: ContentPlanningInput) -> str:
         placement_rules=(
             "Placement CTA lub linku ma być after_lead, after_content albo dokładnym "
             "nagłówkiem jednej z zaplanowanych sekcji, która nie ma disposition "
-            "remove_review_required. Jeśli application_context zawiera placement_contract, "
+            "remove_review_required ani merge. Jeśli application_context zawiera "
+            "placement_contract, "
             "traktuj forbidden_section_headings jako zakazane i użyj jednego z "
             "safe_fallback_placements. "
         ),
@@ -349,7 +350,7 @@ def _placement_contract(planning_input: ContentPlanningInput) -> dict[str, objec
         ],
         "forbidden_placement_rule": (
             "Nie umieszczaj CTA ani linku przy żadnej sekcji, której output ma "
-            "inventory_disposition=remove_review_required."
+            "inventory_disposition=remove_review_required lub merge."
         ),
         "safe_fallback_placements": ["after_lead", "after_content"],
     }

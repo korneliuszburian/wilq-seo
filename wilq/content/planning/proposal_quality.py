@@ -130,10 +130,11 @@ def has_exact_query_rows(value: object) -> bool:
 def orphaned_placement_quality_errors(
     *, sections: Iterable[object], placements: Iterable[str]
 ) -> list[str]:
-    removed_targets = {
+    non_body_targets = {
         target
         for section in sections
-        if getattr(section, "inventory_disposition", None) == "remove_review_required"
+        if getattr(section, "inventory_disposition", None)
+        in {"remove_review_required", "merge"}
         for target in (
             getattr(section, "heading", None),
             getattr(section, "section_id", None),
@@ -141,7 +142,7 @@ def orphaned_placement_quality_errors(
         )
         if target
     }
-    return ["orphaned_placement"] if removed_targets.intersection(placements) else []
+    return ["orphaned_placement"] if non_body_targets.intersection(placements) else []
 
 
 def placement_values(items: Iterable[object]) -> list[str]:

@@ -470,7 +470,8 @@ def test_public_http_inventory_only_rewrite_merge_blocks_before_writer_side_effe
     assert draft["status"] == "blocked", draft
     assert draft["blockers"][0]["code"] in {
         "draft_plan_source_support_missing",
-        "draft_plan_merge_target_missing",
+        "draft_plan_no_writable_targets",
+        "document_scope_mismatch",
     }
     assert runtime.calls == calls_before_draft
     with sqlite3.connect(store.path) as connection:

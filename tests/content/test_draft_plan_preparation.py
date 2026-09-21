@@ -316,40 +316,32 @@ def test_regulatory_target_requires_a_requirement_definition() -> None:
     ]
 
 
-def test_unresolved_merge_is_not_a_body_target() -> None:
-    candidate = _candidate(
-        ContentPlanningSection(
-            section_id="section_merge",
-            heading="Scal tę sekcję",
-            purpose="Przenieś do innego adresu.",
-            inventory_disposition="merge",
-            evidence_ids=["ev_source_fact"],
-        )
+def test_merge_is_excluded_from_body_targets_but_writable_sections_remain() -> None:
+    merge = ContentPlanningSection(
+        section_id="section_merge",
+        heading="Scal tę sekcję",
+        purpose="Przenieś do innego adresu.",
+        inventory_disposition="merge",
+        inventory_section_id="inventory_section_01",
+        evidence_ids=["ev_source_fact"],
     )
+    writable = ContentPlanningSection(
+        section_id="section_writable",
+        heading="Sekcja ze źródłem",
+        purpose="Wyjaśnij potwierdzony zakres.",
+        inventory_disposition="rewrite",
+        evidence_ids=["ev_source_fact"],
+    )
+    candidate = _candidate(merge, writable)
 
     result = prepare_draft_plan(candidate, _source_snapshot(_source_fact()))
 
-    assert isinstance(result, DraftPlanBlocked)
-    assert result.blocker.code == "draft_plan_merge_target_missing"
-
-
-def test_merge_with_exact_inventory_identity_still_requires_destination_contract() -> None:
-    candidate = _candidate(
-        ContentPlanningSection(
-            section_id="section_merge",
-            heading="Scal tę sekcję",
-            purpose="Scal potwierdzoną informację.",
-            inventory_disposition="merge",
-            inventory_section_id="inventory_section_01",
-            evidence_ids=["ev_source_fact"],
-        )
-    )
-
-    result = prepare_draft_plan(candidate, _source_snapshot(_source_fact()))
-
-    assert isinstance(result, DraftPlanBlocked)
-    assert result.blocker.code == "draft_plan_merge_target_missing"
-    assert result.blocker.source_codes == ["section_merge"]
+    assert isinstance(result, PreparedDraftPlan)
+    assert [section.section_id for section in result.body_targets] == ["section_writable"]
+    assert [section.section_id for section in result.draftable_proposal.sections] == [
+        "section_writable"
+    ]
+    assert result.candidate.sections[0].inventory_disposition == "merge"
 
 
 def test_historical_bdo_v9_sections_10_to_12_block_without_exact_source_support() -> None:

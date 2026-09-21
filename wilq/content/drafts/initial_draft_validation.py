@@ -11,7 +11,10 @@ from wilq.content.drafts.grounding import (
     source_fact_summaries_by_section,
 )
 from wilq.content.drafts.initial_full_draft_contracts import ContentInitialDraftModelOutput
-from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.drafts.initial_full_draft_scope import (
+    draftable_planning_proposal,
+    draftable_planning_sections,
+)
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
@@ -30,7 +33,11 @@ def document_scope_errors(
     prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[str]:
     errors: list[str] = []
-    draftable_proposal = prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+    draftable_proposal = (
+        prepared_plan.draftable_proposal
+        if prepared_plan is not None
+        else draftable_planning_proposal(proposal)
+    )
     draftable_sections = draftable_planning_sections(draftable_proposal.sections)
     expected_sections = [(item.section_id, item.heading) for item in draftable_sections]
     actual_sections = [(item.section_id, item.heading) for item in output.sections]

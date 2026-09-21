@@ -94,7 +94,6 @@ describe("content initial draft contracts", () => {
 
   it.each([
     "draft_plan_source_support_missing",
-    "draft_plan_merge_target_missing",
     "draft_plan_no_writable_targets"
   ])("accepts the draft-plan blocker code %s", (code) => {
     const parsed = ContentInitialDraftBlockerSchema.parse({

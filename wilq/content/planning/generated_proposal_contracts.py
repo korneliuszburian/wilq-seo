@@ -257,15 +257,15 @@ class ContentPlanningModelOutput(BaseModel):
                 "CTA and internal-link placement must name after_lead, "
                 "after_content, or an exact planned section heading."
             )
-        removed_section_headings = {
+        non_body_section_headings = {
             section.heading
             for section in self.sections
-            if section.inventory_disposition == "remove_review_required"
+            if section.inventory_disposition in {"remove_review_required", "merge"}
         }
-        if removed_section_headings.intersection(placements):
+        if non_body_section_headings.intersection(placements):
             raise ValueError(
-                "CTA and internal-link placement cannot target a section marked "
-                "remove_review_required."
+                "CTA and internal-link placement cannot target a non-body section "
+                "marked remove_review_required or merge."
             )
         page_assets = self.page_assets.model_dump()
         if any(not str(value).strip() for value in page_assets.values()):

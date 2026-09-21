@@ -377,7 +377,7 @@ def planning_section_inputs(
             knowledge_card_ids=section.knowledge_card_ids,
         )
         for section in planning_proposal.sections
-        if section.inventory_disposition != "remove_review_required"
+        if section.inventory_disposition not in {"remove_review_required", "merge"}
     ]
 
 

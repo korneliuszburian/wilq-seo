@@ -74,7 +74,6 @@ export const ContentInitialDraftBlockerCodeSchema = z.enum([
   "missing_regulatory_source_coverage",
   "planning_not_ready",
   "draft_plan_source_support_missing",
-  "draft_plan_merge_target_missing",
   "draft_plan_no_writable_targets",
   "draft_not_started",
   "planning_not_generated",

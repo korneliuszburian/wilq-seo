@@ -17,7 +17,10 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftRequest,
 )
-from wilq.content.drafts.initial_full_draft_scope import draftable_planning_sections
+from wilq.content.drafts.initial_full_draft_scope import (
+    draftable_planning_proposal,
+    draftable_planning_sections,
+)
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     content_planning_inventory_digest,
@@ -168,7 +171,9 @@ def _revision_sections(
     prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[ContentDraftRevisionSection]:
     draftable_proposal = (
-        prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+        prepared_plan.draftable_proposal
+        if prepared_plan is not None
+        else draftable_planning_proposal(proposal)
     )
     return [
         ContentDraftRevisionSection(

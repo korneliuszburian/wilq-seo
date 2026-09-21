@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.content.workflow.decisions.planning import ContentPlanningSection
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
+)
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 
@@ -11,9 +14,10 @@ def draftable_planning_sections(
 ) -> list[ContentPlanningSection]:
     """Return only sections allowed to become body content.
 
-    ``remove_review_required`` rows remain in the planning proposal so the
-    marketer can see what was excluded from the existing page. They are not
-    document targets and must never be sent to the full-draft generator.
+    ``remove_review_required`` and ``merge`` rows remain in the planning
+    proposal so the marketer can see what was excluded from the existing page.
+    They are not document targets and must never be sent to the full-draft
+    generator.
     """
 
     return [
@@ -24,8 +28,18 @@ def draftable_planning_sections(
             if isinstance(section, dict)
             else getattr(section, "inventory_disposition", None)
         )
-        != "remove_review_required"
+        not in {"remove_review_required", "merge"}
     ]
+
+
+def draftable_planning_proposal(proposal: ContentPlanningProposal) -> ContentPlanningProposal:
+    """Return the proposal with only sections allowed to become body content.
+
+    Used when no prepared plan is available, so a non-body section can never
+    reach the generator context through the un-prepared path.
+    """
+
+    return proposal.model_copy(update={"sections": draftable_planning_sections(proposal.sections)})
 
 
 def bind_draftable_planning_sections(
@@ -52,4 +66,8 @@ def bind_draftable_planning_sections(
     return {section_id: bound[section_id] for section_id in revision_ids}
 
 
-__all__ = ["bind_draftable_planning_sections", "draftable_planning_sections"]
+__all__ = [
+    "bind_draftable_planning_sections",
+    "draftable_planning_proposal",
+    "draftable_planning_sections",
+]

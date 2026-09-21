@@ -79,7 +79,6 @@ ContentInitialDraftBlockerCode = Literal[
     "research_packet_blocked",
     "research_packet_conflict",
     "draft_plan_source_support_missing",
-    "draft_plan_merge_target_missing",
     "draft_plan_no_writable_targets",
 ]
 CONTENT_INITIAL_DRAFT_BLOCKER_CODES = frozenset(
