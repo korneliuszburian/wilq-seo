@@ -270,6 +270,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_assurance_turn_retry.py",
     ),
+    ("assurance-batching", "single-critic-turn-all-constraints"): (
+        "scripts/test.sh",
+        "tests/content/test_assurance_batching_change_contract.py",
+    ),
     ("assurance-fingerprint", "malformed-dropped-not-fatal"): (
         "scripts/test.sh",
         "tests/content/test_exact_assurance_fingerprint.py",
@@ -432,6 +436,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("initial-draft-worker-error", "typed-field-locations"),
             ("document-fact-working-note", "protected-term-strips-note"),
             ("assurance-turn-retry", "transient-failure-once"),
+            ("assurance-batching", "single-critic-turn-all-constraints"),
             ("assurance-fingerprint", "malformed-dropped-not-fatal"),
             ("assurance-fingerprint", "valid-digest-persists"),
         },

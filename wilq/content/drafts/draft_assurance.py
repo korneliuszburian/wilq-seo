@@ -32,6 +32,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryClaimConstraint,
     ContentRegulatoryCoverage,
     ContentRegulatoryProfile,
+    ContentRegulatoryRequirement,
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
 )
@@ -52,14 +53,14 @@ ContentDraftAssuranceReasonCode = Literal[
 _CRITERIA_VERSION: Final[Literal["wilq_regulatory_draft_assurance_v1"]] = (
     "wilq_regulatory_draft_assurance_v1"
 )
-ASSURANCE_FINGERPRINT_VERSION: Final[Literal["wilq_draft_assurance_fingerprint_v2"]] = (
-    "wilq_draft_assurance_fingerprint_v2"
+ASSURANCE_FINGERPRINT_VERSION: Final[Literal["wilq_draft_assurance_fingerprint_v3"]] = (
+    "wilq_draft_assurance_fingerprint_v3"
 )
-ASSURANCE_PROMPT_VERSION: Final[Literal["wilq_regulatory_draft_assurance_prompt_v2"]] = (
-    "wilq_regulatory_draft_assurance_prompt_v2"
+ASSURANCE_PROMPT_VERSION: Final[Literal["wilq_regulatory_draft_assurance_prompt_v3"]] = (
+    "wilq_regulatory_draft_assurance_prompt_v3"
 )
-CRITIC_INPUT_DIGEST_VERSION: Final[Literal["wilq_draft_assurance_critic_input_v1"]] = (
-    "wilq_draft_assurance_critic_input_v1"
+CRITIC_INPUT_DIGEST_VERSION: Final[Literal["wilq_draft_assurance_critic_input_v2"]] = (
+    "wilq_draft_assurance_critic_input_v2"
 )
 
 _INSTRUCTION = (
@@ -249,7 +250,56 @@ def draft_assurance_turn_request(
         output,
     )
 
-    application_context = json.dumps(
+    application_context = _assurance_application_context(
+        planning_input=planning_input,
+        profile=profile,
+        constraints=constraints,
+        requirements=requirements,
+        section_ids_by_constraint=section_ids_by_constraint,
+    )
+    untrusted_context = json.dumps(
+        {
+            "candidate_document": _candidate_document_for_constraints(
+                output,
+                proposal,
+                constraints,
+            ),
+            "official_source_facts": (
+                _source_facts_for_prepared_plan(prepared_plan, constraints)
+                if prepared_plan is not None
+                else _source_facts_for_critic(
+                    planning_input.regulatory_coverage,
+                    constraints,
+                )
+            ),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return CodexAppServerStructuredTurnRequest(
+        instruction=_INSTRUCTION,
+        application_context=application_context,
+        untrusted_context=untrusted_context,
+        output_schema=draft_assurance_output_schema(
+            profile,
+            planning_input.regulatory_coverage,
+            output,
+            proposal,
+            constraints_override=constraints,
+        ),
+    )
+
+
+def _assurance_application_context(
+    *,
+    planning_input: ContentPlanningInput,
+    profile: ContentRegulatoryProfile,
+    constraints: list[ContentRegulatoryClaimConstraint],
+    requirements: list[ContentRegulatoryRequirement],
+    section_ids_by_constraint: dict[str, list[str]],
+) -> str:
+    return json.dumps(
         {
             "operation": "assure_regulatory_content_draft",
             "work_item_id": planning_input.work_item_id,
@@ -294,38 +344,6 @@ def draft_assurance_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
-    untrusted_context = json.dumps(
-        {
-            "candidate_document": _candidate_document_for_constraints(
-                output,
-                proposal,
-                constraints,
-            ),
-            "official_source_facts": (
-                _source_facts_for_prepared_plan(prepared_plan, constraints)
-                if prepared_plan is not None
-                else _source_facts_for_critic(
-                    planning_input.regulatory_coverage,
-                    constraints,
-                )
-            ),
-        },
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return CodexAppServerStructuredTurnRequest(
-        instruction=_INSTRUCTION,
-        application_context=application_context,
-        untrusted_context=untrusted_context,
-        output_schema=draft_assurance_output_schema(
-            profile,
-            planning_input.regulatory_coverage,
-            output,
-            proposal,
-            constraints_override=constraints,
-        ),
-    )
 
 
 def draft_assurance_turn_requests(
@@ -336,18 +354,18 @@ def draft_assurance_turn_requests(
     profile: ContentRegulatoryProfile,
     prepared_plan: PreparedDraftPlan,
 ) -> list[CodexAppServerStructuredTurnRequest]:
-    """Compile every exact critic request for one frozen regulated candidate."""
+    """Compile one exact critic request for every constraint in one turn."""
 
+    constraints = list(regulatory_draft_assurance_constraints(profile))
     return [
         draft_assurance_turn_request(
             planning_input=planning_input,
             proposal=proposal,
             output=output,
             profile=profile,
-            constraints_override=[constraint],
+            constraints_override=constraints,
             prepared_plan=prepared_plan,
         )
-        for constraint in regulatory_draft_assurance_constraints(profile)
     ]
 
 

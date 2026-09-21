@@ -71,19 +71,7 @@ def run_regulatory_draft_assurance(
     profile = regulatory_draft_assurance_profile(planning_input)
     if profile is None:
         return None
-    critic_run = run_store.save_codex_run(
-        CodexRun(
-            id=f"codex_content_draft_assurance_{uuid4().hex}",
-            skill="wilq-content-operator",
-            hook="content_regulatory_draft_assurance",
-            source="wilq_api",
-            status="started",
-            used_endpoints=[f"/api/content/work-items/{planning_input.work_item_id}/initial-draft"],
-            evidence_ids=planning_input.regulatory_coverage.evidence_ids,
-            proposal_id=proposal.proposal_id,
-            planning_input_digest=planning_input.planning_input_digest,
-        )
-    )
+    critic_run = _start_assurance_run(run_store, planning_input, proposal)
     constraints = regulatory_draft_assurance_constraints(profile)
     requests = draft_assurance_turn_requests(
         planning_input=planning_input,
@@ -121,24 +109,7 @@ def run_regulatory_draft_assurance(
             critic_input_digest=critic_input_digest,
         )
     except ValueError as error:
-        invalid_output_code = _invalid_output_code(error)
-        run_store.save_codex_run(
-            critic_run.model_copy(
-                update={
-                    "status": "blocked",
-                    "completed_at": utc_now(),
-                    "error": f"draft_assurance_invalid_output|{invalid_output_code}",
-                }
-            )
-        )
-        return ContentDraftAssuranceFailure(
-            code="draft_assurance_invalid_output",
-            label="Kontrola merytoryczna zwróciła niepoprawny wynik",
-            reason="Wynik krytyka nie przeszedł ścisłego kontraktu profilu i źródeł.",
-            next_step="Odrzuć próbę i uruchom nową; WILQ nie zapisał dokumentu.",
-            source_codes=[invalid_output_code],
-            repair_reasons={},
-        )
+        return _invalid_assurance_output(run_store, critic_run, error)
     run_store.save_codex_run(
         critic_run.model_copy(
             update={
@@ -167,6 +138,26 @@ def run_regulatory_draft_assurance(
     )
 
 
+def _start_assurance_run(
+    run_store: LocalStateStore,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> CodexRun:
+    return run_store.save_codex_run(
+        CodexRun(
+            id=f"codex_content_draft_assurance_{uuid4().hex}",
+            skill="wilq-content-operator",
+            hook="content_regulatory_draft_assurance",
+            source="wilq_api",
+            status="started",
+            used_endpoints=[f"/api/content/work-items/{planning_input.work_item_id}/initial-draft"],
+            evidence_ids=planning_input.regulatory_coverage.evidence_ids,
+            proposal_id=proposal.proposal_id,
+            planning_input_digest=planning_input.planning_input_digest,
+        )
+    )
+
+
 def _collect_bounded_checks(
     *,
     planning_input: ContentPlanningInput,
@@ -187,10 +178,9 @@ def _collect_bounded_checks(
                 proposal=proposal,
                 output=output,
                 profile=profile,
-                constraints_override=[constraint],
+                constraints_override=constraints,
                 prepared_plan=prepared_plan,
             )
-            for constraint in constraints
         ]
     results = list(
         _ASSURANCE_EXECUTOR.map(
@@ -207,8 +197,10 @@ def _collect_bounded_checks(
             return _failed_runtime_attempt(run_store, critic_run, result)
         try:
             assessment = ContentDraftAssuranceModelOutput.model_validate_json(result.output_text)
-            if len(assessment.checks) != 1:
-                raise ValueError("Draft assurance turn must return one constraint check.")
+            if len(assessment.checks) != len(constraints):
+                raise ValueError(
+                    "Draft assurance batched turn must return one check per constraint."
+                )
             checks.extend(assessment.checks)
         except ValueError as error:
             return _invalid_assurance_output(run_store, critic_run, error)
