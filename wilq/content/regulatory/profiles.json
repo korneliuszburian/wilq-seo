@@ -526,7 +526,7 @@
           "reason": "Treść musi rozróżniać przypadki wymagające pozwolenia wodnoprawnego od ustawowych wyjątków i nie może przedstawiać obowiązku jako uniwersalnego.",
           "document_assertions": [
             {"id": "permit_scope", "label": "zakres pozwolenia wodnoprawnego", "required_any_of": ["pozwolenie wodnoprawne", "wymagane pozwolenie"]},
-            {"id": "permit_exceptions", "label": "wyjątki od obowiązku", "required_any_of": ["nie wymaga pozwolenia", "zwolnien", "wyjątk"]}
+            {"id": "permit_exceptions", "label": "wyjątki od obowiązku", "required_any_of": ["nie wymaga pozwolenia", "nie wymaga", "zwolnien", "wyjątk"]}
           ]
         },
         {
