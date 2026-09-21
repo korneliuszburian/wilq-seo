@@ -426,7 +426,7 @@
       "safe_next_step": "Potwierdź sektorowe wdrożenie przez odrębne akty i zachowaj warunkowy zakres dla konkretnej działalności firmy."
     },
     {
-      "candidate_id": "operat_prawo_wodne_2025_960_r1",
+      "candidate_id": "operat_prawo_wodne_scope_r1",
       "profile_id": "operat_wodnoprawny",
       "profile_version": "2026-09-20-r1",
       "service_card_ids": [],
@@ -434,41 +434,124 @@
       "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
       "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
       "observed_on": "2026-09-20",
-      "requirement_ids": [
-        "operat_scope_and_exceptions",
-        "operat_application_and_contents",
-        "operat_validity",
-        "operat_authority"
-      ],
+      "requirement_ids": ["operat_scope_and_exceptions"],
       "selector": {
         "kind": "provision_range",
         "start_anchor": "Art. 389.",
-        "end_anchor": "Art. 409.",
-        "required_anchors": [
-          "Art. 389.",
-          "Art. 390.",
-          "Art. 397.",
-          "Art. 399.",
-          "Art. 400.",
-          "Art. 407.",
-          "Art. 408.",
-          "Art. 409."
-        ],
+        "end_anchor": "Art. 390.",
+        "required_anchors": ["Art. 389.", "Art. 390."],
         "excluded_anchors": [],
         "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
-        "excluded_ranges": [
-          {"start_anchor": "<4a)", "end_anchor": ";>"},
-          {"start_anchor": "<5a.", "end_anchor": ".>"},
-          {"start_anchor": "<8.", "end_anchor": ".>"},
-          {"start_anchor": "Dodany pkt 4a w", "end_anchor": "poz. 1156)."},
-          {"start_anchor": "Dodany ust. 5a w", "end_anchor": "poz. 1156)."}
-        ],
-        "max_chars": 120000,
-        "context_chars": 12000
+        "excluded_ranges": [],
+        "max_chars": 8000,
+        "context_chars": 4000
       },
       "as_of": "2026-09-20",
       "review_status": "review_required",
-      "safe_next_step": "Sprawdź zakres obowiązku, wyjątki, właściwość organu, zawartość operatu i wariant okresu obowiązywania w aktualnym tekście ustawy."
+      "safe_next_step": "Potwierdź zakres obowiązku i wyjątki w art. 389-390 Prawa wodnego."
+    },
+    {
+      "candidate_id": "operat_prawo_wodne_application_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_application_and_contents"],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 407.",
+        "end_anchor": "Art. 407.",
+        "required_anchors": ["Art. 407."],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "excluded_ranges": [{"start_anchor": "<5a.", "end_anchor": ".>"}],
+        "max_chars": 8000,
+        "context_chars": 4000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź wymagania wniosku i obowiązek dołączenia operatu w art. 407 Prawa wodnego."
+    },
+    {
+      "candidate_id": "operat_prawo_wodne_contents_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_application_and_contents"],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 408.",
+        "end_anchor": "Art. 409.",
+        "required_anchors": ["Art. 408.", "Art. 409."],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "excluded_ranges": [
+          {"start_anchor": "<8.", "end_anchor": ".>"},
+          {"start_anchor": "Dodany ust. 5a w", "end_anchor": "poz. 1156)."}
+        ],
+        "max_chars": 16000,
+        "context_chars": 4000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź formę oraz części opisową i graficzną operatu w art. 408-409 Prawa wodnego."
+    },
+    {
+      "candidate_id": "operat_prawo_wodne_validity_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_validity"],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 400.",
+        "end_anchor": "Art. 400.",
+        "required_anchors": ["Art. 400."],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "excluded_ranges": [],
+        "max_chars": 8000,
+        "context_chars": 4000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź warianty okresu obowiązywania pozwolenia w art. 400 Prawa wodnego."
+    },
+    {
+      "candidate_id": "operat_prawo_wodne_authority_r1",
+      "profile_id": "operat_wodnoprawny",
+      "profile_version": "2026-09-20-r1",
+      "service_card_ids": [],
+      "canonical_paths": ["/operat-wodnoprawny-wszystko-co-musisz-wiedziec"],
+      "source_url": "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf",
+      "source_title": "ELI: Prawo wodne — tekst jednolity Dz.U. 2025 poz. 960",
+      "observed_on": "2026-09-20",
+      "requirement_ids": ["operat_authority"],
+      "selector": {
+        "kind": "provision_range",
+        "start_anchor": "Art. 397.",
+        "end_anchor": "Art. 397.",
+        "required_anchors": ["Art. 397."],
+        "excluded_anchors": [],
+        "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
+        "excluded_ranges": [],
+        "max_chars": 10000,
+        "context_chars": 4000
+      },
+      "as_of": "2026-09-20",
+      "review_status": "review_required",
+      "safe_next_step": "Potwierdź właściwy organ dla zgód wodnoprawnych w art. 397 Prawa wodnego."
     },
     {
       "candidate_id": "operat_kpa_2025_1691_r1",
@@ -504,17 +587,21 @@
       "source_title": "Wody Polskie: pozwolenie wodnoprawne",
       "observed_on": "2026-09-20",
       "requirement_ids": [
-        "operat_scope_and_exceptions",
         "operat_application_and_contents",
         "operat_authority"
       ],
       "selector": {
-        "kind": "bounded_document",
-        "required_anchors": ["Pozwolenie wodnoprawne", "operat wodnoprawny"],
+        "kind": "heading_set",
+        "required_anchors": [
+          "2. Operat wodnoprawny",
+          "Do wniosku dołącz operat wodnoprawny",
+          "Jeśli wnioskodawcą są Wody Polskie to wniosek składa się do Ministerstwa Infrastruktury"
+        ],
         "excluded_anchors": [],
         "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
-        "max_chars": 75000,
-        "context_chars": 0
+        "excluded_ranges": [],
+        "max_chars": 12000,
+        "context_chars": 3000
       },
       "as_of": "2026-09-20",
       "review_status": "review_required",

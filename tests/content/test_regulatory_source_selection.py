@@ -28,31 +28,20 @@ def test_operat_late_provisions_reach_structured_turn_without_future_clauses(
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.source_url
-        == "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
     proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
     late_provisions = "\n".join(
         [
-            "Art. 389. Pozwolenie wodnoprawne jest wymagane w przypadkach określonych ustawą.",
-            "Art. 390. Ustawa przewiduje wyjątki od obowiązku uzyskania pozwolenia.",
-            "Art. 397. Właściwy organ wydaje pozwolenie wodnoprawne.",
-            "Art. 399. Wniosek zawiera operat wodnoprawny i wymagane załączniki.",
-            "Art. 400. Pozwolenie wodnoprawne określa okres obowiązywania.",
-            "Art. 407. Operat wodnoprawny powinien zawierać wymagane elementy.",
-            "5. Aktualny ustęp 5. pozostaje w mocy.",
-            "6. Aktualny ustęp 6. pozostaje w mocy.",
-            "<4a) Przyszły przepis obowiązuje od 2027 r.;>",
-            "7. Aktualny ustęp 7. pozostaje w mocy.",
-            "<5a. Przyszły przepis obowiązuje od 2027 r..>",
-            "8. Aktualny ustęp 8. pozostaje w mocy.",
-            "<8. Przyszły przepis obowiązuje od 2027 r..>",
-            "9. Aktualny ustęp 9. pozostaje w mocy.",
             "Art. 408. Operat składa się w formie określonej przepisami.",
+            "5. Aktualny ustęp 5. pozostaje w mocy.",
+            "<8. Przyszły przepis obowiązuje od 2027 r..>",
             "Art. 409. Operat wodnoprawny zawiera część opisową i graficzną.",
-            "Dodany pkt 4a w art. 407 poz. 1156).",
+            "6. Aktualny ustęp 6. pozostaje w mocy.",
             "Dodany ust. 5a w art. 407 poz. 1156).",
+            "7. Aktualny ustęp 7. pozostaje w mocy.",
             "Operat wodnoprawny pozwolenie obowiązek.",
+            "Art. 410. Poza zakresem.",
         ]
     )
     extracted = ("RAW-PREFIX " * 70_000) + late_provisions
@@ -84,14 +73,12 @@ def test_operat_late_provisions_reach_structured_turn_without_future_clauses(
     assert result.status == "ready", result.reason
     assert result.proposal is not None
     context = client.requests[0].untrusted_context
-    assert "Art. 389." in context
+    assert "Art. 408." in context
     assert "Art. 409." in context
     assert "Aktualny ustęp 5." in context
     assert "Aktualny ustęp 6." in context
     assert "Aktualny ustęp 7." in context
-    assert "Aktualny ustęp 9." in context
     assert "2027 r." not in context
-    assert "Dodany pkt 4a w" not in context
     assert "Dodany ust. 5a w" not in context
     assert "RAW-PREFIX" not in context
     assert "RAW-PREFIX" not in proposal_store.path.read_bytes().decode(errors="ignore")
@@ -100,14 +87,21 @@ def test_operat_late_provisions_reach_structured_turn_without_future_clauses(
     assert application_context["selector"]["kind"] == "provision_range"
 
 
-def test_bounded_document_allows_repeated_anchors_but_blocks_missing_anchor() -> None:
+def test_heading_set_selects_required_headings_but_blocks_missing_anchor() -> None:
     candidate = next(
         item
         for item in regulatory_source_candidates()
         if item.candidate_id == "operat_wody_polskie_2026_r1"
     )
     assert candidate.selector is not None
-    source = "Pozwolenie wodnoprawne — operat wodnoprawny. " * 3
+    source = "\n".join(
+        [
+            "2. Operat wodnoprawny",
+            "Do wniosku dołącz operat wodnoprawny",
+            "Jeśli wnioskodawcą są Wody Polskie to wniosek składa się "
+            "do Ministerstwa Infrastruktury",
+        ]
+    )
 
     assert selection_module.select_bounded_source_text(candidate, source) == source.strip()
 
@@ -124,22 +118,39 @@ def test_bounded_document_allows_repeated_anchors_but_blocks_missing_anchor() ->
 
 def test_all_operat_candidates_select_without_false_future_marker_block() -> None:
     sources = {
-        "operat_prawo_wodne_2025_960_r1": "\n".join(
+        "operat_prawo_wodne_scope_r1": "\n".join(
             [
                 "Art. 389. Zakres pozwolenia.",
                 "Art. 390. Wyjątki.",
-                "Art. 397. Właściwy organ.",
-                "Art. 399. Wniosek i operat.",
-                "Art. 400. Okres obowiązywania.",
-                "Art. 407. Zawartość operatu.",
-                "<4a) Przyszła jednostka 2027 r.;>",
+                "Art. 397. Poza zakresem.",
+            ]
+        ),
+        "operat_prawo_wodne_application_r1": "\n".join(
+            [
+                "Art. 407. Wymagania wniosku i operatu.",
                 "<5a. Przyszła jednostka 2027 r..>",
-                "<8. Przyszła jednostka 2027 r..>",
                 "Art. 408. Forma operatu.",
+            ]
+        ),
+        "operat_prawo_wodne_contents_r1": "\n".join(
+            [
+                "Art. 408. Forma operatu.",
+                "<8. Przyszła jednostka 2027 r..>",
                 "Art. 409. Część opisowa i graficzna.",
-                "Dodany pkt 4a w art. 407 poz. 1156).",
                 "Dodany ust. 5a w art. 407 poz. 1156).",
                 "Art. 410. Poza zakresem.",
+            ]
+        ),
+        "operat_prawo_wodne_validity_r1": "\n".join(
+            [
+                "Art. 400. Okres obowiązywania.",
+                "Art. 401. Poza zakresem.",
+            ]
+        ),
+        "operat_prawo_wodne_authority_r1": "\n".join(
+            [
+                "Art. 397. Właściwy organ.",
+                "Art. 398. Poza zakresem.",
             ]
         ),
         "operat_kpa_2025_1691_r1": "\n".join(
@@ -151,8 +162,10 @@ def test_all_operat_candidates_select_without_false_future_marker_block() -> Non
             ]
         ),
         "operat_wody_polskie_2026_r1": (
-            "Pozwolenie wodnoprawne opisuje zakres. "
-            "Wniosek obejmuje operat wodnoprawny i właściwy organ."
+            "2. Operat wodnoprawny\n"
+            "Do wniosku dołącz operat wodnoprawny\n"
+            "Jeśli wnioskodawcą są Wody Polskie to wniosek składa się "
+            "do Ministerstwa Infrastruktury"
         ),
         "operat_oplaty_2026_2025_717_r1": (
             "Tabela: opłaty za wydanie pozwolenia wodnoprawnego w 2026 r."
@@ -165,19 +178,27 @@ def test_all_operat_candidates_select_without_false_future_marker_block() -> Non
         if candidate.candidate_id in sources
     )
 
+    assert len(candidates) == 8
     assert {candidate.candidate_id for candidate in candidates} == set(sources)
     for candidate in candidates:
-        selected = selection_module.select_bounded_source_text(
-            candidate, sources[candidate.candidate_id]
-        )
+        source = sources[candidate.candidate_id]
+        selected = selection_module.select_bounded_source_text(candidate, source)
         assert selected
+        for forbidden in ("<", ">", "2027", "Dodany"):
+            if forbidden in source:
+                assert forbidden not in selected
+    # The candidates that own excluded future units must actually carry markers,
+    # otherwise the removal assertions above would be vacuous.
+    assert "2027" in sources["operat_prawo_wodne_application_r1"]
+    assert "2027" in sources["operat_prawo_wodne_contents_r1"]
+    assert "Dodany" in sources["operat_prawo_wodne_contents_r1"]
 
 
 def test_residual_forbidden_anchor_blocks_future_marker_left_after_exclusion() -> None:
     original = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
     assert original.selector is not None
     candidate = original.model_copy(
@@ -197,12 +218,6 @@ def test_residual_forbidden_anchor_blocks_future_marker_left_after_exclusion() -
     )
     source = "\n".join(
         [
-            "Art. 389. Zakres.",
-            "Art. 390. Wyjątki.",
-            "Art. 397. Organ.",
-            "Art. 399. Wniosek.",
-            "Art. 400. Okres.",
-            "Art. 407. Zawartość.",
             "Art. 408. Forma.",
             "Art. 409. Część opisowa.",
             "REMOVE_ME",
@@ -222,40 +237,29 @@ def test_excluded_ranges_remove_only_exact_future_units_and_amendment_notes() ->
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
     source = "\n".join(
         [
-            "Art. 389. zakres pozwolenia",
-            "Art. 390. wyjątki",
-            "Art. 397. właściwy organ",
-            "Art. 399. wniosek i operat",
-            "Art. 400. okres obowiązywania",
-            "Art. 407. zawartość operatu",
-            "5. Aktualny ustęp 5.",
-            "6. Aktualny ustęp 6.",
-            "<4a) przyszła jednostka 2027 r;>",
-            "7. Aktualny ustęp 7.",
-            "<5a. przyszła jednostka 2027 r.>",
-            "8. Aktualny ustęp 8.",
-            "<8. przyszła jednostka 2027 r.>",
-            "9. Aktualny ustęp 9.",
             "Art. 408. forma operatu",
+            "5. Aktualny ustęp 5.",
+            "<8. przyszła jednostka 2027 r.>",
             "Art. 409. część opisowa i graficzna",
-            "Dodany pkt 4a w art. 407 poz. 1156).",
+            "6. Aktualny ustęp 6.",
             "Dodany ust. 5a w art. 407 poz. 1156).",
+            "7. Aktualny ustęp 7.",
+            "Art. 410. poza zakresem",
         ]
     )
 
     selected = selection_module.select_bounded_source_text(candidate, source)
 
-    for value in ("przyszła jednostka", "Dodany pkt 4a w", "Dodany ust. 5a w"):
+    for value in ("przyszła jednostka", "Dodany ust. 5a w"):
         assert value not in selected
     for value in (
         "Aktualny ustęp 5.",
         "Aktualny ustęp 6.",
         "Aktualny ustęp 7.",
-        "Aktualny ustęp 9.",
     ):
         assert value in selected
 
@@ -264,7 +268,7 @@ def test_excluded_range_cannot_recreate_a_removed_required_anchor() -> None:
     original = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_wody_polskie_2026_r1"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
     assert original.selector is not None
     candidate = original.model_copy(
@@ -284,11 +288,12 @@ def test_excluded_range_cannot_recreate_a_removed_required_anchor() -> None:
     )
     source = "\n".join(
         [
-            "Art.",
+            "Art. 408. Forma.",
             "EXCLUDED_START",
             "Art. 409.",
             "EXCLUDED_END",
             "409.",
+            "Art. 410. Poza zakresem.",
         ]
     )
 
@@ -325,29 +330,23 @@ def test_excluded_range_cannot_swallow_required_provision_or_create_proposal(
     original = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
     assert original.selector is not None
     candidate = original.model_copy(
         update={
             "selector": original.selector.model_copy(
-                update={"excluded_ranges": [original.selector.excluded_ranges[3]]}
+                update={"excluded_ranges": [original.selector.excluded_ranges[1]]}
             )
         }
     )
     source = "\n".join(
         [
-            "Art. 389. zakres",
-            "Art. 390. wyjątki",
-            "Art. 397. organ",
-            "Art. 399. wniosek",
-            "Art. 400. okres",
-            "Art. 407. zawartość",
             "Art. 408. forma",
-            "Dodany pkt 4a w art. 407",
+            "Dodany ust. 5a w art. 407",
             "Art. 409. części opisowa i graficzna",
             "poz. 1156).",
-            "tekst przyszły 2027",
+            "Art. 410. poza zakresem",
         ]
     )
 
@@ -376,9 +375,9 @@ def test_excluded_range_cannot_swallow_required_provision_or_create_proposal(
 @pytest.mark.parametrize(
     "extracted,expected_error",
     [
-        ("Art. 389. tylko początek bez końcowego przepisu.", "missing"),
+        ("Art. 408. tylko początek bez końcowego przepisu.", "missing"),
         (
-            "Art. 389. pierwszy\nArt. 389. drugi\nArt. 409. koniec",
+            "Art. 408. pierwszy\nArt. 408. drugi\nArt. 409. koniec",
             "ambiguous",
         ),
     ],
@@ -389,8 +388,7 @@ def test_operat_selector_missing_or_ambiguous_anchor_fails_closed(
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.source_url
-        == "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf"
+        if item.candidate_id == "operat_prawo_wodne_contents_r1"
     )
 
     class _PdfResult:
@@ -422,8 +420,7 @@ def test_operat_selector_scope_drift_invalidates_existing_proposal(tmp_path) -> 
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.source_url
-        == "https://eli.gov.pl/api/acts/DU/2025/960/text/U/D20250960Lj.pdf"
+        if item.candidate_id == "operat_prawo_wodne_scope_r1"
     )
     proposal_store, snapshot_store, _review_store, run_store = _stores(tmp_path)
     result = generate_source_fact_proposal(
@@ -443,21 +440,6 @@ def test_operat_selector_scope_drift_invalidates_existing_proposal(tmp_path) -> 
                     "Art. 389. zakres pozwolenia",
                     "Art. 390. wyjątki",
                     "Art. 397. właściwy organ",
-                    "Art. 399. wniosek i operat",
-                    "Art. 400. okres obowiązywania",
-                    "Art. 407. zawartość operatu",
-                    "5. Aktualny ustęp 5.",
-                    "6. Aktualny ustęp 6.",
-                    "<4a) przyszła jednostka 2027 r.;>",
-                    "7. Aktualny ustęp 7.",
-                    "<5a. przyszła jednostka 2027 r..>",
-                    "8. Aktualny ustęp 8.",
-                    "<8. przyszła jednostka 2027 r..>",
-                    "9. Aktualny ustęp 9.",
-                    "Art. 408. forma operatu",
-                    "Art. 409. część opisowa i graficzna",
-                    "Dodany pkt 4a w art. 407 poz. 1156).",
-                    "Dodany ust. 5a w art. 407 poz. 1156).",
                     "Operat wodnoprawny pozwolenie obowiązek.",
                 ]
             ).replace("<", "&lt;")

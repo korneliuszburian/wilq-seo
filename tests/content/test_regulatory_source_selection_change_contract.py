@@ -22,7 +22,7 @@ def _operat_candidate() -> ContentRegulatorySourceCandidate | None:
         (
             item
             for item in regulatory_source_candidates()
-            if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+            if item.candidate_id == "operat_prawo_wodne_contents_r1"
         ),
         None,
     )
@@ -42,19 +42,14 @@ def _selector_module() -> tuple[Any, Any]:
 def _operat_source() -> str:
     return "\n".join(
         [
-            "Art. 389. zakres pozwolenia",
-            "Art. 390. wyjątki",
-            "Art. 397. właściwy organ",
-            "Art. 399. wniosek i operat",
-            "Art. 400. okres obowiązywania",
-            "Art. 407. zawartość operatu",
             "Art. 408. forma operatu",
-            "<4a) przyszła jednostka 2027 r.;>",
+            "5. Aktualny ustęp 5.",
+            "<8. przyszła jednostka 2027 r..>",
             "Art. 409. część opisowa i graficzna",
-            "<5a. przyszła jednostka 2027 r.>",
-            "<8. przyszła jednostka 2027 r.>",
-            "Dodany pkt 4a w art. 407 poz. 1156).",
+            "6. Aktualny ustęp 6.",
             "Dodany ust. 5a w art. 407 poz. 1156).",
+            "7. Aktualny ustęp 7.",
+            "Art. 410. poza zakresem",
         ]
     )
 
@@ -71,8 +66,11 @@ def test_operat_source_selector_is_bounded_and_fail_closed() -> None:
     assert selection_error is not None
 
     selected = select_bounded_source_text(candidate, _operat_source())
-    assert "Art. 389." in selected
+    assert "Art. 408." in selected
     assert "Art. 409." in selected
+    assert "Aktualny ustęp 5." in selected
+    assert "Aktualny ustęp 6." in selected
+    assert "Aktualny ustęp 7." in selected
     assert "2027" not in selected
     assert "Dodany" not in selected
     assert "<" not in selected

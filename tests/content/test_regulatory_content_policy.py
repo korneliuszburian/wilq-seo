@@ -347,7 +347,7 @@ def test_operat_wodnoprawny_profile_binds_exact_canonical_path_and_official_sour
         for candidate in regulatory_source_candidates()
         if candidate.profile_id == profile.id
     ]
-    assert len(candidates) == 4
+    assert len(candidates) == 8
     assert {
         candidate.source_url for candidate in candidates
     } == {

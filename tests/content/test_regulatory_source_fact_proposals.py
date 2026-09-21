@@ -102,16 +102,6 @@ def test_public_fact_proposal_route_uses_bounded_codex_deadline(tmp_path, monkey
             "Art. 389. zakres pozwolenia",
             "Art. 390. wyjątki",
             "Art. 397. właściwy organ",
-            "Art. 399. wniosek i operat",
-            "Art. 400. okres obowiązywania",
-            "Art. 407. zawartość operatu",
-            "<4a) przyszła jednostka 2027 r.;>",
-            "<5a. przyszła jednostka 2027 r..>",
-            "<8. przyszła jednostka 2027 r..>",
-            "Art. 408. forma operatu",
-            "Art. 409. część opisowa i graficzna",
-            "Dodany pkt 4a w art. 407 poz. 1156).",
-            "Dodany ust. 5a w art. 407 poz. 1156).",
         ]
     )
     monkeypatch.setattr(regulatory_router, "StdioCodexAppServerClient", _FakeClient)
@@ -136,7 +126,7 @@ def test_public_fact_proposal_route_uses_bounded_codex_deadline(tmp_path, monkey
 
     response = TestClient(app).post(
         "/api/content/regulatory-source-candidates/"
-        "operat_prawo_wodne_2025_960_r1/fact-proposal"
+        "operat_prawo_wodne_scope_r1/fact-proposal"
     )
 
     assert response.status_code == 200
@@ -318,7 +308,7 @@ def test_proposal_review_rejects_mismatched_scope_without_human_review(
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+        if item.candidate_id == "operat_prawo_wodne_scope_r1"
     )
     assert candidate.selector is not None
     proposal_store, snapshot_store, review_store, run_store = _stores(tmp_path)
@@ -333,23 +323,8 @@ def test_proposal_review_rejects_mismatched_scope_without_human_review(
                 [
                     "Art. 389. zakres pozwolenia",
                     "Art. 390. wyjątki",
-                    "Art. 397. właściwy organ",
-                    "Art. 399. wniosek i operat",
-                    "Art. 400. okres obowiązywania",
-                    "Art. 407. zawartość operatu",
-                    "5. Aktualny ustęp 5.",
-                    "6. Aktualny ustęp 6.",
-                    "<4a) przyszła jednostka 2027 r.;>",
-                    "7. Aktualny ustęp 7.",
-                    "<5a. przyszła jednostka 2027 r..>",
-                    "8. Aktualny ustęp 8.",
-                    "<8. przyszła jednostka 2027 r..>",
-                    "9. Aktualny ustęp 9.",
-                    "Art. 408. forma operatu",
-                    "Art. 409. część opisowa i graficzna",
-                    "Dodany pkt 4a w art. 407 poz. 1156).",
-                    "Dodany ust. 5a w art. 407 poz. 1156).",
                     "Oficjalne źródło opisuje obowiązek.",
+                    "Art. 397. właściwy organ",
                 ]
             )
             .replace("<", "&lt;")

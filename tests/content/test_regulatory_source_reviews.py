@@ -305,7 +305,7 @@ def test_review_rejects_selector_scope_drift_before_persisting_decision(tmp_path
     candidate = next(
         item
         for item in regulatory_source_candidates()
-        if item.candidate_id == "operat_prawo_wodne_2025_960_r1"
+        if item.candidate_id == "operat_prawo_wodne_scope_r1"
     )
     snapshot = _snapshot(store.path, candidate.candidate_id)
     command = _command(candidate_id=candidate.candidate_id, snapshot=snapshot)
