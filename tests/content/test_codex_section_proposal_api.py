@@ -20,8 +20,12 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentRevisionRepairProposalRequest,
     ContentRevisionRepairProposalResponse,
 )
+from wilq.content.workflow.documents.revision_children import build_child_draft_revision_command
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
+    ContentDraftRevisionAppendCommand,
+    ContentDraftRevisionProposalMetadata,
+    ContentDraftRevisionProposalSectionLineage,
     ContentDraftRevisionSection,
 )
 from wilq.schemas import CodexRun
@@ -414,3 +418,63 @@ def test_section_proposal_conflict_finishes_started_run_as_blocked_without_revis
     assert len(appended) == 1
     assert appended[0].status == "completed"
     assert run_store.list_codex_runs()[0].status == "blocked"
+
+
+def test_child_section_proposal_preserves_research_packet_binding() -> None:
+    base_revision = ContentDraftRevision.model_construct(
+        revision_id="content_revision_packet_parent",
+        work_item_id="content_work_item_packet",
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="draft_package_packet",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        research_packet_id="content_research_packet_parent",
+        research_packet_digest="d" * 64,
+        title="Tytuł wersji bazowej",
+        final_canonical_url="https://ekologus.pl/test-packet-binding/",
+        sections=[
+            ContentDraftRevisionSection(
+                heading="Zakres",
+                body_markdown="Treść wersji bazowej.",
+                evidence_ids=["evidence_packet"],
+            )
+        ],
+        cta_blocks=[],
+    )
+    metadata = ContentDraftRevisionProposalMetadata(
+        codex_run_id="codex_run_packet_binding",
+        selected_section_headings=["Zakres"],
+        section_lineage=[
+            ContentDraftRevisionProposalSectionLineage(
+                heading="Zakres",
+                evidence_ids=["evidence_packet"],
+            )
+        ],
+        quality_verdict="reviewable",
+        research_packet_id=base_revision.research_packet_id,
+        research_packet_digest=base_revision.research_packet_digest,
+    )
+
+    child_command = build_child_draft_revision_command(
+        base_revision,
+        sections=base_revision.sections,
+        proposal_metadata=metadata,
+        created_by="wilku",
+    )
+
+    assert isinstance(child_command, ContentDraftRevisionAppendCommand)
+    assert child_command.research_packet_id == base_revision.research_packet_id
+    assert child_command.research_packet_digest == base_revision.research_packet_digest
+
+    mismatched_metadata = metadata.model_copy(update={"research_packet_digest": "e" * 64})
+    with pytest.raises(
+        ValueError,
+        match="Draft revision packet binding must match its proposal metadata\\.",
+    ):
+        build_child_draft_revision_command(
+            base_revision,
+            sections=base_revision.sections,
+            proposal_metadata=mismatched_metadata,
+            created_by="wilku",
+        )

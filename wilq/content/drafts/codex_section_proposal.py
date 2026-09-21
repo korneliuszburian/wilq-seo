@@ -425,6 +425,38 @@ def _review_runtime_output(
     return quality_review
 
 
+def _missing_planning_binding_response(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    base_revision_id: str,
+    selected_headings: list[str],
+    runtime: _RuntimeOutput,
+    quality_review: ContentQualityReview,
+    run_store: LocalStateStore,
+) -> ContentCodexSectionProposalResponse:
+    blocker = build_blocker(
+        ContentCodexSectionProposalBlocker,
+        code="missing_planning_binding",
+        label="Wersja nie jest powiązana z zatwierdzonym planem",
+        reason="Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
+        next_step="Zapisz nową wersję po zatwierdzeniu aktualnego planu.",
+    )
+    return _blocked_response(
+        snapshot=snapshot,
+        base_revision_id=base_revision_id,
+        selected_headings=selected_headings,
+        run=_finish_run(
+            run_store,
+            runtime.run,
+            status="blocked",
+            error=blocker.code,
+        ),
+        runtime=runtime.trace,
+        blockers=[blocker],
+        quality_review=quality_review,
+    )
+
+
 def _persist_proposal(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
@@ -437,26 +469,13 @@ def _persist_proposal(
 ) -> ContentCodexSectionProposalResponse:
     base_revision = inputs.base_revision
     if base_revision.planning_digest is None:
-        blocker = build_blocker(
-            ContentCodexSectionProposalBlocker,
-            code="missing_planning_binding",
-            label="Wersja nie jest powiązana z zatwierdzonym planem",
-            reason="Starsza wersja nie wskazuje dokładnego zakresu i mapy sekcji.",
-            next_step="Zapisz nową wersję po zatwierdzeniu aktualnego planu.",
-        )
-        return _blocked_response(
+        return _missing_planning_binding_response(
             snapshot=snapshot,
             base_revision_id=base_revision.revision_id,
             selected_headings=inputs.selected_headings,
-            run=_finish_run(
-                run_store,
-                runtime.run,
-                status="blocked",
-                error=blocker.code,
-            ),
-            runtime=runtime.trace,
-            blockers=[blocker],
+            runtime=runtime,
             quality_review=quality_review,
+            run_store=run_store,
         )
     revision_sections = merge_selected_sections(
         base_revision,
@@ -752,6 +771,8 @@ def _proposal_metadata(
             if selected_cta_ids
             else "persisted_selected_sections_and_declared_lineage"
         ),
+        research_packet_id=base_revision.research_packet_id,
+        research_packet_digest=base_revision.research_packet_digest,
     )
 
 
