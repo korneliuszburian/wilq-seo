@@ -386,7 +386,11 @@ def _generate_proposal(
         update={"status": "completed", "completed_at": utc_now(), "error": None}
     )
     proposal = _proposal_from_output(planning_input, output, completed)
-    saved_status, saved = store.save_generated(proposal, completed)
+    saved_status, saved = store.save_generated(
+        proposal,
+        completed,
+        planning_input=planning_input,
+    )
     return ContentPlanningProposalResponse(
         status="created" if saved_status == "created" else "idempotent",
         work_item_id=planning_input.work_item_id,

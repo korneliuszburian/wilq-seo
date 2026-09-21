@@ -72,6 +72,7 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_new_page_revision_apply_claims",
         "content_planning_generation_claims",
         "content_planning_generation_jobs",
+        "content_planning_input_snapshots",
         "content_planning_proposal_repairs",
         "content_planning_proposals",
         "content_planning_reviews",

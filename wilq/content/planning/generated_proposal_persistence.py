@@ -67,6 +67,7 @@ def persist_generated_proposal(
         store_status, stored = store.save_generated(
             proposal,
             completed_run,
+            planning_input=planning_input,
             replace_existing_exact_input=(
                 request.regenerate_stale_mapping or request.regenerate_after_review
             ),

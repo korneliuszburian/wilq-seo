@@ -66,9 +66,11 @@ from wilq.content.planning.dynamic_input import (
     bind_research_packet_to_planning_input,
     build_content_planning_input,
 )
+from wilq.content.planning.frozen_planning_input import frozen_input_for_proposal
 from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
+from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
 from wilq.content.quality.benefit_signal import (
     BENEFIT_BODY_MARKER,
     BENEFIT_HEADING_SIGNAL,
@@ -433,7 +435,6 @@ def _prepare_draft_planning_input(
         proposal.content_kind,
         service_card_id,
     )
-    # A durable document requires stricter readiness than a reviewable plan.
     if planning_result.planning_input is None or planning_result.blockers:
         return _blocked_response(
             snapshot,
@@ -442,8 +443,7 @@ def _prepare_draft_planning_input(
             blockers=[_planning_input_blocker(planning_result.blockers)],
         )
     planning_input = planning_result.planning_input
-    if workflow_store is None and proposal.content_kind != "editorial":
-        return planning_input
+    frozen_planning_input = frozen_input_for_proposal(proposal, content_planning_proposal_store)
     packet_blocker = _validate_research_packet(
         snapshot=snapshot,
         planning_input=planning_input,
@@ -457,17 +457,17 @@ def _prepare_draft_planning_input(
             status="blocked",
             blockers=[packet_blocker],
         )
-    if workflow_store is None:
-        return planning_input
-    return _planning_input_with_packet(workflow_store, proposal, planning_input)
+    return frozen_planning_input or _planning_input_with_packet(
+        workflow_store, proposal, planning_input
+    )
 
 
 def _planning_input_with_packet(
-    workflow_store: InitialDraftRevisionStore,
+    workflow_store: InitialDraftRevisionStore | None,
     proposal: ContentPlanningProposal,
     planning_input: ContentPlanningInput,
 ) -> ContentPlanningInput:
-    if proposal.research_packet_id is None:
+    if workflow_store is None or proposal.research_packet_id is None:
         return planning_input
     packet_loader = getattr(workflow_store, "load_content_research_packet", None)
     packet = packet_loader(proposal.research_packet_id) if callable(packet_loader) else None

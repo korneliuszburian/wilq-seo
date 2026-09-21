@@ -6,6 +6,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal, cast
 
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.frozen_planning_input import (
+    frozen_input_snapshot_time,
+    persist_frozen_planning_input,
+    read_frozen_input,
+)
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
@@ -207,6 +213,13 @@ class ContentPlanningProposalStore(
             connection.close()
         return _proposal_from_row(row)
 
+    def frozen_planning_input(
+        self,
+        work_item_id: str,
+        planning_input_digest: str,
+    ) -> ContentPlanningInput | None:
+        return read_frozen_input(self._read_connection, work_item_id, planning_input_digest)
+
     def queued_response(
         self,
         work_item_id: str,
@@ -371,12 +384,14 @@ class ContentPlanningProposalStore(
         proposal: ContentPlanningProposal,
         completed_run: CodexRun,
         *,
+        planning_input: ContentPlanningInput | None = None,
         replace_existing_exact_input: bool = False,
     ) -> tuple[GeneratedProposalSaveOutcome, ContentPlanningProposal]:
         return _save_generated(
             self,
             proposal,
             completed_run,
+            planning_input=planning_input,
             replace_existing_exact_input=replace_existing_exact_input,
         )
 
@@ -669,9 +684,11 @@ def _save_generated(
     proposal: ContentPlanningProposal,
     completed_run: CodexRun,
     *,
+    planning_input: ContentPlanningInput | None = None,
     replace_existing_exact_input: bool = False,
 ) -> tuple[GeneratedProposalSaveOutcome, ContentPlanningProposal]:
     _validate_generated_proposal(proposal, completed_run)
+    snapshot_created_at = frozen_input_snapshot_time(proposal, completed_run, planning_input)
     with store.run_transaction() as connection:
         connection.execute("BEGIN IMMEDIATE")
         assert_refresh_preparation_proposal_current(connection, proposal)
@@ -690,23 +707,11 @@ def _save_generated(
             if existing is None:
                 raise RuntimeError("Planning proposal row disappeared during save.")
             if not replace_existing_exact_input:
+                persist_frozen_planning_input(connection, planning_input, snapshot_created_at)
                 return "idempotent", existing
         else:
             existing = None
-        row = connection.execute(
-            """
-                SELECT COALESCE(MAX(proposal_version), 0) AS latest_version
-                FROM (
-                  SELECT proposal_version FROM content_planning_proposals WHERE work_item_id = ?
-                  UNION ALL
-                  SELECT proposal_version
-                  FROM content_planning_proposal_repairs
-                  WHERE work_item_id = ?
-                )
-                """,
-            (proposal.work_item_id, proposal.work_item_id),
-        ).fetchone()
-        version = 1 if row is None else int(row["latest_version"]) + 1
+        version = _next_proposal_version(connection, proposal.work_item_id)
         versioned = proposal.model_copy(update={"proposal_version": version})
         safe_proposal = ContentPlanningProposal.model_validate(
             redact_mapping(versioned.model_dump(mode="json"))
@@ -754,7 +759,25 @@ def _save_generated(
                 (*values[:7], existing.proposal_id, *values[7:]),
             )
             outcome = "replaced"
+        persist_frozen_planning_input(connection, planning_input, created_at)
     return outcome, safe_proposal
+
+
+def _next_proposal_version(connection: sqlite3.Connection, work_item_id: str) -> int:
+    row = connection.execute(
+        """
+            SELECT COALESCE(MAX(proposal_version), 0) AS latest_version
+            FROM (
+              SELECT proposal_version FROM content_planning_proposals WHERE work_item_id = ?
+              UNION ALL
+              SELECT proposal_version
+              FROM content_planning_proposal_repairs
+              WHERE work_item_id = ?
+            )
+            """,
+        (work_item_id, work_item_id),
+    ).fetchone()
+    return 1 if row is None else int(row["latest_version"]) + 1
 
 
 def _proposal_row_for_subject_input(
@@ -765,7 +788,6 @@ def _proposal_row_for_subject_input(
 ) -> sqlite3.Row | None:
     tables = _proposal_tables(connection)
     query = " UNION ALL ".join(_PROPOSAL_INPUT_SELECTS[table] for table in tables)
-    # Table fragments are fixed above; every caller value remains a bound parameter.
     row = connection.execute(
         "SELECT * FROM (" + query + ") ORDER BY proposal_version DESC LIMIT 1",  # nosec B608
         (

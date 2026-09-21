@@ -54,6 +54,22 @@ CREATE TABLE {table} (
   PRIMARY KEY (work_item_id, content_kind, subject_key, planning_input_digest)
 )
 """
+_INPUT_SNAPSHOTS = """
+CREATE TABLE IF NOT EXISTS {table} (
+  snapshot_id TEXT PRIMARY KEY,
+  work_item_id TEXT NOT NULL,
+  service_card_id TEXT,
+  content_kind TEXT NOT NULL CHECK (content_kind IN ('service', 'editorial')),
+  subject_key TEXT NOT NULL,
+  planning_input_digest TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  input_json TEXT NOT NULL,
+  CHECK ((content_kind = 'service' AND service_card_id IS NOT NULL
+    AND subject_key = service_card_id)
+    OR (content_kind = 'editorial' AND service_card_id IS NULL AND subject_key = 'editorial')),
+  UNIQUE (work_item_id, planning_input_digest)
+)
+"""
 
 
 def ensure_generated_proposal_schema(connection: sqlite3.Connection) -> None:
@@ -64,6 +80,7 @@ def ensure_generated_proposal_schema(connection: sqlite3.Connection) -> None:
         _ensure_table(connection, "content_planning_proposals", _PROPOSALS)
         _ensure_table(connection, "content_planning_proposal_repairs", _REPAIRS)
         _ensure_table(connection, "content_planning_generation_jobs", _JOBS)
+        _ensure_table(connection, "content_planning_input_snapshots", _INPUT_SNAPSHOTS)
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS codex_runs (
@@ -86,6 +103,7 @@ def _schema_is_current(connection: sqlite3.Connection) -> bool:
         "content_planning_proposals",
         "content_planning_proposal_repairs",
         "content_planning_generation_jobs",
+        "content_planning_input_snapshots",
     ):
         if not _table_exists(connection, table):
             return False
@@ -129,7 +147,13 @@ def _rebuild_table(connection: sqlite3.Connection, table: str, schema: str) -> N
     connection.execute(schema.format(table=table))  # nosec B608 -- fixed names.
     columns = [str(row[1]) for row in connection.execute(f"PRAGMA table_info({legacy})")]
     copied = [name for name in columns if name not in {"content_kind", "subject_key"}]
-    split_at = 2 if table == "content_planning_generation_jobs" else 4
+    split_at = (
+        2
+        if table == "content_planning_generation_jobs"
+        else 3
+        if table == "content_planning_input_snapshots"
+        else 4
+    )
     target_columns = [*copied[:split_at], "content_kind", "subject_key", *copied[split_at:]]
     select_values = [
         "'service'"
