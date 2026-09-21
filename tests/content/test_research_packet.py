@@ -610,6 +610,26 @@ def test_credential_like_packet_identifier_is_rejected_before_redaction(
         ContentResearchPacketCommand.model_validate(payload)
 
 
+def test_legal_source_requirements_allow_domain_ids_and_reject_unsafe_values(
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    command, _ = _packet_command(store, identity)
+    payload = command.model_dump(mode="json")
+    requirements = ("operat_2026_administrative_charges", "operat_validity")
+
+    accepted = ContentResearchPacketCommand.model_validate(
+        payload | {"legal_source_requirements": requirements}
+    )
+    assert accepted.legal_source_requirements == requirements
+
+    for invalid in ("sk-" + "a" * 24, "", "not an identifier"):
+        with pytest.raises(ValueError, match="Legal/source requirement"):
+            ContentResearchPacketCommand.model_validate(
+                payload | {"legal_source_requirements": (invalid,)}
+            )
+
+
 def test_credential_like_fact_and_freshness_ids_are_rejected() -> None:
     token = "gho_" + "a" * 24
 

@@ -372,9 +372,16 @@ class ContentResearchPacketCommand(_FrozenModel):
     @field_validator("legal_source_requirements")
     @classmethod
     def normalize_legal_requirements(cls, value: tuple[str, ...]) -> tuple[str, ...]:
-        return tuple(
-            _safe_text(item, "Legal/source requirement", allow_blank=False) for item in value
-        )
+        normalized = tuple(item.strip() for item in value)
+        if (
+            any(not item for item in normalized)
+            or any(not re.fullmatch(_SAFE_IDENTIFIER, item) for item in normalized)
+            or any(_SECRET_LIKE.search(item) for item in normalized)
+            or len(normalized) != len(set(normalized))
+            or normalized != tuple(sorted(normalized))
+        ):
+            raise ValueError("Legal/source requirements must be sorted, unique and non-blank.")
+        return normalized
 
     @field_validator("recorded_at")
     @classmethod
