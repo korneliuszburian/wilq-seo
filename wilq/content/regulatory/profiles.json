@@ -535,9 +535,9 @@
           "reason": "Treść musi opisywać wniosek oraz wymagane elementy operatu, w tym jego część opisową i graficzną, bez tworzenia zamkniętej listy poza źródłem.",
           "document_assertions": [
             {"id": "application", "label": "wniosek o pozwolenie", "required_any_of": ["wniosek o wydanie pozwolenia", "wniosek"]},
-            {"id": "operat", "label": "operat wodnoprawny", "required_any_of": ["operat wodnoprawny"]},
-            {"id": "operat_description", "label": "część opisowa operatu", "required_any_of": ["część opisowa"]},
-            {"id": "operat_graphics", "label": "część graficzna operatu", "required_any_of": ["część graficzna"]}
+            {"id": "operat", "label": "operat wodnoprawny", "required_any_of": ["operat wodnoprawny", "operatem wodnoprawnym"]},
+            {"id": "operat_description", "label": "część opisowa operatu", "required_any_of": ["część opisowa", "opisowej"]},
+            {"id": "operat_graphics", "label": "część graficzna operatu", "required_any_of": ["część graficzna", "graficznej"]}
           ]
         },
         {
@@ -563,7 +563,7 @@
           "label": "właściwość organu",
           "reason": "Treść musi wskazywać właściwy organ z zastrzeżeniem rodzaju sprawy i właściwości ustawowej, bez przypisywania jednej instytucji wszystkich decyzji.",
           "document_assertions": [
-            {"id": "competent_authority", "label": "właściwy organ", "required_any_of": ["właściwy organ", "organ właściwy"]},
+            {"id": "competent_authority", "label": "właściwy organ", "required_any_of": ["właściwy organ", "organ właściwy", "właściwe organy"]},
             {"id": "polish_waters", "label": "Wody Polskie", "required_any_of": ["Wody Polskie"]}
           ]
         },

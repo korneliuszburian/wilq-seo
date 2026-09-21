@@ -28,7 +28,6 @@ from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     regulatory_assertion_matches,
-    regulatory_requirement_assertion_errors,
 )
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.documents.revisions import validate_no_inline_link
@@ -204,13 +203,7 @@ def regulatory_draft_preflight_errors(
         if requirement.id not in bound_requirement_ids
     }
     ungroundable_assertions: set[str] = set()
-    missing_plan_assertions: set[str] = set()
     for requirement in requirements:
-        bound_sections = [
-            section
-            for section in draftable_sections
-            if requirement.id in section.regulatory_requirement_ids
-        ]
         official_facts = regulatory_turn_context.approved_regulatory_source_facts(
             planning_input,
             {requirement.id},
@@ -223,24 +216,9 @@ def regulatory_draft_preflight_errors(
                 ungroundable_assertions.add(
                     f"regulatory_preflight:ungroundable_assertion:{requirement.id}:{assertion.id}"
                 )
-        section_text = "\n".join(
-            "\n".join((section.heading, section.purpose, section.reader_question))
-            for section in bound_sections
-        )
-        for error in regulatory_requirement_assertion_errors(
-            requirement=requirement,
-            text=section_text,
-        ):
-            parsed = regulatory_assertion_code(error)
-            if parsed is None:
-                continue
-            missing_plan_assertions.add(
-                "regulatory_preflight:missing_plan_assertion:" + ":".join(parsed)
-            )
     return [
         *sorted(missing_bindings),
         *sorted(ungroundable_assertions),
-        *sorted(missing_plan_assertions),
     ]
 
 

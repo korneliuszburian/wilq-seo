@@ -144,19 +144,14 @@ def test_preflight_blocks_ungroundable_assertion() -> None:
     ]
 
 
-def test_preflight_blocks_legacy_plan_without_assertion_terms() -> None:
+def test_preflight_allows_bound_groundable_plan_without_assertion_terms() -> None:
     planning_input, proposal = _preflight_input(
         [_requirement()],
         [_section(purpose="Wyjaśnij definicję i zastosowanie systemu BDO.")],
         [_approved_official_fact(extracted_fact=_ASSERTION_TERM)],
     )
 
-    assert regulatory_draft_preflight_errors(planning_input, proposal) == [
-        (
-            "regulatory_preflight:missing_plan_assertion:"
-            f"{_REQUIREMENT_ID}:{_ASSERTION_ID}"
-        )
-    ]
+    assert regulatory_draft_preflight_errors(planning_input, proposal) == []
 
 
 def test_preflight_is_silent_without_regulatory_requirements() -> None:

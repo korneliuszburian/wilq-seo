@@ -222,6 +222,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_regulatory_source_selection_change_contract.py",
     ),
+    ("regulatory-preflight", "bound-groundable-plan-without-metadata-terms"): (
+        "scripts/test.sh",
+        "tests/content/test_regulatory_preflight_change_contract.py",
+    ),
     ("readability-regulatory-restore", "pure-grounding-after-model-repair"): (
         "scripts/test.sh",
         "tests/content/test_readability_regulatory_restore.py",
@@ -404,6 +408,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("regulatory-fact-proposal-deadline", "covers-full-turn"),
             ("regulatory-grounding-fallback", "requirement-wide-approved-facts"),
             ("regulatory-source-selection", "bounded-exact-fail-closed"),
+            ("regulatory-preflight", "bound-groundable-plan-without-metadata-terms"),
             ("readability-regulatory-restore", "pure-grounding-after-model-repair"),
             ("assurance-turn-signal", "typed-transport-exception"),
             ("initial-draft-deadline", "covers-full-finalization"),

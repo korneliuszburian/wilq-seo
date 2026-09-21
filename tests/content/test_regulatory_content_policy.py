@@ -12,6 +12,7 @@ from wilq.content.regulatory.policy import (
     ContentRegulatoryRequirement,
     ContentRegulatoryReviewCandidate,
     ContentRegulatorySourceCandidate,
+    regulatory_assertion_matches,
     regulatory_content_coverage,
     regulatory_content_profile,
     regulatory_draft_assurance_constraints,
@@ -382,6 +383,36 @@ def test_operat_profile_does_not_admit_future_2027_clause_or_market_price_scope(
     assert "2027" not in profile_text
     assert "cena rynkowa" not in profile_text
     assert "stawka opłaty administracyjnej" in profile_text
+
+
+def test_operat_inflected_assertions_match_approved_fact_wording() -> None:
+    profile = regulatory_content_profile(
+        canonical_path="/operat-wodnoprawny-wszystko-co-musisz-wiedziec"
+    )
+    assert profile is not None
+    assertions = {
+        (requirement.id, assertion.id): assertion
+        for requirement in profile.requirements
+        for assertion in requirement.document_assertions
+    }
+    cases = (
+        ("operat_application_and_contents", "operat", "operatem wodnoprawnym"),
+        (
+            "operat_application_and_contents",
+            "operat_description",
+            "formie opisowej i graficznej",
+        ),
+        (
+            "operat_application_and_contents",
+            "operat_graphics",
+            "formie opisowej i graficznej",
+        ),
+        ("operat_authority", "competent_authority", "właściwe organy Wód Polskich"),
+    )
+
+    for requirement_id, assertion_id, fact in cases:
+        assertion = assertions[(requirement_id, assertion_id)]
+        assert regulatory_assertion_matches(text=fact, assertion=assertion) is True
 
 
 def test_environmental_assessment_assertion_accepts_polish_case_used_in_heading() -> None:
