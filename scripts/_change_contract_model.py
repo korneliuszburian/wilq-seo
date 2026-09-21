@@ -214,6 +214,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_regulatory_fact_proposal_deadline_change_contract.py",
     ),
+    ("section-repair-deadline", "covers-full-turn"): (
+        "scripts/test.sh",
+        "tests/content/test_section_repair_deadline_change_contract.py",
+    ),
     ("regulatory-grounding-fallback", "requirement-wide-approved-facts"): (
         "scripts/test.sh",
         "tests/content/test_regulatory_grounding_fallback.py",
@@ -410,6 +414,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("packet-id-normalization", "operational-to-inventory"),
             ("planning-codex-deadline", "covers-full-turn"),
             ("regulatory-fact-proposal-deadline", "covers-full-turn"),
+            ("section-repair-deadline", "covers-full-turn"),
             ("regulatory-grounding-fallback", "requirement-wide-approved-facts"),
             ("regulatory-source-selection", "bounded-exact-fail-closed"),
             ("regulatory-preflight", "bound-groundable-plan-without-metadata-terms"),

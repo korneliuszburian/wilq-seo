@@ -14,6 +14,7 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentRevisionRepairProposalRequest,
     ContentRevisionRepairProposalResponse,
 )
+from wilq.content.drafts.section_repair_runtime_contract import section_repair_timeout_seconds
 from wilq.content.planning.dynamic_input import ContentPlanningInput, build_content_planning_input
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.quality.semantic_review_store import content_semantic_review_store
@@ -74,7 +75,7 @@ def register_content_revision_repair_route(
                 selected_cta_ids=request.selected_cta_ids,
                 requested_by=request.requested_by,
             ),
-            client=content_codex_app_server_client(),
+            client=StdioCodexAppServerClient(timeout_seconds=section_repair_timeout_seconds()),
             workflow_store=content_workflow_store(),
             run_store=local_state_store(),
             semantic_review=semantic_review,

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_codex_proposal, content_workflow
+from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import codex_section_proposal
 from wilq.content.drafts.codex_section_proposal import propose_content_section_revision
 from wilq.content.drafts.codex_section_proposal_contracts import (
@@ -16,6 +17,8 @@ from wilq.content.drafts.codex_section_proposal_contracts import (
     ContentCodexSectionProposalBlocker,
     ContentCodexSectionProposalRequest,
     ContentCodexSectionProposalResponse,
+    ContentRevisionRepairProposalRequest,
+    ContentRevisionRepairProposalResponse,
 )
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
@@ -133,6 +136,94 @@ def test_revision_repair_route_adapts_one_stable_component_without_prompt_fields
     assert request.selected_section_headings == []
     assert "model_input" not in response.text
     assert "system_instruction" not in response.text
+
+
+def test_revision_repair_route_uses_bounded_codex_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    router = APIRouter()
+    timeouts: list[float] = []
+    turn_results: list[CodexAppServerTurnResult] = []
+    persisted_revision = ContentDraftRevision.model_construct(
+        revision_id="content_revision_deadline",
+        work_item_id="content_work_item_deadline",
+        content_digest="d" * 64,
+    )
+
+    class _FakeClient:
+        def __init__(self, *, timeout_seconds: float) -> None:
+            timeouts.append(timeout_seconds)
+
+        def run_structured_turn(self, _request: object) -> CodexAppServerTurnResult:
+            result = CodexAppServerTurnResult(status="failed")
+            turn_results.append(result)
+            return result
+
+    def proposal(**kwargs: object) -> ContentCodexSectionProposalResponse:
+        client = cast(_FakeClient, kwargs["client"])
+        result = client.run_structured_turn(object())
+        assert isinstance(result, CodexAppServerTurnResult)
+        assert result.status == "failed"
+        return ContentCodexSectionProposalResponse(
+            status="failed",
+            work_item_id=persisted_revision.work_item_id,
+            base_revision_id=persisted_revision.revision_id,
+            selected_section_headings=["Sekcja naprawy"],
+            runtime=ContentCodexRuntimeTrace(status="failed"),
+            blockers=[
+                ContentCodexSectionProposalBlocker(
+                    code="runtime_failed",
+                    label="Codex nie zakończył propozycji",
+                    reason="Testowy failed turn.",
+                    next_step="Uruchom nową propozycję.",
+                )
+            ],
+            safe_next_step="Uruchom nową propozycję.",
+        )
+
+    monkeypatch.setattr(content_codex_proposal, "StdioCodexAppServerClient", _FakeClient)
+    monkeypatch.setattr(content_codex_proposal, "propose_content_section_revision", proposal)
+    monkeypatch.setattr(
+        content_codex_proposal,
+        "content_semantic_review_store",
+        lambda: SimpleNamespace(for_revision=lambda *_args: None),
+    )
+    monkeypatch.setattr(content_codex_proposal, "content_workflow_store", lambda: object())
+    monkeypatch.setattr(content_codex_proposal, "local_state_store", lambda: object())
+    content_codex_proposal.register_content_revision_repair_route(
+        router,
+        snapshot_loader=lambda _work_item_id: SimpleNamespace(
+            revision_workspace=SimpleNamespace(
+                latest_revision=persisted_revision,
+                status="needs_changes",
+                context_current=True,
+                can_save=True,
+            ),
+            planning_workspace=None,
+        ),
+    )
+
+    request = ContentRevisionRepairProposalRequest(
+        expected_base_digest="d" * 64,
+        selected_section_ids=["section_deadline"],
+        requested_by="wilku",
+    )
+    endpoint = router.routes[0].endpoint
+    response = endpoint(
+        work_item_id="content_work_item_deadline",
+        base_revision_id="content_revision_deadline",
+        request=request,
+    )
+
+    from wilq.content.drafts.section_repair_runtime_contract import (
+        section_repair_timeout_seconds,
+    )
+
+    assert isinstance(response, ContentRevisionRepairProposalResponse)
+    assert response.status == "failed"
+    assert turn_results
+    assert timeouts == [section_repair_timeout_seconds()]
+    assert timeouts[0] > 120.0
 
 
 def test_refresh_bound_repair_uses_binding_aware_snapshot(
