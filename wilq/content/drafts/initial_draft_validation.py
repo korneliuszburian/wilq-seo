@@ -27,9 +27,11 @@ def document_scope_errors(
     regulatory_requirements: list[ContentRegulatoryRequirement] | None = None,
     source_facts_by_section: dict[str, list[str]] | None = None,
     source_fact_corpus: list[str] | None = None,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[str]:
     errors: list[str] = []
-    draftable_sections = draftable_planning_sections(proposal.sections)
+    draftable_proposal = prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+    draftable_sections = draftable_planning_sections(draftable_proposal.sections)
     expected_sections = [(item.section_id, item.heading) for item in draftable_sections]
     actual_sections = [(item.section_id, item.heading) for item in output.sections]
     if actual_sections != expected_sections:
@@ -90,7 +92,7 @@ def document_scope_errors(
         )
         errors.extend(
             source_fact_signal_errors(
-                proposal,
+                draftable_proposal,
                 output,
                 source_facts_by_section=source_facts_by_section,
                 source_fact_corpus=corpus,
@@ -131,6 +133,7 @@ def document_scope_errors_for_planning_input(
                 )
             ]
         ),
+        prepared_plan=prepared_plan,
     )
 
 

@@ -590,11 +590,6 @@ def _prepare_generation_contract(
         )
     if errors := regulatory_draft_preflight_errors(planning_input, proposal):
         return _regulatory_preflight_blocked(snapshot, proposal, errors)
-    generation_contract = contract_for_planning_proposal(
-        generation.contract,
-        proposal,
-        planning_input,
-    )
     draft_plan = prepare_draft_plan(proposal, planning_input)
     if isinstance(draft_plan, DraftPlanBlocked):
         return _blocked_response(
@@ -603,6 +598,11 @@ def _prepare_generation_contract(
             status="blocked",
             blockers=[draft_plan.blocker],
         )
+    generation_contract = contract_for_planning_proposal(
+        generation.contract,
+        draft_plan.draftable_proposal,
+        planning_input,
+    )
     return _InitialDraftInputs(
         planning_input=planning_input,
         proposal=proposal,
@@ -773,10 +773,15 @@ def _output_blocker(
             next_step="Odrzuć wynik; nie naprawiaj struktury ręcznie po generowaniu.",
             source_codes=errors,
         )
+    claim_safety_proposal = (
+        inputs.draft_plan.draftable_proposal
+        if inputs.draft_plan is not None
+        else inputs.proposal
+    )
     issues = generated_claim_safety_issues(
         claim_safety_output(
             inputs.planning_input,
-            inputs.proposal,
+            claim_safety_proposal,
             output,
             inputs.generation_contract,
         ),

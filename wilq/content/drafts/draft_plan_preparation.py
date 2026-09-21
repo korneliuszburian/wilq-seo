@@ -69,6 +69,15 @@ class PreparedDraftTarget:
 
 
 @dataclass(frozen=True, slots=True)
+class DroppedDraftTarget:
+    """One body section omitted because its exact support is incomplete."""
+
+    section_id: str
+    heading: str
+    source_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class DraftPlanBlocked:
     """Typed, Polish blocker preventing an unsafe plan from reaching a writer."""
 
@@ -83,6 +92,13 @@ class PreparedDraftPlan:
     exact_source_snapshot: ContentPlanningInput
     body_targets: tuple[ContentPlanningSection, ...]
     target_supports: tuple[PreparedDraftTarget, ...]
+    dropped_targets: tuple[DroppedDraftTarget, ...] = ()
+
+    @property
+    def draftable_proposal(self) -> ContentPlanningProposal:
+        """Return the original proposal with only supported body targets."""
+
+        return self.candidate.model_copy(update={"sections": list(self.body_targets)})
 
     def source_facts_for_section(
         self,
@@ -167,8 +183,46 @@ def prepare_draft_plan(
         requirement.id: requirement
         for requirement in exact_source_snapshot.regulatory_coverage.requirements
     }
+    target_supports, dropped_targets = _prepare_target_supports(
+        body_targets,
+        exact_facts,
+        requirements_by_id,
+    )
+    if not target_supports:
+        return _blocked(
+            "draft_plan_no_writable_targets",
+            (
+                "Żaden cel body nie ma merytorycznego wsparcia z bieżącego packetu "
+                "ani source fact."
+            ),
+            (
+                "Przypisz co najmniej jednemu celowi dokładny source fact lub source "
+                "material z bieżącego packetu; same inventory, popyt i pomiar nie "
+                "wystarczają."
+            ),
+            (
+                source_code
+                for target in dropped_targets
+                for source_code in target.source_codes
+            ),
+        )
+
+    return PreparedDraftPlan(
+        candidate=candidate,
+        exact_source_snapshot=exact_source_snapshot,
+        body_targets=tuple(target.section for target in target_supports),
+        target_supports=tuple(target_supports),
+        dropped_targets=tuple(dropped_targets),
+    )
+
+
+def _prepare_target_supports(
+    body_targets: tuple[ContentPlanningSection, ...],
+    exact_facts: tuple[PreparedSourceFact, ...],
+    requirements_by_id: dict[str, ContentRegulatoryRequirement],
+) -> tuple[tuple[PreparedDraftTarget, ...], tuple[DroppedDraftTarget, ...]]:
     target_supports: list[PreparedDraftTarget] = []
-    unsupported: list[str] = []
+    dropped_targets: list[DroppedDraftTarget] = []
     for section in body_targets:
         facts = _facts_for_target(section, exact_facts)
         if section.regulatory_requirement_ids:
@@ -178,32 +232,25 @@ def prepare_draft_plan(
                 requirements_by_id,
             )
             if assertion_source_codes:
-                unsupported.extend(assertion_source_codes)
+                dropped_targets.append(
+                    DroppedDraftTarget(
+                        section_id=section.section_id,
+                        heading=section.heading,
+                        source_codes=assertion_source_codes,
+                    )
+                )
                 continue
         elif not facts:
-            unsupported.extend(_missing_target_codes(section, exact_facts))
+            dropped_targets.append(
+                DroppedDraftTarget(
+                    section_id=section.section_id,
+                    heading=section.heading,
+                    source_codes=_missing_target_codes(section, exact_facts),
+                )
+            )
             continue
         target_supports.append(PreparedDraftTarget(section=section, source_facts=facts))
-    if unsupported:
-        return _blocked(
-            "draft_plan_source_support_missing",
-            (
-                "Co najmniej jeden cel body nie ma merytorycznego wsparcia z bieżącego "
-                "packetu ani source fact."
-            ),
-            (
-                "Przypisz każdemu celowi dokładny source fact lub source material z "
-                "bieżącego packetu; same inventory, popyt i pomiar nie wystarczają."
-            ),
-            tuple(unsupported),
-        )
-
-    return PreparedDraftPlan(
-        candidate=candidate,
-        exact_source_snapshot=exact_source_snapshot,
-        body_targets=body_targets,
-        target_supports=tuple(target_supports),
-    )
+    return tuple(target_supports), tuple(dropped_targets)
 
 
 def _same_exact_input(
@@ -373,6 +420,7 @@ def _blocked(
 __all__ = [
     "DraftPlanBlocked",
     "DraftPlanBlockerCode",
+    "DroppedDraftTarget",
     "PreparedSourceFact",
     "PreparedDraftTarget",
     "PreparedDraftPlan",

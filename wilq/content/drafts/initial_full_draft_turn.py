@@ -24,7 +24,10 @@ from wilq.content.drafts.regulatory_repair import (
     regulatory_assertion_repair_output_schema,
     regulatory_section_repair_modes,
 )
-from wilq.content.drafts.structured_generation import StructuredDraftGenerationContract
+from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationContract,
+    contract_for_planning_proposal,
+)
 from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_initial_draft_planning_input,
@@ -39,6 +42,7 @@ from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
 )
+from wilq.content.workflow.research_packet import ContentResearchPacket
 
 
 def initial_full_draft_turn_request(
@@ -63,6 +67,9 @@ def initial_full_draft_turn_request(
         != planning_input.planning_input_digest
     ):
         raise ValueError("Prepared draft plan does not match the planning input.")
+    draftable_proposal = (
+        prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+    )
     packet = current_research_packet_for_model(planning_input)
     if packet is not None:
         planning_input = project_selected_source_pack_facts(
@@ -71,6 +78,54 @@ def initial_full_draft_turn_request(
             ekologus_source_facts(),
         )
     allowed_source_fact_ids = None if packet is None else set(packet.approved_source_fact_ids)
+    generation_contract = _project_prepared_generation_contract(
+        generation_contract,
+        draftable_proposal,
+        prepared_plan,
+    )
+    application_context, untrusted_context = _initial_full_draft_contexts(
+        planning_input=planning_input,
+        proposal=proposal,
+        draftable_proposal=draftable_proposal,
+        generation_contract=generation_contract,
+        packet=packet,
+        allowed_source_fact_ids=allowed_source_fact_ids,
+        prepared_plan=prepared_plan,
+    )
+    prompt_template = resolve_prompt_template("content_initial_draft")
+    return CodexAppServerStructuredTurnRequest(
+        instruction=prompt_template.render(
+            regulatory_draft_directive=_regulatory_draft_directive(
+                planning_input,
+                draftable_proposal,
+            )
+        ),
+        application_context=application_context,
+        untrusted_context=untrusted_context,
+        output_schema=initial_full_draft_output_schema(draftable_proposal),
+    )
+
+
+def _project_prepared_generation_contract(
+    generation_contract: StructuredDraftGenerationContract,
+    draftable_proposal: ContentPlanningProposal,
+    prepared_plan: PreparedDraftPlan | None,
+) -> StructuredDraftGenerationContract:
+    if prepared_plan is None:
+        return generation_contract
+    return contract_for_planning_proposal(generation_contract, draftable_proposal)
+
+
+def _initial_full_draft_contexts(
+    *,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    draftable_proposal: ContentPlanningProposal,
+    generation_contract: StructuredDraftGenerationContract,
+    packet: ContentResearchPacket | None,
+    allowed_source_fact_ids: set[str] | None,
+    prepared_plan: PreparedDraftPlan | None,
+) -> tuple[str, str]:
     application_context = json.dumps(
         {
             "operation": "generate_initial_full_content_draft",
@@ -100,14 +155,15 @@ def initial_full_draft_turn_request(
         {
             "planning_input": compact_initial_draft_planning_input(planning_input, packet),
             "approved_planning_proposal": compact_proposal(
-                proposal,
+                draftable_proposal,
                 draftable_sections_only=False,
             ),
             "research_packet_binding": _research_packet_binding(planning_input, proposal),
             "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
             "document_scope": {
                 "included_section_ids": [
-                    section.section_id for section in draftable_planning_sections(proposal.sections)
+                    section.section_id
+                    for section in draftable_planning_sections(draftable_proposal.sections)
                 ],
                 "excluded_section_ids": [
                     section.section_id
@@ -135,18 +191,7 @@ def initial_full_draft_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
-    prompt_template = resolve_prompt_template("content_initial_draft")
-    return CodexAppServerStructuredTurnRequest(
-        instruction=prompt_template.render(
-            regulatory_draft_directive=_regulatory_draft_directive(
-                planning_input,
-                proposal,
-            )
-        ),
-        application_context=application_context,
-        untrusted_context=untrusted_context,
-        output_schema=initial_full_draft_output_schema(proposal),
-    )
+    return application_context, untrusted_context
 
 
 def regulatory_assertion_repair_turn_request(
@@ -181,44 +226,13 @@ def regulatory_assertion_repair_turn_request(
         set[str],
         {item["requirement_id"] for item in assertions},
     )
-    if prepared_plan is not None:
-        required_pairs = {
-            (str(item["section_id"]), str(item["requirement_id"])) for item in assertions
-        }
-        source_facts = [
-            {
-                **fact,
-                "requirement_ids": [
-                    requirement_id
-                    for requirement_id in cast(list[str], fact["requirement_ids"])
-                    if (str(row["section_id"]), requirement_id) in required_pairs
-                ],
-            }
-            for row in _prepared_source_facts_by_section(prepared_plan, regulatory=True)
-            if set(cast(list[str], row["requirement_ids"])).intersection(requirement_ids)
-            for fact in cast(list[dict[str, object]], row["source_facts"])
-            if set(cast(list[str], fact["requirement_ids"])).intersection(
-                {
-                    requirement_id
-                    for section_id, requirement_id in required_pairs
-                    if section_id == str(row["section_id"])
-                }
-            )
-        ]
-    else:
-        source_facts = [
-            {
-                "summary": fact.extracted_fact,
-                "requirement_ids": fact.regulatory_requirement_ids,
-            }
-            for fact in regulatory_turn_context.approved_regulatory_source_facts(
-                planning_input,
-                requirement_ids,
-                allowed_source_fact_ids=(
-                    None if packet is None else packet.approved_source_fact_ids
-                ),
-            )
-        ]
+    source_facts = _regulatory_repair_source_facts(
+        planning_input=planning_input,
+        assertions=assertions,
+        requirement_ids=requirement_ids,
+        packet=packet,
+        prepared_plan=prepared_plan,
+    )
     return CodexAppServerStructuredTurnRequest(
         instruction=(
             "Zwróć wyłącznie patch body_markdown wskazanych section_id wraz z server-owned "
@@ -271,6 +285,53 @@ def _research_packet_binding(
     return {"packet_id": packet_id, "packet_digest": packet_digest}
 
 
+def _regulatory_repair_source_facts(
+    *,
+    planning_input: ContentPlanningInput,
+    assertions: list[dict[str, object]],
+    requirement_ids: set[str],
+    packet: ContentResearchPacket | None,
+    prepared_plan: PreparedDraftPlan | None,
+) -> list[dict[str, object]]:
+    if prepared_plan is None:
+        return [
+            {
+                "summary": fact.extracted_fact,
+                "requirement_ids": fact.regulatory_requirement_ids,
+            }
+            for fact in regulatory_turn_context.approved_regulatory_source_facts(
+                planning_input,
+                requirement_ids,
+                allowed_source_fact_ids=(
+                    None if packet is None else packet.approved_source_fact_ids
+                ),
+            )
+        ]
+    required_pairs = {
+        (str(item["section_id"]), str(item["requirement_id"])) for item in assertions
+    }
+    return [
+        {
+            **fact,
+            "requirement_ids": [
+                requirement_id
+                for requirement_id in cast(list[str], fact["requirement_ids"])
+                if (str(row["section_id"]), requirement_id) in required_pairs
+            ],
+        }
+        for row in _prepared_source_facts_by_section(prepared_plan, regulatory=True)
+        if set(cast(list[str], row["requirement_ids"])).intersection(requirement_ids)
+        for fact in cast(list[dict[str, object]], row["source_facts"])
+        if set(cast(list[str], fact["requirement_ids"])).intersection(
+            {
+                requirement_id
+                for section_id, requirement_id in required_pairs
+                if section_id == str(row["section_id"])
+            }
+        )
+    ]
+
+
 def readability_repair_turn_request(
     *,
     planning_input: ContentPlanningInput,
@@ -279,34 +340,9 @@ def readability_repair_turn_request(
     issues: list[tuple[str, str, str]],
     prepared_plan: PreparedDraftPlan | None = None,
 ) -> CodexAppServerStructuredTurnRequest:
-    candidate_section_ids = {section.section_id for section in candidate.sections}
-    auxiliary_section_ids = {
-        *(f"faq:{index}" for index, _ in enumerate(candidate.faq, start=1)),
-        *(f"cta:{index}" for index, _ in enumerate(candidate.cta_blocks, start=1)),
-        "page_assets:wordpress_title",
-        "page_assets:meta_title",
-        "page_assets:meta_description",
-        "page_assets:h1",
-        "page_assets:lead",
-        *(f"link:{index}" for index, _ in enumerate(candidate.internal_links, start=1)),
-    }
-    if candidate_section_ids & auxiliary_section_ids:
-        raise ValueError("Candidate section IDs collide with reserved repair targets.")
-    candidate_section_ids.update(auxiliary_section_ids)
-    affected_section_ids = list(
-        dict.fromkeys(
-            section_id for _, section_id, _ in issues if section_id in candidate_section_ids
-        )
-    )
-    if not affected_section_ids:
-        raise ValueError("Readability repair requires an affected candidate section.")
-    affected_issues = [
-        (code, section_id, reason)
-        for code, section_id, reason in issues
-        if section_id in affected_section_ids
-    ]
-    auxiliary_targets = any(
-        section_id in auxiliary_section_ids for section_id in affected_section_ids
+    affected_section_ids, affected_issues, auxiliary_targets = _readability_repair_targets(
+        candidate,
+        issues,
     )
     instruction = (
         (
@@ -382,6 +418,42 @@ def readability_repair_turn_request(
         ),
         output_schema=regulatory_assertion_repair_output_schema(affected_section_ids),
     )
+
+
+def _readability_repair_targets(
+    candidate: ContentInitialDraftModelOutput,
+    issues: list[tuple[str, str, str]],
+) -> tuple[list[str], list[tuple[str, str, str]], bool]:
+    candidate_section_ids = {section.section_id for section in candidate.sections}
+    auxiliary_section_ids = {
+        *(f"faq:{index}" for index, _ in enumerate(candidate.faq, start=1)),
+        *(f"cta:{index}" for index, _ in enumerate(candidate.cta_blocks, start=1)),
+        "page_assets:wordpress_title",
+        "page_assets:meta_title",
+        "page_assets:meta_description",
+        "page_assets:h1",
+        "page_assets:lead",
+        *(f"link:{index}" for index, _ in enumerate(candidate.internal_links, start=1)),
+    }
+    if candidate_section_ids & auxiliary_section_ids:
+        raise ValueError("Candidate section IDs collide with reserved repair targets.")
+    candidate_section_ids.update(auxiliary_section_ids)
+    affected_section_ids = list(
+        dict.fromkeys(
+            section_id for _, section_id, _ in issues if section_id in candidate_section_ids
+        )
+    )
+    if not affected_section_ids:
+        raise ValueError("Readability repair requires an affected candidate section.")
+    affected_issues = [
+        (code, section_id, reason)
+        for code, section_id, reason in issues
+        if section_id in affected_section_ids
+    ]
+    auxiliary_targets = any(
+        section_id in auxiliary_section_ids for section_id in affected_section_ids
+    )
+    return affected_section_ids, affected_issues, auxiliary_targets
 
 
 def _readability_candidate_context(

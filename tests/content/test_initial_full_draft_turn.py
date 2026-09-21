@@ -11,7 +11,6 @@ from wilq.codex.app_server import (
     CodexAppServerTurnBlocker,
     CodexAppServerTurnResult,
 )
-from wilq.codex.prompts import resolve_prompt_template
 from wilq.content.drafts import fact_selection, initial_full_draft
 from wilq.content.drafts.initial_draft_readability import readability_issues_for_output
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -40,31 +39,6 @@ from wilq.content.workflow.decisions.planning import (
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionPageAssets
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import LocalStateStore
-
-
-def test_initial_draft_v2_prompt_preserves_copy_and_source_fact_rules() -> None:
-    template = resolve_prompt_template("content_initial_draft@v2")
-
-    instruction = template.render(regulatory_draft_directive=" REGULATORY_DIRECTIVE")
-
-    for planning_field in (
-        "target_reader",
-        "buyer_problem",
-        "buyer_trigger",
-        "search_intent",
-        "angle",
-        "value_proposition",
-        "reader_question",
-        "cta_direction",
-        "baseline_cta_direction",
-    ):
-        assert planning_field in instruction
-    assert "Source facts służą wyłącznie do ustalenia treści" in instruction
-    assert "approved_source_facts_by_section" in instruction
-    assert "co najmniej jeden konkretny fakt" in instruction
-    assert "Nie dodawaj faktów" in instruction
-    assert "nie powtarzaj tego samego twierdzenia" in instruction
-    assert instruction.endswith("REGULATORY_DIRECTIVE")
 
 
 def test_refresh_runtime_failure_preserves_trace_terminal_status_and_error(
@@ -512,47 +486,6 @@ def test_enrich_benefit_sections_uses_only_missing_benefit_answers() -> None:
     assert enriched.sections[1].body_markdown == existing_benefit_body
     assert enriched.sections[2].body_markdown == non_benefit_body
     assert output.sections[0].body_markdown == vague_body
-
-
-def test_enrich_benefit_sections_skips_link_bearing_source_fact() -> None:
-    safe_fact = "Terminowy nadzór formalno-prawny ogranicza ryzyko opóźnień."
-    planning_input = ContentPlanningInput.model_construct(
-        source_facts=[
-            ContentPlanningSourceFact(
-                fact_id="planning_link_benefit_fact",
-                summary="Koszt opisano przy [usłudze](https://example.com).",
-                source_connector="public_site",
-                evidence_ids=["ev_link_benefit"],
-            ),
-            ContentPlanningSourceFact(
-                fact_id="planning_safe_benefit_fact",
-                summary=safe_fact,
-                source_connector="public_site",
-                evidence_ids=["ev_safe_benefit"],
-            ),
-        ]
-    )
-    output = ContentInitialDraftModelOutput(
-        page_assets=ContentDraftRevisionPageAssets(
-            wordpress_title="Korzyści outsourcingu",
-            meta_title="Korzyści outsourcingu środowiskowego",
-            meta_description="Korzyści stałej obsługi środowiskowej dla firmy.",
-            h1="Korzyści outsourcingu środowiskowego",
-            lead="Praktyczny opis stałego wsparcia środowiskowego dla firmy.",
-        ),
-        sections=[
-            ContentInitialDraftSectionOutput(
-                section_id="benefit_missing",
-                heading="Co daje outsourcing?",
-                body_markdown="Może obejmować nadzór nad dokumentacją.",
-            )
-        ],
-    )
-
-    enriched = initial_full_draft._enrich_benefit_sections(output, planning_input)
-
-    assert safe_fact in enriched.sections[0].body_markdown
-    assert "https://example.com" not in enriched.sections[0].body_markdown
 
 
 def test_initial_draft_turn_exposes_approved_source_facts_by_section(

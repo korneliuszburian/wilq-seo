@@ -67,7 +67,7 @@ def build_initial_draft_revision_command(
     package = snapshot.draft_package.draft_package_result.draft_package
     if package is None:
         raise ValueError("Initial draft preflight passed without a draft package.")
-    sections = _revision_sections(proposal, output)
+    sections = _revision_sections(proposal, output, prepared_plan=prepared_plan)
     return ContentDraftRevisionAppendCommand(
         schema_version="wilq_content_draft_revision_v2",
         work_item_id=planning_input.work_item_id,
@@ -164,7 +164,12 @@ def _current_regulatory_assurance(
 def _revision_sections(
     proposal: ContentPlanningProposal,
     output: ContentInitialDraftModelOutput,
+    *,
+    prepared_plan: PreparedDraftPlan | None = None,
 ) -> list[ContentDraftRevisionSection]:
+    draftable_proposal = (
+        prepared_plan.draftable_proposal if prepared_plan is not None else proposal
+    )
     return [
         ContentDraftRevisionSection(
             section_id=plan.section_id,
@@ -178,7 +183,7 @@ def _revision_sections(
             knowledge_card_ids=sorted(set(plan.knowledge_card_ids)),
         )
         for plan, generated in zip(
-            draftable_planning_sections(proposal.sections), output.sections, strict=True
+            draftable_planning_sections(draftable_proposal.sections), output.sections, strict=True
         )
     ]
 

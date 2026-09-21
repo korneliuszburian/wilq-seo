@@ -246,6 +246,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_planning_directive_change_contract.py",
     ),
+    ("draft-plan-preparation", "drops-unsupported-body-targets"): (
+        "scripts/test.sh",
+        "tests/content/test_draft_plan_preparation_change_contract.py",
+    ),
     ("initial-draft-worker-error", "typed-field-locations"): (
         "scripts/test.sh",
         "tests/content/test_initial_draft_worker_error_signal.py",
@@ -414,6 +418,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("initial-draft-deadline", "covers-full-finalization"),
             ("semantic-review-runtime", "terra-max-deadline"),
             ("planning-directives", "claim-free-source-facts"),
+            ("draft-plan-preparation", "drops-unsupported-body-targets"),
             ("initial-draft-worker-error", "typed-field-locations"),
             ("document-fact-working-note", "protected-term-strips-note"),
             ("assurance-turn-retry", "transient-failure-once"),

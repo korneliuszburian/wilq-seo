@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from wilq.content.drafts.draft_plan_preparation import (
     DraftPlanBlocked,
+    DroppedDraftTarget,
     PreparedDraftPlan,
     prepare_draft_plan,
 )
@@ -67,9 +68,8 @@ def test_inventory_only_body_target_is_blocked_before_draft_preparation() -> Non
     result = prepare_draft_plan(candidate, snapshot)
 
     assert isinstance(result, DraftPlanBlocked)
-    assert result.blocker.code == "draft_plan_source_support_missing"
-    assert result.blocker.reason
-    assert "source fact" in result.blocker.reason
+    assert result.blocker.code == "draft_plan_no_writable_targets"
+    assert result.blocker.source_codes == ["section_inventory_only"]
 
 
 def test_exact_source_fact_support_yields_a_prepared_draft_plan() -> None:
@@ -153,6 +153,7 @@ def test_regulatory_target_reports_only_the_unmapped_requirement() -> None:
     )
 
     assert isinstance(result, DraftPlanBlocked)
+    assert result.blocker.code == "draft_plan_no_writable_targets"
     assert result.blocker.source_codes == ["section_regulatory:requirement_b"]
 
 
@@ -220,6 +221,7 @@ def test_prepared_plan_blocks_only_the_unmapped_requirement() -> None:
     )
 
     assert isinstance(result, DraftPlanBlocked)
+    assert result.blocker.code == "draft_plan_no_writable_targets"
     assert result.blocker.source_codes == ["section_ab:requirement_b"]
 
 
@@ -274,7 +276,7 @@ def test_regulatory_target_requires_all_document_assertions_from_assigned_facts(
     )
 
     assert isinstance(first_result, DraftPlanBlocked)
-    assert first_result.blocker.code == "draft_plan_source_support_missing"
+    assert first_result.blocker.code == "draft_plan_no_writable_targets"
     assert first_result.blocker.source_codes == [
         "section_regulatory:requirement_exact:assertion_two"
     ]
@@ -308,7 +310,7 @@ def test_regulatory_target_requires_a_requirement_definition() -> None:
     result = prepare_draft_plan(candidate, _source_snapshot())
 
     assert isinstance(result, DraftPlanBlocked)
-    assert result.blocker.code == "draft_plan_source_support_missing"
+    assert result.blocker.code == "draft_plan_no_writable_targets"
     assert result.blocker.source_codes == [
         "section_regulatory:requirement_missing:missing_requirement_definition"
     ]
@@ -376,14 +378,52 @@ def test_historical_bdo_v9_sections_10_to_12_block_without_exact_source_support(
 
     result = prepare_draft_plan(candidate, _source_snapshot(_source_fact()))
 
-    assert isinstance(result, DraftPlanBlocked)
-    assert result.blocker.code == "draft_plan_source_support_missing"
-    assert result.blocker.source_codes == [
+    assert isinstance(result, PreparedDraftPlan)
+    assert len(result.body_targets) == 9
+    assert [target.section_id for target in result.dropped_targets] == [
         "section_10",
         "section_11",
         "section_12",
     ]
-    assert "source" in result.blocker.next_step.lower()
+    assert [target.source_codes for target in result.dropped_targets] == [
+        ("section_10",),
+        ("section_11",),
+        ("section_12",),
+    ]
+
+
+def test_mixed_supported_and_inventory_only_targets_drop_only_the_unsupported_section() -> None:
+    supported = ContentPlanningSection(
+        section_id="section_08",
+        heading="Zakres operatu",
+        purpose="Wyjaśnij potwierdzony zakres usługi.",
+        inventory_disposition="rewrite",
+        evidence_ids=["ev_source_fact"],
+    )
+    unsupported = ContentPlanningSection(
+        section_id="section_09",
+        heading="Kto wykonuje operat wodnoprawny?",
+        purpose="Odpowiedz na pytanie z historycznego inventory.",
+        inventory_disposition="rewrite",
+        inventory_section_id="inventory_section_09",
+        evidence_ids=["ev_wordpress_inventory"],
+    )
+
+    result = prepare_draft_plan(
+        _candidate(supported, unsupported),
+        _source_snapshot(_source_fact()),
+    )
+
+    assert isinstance(result, PreparedDraftPlan)
+    assert list(result.body_targets) == [supported]
+    assert [target.section.section_id for target in result.target_supports] == ["section_08"]
+    assert result.dropped_targets == (
+        DroppedDraftTarget(
+            section_id="section_09",
+            heading="Kto wykonuje operat wodnoprawny?",
+            source_codes=("section_09",),
+        ),
+    )
 
 
 def test_current_bdo_v10_compiles_eight_exact_supported_targets_without_merge() -> None:
