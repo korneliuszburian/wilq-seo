@@ -101,6 +101,7 @@ def test_public_fact_proposal_route_uses_bounded_codex_deadline(tmp_path, monkey
         [
             "Art. 389. zakres pozwolenia",
             "Art. 390. wyjątki",
+            "Art. 395. pozwolenia albo zgłoszenia nie wymaga",
             "Art. 397. właściwy organ",
         ]
     )
@@ -323,6 +324,7 @@ def test_proposal_review_rejects_mismatched_scope_without_human_review(
                 [
                     "Art. 389. zakres pozwolenia",
                     "Art. 390. wyjątki",
+                    "Art. 395. pozwolenia albo zgłoszenia nie wymaga",
                     "Oficjalne źródło opisuje obowiązek.",
                     "Art. 397. właściwy organ",
                 ]

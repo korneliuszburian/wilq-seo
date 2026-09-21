@@ -122,6 +122,7 @@ def test_all_operat_candidates_select_without_false_future_marker_block() -> Non
             [
                 "Art. 389. Zakres pozwolenia.",
                 "Art. 390. Wyjątki.",
+                "Art. 395. Pozwolenia albo zgłoszenia nie wymaga.",
                 "Art. 397. Poza zakresem.",
             ]
         ),
@@ -439,6 +440,7 @@ def test_operat_selector_scope_drift_invalidates_existing_proposal(tmp_path) -> 
                 [
                     "Art. 389. zakres pozwolenia",
                     "Art. 390. wyjątki",
+                    "Art. 395. pozwolenia albo zgłoszenia nie wymaga",
                     "Art. 397. właściwy organ",
                     "Operat wodnoprawny pozwolenie obowiązek.",
                 ]

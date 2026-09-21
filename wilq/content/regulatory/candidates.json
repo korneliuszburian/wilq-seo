@@ -438,17 +438,17 @@
       "selector": {
         "kind": "provision_range",
         "start_anchor": "Art. 389.",
-        "end_anchor": "Art. 390.",
-        "required_anchors": ["Art. 389.", "Art. 390."],
+        "end_anchor": "Art. 395.",
+        "required_anchors": ["Art. 389.", "Art. 390.", "Art. 395."],
         "excluded_anchors": [],
         "residual_forbidden_anchors": ["<", ">", "2027", "Dodany"],
         "excluded_ranges": [],
-        "max_chars": 8000,
+        "max_chars": 16000,
         "context_chars": 4000
       },
       "as_of": "2026-09-20",
       "review_status": "review_required",
-      "safe_next_step": "Potwierdź zakres obowiązku i wyjątki w art. 389-390 Prawa wodnego."
+      "safe_next_step": "Potwierdź zakres obowiązku w art. 389-390 oraz przypadki niewymagające pozwolenia w art. 395 Prawa wodnego."
     },
     {
       "candidate_id": "operat_prawo_wodne_application_r1",
