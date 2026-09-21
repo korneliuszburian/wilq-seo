@@ -1,9 +1,10 @@
 """One bounded deadline contract for the initial-draft Codex run.
 
-Evidence: a live BDO initial draft exceeded the previous 2400-second deadline
-without completing (``initial_draft_timeout``). The effective deadline must keep
-real margin above that observed need and stay env-configurable, for both the
-queue claim default and the run-status check.
+Evidence: a live Operat 12-section initial draft with six assurance turns
+exceeded the previous 3600-second deadline (``initial_draft_timeout`` /
+``assurance_turn_timeouterror``). The effective deadline must keep real margin
+above that observed need and stay env-configurable, for both the queue claim
+default and the run-status check.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from wilq.content.drafts.initial_draft_queue import _DEFAULT_INITIAL_DRAFT_TIMEO
 from wilq.content.drafts.initial_draft_run import effective_initial_draft_deadline
 from wilq.schemas import CodexRun
 
-_OBSERVED_TIMEOUT_SECONDS = 2400.0
+_OBSERVED_TIMEOUT_SECONDS = 3600.0
 
 
 def _started() -> datetime:

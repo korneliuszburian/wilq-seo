@@ -2,16 +2,18 @@
 
 The draft path chains one large writer turn with bounded readability, regulatory
 and independent-assurance repair rounds, so its wall clock is far larger than a
-single model turn. A live BDO draft exceeded the previous 2400-second deadline
-without completing, so the default keeps real margin above that observed need
-while the operator never waits on the browser request (the API is asynchronous).
+single model turn. A live Operat 12-section draft with six assurance turns
+exceeded the previous 3600-second deadline (``initial_draft_timeout`` /
+``assurance_turn_timeouterror``), so the default keeps real margin above that
+observed need while the operator never waits on the browser request (the API is
+asynchronous).
 """
 
 from __future__ import annotations
 
 from os import environ
 
-DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 3600.0
+DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = 7200.0
 
 
 def initial_draft_timeout_seconds() -> float:
