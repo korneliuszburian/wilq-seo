@@ -135,6 +135,26 @@ def compact_initial_draft_planning_input(
     return payload
 
 
+def strip_existing_content_from_initial_draft_planning_input(
+    payload: dict[str, object],
+    existing_content_text: str | None,
+) -> dict[str, object]:
+    """Drop inventory body fields when the draft constraints already carry them."""
+
+    projected = dict(payload)
+    if not existing_content_text:
+        return projected
+
+    inventory = projected.get("inventory")
+    if isinstance(inventory, dict):
+        projected["inventory"] = {
+            key: value
+            for key, value in inventory.items()
+            if key not in {"content_text", "content_summary"}
+        }
+    return projected
+
+
 def compact_semantic_review_planning_input(
     planning_input: ContentPlanningInput,
 ) -> dict[str, object]:
@@ -207,4 +227,5 @@ __all__ = [
     "compact_initial_draft_planning_input",
     "compact_proposal",
     "compact_semantic_review_planning_input",
+    "strip_existing_content_from_initial_draft_planning_input",
 ]

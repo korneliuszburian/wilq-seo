@@ -32,6 +32,7 @@ from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_initial_draft_planning_input,
     compact_proposal,
+    strip_existing_content_from_initial_draft_planning_input,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.packet_model_projection import current_research_packet_for_model
@@ -151,15 +152,20 @@ def _initial_full_draft_contexts(
         sort_keys=True,
         separators=(",", ":"),
     )
+    generation_constraints = generation_contract.model_input.model_dump(mode="json")
+    planning_input_projection = strip_existing_content_from_initial_draft_planning_input(
+        compact_initial_draft_planning_input(planning_input, packet),
+        getattr(generation_contract.model_input, "existing_content_text", None),
+    )
     untrusted_context = json.dumps(
         {
-            "planning_input": compact_initial_draft_planning_input(planning_input, packet),
+            "planning_input": planning_input_projection,
             "approved_planning_proposal": compact_proposal(
                 draftable_proposal,
                 draftable_sections_only=False,
             ),
             "research_packet_binding": _research_packet_binding(planning_input, proposal),
-            "generation_constraints": generation_contract.model_input.model_dump(mode="json"),
+            "generation_constraints": generation_constraints,
             "document_scope": {
                 "included_section_ids": [
                     section.section_id
