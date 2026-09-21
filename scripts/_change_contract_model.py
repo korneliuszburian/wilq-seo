@@ -92,6 +92,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_authoring_inventory_receipt_schema_hunk_is_exact",
         "tests/content/test_production_registered_inventory_receipt.py::test_registered_inventory_receipt_rejects_a_forged_digest",
     ),
+    ("wordpress-refresh-coverage", "targeted-keeps-baseline"): (
+        "scripts/test.sh",
+        "tests/content/test_targeted_wordpress_refresh_keeps_baseline_change_contract.py",
+    ),
     ("current-disposition", "exact-persisted-authority-chain"): (
         "scripts/test.sh",
         "tests/content/test_current_disposition_authority.py",
@@ -404,6 +408,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
         in {
             ("change-contract-gate", "observed-before-state"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
+            ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
             ("current-disposition", "operator-decision-card"),
