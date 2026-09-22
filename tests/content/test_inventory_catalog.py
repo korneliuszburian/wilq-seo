@@ -338,6 +338,105 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
     assert result.items[0].metrics_evidence_ids == ["ev_gsc_current"]
 
 
+def test_inventory_catalog_does_not_fabricate_metric_values(monkeypatch):
+    names = (
+        "malformed",
+        "none",
+        "unreadable",
+        "impressions",
+        "mixed",
+        "unknown",
+        "zero",
+        "clean",
+        "missing",
+    )
+    urls = {name: f"https://www.ekologus.pl/{name}-metrics/" for name in names}
+
+    def inventory_row(url: str, evidence_id: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            name="content_object_seen",
+            dimensions={"content_url": url},
+            source_connector="wordpress_ekologus",
+            evidence_id=evidence_id,
+            collected_at=datetime(2026, 7, 18, tzinfo=UTC),
+        )
+
+    def metric_row(
+        url: str,
+        value: object,
+        query: str,
+        evidence_id: str,
+        name: str = "clicks",
+        include_value: bool = True,
+    ) -> SimpleNamespace:
+        fact = SimpleNamespace(
+            name=name,
+            dimensions={"page": url, "query": query},
+            source_connector="google_search_console",
+            evidence_id=evidence_id,
+            collected_at=datetime(2026, 7, 18, tzinfo=UTC),
+        )
+        if include_value:
+            fact.value = value
+        return fact
+
+    metric_specs = {
+        "malformed": [("not-a-number", "broken", "ev_gsc_malformed")],
+        "none": [(None, "none", "ev_gsc_none")],
+        "unreadable": [(None, "missing", "ev_gsc_unreadable", "clicks", False)],
+        "impressions": [
+            (7, "first", "ev_gsc_impressions_1", "impressions"),
+            (2, "second", "ev_gsc_impressions_2", "impressions"),
+        ],
+        "mixed": [
+            (2, "clicks", "ev_gsc_mixed_clicks"),
+            (4, "impressions", "ev_gsc_mixed_impressions", "impressions"),
+        ],
+        "unknown": [(9, "unknown", "ev_gsc_unknown", "unknown_metric")],
+        "zero": [(0, "zero", "ev_gsc_zero")],
+        "clean": [("2", "first", "ev_gsc_clean_1"), (3, "second", "ev_gsc_clean_2")],
+    }
+
+    monkeypatch.setattr(
+        catalog_module,
+        "_latest_wordpress_inventory_facts",
+        lambda: [inventory_row(url, f"ev_wp_{name}") for name, url in urls.items()],
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "_catalog_metric_facts_by_path",
+        lambda: {
+            f"/{name}-metrics/": [metric_row(urls[name], *spec) for spec in specs]
+            for name, specs in metric_specs.items()
+        },
+    )
+    monkeypatch.setattr(catalog_module, "_authoring_rest_content_objects", lambda: [])
+    monkeypatch.setattr(
+        catalog_module,
+        "_inventory_coverage",
+        lambda: ContentInventoryCoverage(status="complete", returned_count=len(urls)),
+    )
+
+    result = build_content_inventory_catalog()
+    items_by_path = {item.path: item for item in result.items}
+
+    expected_metrics = {
+        "/malformed-metrics/": ("malformed", None, None),
+        "/none-metrics/": ("malformed", None, None),
+        "/unreadable-metrics/": ("malformed", None, None),
+        "/impressions-metrics/": ("available", None, 9),
+        "/mixed-metrics/": ("available", 2, 4),
+        "/unknown-metrics/": ("available", None, None),
+        "/zero-metrics/": ("available", 0, None),
+        "/clean-metrics/": ("available", 5, None),
+        "/missing-metrics/": ("missing", None, None),
+    }
+    for path, expected in expected_metrics.items():
+        item = items_by_path[path]
+        assert (item.metrics_status, item.metrics_clicks, item.metrics_impressions) == expected
+    assert items_by_path["/clean-metrics/"].metrics_query_count == 2
+
+
 def test_inventory_coverage_does_not_claim_complete_for_legacy_public_cap(monkeypatch):
     latest_run = SimpleNamespace(
         mode=SimpleNamespace(value="vendor_read"),

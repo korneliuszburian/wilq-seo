@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { ContentInventoryCatalogResponseSchema } from "./index";
+import {
+  ContentInventoryCatalogItemSchema,
+  ContentInventoryCatalogResponseSchema
+} from "./index";
 
 const blockedReadiness = {
   status: "blocked",
@@ -107,6 +110,48 @@ const journalReadiness = {
 };
 
 describe("ContentInventoryCatalogResponseSchema journal readiness", () => {
+  it("keeps malformed metric values nullable while accepting legacy numeric payloads", () => {
+    const baseItem = {
+      catalog_id: "catalog_news",
+      work_item_id: "work_item_news",
+      url: "https://www.ekologus.pl/news/",
+      path: "/news/",
+      title: "News",
+      content_type: "post",
+      content_summary: null,
+      content_word_count: null,
+      section_count: null,
+      acf_section_count: null,
+      material_status: "content_summary" as const,
+      source_connector: "wordpress_ekologus",
+      evidence_id: "ev_inventory",
+      collected_at: "2026-09-22T00:00:00Z"
+    };
+
+    const malformed = ContentInventoryCatalogItemSchema.parse({
+      ...baseItem,
+      metrics_status: "malformed",
+      metrics_clicks: null,
+      metrics_impressions: null
+    });
+    expect(malformed.metrics_status).toBe("malformed");
+    expect(malformed.metrics_clicks).toBeNull();
+    expect(malformed.metrics_impressions).toBeNull();
+
+    const legacy = ContentInventoryCatalogItemSchema.parse({
+      ...baseItem,
+      metrics_status: "available",
+      metrics_clicks: 0,
+      metrics_impressions: 0
+    });
+    expect(legacy.metrics_clicks).toBe(0);
+    expect(legacy.metrics_impressions).toBe(0);
+
+    const omitted = ContentInventoryCatalogItemSchema.parse(baseItem);
+    expect(omitted.metrics_clicks).toBeUndefined();
+    expect(omitted.metrics_impressions).toBeUndefined();
+  });
+
   it("preserves the blocked 214-row historical-scope projection at the API boundary", () => {
     const parsed = ContentInventoryCatalogResponseSchema.parse({
       status: "blocked",

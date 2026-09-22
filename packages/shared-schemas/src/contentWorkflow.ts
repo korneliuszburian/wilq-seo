@@ -5602,11 +5602,11 @@ export const ContentInventoryCatalogItemSchema = z.object({
   source_connector: z.string(),
   evidence_id: z.string(),
   collected_at: z.string(),
-  metrics_status: z.enum(["available", "missing"]).default("missing"),
+  metrics_status: z.enum(["available", "missing", "malformed"]).default("missing"),
   metrics_evidence_ids: z.array(z.string()).default([]),
   metrics_query_count: z.number().int().nonnegative().default(0),
-  metrics_clicks: z.number().int().nonnegative().default(0),
-  metrics_impressions: z.number().int().nonnegative().default(0)
+  metrics_clicks: z.number().int().nonnegative().nullable().optional(),
+  metrics_impressions: z.number().int().nonnegative().nullable().optional()
 });
 
 export const ContentEvidenceReadinessBlockerSchema = z.object({
@@ -5938,7 +5938,7 @@ export const ContentInventoryBindingResponseSchema = z.object({
   source_field_lineage: z.array(z.string()).default([]),
   blocker_code: z.string().nullable().optional(),
   blocker: z.string().nullable().optional(),
-  metrics_status: z.string().default("not_evaluated"),
+  metrics_status: z.enum(["available", "missing", "malformed", "not_evaluated"]).default("not_evaluated"),
   metrics_evidence_ids: z.array(z.string()).default([]),
   knowledge_status: z.string().default("not_evaluated"),
   generation_status: z.string().default("blocked_until_service_and_metrics")

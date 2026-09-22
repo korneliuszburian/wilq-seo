@@ -60,6 +60,13 @@ ContentInventoryMaterialLineageStatus = Literal[
     "live_material_not_evidence_bound",
 ]
 ContentInventoryMaterialStatus = Literal["ready", "blocked"]
+ContentInventoryMetricsStatus = Literal["available", "missing", "malformed"]
+ContentInventoryBindingMetricsStatus = Literal[
+    "available",
+    "missing",
+    "malformed",
+    "not_evaluated",
+]
 
 
 class ContentInventoryCatalogItem(BaseModel):
@@ -82,11 +89,11 @@ class ContentInventoryCatalogItem(BaseModel):
     source_connector: str = Field(min_length=1)
     evidence_id: str = Field(min_length=1)
     collected_at: datetime
-    metrics_status: str = "missing"
+    metrics_status: ContentInventoryMetricsStatus = "missing"
     metrics_evidence_ids: list[str] = Field(default_factory=list)
     metrics_query_count: int = 0
-    metrics_clicks: int = 0
-    metrics_impressions: int = 0
+    metrics_clicks: int | None = None
+    metrics_impressions: int | None = None
 
 
 class ContentInventoryRestObject(BaseModel):
@@ -206,7 +213,7 @@ class ContentInventoryBindingResponse(BaseModel):
     source_field_lineage: list[str] = Field(default_factory=list)
     blocker_code: str | None = None
     blocker: str | None = None
-    metrics_status: str = "not_evaluated"
+    metrics_status: ContentInventoryBindingMetricsStatus = "not_evaluated"
     metrics_evidence_ids: list[str] = Field(default_factory=list)
     knowledge_status: str = "not_evaluated"
     generation_status: str = "blocked_until_service_and_metrics"
@@ -266,13 +273,8 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
         )
         metric_facts = metric_by_path.get(_path(url), [])
         metric_evidence_ids = sorted({fact.evidence_id for fact in metric_facts})
-        metrics_clicks = sum(
-            _metric_numeric_value(fact) for fact in metric_facts if fact.name == "clicks"
-        )
-        metrics_impressions = sum(
-            _metric_numeric_value(fact)
-            for fact in metric_facts
-            if fact.name == "impressions"
+        metrics_status, metrics_clicks, metrics_impressions = _metric_summary(
+            metric_facts
         )
         metrics_query_count = len(
             {
@@ -310,7 +312,7 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
             source_connector=fact.source_connector,
             evidence_id=fact.evidence_id,
             collected_at=fact.collected_at,
-            metrics_status="available" if metric_facts else "missing",
+            metrics_status=metrics_status,
             metrics_evidence_ids=metric_evidence_ids,
             metrics_query_count=metrics_query_count,
             metrics_clicks=metrics_clicks,
@@ -734,6 +736,7 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
             blocker="Ten adres nie występuje w aktualnym, evidence-bound inventory WordPress.",
         )
     metric_facts = inventory_metric_facts(item.url, item.path)
+    metrics_status, _, _ = _metric_summary(metric_facts)
     # Catalog rows are intentionally cheap and may only contain a URL when
     # public REST/ACF did not expose the article. Resolve the selected URL once
     # at the binding seam so the marketer does not receive a false `url_only`
@@ -782,7 +785,7 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
                 source_field_lineage=material.source_field_lineage,
                 blocker_code=material.blocker_code,
                 blocker=material.blocker,
-                metrics_status="available" if metric_facts else "missing",
+                metrics_status=metrics_status,
                 metrics_evidence_ids=sorted({fact.evidence_id for fact in metric_facts}),
             )
         if material.status == "ready" and material.content_text:
@@ -829,7 +832,7 @@ def bind_content_inventory_item(url: str) -> ContentInventoryBindingResponse:
         material_confidence=material_confidence,
         extraction_region=extraction_region,
         source_field_lineage=source_field_lineage,
-        metrics_status="available" if metric_facts else "missing",
+        metrics_status=metrics_status,
         metrics_evidence_ids=sorted({fact.evidence_id for fact in metric_facts}),
         # Binding only proves the URL/inventory seam. Service-card matching is
         # evaluated later, after the marketer chooses the page and current
@@ -955,11 +958,33 @@ def _optional_int(value: Any) -> int | None:
         return None
 
 
-def _metric_numeric_value(fact: Any) -> int:
+def _metric_summary(
+    metric_facts: list[Any],
+) -> tuple[ContentInventoryMetricsStatus, int | None, int | None]:
+    if not metric_facts:
+        return "missing", None, None
+    clicks: list[int] = []
+    impressions: list[int] = []
+    for fact in metric_facts:
+        value = _metric_numeric_value(fact)
+        if value is None:
+            return "malformed", None, None
+        if fact.name == "clicks":
+            clicks.append(value)
+        elif fact.name == "impressions":
+            impressions.append(value)
+    return (
+        "available",
+        sum(clicks) if clicks else None,
+        sum(impressions) if impressions else None,
+    )
+
+
+def _metric_numeric_value(fact: Any) -> int | None:
     try:
         return int(float(fact.value))
-    except (TypeError, ValueError):
-        return 0
+    except (AttributeError, OverflowError, TypeError, ValueError):
+        return None
 
 
 def _json_list(value: Any) -> list[str]:
