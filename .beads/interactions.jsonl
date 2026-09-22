@@ -1452,3 +1452,4 @@
 {"id":"int-f3af1a29","kind":"field_change","created_at":"2026-09-22T00:26:50.762391636Z","actor":"korneliuszburian","issue_id":"wilq-seo-1fn8","extra":{"field":"status","new_value":"closed","old_value":"open"}}
 {"id":"int-9c47c6cc","kind":"field_change","created_at":"2026-09-22T01:02:20.73442006Z","actor":"korneliuszburian","issue_id":"wilq-seo-idg7","extra":{"field":"status","new_value":"closed","old_value":"open"}}
 {"id":"int-ca4140c0","kind":"field_change","created_at":"2026-09-22T01:02:30.483022767Z","actor":"korneliuszburian","issue_id":"wilq-seo-61vq","extra":{"field":"status","new_value":"closed","old_value":"open"}}
+{"id":"int-3f8c3537","kind":"field_change","created_at":"2026-09-22T02:17:00.802620183Z","actor":"korneliuszburian","issue_id":"wilq-seo-1oa.36.109.4","extra":{"field":"status","new_value":"blocked","old_value":"open"}}
