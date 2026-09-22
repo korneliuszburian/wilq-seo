@@ -51,6 +51,7 @@ class EvidenceAcquisitionCoordinator:
         official_guidance_snapshot_reader: Callable[..., Any] | None = None,
         catalog_loader: Callable[[], Any] | None = None,
         clock: ServerClock | None = None,
+        researcher_executor_available: bool = False,
     ) -> None:
         self._identity_loader = identity_loader
         self._classification_loader = classification_loader
@@ -67,6 +68,7 @@ class EvidenceAcquisitionCoordinator:
             current_authoring_inventory_item=_current_authoring_inventory_item,
             authoring_catalog_context_digest=_authoring_catalog_context_digest,
             authoring_inventory_receipt_is_fresh=_authoring_inventory_receipt_is_fresh,
+            researcher_executor_available=researcher_executor_available,
         )
 
     def start(
@@ -81,6 +83,20 @@ def _default_inventory_catalog() -> Any:
 
     return build_content_inventory_catalog_cached()
 
+
+def _default_researcher_executor_available() -> bool:
+    try:
+        from wilq.codex.runtime_status import codex_local_runtime_readiness
+        from wilq.content.workflow.research_proposal import CodexAppServerResearcherAdapter
+        readiness = codex_local_runtime_readiness()
+    except (ImportError, OSError):
+        return False
+    return (
+        readiness.status == "ready"
+        and callable(getattr(CodexAppServerResearcherAdapter, "run_structured_turn", None))
+    )
+
+
 def build_default_evidence_acquisition_coordinator() -> EvidenceAcquisitionCoordinator:
     from wilq.content.workflow.store.store import content_workflow_store
 
@@ -91,6 +107,7 @@ def build_default_evidence_acquisition_coordinator() -> EvidenceAcquisitionCoord
         store=store,
         current_page_snapshot_reader=WordPressCurrentPageSnapshotAdapter().read,
         official_guidance_snapshot_reader=OfficialGuidanceObservationAdapter().read,
+        researcher_executor_available=_default_researcher_executor_available(),
     )
 
 

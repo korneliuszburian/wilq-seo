@@ -410,7 +410,7 @@ class EvidenceAcquisitionRun(BaseModel):
     observation: EvidenceObservation | None = None
     proposed_facts: tuple[()] = ()
     vendor_read_status: Literal["not_attempted", "completed", "blocked"] = "not_attempted"
-    researcher_executor_status: Literal["missing"] = "missing"
+    researcher_executor_status: Literal["missing", "available"] = "missing"
     blockers: tuple[EvidenceAcquisitionRunBlocker, ...] = ()
     safe_next_step: str = Field(min_length=1)
 

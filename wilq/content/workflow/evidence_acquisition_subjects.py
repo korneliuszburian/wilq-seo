@@ -55,6 +55,13 @@ class EvidenceAcquisitionContext:
     current_authoring_inventory_item: Callable[..., Any | None]
     authoring_catalog_context_digest: Callable[..., str]
     authoring_inventory_receipt_is_fresh: Callable[..., bool]
+    researcher_executor_available: bool = False
+
+
+def _researcher_executor_status(
+    available: bool,
+) -> Literal["missing", "available"]:
+    return "available" if available else "missing"
 
 
 def start_acquisition(
@@ -317,6 +324,7 @@ def _start_official_primary(
             classification=classification,
             observation=observation,
             candidate=candidate,
+            researcher_executor_available=context.researcher_executor_available,
         ),
         context,
     )
@@ -515,6 +523,7 @@ def _complete_authoring_snapshot(
             catalog_item=catalog_item,
             catalog_context_digest=catalog_context_digest,
             observation=observation,
+            researcher_executor_available=context.researcher_executor_available,
         ),
         context,
     )
@@ -603,6 +612,7 @@ def _start_exact_current_page(
             identity=identity,
             classification=classification,
             observation=observation,
+            researcher_executor_available=context.researcher_executor_available,
         ),
         context,
     )
@@ -796,6 +806,7 @@ def _build_ready(
     classification: ContentProductionClassificationProjection,
     observation: EvidenceObservationReceipt | OfficialGuidanceObservationReceipt,
     candidate: Any | None = None,
+    researcher_executor_available: bool = False,
 ) -> EvidenceAcquisitionRun:
     payload: dict[str, Any] = {
         "response_type": "content_evidence_acquisition_run",
@@ -837,7 +848,9 @@ def _build_ready(
         "observation": observation,
         "proposed_facts": (),
         "vendor_read_status": "completed",
-        "researcher_executor_status": "missing",
+        "researcher_executor_status": _researcher_executor_status(
+            researcher_executor_available
+        ),
         "blockers": (),
         "safe_next_step": "Przekaż exact observation do osobnego researchera.",
     }
@@ -853,6 +866,7 @@ def _build_subject_ready(
     catalog_item: Any,
     catalog_context_digest: str,
     observation: EvidenceObservationReceipt,
+    researcher_executor_available: bool = False,
 ) -> EvidenceAcquisitionRun:
     payload: dict[str, Any] = {
         "response_type": "content_evidence_acquisition_run",
@@ -889,7 +903,9 @@ def _build_subject_ready(
         "observation": observation,
         "proposed_facts": (),
         "vendor_read_status": "completed",
-        "researcher_executor_status": "missing",
+        "researcher_executor_status": _researcher_executor_status(
+            researcher_executor_available
+        ),
         "blockers": (),
         "safe_next_step": "Przekaż exact observation do osobnego researchera.",
     }

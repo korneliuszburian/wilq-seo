@@ -608,7 +608,9 @@ def test_public_official_guidance_candidates_keep_selection_typed(tmp_path: Path
     assert mismatched.blockers[0].code == "official_guidance_candidate_path_mismatch"
 
 
-def _public_official_guidance_fixture(tmp_path: Path):
+def _public_official_guidance_fixture(
+    tmp_path: Path, *, researcher_executor_available: bool = False
+):
     workflow_store = ContentWorkflowStore(tmp_path / "workflow.sqlite3")
     workflow_store.record_production_classification(exact_public_bdo_run())
     stored_identity = workflow_store.record_content_delivery_identity(
@@ -673,6 +675,7 @@ def _public_official_guidance_fixture(tmp_path: Path):
         store=workflow_store,
         official_guidance_snapshot_reader=adapter.read,
         clock=lambda: read_at,
+        researcher_executor_available=researcher_executor_available,
     )
     command = EvidenceAcquisitionStartCommand(
         subject={
@@ -757,3 +760,20 @@ def test_public_official_guidance_acquisition_and_research_are_review_only(
             "iso-37301-compliance-management.html"
         )
         assert "secret" not in json.dumps(readback_payload).casefold()
+
+
+def test_researcher_executor_availability_is_reported_without_facts_or_authority(
+    tmp_path,
+) -> None:
+    for available, expected in ((True, "available"), (False, "missing")):
+        fixture_dir = tmp_path / expected
+        fixture_dir.mkdir()
+        coordinator, command, _research, _researcher = _public_official_guidance_fixture(
+            fixture_dir, researcher_executor_available=available
+        )
+        run = coordinator.start(command).recorded_run
+        assert run.researcher_executor_status == expected
+        assert run.proposed_facts == ()
+        assert run.production_authority is False
+        assert run.source_authority_status == "unknown"
+        assert run.generation_allowed is False
