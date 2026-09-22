@@ -55,6 +55,9 @@ _ASSURANCE_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
     thread_name_prefix="wilq-draft-assurance",
 )
+_RETRYABLE_ASSURANCE_FAILURE_CODES = frozenset(
+    {"codex_transport_error", "codex_protocol_error", "codex_not_available"}
+)
 
 
 def run_regulatory_draft_assurance(
@@ -212,18 +215,23 @@ def _run_assurance_turn(
     request: CodexAppServerStructuredTurnRequest,
 ) -> CodexAppServerTurnResult:
     result = _run_assurance_turn_once(client, request)
-    if _assurance_turn_is_terminal(result):
+    if not _assurance_turn_is_retryable(result):
         return result
-    # One bounded retry tolerates a transient provider turn failure without
-    # changing a critic verdict or retrying a blocked external call.
+    # One bounded retry is reserved for a classified transport/protocol
+    # failure; verdicts, blocked calls, and bounded turn timeouts stay final.
     return _run_assurance_turn_once(client, request)
 
 
-def _assurance_turn_is_terminal(result: CodexAppServerTurnResult) -> bool:
+def _assurance_turn_is_retryable(result: CodexAppServerTurnResult) -> bool:
     return (
-        result.status == "completed"
-        or result.external_call_attempted
-        or result.output_text is not None
+        result.status == "failed"
+        and not result.external_call_attempted
+        and result.output_text is None
+        and bool(result.blockers)
+        and all(
+            blocker.code in _RETRYABLE_ASSURANCE_FAILURE_CODES
+            for blocker in result.blockers
+        )
     )
 
 
@@ -233,9 +241,41 @@ def _run_assurance_turn_once(
 ) -> CodexAppServerTurnResult:
     try:
         return client.run_structured_turn(request)
+    except TimeoutError:
+        # Stdio normalizes its bounded deadline to ``codex_timeout`` before
+        # this seam; an exception escaping another client is transport failure.
+        return CodexAppServerTurnResult(
+            status="failed",
+            blockers=(
+                CodexAppServerTurnBlocker(
+                    code="codex_transport_error",
+                    message="Nie udało się bezpiecznie uruchomić lokalnego Codexa.",
+                ),
+            ),
+        )
+    except FileNotFoundError:
+        return CodexAppServerTurnResult(
+            status="failed",
+            blockers=(
+                CodexAppServerTurnBlocker(
+                    code="codex_not_available",
+                    message="Lokalny runtime Codexa nie jest dostępny.",
+                ),
+            ),
+        )
+    except (OSError, TypeError, ValueError):
+        return CodexAppServerTurnResult(
+            status="failed",
+            blockers=(
+                CodexAppServerTurnBlocker(
+                    code="codex_transport_error",
+                    message="Nie udało się bezpiecznie uruchomić lokalnego Codexa.",
+                ),
+            ),
+        )
     except Exception as error:
         # Keep one safe, typed signal instead of an empty blocker, so an
-        # unexpected transport failure stays diagnosable.
+        # unexpected runtime failure stays diagnosable without provider text.
         return CodexAppServerTurnResult(
             status="failed",
             blockers=(

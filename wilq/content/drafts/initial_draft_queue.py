@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from typing import Any, Literal, Protocol
 
@@ -13,9 +14,6 @@ from wilq.codex.app_server import (
 )
 from wilq.content.drafts.initial_draft_persistence import InitialDraftPrePersistenceGuardError
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
-from wilq.content.drafts.initial_draft_runtime_contract import (
-    initial_draft_timeout_seconds,
-)
 from wilq.content.drafts.initial_draft_run import (
     InitialDraftClaim,
     InitialDraftClaimContext,
@@ -27,12 +25,16 @@ from wilq.content.drafts.initial_draft_run import (
     safe_initial_draft_run_error,
     transition_initial_draft_run_if_status,
 )
+from wilq.content.drafts.initial_draft_runtime_contract import (
+    initial_draft_timeout_seconds,
+)
 from wilq.content.drafts.initial_full_draft import generate_initial_full_draft
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftRequest,
     ContentInitialDraftResponse,
 )
+from wilq.content.drafts.section_repair_runtime_contract import section_repair_timeout_seconds
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
@@ -65,6 +67,13 @@ class InitialDraftExecutor(Protocol):
 
 _DEFAULT_INITIAL_DRAFT_TIMEOUT_SECONDS = initial_draft_timeout_seconds()
 _INITIAL_DRAFT_QUEUE_RETRY_SECONDS = 5
+_BOUNDED_INITIAL_DRAFT_TURN_OPERATIONS = frozenset(
+    {
+        "assure_regulatory_content_draft",
+        "repair_initial_draft_regulatory_assertions",
+        "repair_initial_draft_readability",
+    }
+)
 
 
 def snapshot_initial_draft_context_digest(
@@ -179,10 +188,30 @@ class _InitialDraftDeadlineClient:
         remaining = (effective_initial_draft_deadline(run) - utc_now()).total_seconds()
         if remaining <= 0:
             raise TimeoutError("initial draft deadline expired")
-        # The run owns the deadline.  The injected base client commonly has
-        # the app-server's short generic default, which must not truncate a
-        # bounded full-draft run before its persisted deadline.
-        return StdioCodexAppServerClient(timeout_seconds=remaining).run_structured_turn(request)
+        # The full writer turn may use the persisted run deadline; each
+        # assurance or repair turn has its own bounded contract within it.
+        timeout_seconds = min(
+            (
+                section_repair_timeout_seconds()
+                if _is_bounded_initial_draft_turn(request)
+                else remaining
+            ),
+            remaining,
+        )
+        return StdioCodexAppServerClient(timeout_seconds=timeout_seconds).run_structured_turn(
+            request
+        )
+
+
+def _is_bounded_initial_draft_turn(request: CodexAppServerStructuredTurnRequest) -> bool:
+    try:
+        context = json.loads(request.application_context)
+    except (TypeError, ValueError):
+        return False
+    return (
+        isinstance(context, dict)
+        and context.get("operation") in _BOUNDED_INITIAL_DRAFT_TURN_OPERATIONS
+    )
 
 
 class _ContextCheckedWorkflowStore:
