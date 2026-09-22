@@ -281,6 +281,33 @@ class RegulatorySourceReviewStore:
             for row in rows
         ]
 
+    def _list_reviews_in_append_order(
+        self,
+    ) -> list[tuple[int, ContentRegulatorySourceReview]]:
+        if not self.path.exists():
+            return []
+        connection = self._read_connection()
+        if connection is None:
+            return []
+        try:
+            with connection:
+                if not _table_exists(connection, "content_regulatory_source_reviews"):
+                    return []
+                # This rowid table is append-only, so the greatest rowid was recorded last.
+                rows = connection.execute(
+                    "SELECT rowid, payload_json FROM content_regulatory_source_reviews "
+                    "ORDER BY rowid"
+                ).fetchall()
+        finally:
+            connection.close()
+        return [
+            (
+                int(row["rowid"]),
+                ContentRegulatorySourceReview.model_validate(json.loads(row["payload_json"])),
+            )
+            for row in rows
+        ]
+
     def approved_source_facts(self) -> tuple[ContentSourceFact, ...]:
         snapshot_store = RegulatorySourceSnapshotStore(self.path)
         candidates = {
@@ -288,7 +315,7 @@ class RegulatorySourceReviewStore:
         }
         return tuple(
             fact
-            for review in self.list_reviews()
+            for review in _latest_reviews_by_subject(self._list_reviews_in_append_order())
             if review.decision == "accepted"
             and (candidate := candidates.get(review.candidate_id)) is not None
             and review.source_url == candidate.source_url
@@ -327,6 +354,46 @@ class RegulatorySourceReviewStore:
         connection = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
         connection.row_factory = sqlite3.Row
         return connection
+
+
+def _latest_reviews_by_subject(
+    reviews: list[tuple[int, ContentRegulatorySourceReview]],
+) -> tuple[ContentRegulatorySourceReview, ...]:
+    """Project one latest decision for each decision-independent review subject."""
+
+    latest_by_subject: dict[
+        tuple[str, str, str, str, str, str, str, str],
+        tuple[int, ContentRegulatorySourceReview],
+    ] = {}
+    for append_order, review in reviews:
+        subject = _review_subject(review)
+        current = latest_by_subject.get(subject)
+        if current is None or append_order > current[0]:
+            # Append order wins even when reviewed_at is equal or out of order.
+            latest_by_subject[subject] = (append_order, review)
+    return tuple(review for _, review in latest_by_subject.values())
+
+
+def _review_subject(
+    review: ContentRegulatorySourceReview,
+) -> tuple[str, str, str, str, str, str, str, str]:
+    """Return the review subject without the human decision or reviewer."""
+
+    return (
+        review.candidate_id,
+        review.reviewed_fact,
+        review.source_snapshot_id,
+        json.dumps(
+            review.selector.model_dump(mode="json") if review.selector is not None else None,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        review.as_of.isoformat() if review.as_of is not None else "",
+        review.profile_id,
+        review.profile_version,
+        # Requirement scope is part of the reviewed subject because coverage permits subsets.
+        json.dumps(sorted(set(review.covered_requirement_ids)), separators=(",", ":")),
+    )
 
 
 def _resolve_candidate(

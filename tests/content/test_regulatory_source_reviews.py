@@ -120,6 +120,95 @@ def test_rejected_review_never_projects_to_source_fact_or_coverage(tmp_path, mon
     assert coverage.source_fact_ids == []
 
 
+def test_latest_review_decision_wins_for_same_subject_at_projection_time(
+    tmp_path,
+) -> None:
+    candidate = regulatory_source_candidates()[0]
+    reviewed_at = datetime(2026, 7, 31, 12, 1, tzinfo=UTC)
+    accepted_then_rejected = RegulatorySourceReviewStore(
+        tmp_path / "accepted-then-rejected.sqlite3"
+    )
+    snapshot = _snapshot(accepted_then_rejected.path, candidate.candidate_id)
+    snapshot_store = RegulatorySourceSnapshotStore(accepted_then_rejected.path)
+    accepted = accepted_then_rejected.record(
+        _command(snapshot=snapshot),
+        snapshot_store=snapshot_store,
+        now=reviewed_at,
+    )
+    rejected = accepted_then_rejected.record(
+        _command(snapshot=snapshot, decision="rejected"),
+        snapshot_store=snapshot_store,
+        now=reviewed_at,
+    )
+
+    assert accepted.review_id != rejected.review_id
+    assert accepted.reviewed_fact == rejected.reviewed_fact
+    ledger_reviews = accepted_then_rejected.list_reviews()
+    assert len(ledger_reviews) == 2
+    assert {review.review_id for review in ledger_reviews} == {
+        accepted.review_id,
+        rejected.review_id,
+    }
+    assert accepted_then_rejected.approved_source_facts() == ()
+
+    rejected_then_accepted = RegulatorySourceReviewStore(
+        tmp_path / "rejected-then-accepted.sqlite3"
+    )
+    reverse_snapshot = _snapshot(rejected_then_accepted.path, candidate.candidate_id)
+    reverse_snapshot_store = RegulatorySourceSnapshotStore(rejected_then_accepted.path)
+    rejected_then_accepted.record(
+        _command(snapshot=reverse_snapshot, decision="rejected"),
+        snapshot_store=reverse_snapshot_store,
+        now=reviewed_at,
+    )
+    final_acceptance = rejected_then_accepted.record(
+        _command(snapshot=reverse_snapshot),
+        snapshot_store=reverse_snapshot_store,
+        now=reviewed_at,
+    )
+
+    approved_facts = rejected_then_accepted.approved_source_facts()
+    assert [fact.source_id for fact in approved_facts] == [
+        f"regulatory_source_fact_{final_acceptance.review_id}"
+    ]
+
+    scoped_candidate = next(
+        item for item in regulatory_source_candidates() if len(item.requirement_ids) >= 2
+    )
+    first_scope, second_scope = scoped_candidate.requirement_ids[:2]
+    scoped_store = RegulatorySourceReviewStore(tmp_path / "different-scopes.sqlite3")
+    scoped_snapshot = _snapshot(scoped_store.path, scoped_candidate.candidate_id)
+    scoped_snapshot_store = RegulatorySourceSnapshotStore(scoped_store.path)
+    first_scoped = scoped_store.record(
+        _command(
+            candidate_id=scoped_candidate.candidate_id,
+            snapshot=scoped_snapshot,
+            requirement_ids=[first_scope],
+        ),
+        snapshot_store=scoped_snapshot_store,
+        now=reviewed_at,
+    )
+    second_scoped = scoped_store.record(
+        _command(
+            candidate_id=scoped_candidate.candidate_id,
+            snapshot=scoped_snapshot,
+            requirement_ids=[second_scope],
+        ),
+        snapshot_store=scoped_snapshot_store,
+        now=reviewed_at,
+    )
+
+    scoped_facts = scoped_store.approved_source_facts()
+    assert {tuple(fact.regulatory_requirement_ids) for fact in scoped_facts} == {
+        (first_scope,),
+        (second_scope,),
+    }
+    assert {review.review_id for review in scoped_store.list_reviews()} == {
+        first_scoped.review_id,
+        second_scoped.review_id,
+    }
+
+
 def test_direct_review_rejects_a_superseded_snapshot_and_hides_old_fact(
     tmp_path, monkeypatch
 ) -> None:
