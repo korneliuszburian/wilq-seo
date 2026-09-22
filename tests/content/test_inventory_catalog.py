@@ -338,6 +338,77 @@ def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
     assert result.items[0].metrics_evidence_ids == ["ev_gsc_current"]
 
 
+def test_catalog_metrics_require_evidence_scoped_refresh(monkeypatch):
+    page_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    wordpress_row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": page_url},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp_current",
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
+    )
+    historical_clicks = SimpleNamespace(
+        name="clicks",
+        dimensions={"page": page_url, "query": "historyczne kliknięcie"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_old",
+        value="99",
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
+    )
+    historical_impressions = SimpleNamespace(
+        name="impressions",
+        dimensions={"page": page_url, "query": "historyczne wyświetlenie"},
+        source_connector="google_search_console",
+        evidence_id="ev_gsc_old",
+        value="199",
+        collected_at=datetime(2026, 7, 17, tzinfo=UTC),
+    )
+    wordpress_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=["ev_wp_current"],
+        metric_summary={},
+    )
+    gsc_run_without_evidence = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=[],
+    )
+    store = SimpleNamespace(
+        list_metric_facts=lambda connector_id, **_kwargs: (
+            [wordpress_row]
+            if connector_id == "wordpress_ekologus"
+            else [historical_clicks, historical_impressions]
+        ),
+        list_metric_facts_by_evidence_ids=lambda evidence_ids: (
+            [wordpress_row] if evidence_ids == ["ev_wp_current"] else []
+        ),
+    )
+    monkeypatch.setattr(catalog_module, "metric_store", lambda: store)
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: (
+                [wordpress_run]
+                if connector_id == "wordpress_ekologus"
+                else [gsc_run_without_evidence]
+            )
+        ),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert result.items[0].metrics_status == "missing"
+    assert result.items[0].metrics_clicks is None
+    assert result.items[0].metrics_impressions is None
+    assert catalog_module._restrict_to_latest_refresh_batch(
+        "google_search_console",
+        [historical_clicks],
+        latest_run=gsc_run_without_evidence,
+    ) == []
+
+
 def test_inventory_catalog_does_not_fabricate_metric_values(monkeypatch):
     names = (
         "malformed",

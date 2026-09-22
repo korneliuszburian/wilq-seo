@@ -439,10 +439,13 @@ def _latest_connector_refresh_facts(connector_id: str) -> list[Any]:
     latest = _latest_completed_vendor_read(connector_id)
     evidence_ids = [] if latest is None else list(latest.evidence_ids)
     by_evidence = getattr(store, "list_metric_facts_by_evidence_ids", None)
-    if evidence_ids and callable(by_evidence):
+    if callable(by_evidence):
+        if not evidence_ids:
+            return []
         return cast(list[Any], by_evidence(evidence_ids))
-    # Keep lightweight test doubles and pre-migration local stores readable;
-    # production DuckDB always has the evidence-scoped method above.
+    # Keep lightweight test doubles and pre-migration local stores readable
+    # only when they lack the evidence-scoped method; production DuckDB takes
+    # the fail-closed path above.
     return store.list_metric_facts(connector_id, limit=5000)
 
 
@@ -920,7 +923,7 @@ def _restrict_to_latest_refresh_batch(
     """Prevent demand rows from mixing evidence across connector refresh history."""
     latest = latest_run if latest_run is not None else _latest_metric_refresh(connector_id)
     if latest is None or not latest.evidence_ids:
-        return facts
+        return []
     allowed = set(latest.evidence_ids)
     return [fact for fact in facts if fact.evidence_id in allowed]
 
