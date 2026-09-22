@@ -8,6 +8,14 @@ import httpx
 from wilq.connectors.wordpress.text import clean_metadata_text
 
 WORDPRESS_METADATA_FETCH_LIMIT = 50
+# The distributed pass splits sitemap objects into "posts", "pages" and a
+# combined "other" bucket (uslugi and every unrecognized group share it). The
+# live REST inventory exposes 117 posts, 52 uslugi and 10 pages; the old
+# 50-per-bucket budget left most posts and nearly all uslugi unenriched, so the
+# catalog could only classify them as "url_only". 200 per bucket covers that
+# full editorial set while the sitemap URL limit still bounds the total vendor
+# requests, so the read stays bounded.
+WORDPRESS_METADATA_GROUP_FETCH_LIMIT = 200
 WORDPRESS_METADATA_MAX_BYTES = 200_000
 WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
 WORDPRESS_SECTION_HEADING_LIMIT = 12
@@ -25,10 +33,15 @@ def _enrich_sitemap_objects_with_page_metadata(
     for index, item in enumerate(objects):
         group = _metadata_budget_group(item) if distribute_content_groups else "all"
         group_count = group_counts.get(group, 0)
+        fetch_limit = (
+            WORDPRESS_METADATA_GROUP_FETCH_LIMIT
+            if distribute_content_groups
+            else WORDPRESS_METADATA_FETCH_LIMIT
+        )
         limit_reached = (
-            index >= WORDPRESS_METADATA_FETCH_LIMIT
+            index >= fetch_limit
             if not distribute_content_groups
-            else group_count >= WORDPRESS_METADATA_FETCH_LIMIT
+            else group_count >= fetch_limit
         )
         if limit_reached:
             enriched.append(item)

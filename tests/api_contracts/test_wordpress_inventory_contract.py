@@ -213,6 +213,150 @@ def test_public_inventory_enriches_posts_and_pages_with_separate_bounded_budgets
     assert json.loads(facts[UNSUPPORTED_URL].dimensions["section_headings_json"]) == []
 
 
+def test_public_inventory_enriches_objects_past_default_limit_in_one_group(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+
+    object_count = inventory_metadata_module.WORDPRESS_METADATA_FETCH_LIMIT + 1
+    urls = [f"https://www.ekologus.pl/post-{index}/" for index in range(object_count)]
+    metadata_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ekologus.dev.proudsite.pl":
+            return _dev_response(request)
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.path == "/wp-sitemap.xml":
+            entries = "".join(f"<url><loc>{url}</loc></url>" for url in urls)
+            return _xml_response(f"<urlset>{entries}</urlset>")
+        if request.url.path.startswith("/post-"):
+            metadata_paths.append(request.url.path)
+            label = request.url.path.removeprefix("/").removesuffix("/")
+            return httpx.Response(
+                200,
+                headers={"content-type": "text/html; charset=utf-8"},
+                text=(
+                    "<html><body><main>"
+                    f"<h1>{label}</h1><p>{label} content.</p>"
+                    "</main></body></html>"
+                ),
+            )
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    facts = {
+        fact.dimensions["content_url"]: fact
+        for fact in result.metric_facts
+        if fact.name == "content_object_seen"
+        and fact.dimensions.get("inventory_source") == "public_sitemap"
+    }
+    assert len(facts) == object_count
+    assert metadata_paths == [f"/post-{index}/" for index in range(object_count)]
+    assert all(facts[url].dimensions["title_or_h1"] for url in urls)
+
+
+def test_public_inventory_metadata_group_budget_stays_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setattr(inventory_metadata_module, "WORDPRESS_METADATA_GROUP_FETCH_LIMIT", 3)
+
+    urls = [f"https://www.ekologus.pl/post-{index}/" for index in range(5)]
+    metadata_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ekologus.dev.proudsite.pl":
+            return _dev_response(request)
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.path == "/wp-sitemap.xml":
+            entries = "".join(f"<url><loc>{url}</loc></url>" for url in urls)
+            return _xml_response(f"<urlset>{entries}</urlset>")
+        if request.url.path.startswith("/post-"):
+            metadata_paths.append(request.url.path)
+            label = request.url.path.removeprefix("/").removesuffix("/")
+            return httpx.Response(
+                200,
+                headers={"content-type": "text/html; charset=utf-8"},
+                text=(
+                    "<html><body><main>"
+                    f"<h1>{label}</h1><p>{label} content.</p>"
+                    "</main></body></html>"
+                ),
+            )
+        return httpx.Response(404)
+
+    refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    # The distributed budget bounds how many pages one group may fetch, so the
+    # read can never grow into an unbounded vendor-request storm.
+    assert metadata_paths == ["/post-0/", "/post-1/", "/post-2/"]
+
+
+def test_public_inventory_metadata_timeout_isolated_to_one_object(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+
+    timeout_url = "https://www.ekologus.pl/timeout/"
+    healthy_url = "https://www.ekologus.pl/healthy/"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ekologus.dev.proudsite.pl":
+            return _dev_response(request)
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.path == "/wp-sitemap.xml":
+            return _xml_response(
+                f"<urlset><url><loc>{timeout_url}</loc></url>"
+                f"<url><loc>{healthy_url}</loc></url></urlset>"
+            )
+        if request.url.path == "/timeout/":
+            raise httpx.ReadTimeout("simulated public page timeout", request=request)
+        if request.url.path == "/healthy/":
+            return httpx.Response(
+                200,
+                headers={"content-type": "text/html; charset=utf-8"},
+                text="<html><body><main><h1>Healthy page</h1></main></body></html>",
+            )
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    facts = {
+        fact.dimensions["content_url"]: fact
+        for fact in result.metric_facts
+        if fact.name == "content_object_seen"
+        and fact.dimensions.get("inventory_source") == "public_sitemap"
+    }
+    assert result.status == ConnectorRefreshStatus.completed
+    assert facts[timeout_url].dimensions["title_or_h1"] == ""
+    assert facts[healthy_url].dimensions["title_or_h1"] == "Healthy page"
+
+
 def test_targeted_public_inventory_keeps_baseline_metadata_with_budget(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -221,6 +365,7 @@ def test_targeted_public_inventory_keeps_baseline_metadata_with_budget(
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
     monkeypatch.setattr(inventory_metadata_module, "WORDPRESS_METADATA_FETCH_LIMIT", 2)
+    monkeypatch.setattr(inventory_metadata_module, "WORDPRESS_METADATA_GROUP_FETCH_LIMIT", 2)
 
     baseline_url = "https://www.ekologus.pl/baseline/"
     baseline_tail_url = "https://www.ekologus.pl/baseline-tail/"
