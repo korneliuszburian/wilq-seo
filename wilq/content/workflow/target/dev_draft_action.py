@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from copy import deepcopy
 from typing import Any, Literal, cast
 from uuid import uuid4
@@ -19,6 +20,7 @@ from wilq.content.workflow.research_packet_current import (
 )
 from wilq.content.workflow.research_packet_preparation import ResearchPacketPreparationStore
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
+from wilq.content.workflow.store.store_schema import ContentWorkflowSchemaMigrationError
 from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
     ContentAcfCloneReplacement,
@@ -147,7 +149,12 @@ def _content_dev_draft_research_packet_blocker(
         revision_state = cast(ContentWorkflowStore, store).load_draft_revision_state(
             binding.work_item_id
         )
-    except Exception:
+    except (
+        OSError,
+        ValueError,
+        sqlite3.Error,
+        ContentWorkflowSchemaMigrationError,
+    ):
         return _research_packet_apply_blocker(
             "research_packet_blocked",
             "Nie można odczytać bieżącej rewizji i jej research packetu przed apply.",
@@ -168,7 +175,12 @@ def _content_dev_draft_research_packet_blocker(
         )
     try:
         packet = store.load_content_research_packet(packet_id)
-    except Exception:
+    except (
+        OSError,
+        ValueError,
+        sqlite3.Error,
+        ContentWorkflowSchemaMigrationError,
+    ):
         return _research_packet_apply_blocker(
             "research_packet_blocked",
             "Nie można odczytać research packetu związanego z zatwierdzoną rewizją.",
@@ -199,7 +211,12 @@ def _content_dev_draft_research_packet_blocker(
             packet=packet,
             snapshot_loader=snapshot_loader,
         )
-    except Exception:
+    except (
+        LookupError,
+        OSError,
+        sqlite3.Error,
+        ContentWorkflowSchemaMigrationError,
+    ):
         return _research_packet_apply_blocker(
             "research_packet_blocked",
             "Nie można odtworzyć bieżącego kontekstu research packetu przed apply.",

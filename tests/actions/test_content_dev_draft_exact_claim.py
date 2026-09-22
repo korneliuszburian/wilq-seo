@@ -444,14 +444,12 @@ def test_dev_draft_apply_blocks_when_revision_research_packet_was_superseded(
         }
     )
     monkeypatch.setattr(dev_draft_action, "content_workflow_store", lambda: evidence_store)
-
     claim_calls: list[str] = []
     adapter_calls: list[str] = []
 
     def claim(*_args, **_kwargs):
         claim_calls.append("claim")
         return "acquired"
-
     dependencies = ApplyDependencies(
         review_gate=lambda current: current.review_gate,
         wordpress_apply_capability=lambda *_args: (None, []),
@@ -474,7 +472,6 @@ def test_dev_draft_apply_blocks_when_revision_research_packet_was_superseded(
         ),
         dependencies=dependencies,
     )
-
     assert result.applied is False
     assert [blocker.code for blocker in result.wordpress_revision_blockers] == [
         "research_packet_missing"
@@ -501,8 +498,15 @@ def test_dev_draft_apply_blocks_when_revision_research_packet_was_superseded(
         ),
         dependencies=dependencies,
     )
-
     assert current_result.applied is True
     assert current_result.wordpress_revision_blockers == []
     assert claim_calls == ["claim"]
     assert adapter_calls == ["adapter"]
+    with pytest.raises(RuntimeError, match="unexpected"):
+        dev_draft_action._content_dev_draft_research_packet_blocker(
+            binding,
+            store=evidence_store,
+            snapshot_loader=lambda _: (_ for _ in ()).throw(RuntimeError("unexpected")),
+            packet_id=packet.packet_id,
+            packet_digest=packet.packet_digest,
+        )
