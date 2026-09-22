@@ -51,6 +51,7 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceFact,
 )
 from wilq.content.planning.internal_link_candidates import ContentPlanningInternalLinkCandidate
+from wilq.content.planning.packet_model_projection import project_planning_input_for_packet
 from wilq.content.planning.source_pack_projection import project_selected_source_pack_facts
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.demand_evidence import (
@@ -955,6 +956,56 @@ def test_packet_projection_trims_mixed_claim_and_measurement_evidence(
     assert model_input["claim_ledger"][0]["evidence_ids"] == [allowed_evidence]
     assert model_input["internal_link_candidates"][0]["evidence_ids"] == [allowed_evidence]
     assert outside_evidence not in json.dumps(model_input)
+
+
+def test_packet_projection_drops_partially_authorized_source_fact_lineage(
+    tmp_path: Path,
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    prepared = prepare_content_research_packet(
+        store=case.store, snapshot=case.snapshot, planning_input=case.planning_input
+    )
+    assert prepared.packet is not None
+    assert len(prepared.packet.approved_source_fact_ids) >= 2
+    fact_a, fact_b = prepared.packet.approved_source_fact_ids[:2]
+    allowed_evidence = prepared.packet.evidence_ids[0]
+    outside_evidence = "ev_outside_source_fact_projection"
+    intact = ContentPlanningSourceFact(
+        fact_id="fact_authorized_lineage",
+        summary="Summary from fact A.",
+        source_connector="public_site",
+        evidence_ids=[allowed_evidence],
+        source_fact_ids=[fact_a],
+    )
+    partially_authorized = ContentPlanningSourceFact(
+        fact_id="fact_partial_lineage",
+        summary="Summary combines facts A and B.",
+        source_connector="public_site",
+        evidence_ids=[allowed_evidence],
+        source_fact_ids=[fact_a, fact_b],
+    )
+    outside_evidence_fact = ContentPlanningSourceFact(
+        fact_id="fact_outside_evidence",
+        summary="Summary has no packet evidence.",
+        source_connector="public_site",
+        evidence_ids=[outside_evidence],
+        source_fact_ids=[fact_a],
+    )
+    planning_input = case.planning_input.model_copy(
+        update={
+            "source_facts": [partially_authorized, intact, outside_evidence_fact],
+        }
+    )
+    packet = prepared.packet.model_copy(
+        update={
+            "approved_source_fact_ids": (fact_a,),
+            "evidence_ids": (allowed_evidence,),
+        }
+    )
+
+    projected = project_planning_input_for_packet(planning_input, packet)
+
+    assert projected["source_facts"] == [intact.model_dump(mode="json")]
 
 
 def test_require_packet_blocks_without_a_pack_even_when_identity_is_absent(

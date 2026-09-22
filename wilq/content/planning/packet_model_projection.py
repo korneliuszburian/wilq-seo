@@ -79,6 +79,8 @@ def _authorized_source_facts(
         if not isinstance(raw, dict):
             continue
         fact_ids = set(_string_list(raw.get("source_fact_ids"))) or {str(raw.get("fact_id", ""))}
+        if not fact_ids.issubset(allowed_facts):
+            continue
         authorized_fact_ids = sorted(fact_ids.intersection(allowed_facts))
         if not authorized_fact_ids:
             continue
