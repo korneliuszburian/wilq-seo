@@ -6,6 +6,7 @@ import {
   ActionApplyRequestSchema,
   ActionObjectSchema,
   AuditEventSchema,
+  ContentDraftRevisionBindingSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementOutcomeResponseSchema,
@@ -1756,6 +1757,42 @@ describe("AuditEventSchema", () => {
     });
 
     expect(event.details.wordpress_draft_binding).toEqual(binding);
+  });
+
+  it("carries the exact research packet lineage and stays strict", () => {
+    const binding = {
+      work_item_id: "content_work_item_bdo",
+      handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+      revision_id: "content_revision_bdo_1",
+      content_digest: "a".repeat(64),
+      draft_package_id: "draft_package_content_work_item_bdo",
+      draft_package_digest: "b".repeat(64),
+      planning_digest: "c".repeat(64),
+      approval_decision_id: "content_revision_decision_bdo_1",
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      research_packet_id: "content_research_packet_bdo_1",
+      research_packet_digest: "d".repeat(64)
+    };
+    const event = AuditEventSchema.parse({
+      id: "audit_content_revision_bdo_2",
+      action_id: "act_apply_wordpress_draft_handoff",
+      event_type: "action_preview_generated",
+      actor: "operator_local_dashboard",
+      created_at: "2026-07-15T10:00:00Z",
+      summary: "Podgląd przygotowany.",
+      evidence_ids: ["ev_content_revision_bdo_1"],
+      details: { wordpress_draft_binding: binding },
+      redacted: true
+    });
+
+    expect(event.details.wordpress_draft_binding).toEqual(binding);
+    expect(ContentDraftRevisionBindingSchema.parse(binding)).toEqual(binding);
+    expect(
+      ContentDraftRevisionBindingSchema.safeParse({
+        ...binding,
+        unexpected_extra_field: "x"
+      }).success
+    ).toBe(false);
   });
 });
 

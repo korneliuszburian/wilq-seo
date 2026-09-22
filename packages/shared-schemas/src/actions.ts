@@ -12,7 +12,13 @@ export const ContentDraftRevisionBindingSchema = z
     draft_package_digest: z.string().regex(/^[0-9a-f]{64}$/),
     planning_digest: z.string().regex(/^[0-9a-f]{64}$/),
     approval_decision_id: z.string().min(1),
-    final_canonical_url: z.string().min(1)
+    final_canonical_url: z.string().min(1),
+    research_packet_id: z.string().min(1).nullable().optional(),
+    research_packet_digest: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .nullable()
+      .optional()
   })
   .strict();
 
