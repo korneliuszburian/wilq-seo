@@ -48,6 +48,41 @@ def _register_candidate_routes(router: APIRouter) -> None:
     def content_regulatory_source_snapshot(
         candidate_id: str,
     ) -> ContentRegulatorySourceSnapshotReadResponse:
+        """Read the latest stored snapshot without fetching or persisting anything."""
+        snapshot = regulatory_source_snapshot_store().latest(candidate_id)
+        if snapshot is None:
+            return ContentRegulatorySourceSnapshotReadResponse(
+                status="blocked",
+                reason="Brakuje zapisanego snapshotu oficjalnego źródła.",
+                safe_next_step=(
+                    "Uruchom jawny POST snapshotu, aby pobrać i zapisać materiał przed review."
+                ),
+            )
+        return ContentRegulatorySourceSnapshotReadResponse(
+            status="captured",
+            snapshot=snapshot,
+            reason=(
+                "Odczytano zapisany snapshot oficjalnego źródła; ten odczyt nie pobrał "
+                "ani nie zapisał nowego materiału."
+            ),
+            safe_next_step=(
+                "Sprawdź zapisany materiał i zapisz decyzję z dokładnym snapshotem; "
+                "odświeżenie wymaga jawnego POST snapshotu."
+            ),
+        )
+
+    @router.post(
+        "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
+        response_model=ContentRegulatorySourceSnapshotReadResponse,
+    )
+    def capture_content_regulatory_source_snapshot(
+        candidate_id: str,
+    ) -> ContentRegulatorySourceSnapshotReadResponse:
+        """Explicitly fetch and persist a snapshot for operator review.
+
+        A re-capture may require re-review because accepted reviews bind to the
+        exact snapshot ID that was current when the review was recorded.
+        """
         try:
             snapshot = regulatory_source_snapshot_store().capture(candidate_id)
         except (OSError, ValueError):

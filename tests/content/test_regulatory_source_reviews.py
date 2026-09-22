@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import UTC, datetime
 from urllib.error import HTTPError
 
@@ -67,6 +68,18 @@ def _snapshot(
         reader=lambda _: (b"<html>official source snapshot</html>", "text/html"),
         now=now or datetime(2026, 7, 31, 12, 0, tzinfo=UTC),
     )
+
+
+def _stored_snapshot_count(path) -> int:
+    connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        return int(
+            connection.execute(
+                "SELECT COUNT(*) FROM content_regulatory_source_snapshots"
+            ).fetchone()[0]
+        )
+    finally:
+        connection.close()
 
 
 def test_accepted_review_projects_exact_source_fact_and_resolvable_evidence(
@@ -428,7 +441,7 @@ def test_public_source_review_route_persists_only_human_decision(tmp_path, monke
         "_read_official_source",
         lambda _: (b"<html>official source snapshot</html>", "text/html"),
     )
-    snapshot_response = client.get(
+    snapshot_response = client.post(
         "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31_r2/snapshot"
     )
     snapshot = ContentRegulatorySourceSnapshot.model_validate(snapshot_response.json()["snapshot"])
@@ -461,3 +474,70 @@ def test_public_source_review_route_persists_only_human_decision(tmp_path, monke
     assert [item["review_id"] for item in after.json()["reviews"]] == [
         recorded.json()["review_id"]
     ]
+
+
+def test_reading_snapshot_route_preserves_approved_facts_and_storage(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "wilq.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(path))
+    candidate_id = "bdo_registration_scope_2026_07_31_r2"
+    snapshot_store = RegulatorySourceSnapshotStore(path)
+    initial_snapshot = _snapshot(path, candidate_id)
+    review_store = RegulatorySourceReviewStore(path)
+    review_store.record(
+        _command(candidate_id=candidate_id, snapshot=initial_snapshot),
+        snapshot_store=snapshot_store,
+    )
+    approved_before = review_store.approved_source_facts()
+    snapshots_before = _stored_snapshot_count(path)
+    network_reads: list[str] = []
+
+    def unexpected_read(source_url: str):
+        network_reads.append(source_url)
+        return b"<html>official source snapshot</html>", "text/html"
+
+    monkeypatch.setattr(source_snapshots_module, "_read_official_source", unexpected_read)
+    app = FastAPI()
+    router = APIRouter()
+    register_content_regulatory_source_review_routes(router)
+    app.include_router(router)
+    client = TestClient(app)
+    snapshot_path = f"/api/content/regulatory-source-candidates/{candidate_id}/snapshot"
+
+    first_read = client.get(snapshot_path)
+    second_read = client.get(snapshot_path)
+
+    assert first_read.status_code == 200
+    assert second_read.status_code == 200
+    assert first_read.json()["status"] == "captured"
+    assert first_read.json()["snapshot"]["snapshot_id"] == initial_snapshot.snapshot_id
+    assert second_read.json()["snapshot"]["snapshot_id"] == initial_snapshot.snapshot_id
+    assert review_store.approved_source_facts() == approved_before
+    assert _stored_snapshot_count(path) == snapshots_before
+    assert network_reads == []
+
+    capture_before = _stored_snapshot_count(path)
+    capture_response = client.post(snapshot_path)
+
+    assert capture_response.status_code == 200
+    assert capture_response.json()["status"] == "captured"
+    assert capture_response.json()["snapshot"]["snapshot_id"] != initial_snapshot.snapshot_id
+    assert _stored_snapshot_count(path) == capture_before + 1
+
+
+def test_reading_missing_snapshot_returns_explicit_capture_blocker(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "wilq.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(path))
+    app = FastAPI()
+    router = APIRouter()
+    register_content_regulatory_source_review_routes(router)
+    app.include_router(router)
+
+    response = TestClient(app).get(
+        "/api/content/regulatory-source-candidates/bdo_registration_scope_2026_07_31_r2/snapshot"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "blocked"
+    assert response.json()["snapshot"] is None
+    assert "POST" in response.json()["safe_next_step"]
+    assert not path.exists()

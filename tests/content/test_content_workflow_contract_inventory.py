@@ -102,6 +102,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
     ): ContentRegulatorySourceSnapshotReadResponse,
     (
+        "POST",
+        "/api/content/regulatory-source-candidates/{candidate_id}/snapshot",
+    ): ContentRegulatorySourceSnapshotReadResponse,
+    (
         "GET",
         "/api/content/regulatory-source-candidates/{candidate_id}/fact-proposal",
     ): ContentRegulatorySourceFactProposalResponse,
