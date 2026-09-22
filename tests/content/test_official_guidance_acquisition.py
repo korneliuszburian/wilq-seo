@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import socket
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
@@ -508,9 +510,105 @@ class _OfficialResearcher:
         )
 
 
-def test_public_official_guidance_acquisition_and_research_are_review_only(
-    tmp_path, monkeypatch
-) -> None:
+def _official_candidate_coordinator(
+    tmp_path: Path,
+    case_name: str,
+    *,
+    canonical_path: str = OFFICIAL_GUIDANCE_CANONICAL_PATH,
+) -> tuple[EvidenceAcquisitionCoordinator, ContentDeliveryIdentityBinding]:
+    store = ContentWorkflowStore(tmp_path / f"{case_name}.sqlite3")
+    store.record_production_classification(exact_public_bdo_run())
+    stored_identity = store.record_content_delivery_identity(
+        identity_command(retained=True).model_copy(
+            update={"retained_work_item_id": None, "retained_usage": None}
+        )
+    ).binding
+    identity = stored_identity
+    classification = store.load_production_classification_for_work_item(
+        stored_identity.current_work_item_id
+    )
+    assert classification is not None
+    if canonical_path != stored_identity.canonical_path:
+        public_url = "https://www.ekologus.pl" + canonical_path
+        identity = stored_identity.model_copy(
+            update={"canonical_path": canonical_path, "public_url": public_url}
+        )
+        classification = classification.model_copy(
+            update={
+                "row": classification.row.model_copy(
+                    update={"canonical_path": canonical_path, "public_url": public_url}
+                )
+            }
+        )
+    return (
+        EvidenceAcquisitionCoordinator(
+            identity_loader=lambda _binding_id: identity,
+            classification_loader=lambda _work_item_id: classification,
+            store=store,
+        ),
+        identity,
+    )
+
+
+def test_public_official_guidance_candidates_keep_selection_typed(tmp_path: Path) -> None:
+    api = FastAPI()
+    router = APIRouter()
+    acquisition_router.register_content_evidence_acquisition_routes(router)
+    api.include_router(router)
+    path = "/api/content/evidence-acquisition/official-guidance-candidates"
+    openapi = api.openapi()
+    assert path in openapi["paths"]
+    response_schema = openapi["paths"][path]["get"]["responses"]["200"][
+        "content"
+    ]["application/json"]["schema"]["items"]["$ref"]
+    candidate_schema = openapi["components"]["schemas"][response_schema.rsplit("/", 1)[-1]]
+    assert set(candidate_schema["properties"]) == {
+        "candidate_id",
+        "canonical_path",
+        "title",
+        "allowed_claim_scope",
+        "blocked_claims",
+        "candidate_digest",
+    }
+    public_candidate = acquisition_router.content_official_guidance_candidates()[0]
+    payload = public_candidate.model_dump(mode="json")
+    registered = official_guidance_candidates()[0]
+    assert payload["candidate_id"] == registered.candidate_id
+    assert payload["canonical_path"] == registered.canonical_path
+    assert payload["candidate_digest"] == registered.candidate_digest
+    assert "source_url" not in payload
+
+    def start(case_name: str, candidate_id: str | None, canonical_path: str) -> object:
+        coordinator, identity = _official_candidate_coordinator(
+            tmp_path, case_name, canonical_path=canonical_path
+        )
+        command: dict[str, object] = {
+            "subject": {
+                "subject_kind": "identity_binding",
+                "identity_binding_id": identity.binding_id,
+            },
+            "research_question": f"Sprawdź official guidance: {case_name}.",
+            "source_intent": "official_primary",
+        }
+        if candidate_id is not None:
+            command["source_selector"] = {
+                "selector_kind": "official_primary",
+                "candidate_id": candidate_id,
+            }
+        return coordinator.start(EvidenceAcquisitionStartCommand.model_validate(command))
+
+    selected = start("selected", OFFICIAL_GUIDANCE_CANDIDATE_ID, registered.canonical_path)
+    assert selected.blockers[0].code == "official_guidance_transport_unavailable"
+    assert selected.recorded_run.official_guidance_candidate_id == OFFICIAL_GUIDANCE_CANDIDATE_ID
+    selector_missing = start("selector-missing", None, registered.canonical_path)
+    assert selector_missing.blockers[0].code == "official_guidance_selector_missing"
+    missing = start("missing", "unregistered_official_guidance", registered.canonical_path)
+    assert missing.blockers[0].code == "official_guidance_candidate_missing"
+    mismatched = start("mismatched", OFFICIAL_GUIDANCE_CANDIDATE_ID, "/inna-strona-editorialna")
+    assert mismatched.blockers[0].code == "official_guidance_candidate_path_mismatch"
+
+
+def _public_official_guidance_fixture(tmp_path: Path):
     workflow_store = ContentWorkflowStore(tmp_path / "workflow.sqlite3")
     workflow_store.record_production_classification(exact_public_bdo_run())
     stored_identity = workflow_store.record_content_delivery_identity(
@@ -588,17 +686,24 @@ def test_public_official_guidance_acquisition_and_research_are_review_only(
             "candidate_id": OFFICIAL_GUIDANCE_CANDIDATE_ID,
         },
     )
-    monkeypatch.setattr(
-        acquisition_router,
-        "build_default_evidence_acquisition_coordinator",
-        lambda: coordinator,
-    )
     researcher = _OfficialResearcher()
     research = EvidenceResearchCoordinator(
         acquisition_reader=coordinator.read,
         proposal_store=workflow_store,
         researcher=researcher,
         clock=lambda: read_at,
+    )
+    return coordinator, command, research, researcher
+
+
+def test_public_official_guidance_acquisition_and_research_are_review_only(
+    tmp_path, monkeypatch
+) -> None:
+    coordinator, command, research, researcher = _public_official_guidance_fixture(tmp_path)
+    monkeypatch.setattr(
+        acquisition_router,
+        "build_default_evidence_acquisition_coordinator",
+        lambda: coordinator,
     )
     monkeypatch.setattr(
         acquisition_router,

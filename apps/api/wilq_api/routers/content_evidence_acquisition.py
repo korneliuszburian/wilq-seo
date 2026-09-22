@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Self
 
 from fastapi import APIRouter, HTTPException, Path
+from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.workflow.evidence_acquisition_coordinator import (
     EvidenceAcquisitionCurrentProjection,
     EvidenceAcquisitionStartCommand,
     build_default_evidence_acquisition_coordinator,
+)
+from wilq.content.workflow.official_guidance import (
+    OfficialGuidanceCandidate,
+    official_guidance_candidates,
 )
 from wilq.content.workflow.research_promotion_authority import (
     ContentResearchFactPromotionPreviewCommand,
@@ -27,7 +32,34 @@ from wilq.content.workflow.research_proposal import (
 from wilq.content.workflow.store.store import content_workflow_store
 
 
+class OfficialGuidanceCandidateRead(BaseModel):
+    """Operator selection projection of one server-owned guidance candidate."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    candidate_id: str = Field(min_length=1)
+    canonical_path: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    allowed_claim_scope: tuple[str, ...] = Field(min_length=1)
+    blocked_claims: tuple[str, ...] = ()
+    candidate_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @classmethod
+    def from_candidate(cls, candidate: OfficialGuidanceCandidate) -> Self:
+        payload = candidate.as_dict()
+        payload.pop("source_url", None)
+        payload["candidate_digest"] = candidate.candidate_digest
+        return cls.model_validate(payload)
+
+
 def register_content_evidence_acquisition_routes(router: APIRouter) -> None:
+    router.add_api_route(
+        "/api/content/evidence-acquisition/official-guidance-candidates",
+        content_official_guidance_candidates,
+        methods=["GET"],
+        response_model=list[OfficialGuidanceCandidateRead],
+        tags=["content"],
+    )
     router.add_api_route(
         "/api/content/evidence-acquisition",
         content_evidence_acquisition_start,
@@ -70,6 +102,15 @@ def register_content_evidence_acquisition_routes(router: APIRouter) -> None:
         response_model=ContentResearchFactPromotionPreviewResponse,
         tags=["content"],
     )
+
+
+def content_official_guidance_candidates() -> list[OfficialGuidanceCandidateRead]:
+    """List the immutable server-owned candidates available for selection by ID."""
+
+    return [
+        OfficialGuidanceCandidateRead.from_candidate(candidate)
+        for candidate in official_guidance_candidates()
+    ]
 
 
 def content_evidence_acquisition_start(
