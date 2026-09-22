@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import sqlite3
-import time
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,15 +12,41 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_planning_proposals as planning_router
 from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
+from tests.content.dynamic_planning_packet_harness import (
+    generate_plan as _generate_plan,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    generated_proposal_from,
+    install_packet_harness,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    generation_request_for_work_item as _generation_request_for_work_item,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    initial_draft_request as _initial_draft_request,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    patch_fast_synthetic_diagnostics as _patch_fast_synthetic_diagnostics,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    post_planning as _post_planning,
+)
+from tests.content.dynamic_planning_packet_harness import (
+    snapshot as _snapshot,
+)
 from tests.content.dynamic_planning_test_support import (
     PlanningClient,
     configure_planning_harness,
 )
+from tests.content.packet_plan_draft_fixtures import build_packet_preparation_case
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.handoff.revision_document_renderer import revision_document_markdown
-from wilq.content.planning import planning_generation_queue
+from wilq.content.planning import (
+    planning_generation_queue,
+)
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInputSummary,
+    bind_research_packet_to_planning_input,
     build_content_planning_input,
 )
 from wilq.content.planning.generated_proposal import (
@@ -51,6 +76,8 @@ from wilq.content.workflow.decisions.planning import (
     ContentPlanningSection,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.research_packet_preparation import prepare_content_research_packet
+from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.workspace.catalog import inventory_work_item_id
 from wilq.schemas import CodexRun
 from wilq.storage.local_state import local_state_store
@@ -121,7 +148,21 @@ def planning_harness(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[TestClient, PlanningClient]:
-    return configure_planning_harness(monkeypatch, tmp_path)
+    client, runtime = configure_planning_harness(monkeypatch, tmp_path)
+    _patch_fast_synthetic_diagnostics(monkeypatch)
+    base_store = content_workflow_store()
+    base_case = build_packet_preparation_case(tmp_path)
+    packet_store = install_packet_harness(
+        monkeypatch,
+        base_store=base_store,
+        base_case=base_case,
+        work_items=(
+            (BDO_WORK_ITEM_ID, BDO_URL),
+            (OUTSOURCING_WORK_ITEM_ID, OUTSOURCING_URL),
+        ),
+    )
+    monkeypatch.setattr(sys.modules[__name__], "content_workflow_store", lambda: packet_store)
+    return client, runtime
 
 
 def test_dynamic_planning_proposals_are_two_case_and_idempotent(
@@ -165,7 +206,11 @@ def test_dynamic_planning_allows_an_exact_service_without_plan_review(
     result = _post_planning(
         client,
         BDO_WORK_ITEM_ID,
-        _generation_request(service_card_id, before["planning_input_digest"]),
+        _generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
+            service_card_id,
+            before["planning_input_digest"],
+        ),
     )
 
     assert result.status_code == 200
@@ -199,7 +244,7 @@ def test_executor_submission_failure_is_typed_and_retryable(
 
     executor = FailingExecutor()
     monkeypatch.setattr(planning_generation_queue, "_PLANNING_GENERATION_EXECUTOR", executor)
-    request = _generation_request(service_card_id, digest)
+    request = _generation_request_for_work_item(BDO_WORK_ITEM_ID, service_card_id, digest)
 
     first = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
@@ -412,14 +457,23 @@ def test_planning_api_rejects_a_stale_digest_before_sibling_queue_logic(
     )
     first = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json=_generation_request(service_card_id, current["planning_input_digest"]),
+        json=_generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
+            service_card_id,
+            current["planning_input_digest"],
+        ),
     )
     assert first.status_code == 200
     assert first.json()["status"] == "generating"
 
     second = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json=_generation_request(service_card_id, "b" * 64),
+        json=_generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
+            service_card_id,
+            "b" * 64,
+            include_authorization=False,
+        ),
     )
     assert second.status_code == 200
     assert second.json()["status"] == "stale"
@@ -496,9 +550,11 @@ def test_changed_input_digest_is_rejected_before_a_replan_is_queued(
     changed_digest = "f" * 64
     response = client.post(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json=_generation_request(
+        json=_generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
             proposal["service_card_id"],
             changed_digest,
+            include_authorization=False,
         ),
     )
 
@@ -522,7 +578,11 @@ def test_dynamic_planning_rejects_an_unknown_document_placement(
     result = _post_planning(
         client,
         BDO_WORK_ITEM_ID,
-        _generation_request(service_card_id, planning_input["planning_input_digest"]),
+        _generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
+            service_card_id,
+            planning_input["planning_input_digest"],
+        ),
     )
 
     assert result.status_code == 200
@@ -560,7 +620,11 @@ def test_dynamic_planning_rejects_internal_link_outside_exact_lineage(
     result = _post_planning(
         client,
         BDO_WORK_ITEM_ID,
-        _generation_request(service_card_id, planning_input["planning_input_digest"]),
+        _generation_request_for_work_item(
+            BDO_WORK_ITEM_ID,
+            service_card_id,
+            planning_input["planning_input_digest"],
+        ),
     )
 
     assert result.status_code == 200
@@ -592,6 +656,18 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
         service_card_id="ekologus_service_bdo_reporting",
     ).planning_input
     assert changed_input is not None
+    packet_result = prepare_content_research_packet(
+        store=content_workflow_store(),
+        snapshot=changed_snapshot,
+        planning_input=changed_input,
+    )
+    assert packet_result.status in {"created", "idempotent"}
+    changed_packet = packet_result.packet
+    assert changed_packet is not None
+    bound_changed_input = bind_research_packet_to_planning_input(
+        changed_input,
+        changed_packet,
+    )
     stale_read = read_content_planning_proposal(
         snapshot=changed_snapshot,
         store=content_planning_proposal_store(),
@@ -603,8 +679,10 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
         snapshot=changed_snapshot,
         request=ContentPlanningProposalRequest(
             service_card_id="ekologus_service_bdo_reporting",
-            expected_planning_input_digest=changed_input.planning_input_digest,
+            expected_planning_input_digest=bound_changed_input.planning_input_digest,
             requested_by="wilku",
+            research_packet_id=changed_packet.packet_id,
+            expected_research_packet_digest=changed_packet.packet_digest,
         ),
         client=runtime,
         store=content_planning_proposal_store(),
@@ -621,8 +699,10 @@ def test_dynamic_planning_input_change_is_stale_and_runtime_fails_closed(
         snapshot=changed_snapshot,
         request=ContentPlanningProposalRequest(
             service_card_id="ekologus_service_bdo_reporting",
-            expected_planning_input_digest=changed_input.planning_input_digest,
+            expected_planning_input_digest=bound_changed_input.planning_input_digest,
             requested_by="wilku",
+            research_packet_id=changed_packet.packet_id,
+            expected_research_packet_digest=changed_packet.packet_digest,
         ),
         client=runtime,
         store=_FailingPlanningStore(content_planning_proposal_store().path),
@@ -658,7 +738,12 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
             json=stale_request,
         )
         assert stale.status_code == 409
-        assert stale.json()["blockers"][0]["code"] == "proposal_mismatch"
+        # The exact refresh authorization is resolved before the stale
+        # proposal digest; its typed binding guard is the public failure
+        # for this deliberately mismatched draft request.
+        assert stale.json()["blockers"][0]["code"] == (
+            "refresh_preparation_proposal_binding_mismatch"
+        )
         assert runtime.calls == expected_calls
         created = client.post(
             f"/api/content/work-items/{work_item_id}/initial-draft",
@@ -695,8 +780,12 @@ def test_initial_full_draft_uses_the_same_atomic_contract_for_both_services(
             f"/api/content/work-items/{work_item_id}/initial-draft",
             json=_initial_draft_request(proposal),
         )
-        assert repeated.status_code == 409
-        assert repeated.json()["blockers"][0]["code"] == "revision_already_exists"
+        # An exact refresh authorization projects an existing revision as a
+        # created/readback result rather than entering the legacy queue-conflict
+        # adapter; it must remain the same revision and must not call Codex.
+        assert repeated.status_code == 200
+        assert repeated.json()["status"] == "created"
+        assert repeated.json()["revision"]["revision_id"] == revision["revision_id"]
         assert runtime.calls == expected_calls
         revisions[work_item_id] = revision
 
@@ -758,121 +847,3 @@ def test_initial_full_draft_runtime_failure_writes_no_partial_revision_and_get_i
     snapshot = _snapshot(client, BDO_WORK_ITEM_ID)
     assert snapshot["revision_workspace"]["latest_revision"] is None
     assert runtime.calls == calls_after_failure
-
-
-def _generate_plan(
-    client: TestClient,
-    runtime: PlanningClient,
-    work_item_id: str,
-    *,
-    expected_calls: int,
-) -> dict[str, Any]:
-    snapshot = _snapshot(client, work_item_id)
-    service_card_id = snapshot["service_profile_context"]["service_card_id"]
-    before = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
-    assert before.status_code == 200
-    assert before.json()["status"] == "not_generated", before.json()["blockers"]
-    input_summary = before.json()["input_summary"]
-    assert len(input_summary["source_assessments"]) == 10
-    gsc_assessment = next(
-        item for item in input_summary["source_assessments"] if item["source"] == "gsc"
-    )
-    assert gsc_assessment["status"] == "used"
-    assert gsc_assessment["landing_match_tiers"]
-    assert input_summary["evidence_id_count"] > 0
-    assert runtime.calls == expected_calls
-    if expected_calls == 0:
-        assert not _planning_table_exists()
-    input_digest = before.json()["planning_input_digest"]
-    unknown = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-proposals",
-        json=_generation_request("ekologus_service_unknown", input_digest),
-    )
-    assert unknown.status_code == 422
-    assert unknown.json()["blockers"][0]["code"] == "unknown_service_card"
-    stale = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-proposals",
-        json=_generation_request(service_card_id, "0" * 64),
-    )
-    assert stale.status_code == 409
-    assert stale.json()["status"] == "stale"
-    assert stale.json().get("planning_input_digest") in {None, input_digest}
-    created = _post_planning(
-        client,
-        work_item_id,
-        _generation_request(service_card_id, input_digest),
-    )
-    assert created.status_code == 200
-    assert created.json()["status"] in {"ready", "idempotent"}, [
-        (blocker.get("code"), blocker.get("source_codes"), blocker.get("reason"))
-        for blocker in created.json().get("blockers", [])
-    ]
-    assert created.json()["proposal"]["input_schema_version"] == ("wilq_content_planning_input_v7")
-    repeated = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-proposals",
-        json=_generation_request(service_card_id, input_digest),
-    )
-    assert repeated.json()["status"] == "idempotent"
-    assert repeated.json()["proposal"]["proposal_id"] == created.json()["proposal"]["proposal_id"]
-    ready = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
-    assert ready.json()["status"] == "ready"
-    assert ready.json()["proposal"] == created.json()["proposal"]
-    assert ready.json()["planning_workspace"]["proposal"] == created.json()["proposal"]
-    assert ready.json()["planning_workspace"]["scope_current"] is False
-    assert ready.json()["input_summary"] == input_summary
-    return cast(dict[str, Any], created.json()["proposal"])
-
-
-def _post_planning(
-    client: TestClient,
-    work_item_id: str,
-    request: dict[str, str],
-) -> Any:
-    response = client.post(
-        f"/api/content/work-items/{work_item_id}/planning-proposals",
-        json=request,
-    )
-    if response.status_code == 200 and response.json().get("status") == "generating":
-        for _ in range(200):
-            time.sleep(0.05)
-            response = client.get(f"/api/content/work-items/{work_item_id}/planning-proposals")
-            if response.json().get("status") != "generating":
-                break
-    return response
-
-
-def _snapshot(client: TestClient, work_item_id: str) -> dict[str, Any]:
-    del client
-    return cast(dict[str, Any], snapshot_for_work_item_or_404(work_item_id).model_dump())
-
-
-def _initial_draft_request(proposal: dict[str, Any]) -> dict[str, str]:
-    return {
-        "expected_proposal_id": proposal["proposal_id"],
-        "expected_planning_digest": proposal["planning_digest"],
-        "expected_planning_input_digest": proposal["planning_input_digest"],
-        "requested_by": "wilku",
-    }
-
-
-def _generation_request(service_card_id: str, digest: str) -> dict[str, str]:
-    return {
-        "service_card_id": service_card_id,
-        "expected_planning_input_digest": digest,
-        "operator_hint": "Odpowiedz najpierw na najważniejsze pytanie czytelnika.",
-        "requested_by": "wilku",
-    }
-
-
-def generated_proposal_from(payload: dict[str, Any]) -> ContentPlanningProposal:
-    return ContentPlanningProposal.model_validate(payload)
-
-
-def _planning_table_exists() -> bool:
-    path = content_planning_proposal_store().path
-    with sqlite3.connect(path) as connection:
-        row = connection.execute(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
-            ("content_planning_proposals",),
-        ).fetchone()
-    return row is not None
