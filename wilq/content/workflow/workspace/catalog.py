@@ -345,12 +345,20 @@ def build_content_inventory_catalog() -> ContentInventoryCatalogResponse:
     catalog_snapshot_digest = content_inventory_catalog_snapshot_digest(catalog)
     catalog.journal_readiness = build_content_inventory_journal_readiness(
         catalog.items,
-        catalog_coverage_status=cast(
-            Literal["complete", "partial", "unknown"], coverage.status
-        ),
+        catalog_coverage_status=_journal_coverage_status(coverage.status),
         catalog_snapshot_digest=catalog_snapshot_digest,
     )
     return catalog
+
+
+def _journal_coverage_status(status: str) -> Literal["complete", "partial", "unknown"]:
+    # `cast` asserts rather than converts, so an unexpected value would reach
+    # pydantic and crash this public read.
+    if status == "complete":
+        return "complete"
+    if status in {"partial", "truncated"}:
+        return "partial"
+    return "unknown"
 
 
 def _latest_wordpress_inventory_facts() -> list[Any]:

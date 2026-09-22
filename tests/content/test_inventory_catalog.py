@@ -10,6 +10,7 @@ from wilq.content.workflow.decisions.inventory_binding import inventory_decision
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
+    ContentInventoryCoverage,
     bind_content_inventory_item,
     build_content_inventory_catalog,
     inventory_metric_facts,
@@ -205,6 +206,67 @@ def test_inventory_coverage_uses_latest_wordpress_refresh(monkeypatch):
     )
 
     assert catalog_module.build_content_inventory_catalog().coverage.status == "complete"
+
+
+def test_catalog_maps_truncated_and_unexpected_coverage_for_journal_readiness(monkeypatch):
+    row = SimpleNamespace(
+        name="content_object_seen",
+        dimensions={"content_url": "https://www.ekologus.pl/bdo/"},
+        source_connector="wordpress_ekologus",
+        evidence_id="ev_wp_truncated",
+        collected_at=datetime(2026, 7, 18, tzinfo=UTC),
+    )
+    latest_run = SimpleNamespace(
+        mode=SimpleNamespace(value="vendor_read"),
+        status=SimpleNamespace(value="completed"),
+        evidence_ids=[],
+        metric_summary={
+            "inventory_coverage_status": "complete",
+            "sitemap_url_source_count": 1,
+            "sitemap_url_returned_count": 1,
+            "sitemap_url_limit": 1,
+            "sitemap_url_truncated": False,
+            "public_sitemap_url_source_count": 1,
+            "public_sitemap_url_returned_count": 1,
+            "public_sitemap_url_limit": 1,
+            "public_sitemap_url_truncated": True,
+        },
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "metric_store",
+        lambda: SimpleNamespace(
+            list_metric_facts=lambda connector_id, **_kwargs: (
+                [row] if connector_id == "wordpress_ekologus" else []
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        catalog_module,
+        "local_state_store",
+        lambda: SimpleNamespace(
+            list_connector_refresh_runs=lambda connector_id: [latest_run]
+        ),
+    )
+
+    result = build_content_inventory_catalog()
+
+    assert result.status == "blocked"
+    assert result.coverage.public_sitemap_truncated is True
+    assert "Sitemap przekroczył limit" in result.coverage.caveat
+    assert result.journal_readiness is not None
+    assert result.journal_readiness.catalog_coverage_status == "partial"
+
+    monkeypatch.setattr(
+        catalog_module,
+        "_inventory_coverage",
+        lambda: ContentInventoryCoverage(status="unexpected"),
+    )
+
+    unexpected = build_content_inventory_catalog()
+
+    assert unexpected.journal_readiness is not None
+    assert unexpected.journal_readiness.catalog_coverage_status == "unknown"
 
 
 def test_inventory_catalog_uses_only_latest_search_refresh_metrics(monkeypatch):
