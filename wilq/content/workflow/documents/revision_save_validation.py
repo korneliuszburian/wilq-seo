@@ -43,6 +43,15 @@ def validate_revision_sections(
     draft_package = snapshot.draft_package.draft_package_result.draft_package
     if draft_package is None:
         return RevisionValidationViolation(422, "Brakuje pakietu sekcji do zapisu wersji.")
+    for section in request.sections:
+        if section.content_html != content_html_from_markdown(section.body_markdown):
+            return RevisionValidationViolation(
+                422,
+                (
+                    "HTML sekcji zapisu musi dokładnie wynikać z jej Markdownu; "
+                    "użyj korekty canonical_html_alignment."
+                ),
+            )
     request_headings = [section.heading for section in request.sections]
     # A current v2 child edits the exact immutable document. Its body can have
     # been generated from a richer planning proposal than the legacy editor

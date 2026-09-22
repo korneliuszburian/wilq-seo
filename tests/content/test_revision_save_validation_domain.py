@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
+from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
 from wilq.content.workflow.documents import revision_save_validation as domain
+from wilq.content.workflow.documents.content_html import content_html_from_markdown
+from wilq.content.workflow.documents.revisions import ContentDraftRevisionSection
 
 ROUTER_SOURCE = (
     Path(__file__).resolve().parents[2]
@@ -30,3 +34,59 @@ def test_router_delegates_instead_of_reimplementing() -> None:
     assert "validate_revision_sections(" in source
     assert "validate_canonical_html_alignment(" in source
     assert "validate_review_evidence(" in source
+
+
+def test_ordinary_save_requires_canonical_html_alignment() -> None:
+    body_markdown = "A"
+    section = ContentDraftRevisionSection(
+        section_id="section-1",
+        heading="Sekcja",
+        body_markdown=body_markdown,
+        content_html="<p>B</p>",
+        evidence_ids=["ev-1"],
+    )
+    request = ContentDraftRevisionSaveRequest(
+        title="Dokument",
+        sections=[section],
+        created_by="wilku",
+    )
+    snapshot = SimpleNamespace(
+        draft_package=SimpleNamespace(
+            draft_package_result=SimpleNamespace(
+                draft_package=SimpleNamespace(
+                    sections=[
+                        SimpleNamespace(heading=section.heading, evidence_ids=section.evidence_ids)
+                    ]
+                )
+            )
+        )
+    )
+
+    mismatch = domain.validate_revision_sections(
+        request,
+        snapshot,
+        latest_revision=None,
+        revision_context_current=False,
+    )
+    assert mismatch is not None
+    assert mismatch.status_code == 422
+    assert "canonical_html_alignment" in mismatch.detail
+
+    aligned_request = request.model_copy(
+        update={
+            "sections": [
+                section.model_copy(
+                    update={"content_html": content_html_from_markdown(body_markdown)}
+                )
+            ]
+        }
+    )
+    assert (
+        domain.validate_revision_sections(
+            aligned_request,
+            snapshot,
+            latest_revision=None,
+            revision_context_current=False,
+        )
+        is None
+    )
