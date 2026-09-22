@@ -17,3 +17,5 @@ class ContentDraftRevisionBinding(BaseModel):
     planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     approval_decision_id: str = Field(min_length=1)
     final_canonical_url: str = Field(min_length=1)
+    research_packet_id: str | None = Field(default=None, min_length=1)
+    research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")

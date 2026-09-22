@@ -61,6 +61,8 @@ def build_revision_bound_wordpress_draft_handoff(
         planning_digest=revision.planning_digest,
         approval_decision_id=approval.decision_id,
         final_canonical_url=revision.final_canonical_url,
+        research_packet_id=revision.research_packet_id,
+        research_packet_digest=revision.research_packet_digest,
     )
     revision_evidence = _revision_evidence_ids(revision)
     return ContentWordPressDraftHandoffResult(

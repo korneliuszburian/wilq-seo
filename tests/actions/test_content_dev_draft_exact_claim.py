@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
+import wilq.content.workflow.target.dev_draft_action as dev_draft_action
+from tests.content.packet_plan_draft_fixtures import build_packet_preparation_case
 from wilq.actions.apply_lifecycle import ApplyDependencies, apply_action
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionBoundary,
@@ -14,10 +16,12 @@ from wilq.content.handoff.wordpress_execution import (
 )
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.documents.revisions import (
+    ContentDraftRevision,
     ContentDraftRevisionAppendCommand,
     ContentDraftRevisionReviewCommand,
     ContentDraftRevisionSection,
 )
+from wilq.content.workflow.research_packet_preparation import prepare_content_research_packet
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
@@ -117,6 +121,8 @@ def _action(action_id: str, binding: ContentDraftRevisionBinding) -> ActionObjec
                 "work_item_id": binding.work_item_id,
                 "revision_id": binding.revision_id,
                 "revision_digest": binding.content_digest,
+                "research_packet_id": None,
+                "research_packet_digest": None,
             },
             "wordpress_draft_binding": binding.model_dump(mode="json"),
         },
@@ -357,3 +363,146 @@ def test_invalid_dev_draft_action_chain_stops_before_claim_and_adapter(
     ]
     assert claim_calls == []
     assert adapter_calls == []
+
+
+def _packet_bound_revision_and_binding(packet_case, packet):
+    revision = ContentDraftRevision.model_construct(
+        revision_id="revision_packet_apply",
+        work_item_id=packet_case.identity.current_work_item_id,
+        revision_number=1,
+        content_digest="a" * 64,
+        draft_package_id="draft_package_packet_apply",
+        draft_package_digest="b" * 64,
+        planning_digest="c" * 64,
+        research_packet_id=packet.packet_id,
+        research_packet_digest=packet.packet_digest,
+        final_canonical_url=packet_case.identity.public_url,
+        title="Packet-bound revision",
+        sections=[
+            ContentDraftRevisionSection(
+                heading="Zakres",
+                body_markdown="Treść exact.",
+                evidence_ids=["ev_packet_apply"],
+            )
+        ],
+        created_by="operator_test",
+    )
+    return revision, ContentDraftRevisionBinding(
+        work_item_id=revision.work_item_id,
+        handoff_id=f"wordpress_draft_handoff_{revision.work_item_id}_{revision.revision_id}",
+        revision_id=revision.revision_id,
+        content_digest=revision.content_digest,
+        draft_package_id=revision.draft_package_id,
+        draft_package_digest=revision.draft_package_digest,
+        planning_digest=revision.planning_digest,
+        approval_decision_id="decision_packet_apply",
+        final_canonical_url=revision.final_canonical_url,
+        research_packet_id=packet.packet_id,
+        research_packet_digest=packet.packet_digest,
+    )
+
+
+def _packet_bound_action(action_id, binding, packet):
+    action = _action(action_id, binding)
+    action.payload["content_target_draft_binding"].update(
+        {
+            "research_packet_id": packet.packet_id,
+            "research_packet_digest": packet.packet_digest,
+        }
+    )
+    return action
+
+
+def test_dev_draft_apply_blocks_when_revision_research_packet_was_superseded(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    packet_case = build_packet_preparation_case(tmp_path)
+    prepared = prepare_content_research_packet(
+        store=packet_case.store,
+        snapshot=packet_case.snapshot,
+        planning_input=packet_case.planning_input,
+    )
+    assert prepared.packet is not None
+    assert prepared.packet.status == "exact_current"
+    packet = prepared.packet
+    revision, binding = _packet_bound_revision_and_binding(packet_case, packet)
+    action = _packet_bound_action("act_content_dev_draft_packet_blocked", binding, packet)
+
+    class EvidenceStore:
+        def load_draft_revision_state(self, _work_item_id):
+            return SimpleNamespace(latest_revision=revision)
+
+        def __getattr__(self, name):
+            return getattr(packet_case.store, name)
+
+    evidence_store = EvidenceStore()
+    packet_case.store.source_pack = packet_case.source_pack.model_copy(
+        update={
+            "binding_id": "content_source_pack_binding_superseding",
+            "binding_digest": "e" * 64,
+        }
+    )
+    monkeypatch.setattr(dev_draft_action, "content_workflow_store", lambda: evidence_store)
+
+    claim_calls: list[str] = []
+    adapter_calls: list[str] = []
+
+    def claim(*_args, **_kwargs):
+        claim_calls.append("claim")
+        return "acquired"
+
+    dependencies = ApplyDependencies(
+        review_gate=lambda current: current.review_gate,
+        wordpress_apply_capability=lambda *_args: (None, []),
+        mutation_adapter=lambda _action: "content_dev_draft_execution_boundary",
+        execute_mutation_adapter=lambda *_args: (adapter_calls.append("adapter"), ({}, []))[1],
+        connector_status=lambda _connector: SimpleNamespace(configured=True),
+        impact_status=lambda _event: "checked",
+        wordpress_apply_claim=claim,
+        finish_wordpress_apply_claim=lambda *_args, **_kwargs: None,
+        status_label=lambda status: status,
+        audit_event_label=lambda event: event,
+        content_snapshot_loader=lambda _work_item_id: packet_case.snapshot,
+    )
+    result = apply_action(
+        action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=binding,
+        ),
+        dependencies=dependencies,
+    )
+
+    assert result.applied is False
+    assert [blocker.code for blocker in result.wordpress_revision_blockers] == [
+        "research_packet_missing"
+    ]
+    assert result.wordpress_revision_blockers[0].label == "Research packet nie jest aktualny"
+    assert claim_calls == []
+    assert adapter_calls == []
+
+    packet_case.store.source_pack = packet_case.source_pack
+
+    def current_packet(*, packet, snapshot_loader, **_kwargs):
+        assert packet is prepared.packet
+        assert snapshot_loader(packet.current_work_item_id) is packet_case.snapshot
+        return SimpleNamespace(status="current", blocker=None)
+
+    monkeypatch.setattr(dev_draft_action, "revalidate_content_research_packet", current_packet)
+    current_action = _packet_bound_action("act_content_dev_draft_packet_current", binding, packet)
+    current_result = apply_action(
+        current_action,
+        ActionApplyRequest(
+            confirm=True,
+            confirmed_by="operator_test",
+            wordpress_draft=binding,
+        ),
+        dependencies=dependencies,
+    )
+
+    assert current_result.applied is True
+    assert current_result.wordpress_revision_blockers == []
+    assert claim_calls == ["claim"]
+    assert adapter_calls == ["adapter"]

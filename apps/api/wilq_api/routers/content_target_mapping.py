@@ -179,6 +179,8 @@ def _approved_revision_binding(
         planning_digest=revision.planning_digest,
         approval_decision_id=review.decision_id,
         final_canonical_url=revision.final_canonical_url,
+        research_packet_id=revision.research_packet_id,
+        research_packet_digest=revision.research_packet_digest,
     )
 
 

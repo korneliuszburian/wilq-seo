@@ -23,6 +23,7 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
+from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -68,6 +69,7 @@ class ApplyDependencies:
     finish_wordpress_apply_claim: Callable[..., None]
     status_label: Callable[[str], str]
     audit_event_label: Callable[[AuditEvent], AuditEvent]
+    content_snapshot_loader: CurrentSnapshotLoader | None = None
 
 
 @dataclass(frozen=True)
@@ -91,7 +93,12 @@ def apply_action(
 ) -> ActionApplyResult:
     """Run the canonical fail-closed apply lifecycle and preserve mutation audit."""
     errors: list[str] = []
-    resolved = _resolve_apply_capability(action, request, dependencies.wordpress_apply_capability)
+    resolved = _resolve_apply_capability(
+        action,
+        request,
+        dependencies.wordpress_apply_capability,
+        content_snapshot_loader=dependencies.content_snapshot_loader,
+    )
     wordpress_revision_blockers = resolved.blockers
     errors.extend(f"{blocker.label}: {blocker.reason}" for blocker in wordpress_revision_blockers)
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
@@ -217,6 +224,8 @@ def _resolve_apply_capability(
     action: ActionObject,
     request: ActionApplyRequest | None,
     wordpress_apply_capability: WordPressApplyCapability,
+    *,
+    content_snapshot_loader: CurrentSnapshotLoader | None = None,
 ) -> _ApplyCapability:
     if (
         action.payload.get("action_type")
@@ -231,7 +240,11 @@ def _resolve_apply_capability(
         # This append-only receipt has no WordPress or vendor mutation.
         return _ApplyCapability(None, [], is_new_page=False)
     if action.payload.get("action_type") == CONTENT_DEV_DRAFT_ACTION_TYPE:
-        binding, blockers = content_dev_draft_apply_binding(action, request)
+        binding, blockers = content_dev_draft_apply_binding(
+            action,
+            request,
+            snapshot_loader=content_snapshot_loader,
+        )
         return _ApplyCapability(binding, blockers, is_new_page=False)
     if action.payload.get("action_type") == CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE:
         capability, blockers = new_page_apply_binding(action, request)

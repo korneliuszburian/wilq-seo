@@ -31,6 +31,7 @@ from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
 from wilq.content.workflow.policies import (
     wordpress_draft_writes_enabled as _wordpress_draft_writes_enabled,
 )
+from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.schemas import (
     ActionApplyRequest,
@@ -54,6 +55,68 @@ class WordPressDraftApplyCapability:
     draft_package: ContentDraftPackage
     write_authorization: ContentWordPressDraftWriteAuthorization
     section_overrides: list[ContentWordPressDraftSectionOverride]
+
+
+def wordpress_draft_current_snapshot_loader(
+    *,
+    workflow_store: Any | None = None,
+) -> CurrentSnapshotLoader:
+    """Load the same current work-item snapshot used by WordPress apply."""
+
+    from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+    from wilq.content.workflow.store.store import content_workflow_store
+
+    active_store = workflow_store if workflow_store is not None else content_workflow_store()
+    diagnostics: Any | None = None
+
+    def load(work_item_id: str) -> ContentWorkItemWorkflowSnapshotResponse:
+        nonlocal diagnostics
+        if diagnostics is None:
+            diagnostics = build_content_diagnostics_cached()
+        revision_state, planning_decisions = _load_wordpress_draft_snapshot_inputs(
+            active_store,
+            work_item_id,
+        )
+        snapshot = _build_wordpress_draft_current_snapshot(
+            diagnostics,
+            work_item_id,
+            revision_state=revision_state,
+            planning_decisions=planning_decisions,
+        )
+        if snapshot is None:
+            raise LookupError("Work item nie jest dostępny w bieżącym snapshotcie treści.")
+        return snapshot
+
+    return load
+
+
+def _build_wordpress_draft_current_snapshot(
+    diagnostics: Any,
+    work_item_id: str,
+    *,
+    revision_state: Any,
+    planning_decisions: list[Any],
+) -> ContentWorkItemWorkflowSnapshotResponse | None:
+    from wilq.content.workflow.workspace.api import (
+        build_content_work_item_diagnostics_snapshot_response_for_work_item,
+    )
+
+    return build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        work_item_id,
+        revision_state=revision_state,
+        planning_decisions=planning_decisions,
+    )
+
+
+def _load_wordpress_draft_snapshot_inputs(
+    workflow_store: Any,
+    work_item_id: str,
+) -> tuple[Any, list[Any]]:
+    return (
+        workflow_store.load_draft_revision_state(work_item_id),
+        workflow_store.load_planning_decisions(work_item_id),
+    )
 
 
 def wordpress_draft_apply_capability(
@@ -136,15 +199,13 @@ def _load_wordpress_draft_apply_snapshot(
 ]:
     from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
     from wilq.content.workflow.store.store import content_workflow_store
-    from wilq.content.workflow.workspace.api import (
-        build_content_work_item_diagnostics_snapshot_response_for_work_item,
-    )
-
     diagnostics = build_content_diagnostics_cached()
     workflow_store = content_workflow_store()
-    revision_state = workflow_store.load_draft_revision_state(binding.work_item_id)
-    planning_decisions = workflow_store.load_planning_decisions(binding.work_item_id)
-    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+    revision_state, planning_decisions = _load_wordpress_draft_snapshot_inputs(
+        workflow_store,
+        binding.work_item_id,
+    )
+    snapshot = _build_wordpress_draft_current_snapshot(
         diagnostics,
         binding.work_item_id,
         revision_state=revision_state,
@@ -166,6 +227,10 @@ def _load_wordpress_draft_apply_snapshot(
     )
     if generated_planning_proposal is None:
         return None, blockers
+    from wilq.content.workflow.workspace.api import (
+        build_content_work_item_diagnostics_snapshot_response_for_work_item,
+    )
+
     snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
         diagnostics,
         binding.work_item_id,

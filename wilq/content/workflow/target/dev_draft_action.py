@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -13,7 +13,12 @@ from wilq.content.workflow.documents.revision_binding import ContentDraftRevisio
 from wilq.content.workflow.pipeline_steps.stage_write_readiness import (
     wordpress_draft_binding_from_audit_event,
 )
-from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.research_packet_current import (
+    CurrentSnapshotLoader,
+    revalidate_content_research_packet,
+)
+from wilq.content.workflow.research_packet_preparation import ResearchPacketPreparationStore
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.content.workflow.target.acf_clone_projection import (
     ContentAcfClonePlan,
     ContentAcfCloneReplacement,
@@ -49,6 +54,9 @@ CONTENT_DEV_DRAFT_ACTION_CREATED_EVENT = "content_dev_draft_action_created"
 def content_dev_draft_apply_binding(
     action: ActionObject,
     request: ActionApplyRequest | None,
+    *,
+    store: ResearchPacketPreparationStore | None = None,
+    snapshot_loader: CurrentSnapshotLoader | None = None,
 ) -> tuple[
     ContentDraftRevisionBinding | None,
     list[ActionWordPressDraftApplyBlocker],
@@ -96,7 +104,131 @@ def content_dev_draft_apply_binding(
     )
     if chain is None:
         return None, blockers
+    raw_content_binding = action.payload.get("content_target_draft_binding")
+    if not isinstance(raw_content_binding, dict):
+        return None, [
+            _research_packet_apply_blocker(
+                "research_packet_conflict",
+                "Akcja szkicu dev nie ma exact bindingu dokumentu do sprawdzenia.",
+            )
+        ]
+    packet_id = raw_content_binding.get("research_packet_id")
+    packet_digest = raw_content_binding.get("research_packet_digest")
+    if packet_id is None and packet_digest is None:
+        return binding, []
+    if not isinstance(packet_id, str) or not isinstance(packet_digest, str):
+        return None, [
+            _research_packet_apply_blocker(
+                "research_packet_conflict",
+                "Akcja szkicu dev ma niekompletne powiązanie z research packetem.",
+            )
+        ]
+    evidence_blocker = _content_dev_draft_research_packet_blocker(
+        binding,
+        store=store if store is not None else content_workflow_store(),
+        snapshot_loader=snapshot_loader,
+        packet_id=packet_id,
+        packet_digest=packet_digest,
+    )
+    if evidence_blocker is not None:
+        return None, [evidence_blocker]
     return binding, []
+
+
+def _content_dev_draft_research_packet_blocker(
+    binding: ContentDraftRevisionBinding,
+    *,
+    store: ResearchPacketPreparationStore,
+    snapshot_loader: CurrentSnapshotLoader | None,
+    packet_id: str,
+    packet_digest: str,
+) -> ActionWordPressDraftApplyBlocker | None:
+    try:
+        revision_state = cast(ContentWorkflowStore, store).load_draft_revision_state(
+            binding.work_item_id
+        )
+    except Exception:
+        return _research_packet_apply_blocker(
+            "research_packet_blocked",
+            "Nie można odczytać bieżącej rewizji i jej research packetu przed apply.",
+        )
+    revision = revision_state.latest_revision
+    if revision is None or (
+        revision.revision_id != binding.revision_id
+        or revision.content_digest != binding.content_digest
+    ):
+        return None
+    if (
+        revision.research_packet_id != packet_id
+        or revision.research_packet_digest != packet_digest
+    ):
+        return _research_packet_apply_blocker(
+            "research_packet_conflict",
+            "ID albo digest research packetu nie odpowiadają bieżącej rewizji.",
+        )
+    try:
+        packet = store.load_content_research_packet(packet_id)
+    except Exception:
+        return _research_packet_apply_blocker(
+            "research_packet_blocked",
+            "Nie można odczytać research packetu związanego z zatwierdzoną rewizją.",
+        )
+    if packet is None:
+        return _research_packet_apply_blocker(
+            "research_packet_missing",
+            "Zatwierdzona rewizja wskazuje research packet, którego WILQ nie może odczytać.",
+        )
+    if (
+        packet.packet_id != packet_id
+        or packet.packet_digest != packet_digest
+        or packet.current_work_item_id != revision.work_item_id
+    ):
+        return _research_packet_apply_blocker(
+            "research_packet_conflict",
+            "ID albo digest research packetu nie odpowiadają dokładnej rewizji.",
+        )
+    if snapshot_loader is None:
+        from wilq.actions.wordpress_mutation_requirements import (
+            wordpress_draft_current_snapshot_loader,
+        )
+
+        snapshot_loader = wordpress_draft_current_snapshot_loader(workflow_store=store)
+    try:
+        current = revalidate_content_research_packet(
+            store=store,
+            packet=packet,
+            snapshot_loader=snapshot_loader,
+        )
+    except Exception:
+        return _research_packet_apply_blocker(
+            "research_packet_blocked",
+            "Nie można odtworzyć bieżącego kontekstu research packetu przed apply.",
+        )
+    if current.status == "current":
+        return None
+    blocker = current.blocker
+    if blocker is None:
+        return _research_packet_apply_blocker(
+            "research_packet_blocked",
+            "Research packet nie ma potwierdzonego bieżącego stanu przed apply.",
+        )
+    code = {
+        "source_pack_binding_missing": "research_packet_missing",
+        "packet_conflict": "research_packet_conflict",
+    }.get(blocker.reason, "research_packet_blocked")
+    return _research_packet_apply_blocker(code, blocker.next_step_pl)
+
+
+def _research_packet_apply_blocker(
+    code: str,
+    next_step: str,
+) -> ActionWordPressDraftApplyBlocker:
+    return ActionWordPressDraftApplyBlocker(
+        code=code,
+        label="Research packet nie jest aktualny",
+        reason=next_step,
+        next_step=next_step,
+    )
 
 
 class ContentTargetDraftActionCommand(BaseModel):
@@ -181,6 +313,8 @@ def create_content_target_draft_action(
         "work_item_id": preview.work_item_id,
         "revision_id": preview.revision.revision_id,
         "revision_digest": preview.revision.content_digest,
+        "research_packet_id": wordpress_draft_binding.research_packet_id,
+        "research_packet_digest": wordpress_draft_binding.research_packet_digest,
         "target_contract_digest": preview.target.target_contract_digest,
         "confirmation_id": preview.confirmation.confirmation_id,
         "confirmation_digest": preview.confirmation.confirmation_digest,
@@ -228,7 +362,7 @@ def create_content_target_draft_action(
             "connector": "wordpress_ekologus",
             "preview_contract": CONTENT_DEV_DRAFT_ACTION_CONTRACT,
             "mode": "dev_draft_only",
-            "content_target_draft_binding": binding,
+        "content_target_draft_binding": binding,
             "wordpress_draft_binding": wordpress_draft_binding.model_dump(mode="json"),
             "draft_payload": draft_payload,
             "payload_preview": [payload_preview],
