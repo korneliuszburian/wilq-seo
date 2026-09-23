@@ -357,6 +357,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_current_page_identity_v2.py",
     ),
+    ("current-source-fact-candidates-v2", "exact-keep-scoped-selection"): (
+        "scripts/test.sh",
+        "tests/content/test_source_fact_candidate_v2.py::"
+        "test_public_v2_source_fact_candidates_require_exact_current_keep",
+    ),
 }
 
 
@@ -454,6 +459,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             == ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning")
             else ("tests/content/test_current_page_identity_v2.py",)
             if key == ("current-page-identity-v2", "receipt-backed-exact-current")
+            else ("tests/content/test_source_fact_candidate_v2.py",)
+            if key == ("current-source-fact-candidates-v2", "exact-keep-scoped-selection")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
@@ -470,6 +477,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),
+            ("current-source-fact-candidates-v2", "exact-keep-scoped-selection"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-disposition", "non-keep-candidate-blocked"),

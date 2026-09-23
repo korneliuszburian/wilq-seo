@@ -373,9 +373,12 @@ def _exact_input_blocker(
 
 
 def _service_binding(
-    identity: ContentDeliveryIdentityBinding,
+    *,
+    page_url: str,
+    canonical_path: str,
     facts: tuple[ContentSourceFact, ...],
     cards: tuple[ContentKnowledgeCard, ...],
+    binding_evidence_ids: tuple[str, ...] = (),
 ) -> tuple[
     ContentSourceFactAuthorityServiceBinding,
     ContentKnowledgeCard | None,
@@ -387,7 +390,7 @@ def _service_binding(
         for card in cards
         if card.card_type == "service"
         and any(
-            _same_exact_public_url(identity.public_url, url)
+            _same_exact_public_url(page_url, url)
             for url in card.service_binding_urls
         )
     )
@@ -395,14 +398,14 @@ def _service_binding(
         fact
         for fact in facts
         if any(
-            content_normalized_path(path).casefold() == identity.canonical_path.casefold()
+            content_normalized_path(path).casefold() == canonical_path.casefold()
             for path in fact.applicable_canonical_paths
         )
     )
     if len(exact_cards) > 1:
         return (
             ContentSourceFactAuthorityServiceBinding(
-                status="ambiguous", binding_url=identity.public_url
+                status="ambiguous", binding_url=page_url
             ),
             None,
             path_facts,
@@ -422,7 +425,7 @@ def _service_binding(
             card_evidence_ids=tuple(sorted(set(card.evidence_ids))),
             card_source_connectors=tuple(sorted(set(card.source_connectors))),
             card_freshness=card.freshness,
-            binding_url=identity.public_url,
+            binding_url=page_url,
         )
         return (
             binding,
@@ -438,14 +441,14 @@ def _service_binding(
     if card is None and not path_facts:
         return (
             ContentSourceFactAuthorityServiceBinding(
-                status="missing", binding_url=identity.public_url
+                status="missing", binding_url=page_url
             ),
             None,
             path_facts,
             _candidate_blocker(
                 "service_binding",
                 "service_binding_missing",
-                identity.inventory_evidence_ids,
+                binding_evidence_ids,
                 "Pozyskaj exact service/page scope przed wyborem source factów.",
             ),
         )
@@ -461,7 +464,7 @@ def _service_binding(
             if card is None
             else tuple(sorted(set(card.source_connectors))),
             card_freshness=None if card is None else card.freshness,
-            binding_url=identity.public_url,
+            binding_url=page_url,
         ),
         card,
         path_facts,
@@ -472,14 +475,14 @@ def _service_binding(
 def _scoped_candidates(
     facts: tuple[ContentSourceFact, ...],
     *,
-    identity: ContentDeliveryIdentityBinding,
+    canonical_path: str,
     card: ContentKnowledgeCard | None,
 ) -> tuple[list[ContentSourceFactAuthorityCandidate], list[ContentSourceFactAuthorityCandidate]]:
     scoped: dict[str, tuple[ContentSourceFact, _CandidateOrigin]] = {}
     for fact in facts:
         origin: _CandidateOrigin | None = None
         if any(
-            content_normalized_path(path).casefold() == identity.canonical_path.casefold()
+            content_normalized_path(path).casefold() == canonical_path.casefold()
             for path in fact.applicable_canonical_paths
         ):
             origin = "exact_canonical_path"
@@ -533,6 +536,60 @@ def _scoped_candidates(
     return eligible, review_required
 
 
+def select_content_source_fact_candidates(
+    facts: tuple[ContentSourceFact, ...],
+    cards: tuple[ContentKnowledgeCard, ...],
+    *,
+    page_url: str,
+    canonical_path: str,
+    binding_evidence_ids: tuple[str, ...] = (),
+) -> tuple[
+    list[ContentSourceFactAuthorityCandidate],
+    list[ContentSourceFactAuthorityCandidate],
+    ContentSourceFactAuthorityServiceBinding,
+    ContentSourceFactAuthorityBlocker | None,
+]:
+    """Select facts through the shared pure exact-path/service-card kernel."""
+
+    binding, card, _path_facts, blocker = _service_binding(
+        page_url=page_url,
+        canonical_path=canonical_path,
+        facts=facts,
+        cards=cards,
+        binding_evidence_ids=binding_evidence_ids,
+    )
+    if blocker is not None:
+        return [], [], binding, blocker
+    eligible, review_required = _scoped_candidates(
+        facts,
+        canonical_path=canonical_path,
+        card=card,
+    )
+    return eligible, review_required, binding, None
+
+
+def _exact_projection_fields(
+    identity_binding_id: str,
+    identity: ContentDeliveryIdentityBinding,
+    classification: ContentProductionClassificationProjection,
+    binding: ContentSourceFactAuthorityServiceBinding,
+    registry: ContentSourceFactAuthorityRegistryReceipt,
+) -> dict[str, object]:
+    return {
+        "identity_binding_id": identity_binding_id,
+        "identity_binding_digest": identity.binding_digest,
+        "current_work_item_id": identity.current_work_item_id,
+        "canonical_path": identity.canonical_path,
+        "public_url": identity.public_url,
+        "classification_run_id": classification.run_id,
+        "classification_run_digest": classification.run_digest,
+        "classification_decision_set_digest": classification.decision_set_digest,
+        "classification_source_row_digest": classification.row.source_packet_row_digest,
+        "service_binding": binding,
+        "registry": registry,
+    }
+
+
 def build_content_source_fact_authority_candidate_projection(
     identity_binding_id: str,
     *,
@@ -558,8 +615,12 @@ def build_content_source_fact_authority_candidate_projection(
         )
     assert identity is not None
     assert classification is not None
-    binding, card, _path_facts, blocker = _service_binding(
-        identity, current_facts, current_cards
+    eligible, review_required, binding, blocker = select_content_source_fact_candidates(
+        current_facts,
+        current_cards,
+        page_url=identity.public_url,
+        canonical_path=identity.canonical_path,
+        binding_evidence_ids=identity.inventory_evidence_ids,
     )
     if blocker is not None:
         return _blocked_projection(
@@ -570,22 +631,13 @@ def build_content_source_fact_authority_candidate_projection(
             classification=classification,
             service_binding=binding,
         )
-    eligible, review_required = _scoped_candidates(
-        current_facts, identity=identity, card=card
+    common = _exact_projection_fields(
+        identity_binding_id,
+        identity,
+        classification,
+        binding,
+        registry,
     )
-    common = {
-        "identity_binding_id": identity_binding_id,
-        "identity_binding_digest": identity.binding_digest,
-        "current_work_item_id": identity.current_work_item_id,
-        "canonical_path": identity.canonical_path,
-        "public_url": identity.public_url,
-        "classification_run_id": classification.run_id,
-        "classification_run_digest": classification.run_digest,
-        "classification_decision_set_digest": classification.decision_set_digest,
-        "classification_source_row_digest": classification.row.source_packet_row_digest,
-        "service_binding": binding,
-        "registry": registry,
-    }
     if eligible:
         return ContentSourceFactAuthorityCandidateProjection.model_validate(
             {
