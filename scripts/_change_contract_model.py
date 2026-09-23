@@ -64,6 +64,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/test_audit_complexity.py::test_frozen_growth_gate_accepts_a_shrinking_facade",
     ),
+    ("material-review-ui", "explicit-exact-attestation"): (
+        "scripts/test.sh",
+        "tests/dashboard/test_material_review_ui_runtime.py::"
+        "test_material_review_ui_requires_explicit_attestation_and_safe_source",
+    ),
     ("connector-refresh-recovery", "bodyless-api-and-full-payload-cas"): (
         "scripts/test.sh",
         "tests/connectors/test_connector_refresh_recovery.py",
@@ -492,6 +497,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
         in {
             ("change-contract-gate", "observed-before-state"),
             ("complexity-audit", "shrinking-frozen-facade"),
+            ("material-review-ui", "explicit-exact-attestation"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),

@@ -10,6 +10,7 @@ import { ContentApprovedHtmlPackage } from "./ContentApprovedHtmlPackage";
 import { ContentOperatorJourney } from "./ContentOperatorJourney";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import { ContentDocumentPreparationAction } from "./DocumentCanvasSections/PreparationSection";
+import { CurrentMaterialReviewEntry } from "./DocumentCanvasSections/CurrentMaterialReviewEntry";
 import {
   DevTargetDetails,
   TargetDraftPreviewDetails,
@@ -124,6 +125,9 @@ export function ContentDocumentWorkspaceCanvas({
         <aside className="rounded-2xl border border-line bg-white p-4 shadow-sm" aria-label="Szczegóły i dev">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Szczegóły i dev</p>
           <StatusCard label="Materiał obecnej strony" value={workspace.source_snapshot.status_label} />
+          {workspace.source_snapshot.url ? (
+            <CurrentMaterialReviewEntry workItemId={workspace.work_item_id} />
+          ) : null}
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
               workItemId={workspace.work_item_id}

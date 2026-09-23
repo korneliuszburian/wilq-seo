@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ActionObject } from "../lib/api";
 import * as actionApi from "../lib/api";
 import { ActionFocus, ActionReviewGatePanel } from "./ActionPanels";
+import { ActionHumanReviewControls } from "./ActionPanels/ReviewControls";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -26,6 +27,93 @@ describe("ActionPanels", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it("requires an explicit full-material check before approving current material", async () => {
+    const review = vi.spyOn(actionApi, "reviewAction").mockImplementation(
+      () => new Promise<never>(() => {})
+    );
+    const action = {
+      id: "act_content_material_review_exact",
+      payload: {
+        action_type: "content_current_material_review_v2",
+        material_review_preview: {
+          public_url: "https://www.ekologus.pl/oferta/bdo/"
+        }
+      },
+      review_gate: {
+        status: "ready_to_apply",
+        status_label: "gotowe",
+        operator_checklist: ["validate_action_object", "human_review_before_apply"],
+        apply_blockers: []
+      }
+    } as unknown as ActionObject;
+
+    renderWithQueryClient(<ActionHumanReviewControls action={action} />);
+    const save = screen.getByRole("button", { name: "Zapisz przegląd" });
+    expect(save).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Otwórz pełny materiał strony" })).toHaveAttribute(
+      "href",
+      "https://www.ekologus.pl/oferta/bdo/"
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Przeczytałem pełny materiał/ }));
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+    await waitFor(() => {
+      expect(review).toHaveBeenCalledWith(action.id, expect.objectContaining({
+        outcome: "approved_for_prepare",
+        checked_items: ["reviewed_full_material"]
+      }));
+    });
+  });
+
+  it("uses the exact public source-host policy for material review links", () => {
+    const actionForUrl = (url: string) => ({
+      id: "act_content_material_review_exact",
+      payload: {
+        action_type: "content_current_material_review_v2",
+        material_review_preview: { public_url: url }
+      },
+      review_gate: {
+        status: "ready_to_apply",
+        status_label: "gotowe",
+        operator_checklist: [],
+        apply_blockers: []
+      }
+    } as unknown as ActionObject);
+
+    for (const url of [
+      "https://www.ekologus.pl/oferta/bdo/?x=1",
+      "https://www.ekologus.pl/oferta/bdo/#plan",
+      "https://www.ekologus.pl:443/oferta/bdo/",
+      "https://www.ekologus.pl/oferta/bdo;mode",
+      "https://www.ekologus.pl/oferta/\u0001bdo/",
+      "https://www.ekologus.pl/oferta/\u007fbdo/"
+    ]) {
+      const view = renderWithQueryClient(<ActionHumanReviewControls action={actionForUrl(url)} />);
+      expect(screen.queryByRole("link", { name: "Otwórz pełny materiał strony" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Zapisz przegląd" })).toBeDisabled();
+      view.unmount();
+    }
+
+    renderWithQueryClient(
+      <ActionHumanReviewControls action={actionForUrl("https://sklep.ekologus.pl/oferta/bdo/")} />
+    );
+    expect(screen.getByRole("link", { name: "Otwórz pełny materiał strony" })).toHaveAttribute(
+      "href",
+      "https://sklep.ekologus.pl/oferta/bdo/"
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Przeczytałem pełny materiał/ }));
+    expect(screen.getByRole("button", { name: "Zapisz przegląd" })).toBeEnabled();
+    cleanup();
+
+    renderWithQueryClient(
+      <ActionHumanReviewControls action={actionForUrl("https://www.ekologus.pl/oferta/bdo;")} />
+    );
+    expect(screen.getByRole("link", { name: "Otwórz pełny materiał strony" })).toHaveAttribute(
+      "href",
+      "https://www.ekologus.pl/oferta/bdo;"
+    );
   });
 
   it("threads the exact dev-draft binding through every action control", async () => {

@@ -15,6 +15,7 @@ import {
   postContentRegulatorySourceReview,
   postContentWorkItemLineageCleanup,
   postContentWorkItemInitialDraft,
+  prepareContentMaterialReviewAction,
   previewAction
 } from "./api";
 
@@ -139,6 +140,37 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("parses exact material review preview and typed conflict on the public path", async () => {
+    let calls = 0;
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/work-items/content_work_item_bdo/material-review-action/preview"
+      );
+      const first = ++calls === 1;
+      return new Response(JSON.stringify(first ? {
+        response_type: "content_material_review_action_v2",
+        status: "preview_ready",
+        action_id: "act_content_material_review_exact",
+        external_write_attempted: false,
+        generation_allowed: false
+      } : {
+        response_type: "content_material_review_action_v2",
+        status: "blocked",
+        blocker_code: "material_review_source_stale",
+        blocker_owner: "WILQ WordPress connector",
+        safe_next_step: "Odśwież odczyt.",
+        external_write_attempted: false,
+        generation_allowed: false
+      }), { status: first ? 200 : 409, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const ready = await prepareContentMaterialReviewAction("content_work_item_bdo");
+    expect(ready.status).toBe("preview_ready");
+    const blocked = await prepareContentMaterialReviewAction("content_work_item_bdo");
+    expect(blocked.status).toBe("blocked");
+  });
+
   it("rejects a research packet when its server digest does not verify", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       void url;
