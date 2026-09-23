@@ -49,6 +49,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     validate_delivery_identity_authority_action_payload,
 )
+from wilq.content.workflow.material_review_action_v2 import (
+    MATERIAL_REVIEW_ACTION_V2_TYPE,
+    validate_current_material_review_action_v2_payload,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     validate_research_fact_promotion_action_payload,
@@ -108,6 +112,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE: (
         "Disposition bieżącej strony v2",
         validate_current_page_disposition_v2_payload,
+    ),
+    MATERIAL_REVIEW_ACTION_V2_TYPE: (
+        "Review materiału WordPress",
+        validate_current_material_review_action_v2_payload,
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
         "Identity treści",

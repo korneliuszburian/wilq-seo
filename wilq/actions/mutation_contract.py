@@ -14,6 +14,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
 )
+from wilq.content.workflow.material_review_action_v2 import (
+    MATERIAL_REVIEW_ACTION_V2_ADAPTER,
+    MATERIAL_REVIEW_ACTION_V2_TYPE,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
@@ -45,6 +49,12 @@ def mutation_apply_contract(
 
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
+    if (
+        action.payload.get("action_type") == MATERIAL_REVIEW_ACTION_V2_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return MATERIAL_REVIEW_ACTION_V2_ADAPTER
     if (
         action.payload.get("action_type") == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
         and action.payload.get("local_authority_only") is True

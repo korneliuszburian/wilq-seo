@@ -348,6 +348,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_material_review.py::"
         "test_public_material_review_routes_are_immutable_idempotent_and_drift_aware",
     ),
+    ("current-material-review-action-v2", "exact-reviewed-material"): (
+        "scripts/test.sh",
+        "tests/content/test_material_review_action_v2.py::"
+        "test_public_action_lifecycle_approves_only_exact_reviewed_current_material",
+    ),
     ("current-page-evidence", "stable-per-url-material-meaning"): (
         "scripts/test.sh",
         "tests/content/test_current_page_evidence.py::"
@@ -494,6 +499,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),
+            ("current-material-review-action-v2", "exact-reviewed-material"),
             ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),

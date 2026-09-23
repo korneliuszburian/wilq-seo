@@ -14,6 +14,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
     execute_delivery_identity_authority,
 )
+from wilq.content.workflow.material_review_action_v2 import (
+    MATERIAL_REVIEW_ACTION_V2_ADAPTER,
+    execute_current_material_review_action_v2,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
     ContentResearchFactPromotionExecutionContext,
@@ -30,6 +34,7 @@ from wilq.storage.local_state import LocalStateStore
 
 _LOCAL_ADAPTERS = frozenset(
     {
+        MATERIAL_REVIEW_ACTION_V2_ADAPTER,
         SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
         CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
         CURRENT_DISPOSITION_MUTATION_ADAPTER,
@@ -51,6 +56,13 @@ def execute_local_content_mutation_adapter(
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]] | None:
     """Run one local content receipt adapter, or return None for vendor adapters."""
+    if adapter == MATERIAL_REVIEW_ACTION_V2_ADAPTER:
+        return execute_current_material_review_action_v2(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
+        )
     if adapter == SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER:
         return execute_content_source_fact_authority(
             action,
@@ -89,6 +101,14 @@ def execute_local_content_mutation_adapter(
             audit_events=action.audit_events,
         )
     return None
+
+
+def _confirmation_actor(action: ActionObject) -> str:
+    events = sorted(
+        (event for event in action.audit_events if event.event_type == "action_apply_confirmed"),
+        key=lambda event: (event.created_at, event.id),
+    )
+    return events[-1].actor if events else ""
 
 
 __all__ = ["execute_local_content_mutation_adapter", "is_local_content_mutation_adapter"]

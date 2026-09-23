@@ -7,6 +7,7 @@ from wilq.connectors.registry import get_connector_status
 from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
 )
+from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -80,6 +81,7 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
         SOURCE_FACT_AUTHORITY_ACTION_TYPE,
         SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
         CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+        MATERIAL_REVIEW_ACTION_V2_TYPE,
     } or (
         action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
         and action.payload.get("local_authority_only") is True

@@ -116,6 +116,8 @@ def action_mutation_adapter_reached_label(value: bool | None) -> str:
 def action_mutation_adapter_label(value: str | None) -> str:
     if not value:
         return "brak bezpiecznej ścieżki zapisu"
+    if value == "content_current_material_review_local_authority":
+        return "lokalny zapis potwierdzenia materiału; bez zapisu w WordPress"
     labels = source_connector_labels([value])
     return labels[0] if labels else "system zewnętrzny wskazany"
 

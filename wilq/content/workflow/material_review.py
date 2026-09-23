@@ -237,7 +237,7 @@ class ContentMaterialReviewReadResponse(BaseModel):
                 f"Approved current material observation is not exact: {mismatches[0]}"
             )
         # The read path supplies the store's latest receipt and performs live freshness checks.
-        expected_digest = _material_meaning_digest(
+        expected_digest = material_review_meaning_digest(
             work_item_id=self.work_item_id,
             preview=preview,
             current_observation=current_observation,
@@ -328,7 +328,7 @@ def material_review_receipt_digest(receipt: ContentMaterialReviewReceipt) -> str
     )
 
 
-def _material_meaning_digest(
+def material_review_meaning_digest(
     *,
     work_item_id: str,
     preview: ContentMaterialReviewPreview,
@@ -525,7 +525,7 @@ def read_content_material_review(
         preview=preview,
         review=review,
         current_observation=current_observation,
-        material_meaning_digest=_material_meaning_digest(
+        material_meaning_digest=material_review_meaning_digest(
             work_item_id=work_item_id,
             preview=preview,
             current_observation=current_observation,
@@ -723,6 +723,7 @@ __all__ = [
     "build_content_material_review_preview",
     "build_content_material_review_receipt",
     "material_review_preview_digest",
+    "material_review_meaning_digest",
     "material_review_receipt_digest",
     "material_review_source_field_lineage_digest",
     "revalidate_content_material_review_preview",

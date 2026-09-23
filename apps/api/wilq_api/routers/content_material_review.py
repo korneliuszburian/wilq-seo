@@ -3,26 +3,23 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict
 
 from wilq.content.workflow.evidence_acquisition_snapshot import WordPressCurrentPageSnapshotAdapter
 from wilq.content.workflow.material_review import (
     CatalogLoader,
     Clock,
-    ContentMaterialReviewCommand,
     ContentMaterialReviewPreviewResponse,
     ContentMaterialReviewReadResponse,
-    ContentMaterialReviewResponse,
     MaterialReaderFactory,
     MaterialReviewConflictError,
     MaterialReviewNotFoundError,
     MaterialReviewStore,
     build_content_material_review_preview,
-    build_content_material_review_receipt,
     read_content_material_review,
-    revalidate_content_material_review_preview,
 )
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.workspace.catalog import build_content_inventory_catalog_cached
@@ -32,6 +29,20 @@ from wilq.schemas.core import utc_now
 SelectedItemLoader = Callable[[str], ContentDecisionItem | None]
 StoreFactory = Callable[[], MaterialReviewStore]
 AdapterFactory = Callable[[], WordPressCurrentPageSnapshotAdapter]
+
+
+class MaterialReviewActionRequiredResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    response_type: Literal["content_material_review_action_required"] = (
+        "content_material_review_action_required"
+    )
+    code: Literal["material_review_action_required"] = "material_review_action_required"
+    status: Literal["blocked"] = "blocked"
+    work_item_id: str
+    blocker_owner: Literal["WILQ content workflow"] = "WILQ content workflow"
+    safe_next_step: str = (
+        "Przygotuj dokładny ActionObject review bieżącego materiału tej strony."
+    )
 
 
 def register_content_material_review_routes(
@@ -75,23 +86,13 @@ def register_content_material_review_routes(
 
     @router.post(
         review_path,
-        response_model=ContentMaterialReviewResponse,
-        responses={409: {"model": ContentMaterialReviewResponse}},
+        status_code=409,
+        response_model=MaterialReviewActionRequiredResponse,
     )
     def material_review_endpoint(
         work_item_id: str,
-        request: ContentMaterialReviewCommand,
-    ) -> ContentMaterialReviewResponse | JSONResponse:
-        return _review_endpoint(
-            work_item_id,
-            request,
-            store_factory=make_store,
-            catalog_loader=catalog_loader,
-            selected_item_loader=make_selected,
-            adapter_factory=adapter_factory,
-            material_reader_factory=material_reader_factory,
-            clock=clock,
-        )
+    ) -> MaterialReviewActionRequiredResponse:
+        return MaterialReviewActionRequiredResponse(work_item_id=work_item_id)
 
     @router.get(
         review_path,
@@ -136,62 +137,6 @@ def _preview_endpoint(
     if stored.status == "conflict":
         raise HTTPException(status_code=409, detail="content_material_review_preview_conflict")
     return ContentMaterialReviewPreviewResponse(preview=stored.preview)
-
-
-def _review_endpoint(
-    work_item_id: str,
-    request: ContentMaterialReviewCommand,
-    *,
-    store_factory: StoreFactory,
-    catalog_loader: CatalogLoader,
-    selected_item_loader: SelectedItemLoader,
-    adapter_factory: AdapterFactory | None,
-    material_reader_factory: MaterialReaderFactory | None,
-    clock: Clock,
-) -> ContentMaterialReviewResponse | JSONResponse:
-    store = store_factory()
-    preview = store.load_content_material_review_preview(request.preview_id)
-    if (
-        preview is None
-        or preview.preview_digest != request.preview_digest
-        or preview.work_item_id != work_item_id
-    ):
-        raise HTTPException(status_code=409, detail="content_material_review_preview_mismatch")
-    try:
-        revalidate_content_material_review_preview(
-            work_item_id=work_item_id,
-            preview=preview,
-            catalog_loader=catalog_loader,
-            selected_item_loader=selected_item_loader,
-            adapter=_build_adapter(adapter_factory),
-            material_reader_factory=material_reader_factory,
-            clock=clock,
-        )
-        receipt = build_content_material_review_receipt(
-            work_item_id=work_item_id,
-            command=request,
-            reviewed_at=clock(),
-        )
-        stored = store.record_content_material_review(receipt)
-        current = _read_endpoint_result(
-            work_item_id,
-            store=store,
-            catalog_loader=catalog_loader,
-            selected_item_loader=selected_item_loader,
-            adapter_factory=adapter_factory,
-            material_reader_factory=material_reader_factory,
-            clock=clock,
-        )
-    except (MaterialReviewConflictError, RuntimeError, ValueError) as error:
-        raise HTTPException(status_code=409, detail=str(error)) from error
-    response = ContentMaterialReviewResponse(
-        status=stored.status,
-        review=stored.review,
-        current=current,
-    )
-    if stored.status == "conflict":
-        return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
-    return response
 
 
 def _read_endpoint(
