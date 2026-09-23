@@ -64,6 +64,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/test_audit_complexity.py::test_frozen_growth_gate_accepts_a_shrinking_facade",
     ),
+    ("complexity-audit", "unchanged-hotspot-budget"): (
+        "scripts/test.sh",
+        "tests/test_audit_complexity.py::"
+        "test_changed_budget_ignores_existing_hotspots_that_do_not_grow",
+    ),
     ("material-review-ui", "explicit-exact-attestation"): (
         "scripts/test.sh",
         "tests/dashboard/test_material_review_ui_runtime.py::"
@@ -497,6 +502,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
         in {
             ("change-contract-gate", "observed-before-state"),
             ("complexity-audit", "shrinking-frozen-facade"),
+            ("complexity-audit", "unchanged-hotspot-budget"),
             ("material-review-ui", "explicit-exact-attestation"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),

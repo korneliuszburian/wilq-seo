@@ -75,12 +75,12 @@ class ChangedBudgetViolation:
 class ComplexityVisitor(ast.NodeVisitor):
     def __init__(self, path: Path) -> None:
         self.path = path
-        self.class_stack: list[str] = []
+        self.scope_stack: list[str] = []
         self.functions: list[CodeBlockMetric] = []
         self.classes: list[CodeBlockMetric] = []
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        name = ".".join([*self.class_stack, node.name])
+        name = ".".join([*self.scope_stack, node.name])
         self.classes.append(
             CodeBlockMetric(
                 path=self.path,
@@ -90,20 +90,24 @@ class ComplexityVisitor(ast.NodeVisitor):
                 branch_count=branch_count(node),
             )
         )
-        self.class_stack.append(node.name)
+        self.scope_stack.append(node.name)
         self.generic_visit(node)
-        self.class_stack.pop()
+        self.scope_stack.pop()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._record_function(node)
+        self.scope_stack.append(node.name)
         self.generic_visit(node)
+        self.scope_stack.pop()
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._record_function(node)
+        self.scope_stack.append(node.name)
         self.generic_visit(node)
+        self.scope_stack.pop()
 
     def _record_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
-        name = ".".join([*self.class_stack, node.name])
+        name = ".".join([*self.scope_stack, node.name])
         self.functions.append(
             CodeBlockMetric(
                 path=self.path,
@@ -158,7 +162,20 @@ def main() -> int:
     current_loc = {file.path: file.loc for file in files if file.path in frozen_paths}
     baseline_loc = {path: baseline_code_lines(root, path) for path in frozen_paths}
     frozen_changed = frozen_growth_files(changed, current_loc, baseline_loc)
-    budget_violations = changed_budget_violations(files, functions, classes, changed)
+    try:
+        baseline_files, baseline_functions, baseline_classes = baseline_metrics(root, changed)
+    except RuntimeError as error:
+        print(f"Cannot verify changed-code baseline: {error}", file=sys.stderr)
+        return 1
+    budget_violations = changed_budget_violations(
+        files,
+        functions,
+        classes,
+        changed,
+        baseline_files=baseline_files,
+        baseline_functions=baseline_functions,
+        baseline_classes=baseline_classes,
+    )
 
     print(
         render_summary(
@@ -287,16 +304,83 @@ def frozen_growth_files(
     return sorted(growth)
 
 
+def baseline_metrics(
+    root: Path, changed: set[Path]
+) -> tuple[list[FileMetric], list[CodeBlockMetric], list[CodeBlockMetric]]:
+    files: list[FileMetric] = []
+    functions: list[CodeBlockMetric] = []
+    classes: list[CodeBlockMetric] = []
+    for path in changed:
+        if path.suffix != ".py":
+            continue
+        result = subprocess.run(
+            ["git", "show", f"HEAD:{path.as_posix()}"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            head_entry = subprocess.run(
+                ["git", "ls-tree", "--name-only", "HEAD", "--", path.as_posix()],
+                cwd=root,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            if head_entry.returncode != 0 or path.as_posix() in head_entry.stdout.splitlines():
+                raise RuntimeError(f"unreadable HEAD baseline for {path.as_posix()}")
+            continue
+        try:
+            tree = ast.parse(result.stdout)
+        except SyntaxError as error:
+            raise RuntimeError(f"unparseable HEAD baseline for {path.as_posix()}") from error
+        files.append(FileMetric(path=path, loc=count_code_lines(result.stdout)))
+        visitor = ComplexityVisitor(path)
+        visitor.visit(tree)
+        functions.extend(visitor.functions)
+        classes.extend(visitor.classes)
+    return files, functions, classes
+
+
+def unique_block_index(
+    blocks: list[CodeBlockMetric],
+) -> tuple[dict[tuple[Path, str], CodeBlockMetric], dict[tuple[Path, str], int]]:
+    counts: dict[tuple[Path, str], int] = {}
+    for block in blocks:
+        key = block.path, block.name
+        counts[key] = counts.get(key, 0) + 1
+    unique = {
+        (block.path, block.name): block
+        for block in blocks
+        if counts[(block.path, block.name)] == 1
+    }
+    return unique, counts
+
+
 def changed_budget_violations(
     files: list[FileMetric],
     functions: list[CodeBlockMetric],
     classes: list[CodeBlockMetric],
     changed: set[Path],
+    *,
+    baseline_files: list[FileMetric] | None = None,
+    baseline_functions: list[CodeBlockMetric] | None = None,
+    baseline_classes: list[CodeBlockMetric] | None = None,
 ) -> list[ChangedBudgetViolation]:
     changed_python = {path for path in changed if path.suffix == ".py"}
+    previous_files = {item.path: item.loc for item in baseline_files or []}
+    previous_functions, _ = unique_block_index(baseline_functions or [])
+    previous_classes, _ = unique_block_index(baseline_classes or [])
+    _, current_function_counts = unique_block_index(functions)
+    _, current_class_counts = unique_block_index(classes)
     violations: list[ChangedBudgetViolation] = []
     for file in files:
-        if file.path in changed_python and file.loc > CHANGED_FILE_LOC_LIMIT:
+        if (
+            file.path in changed_python
+            and file.loc > CHANGED_FILE_LOC_LIMIT
+            and file.loc > previous_files.get(file.path, 0)
+        ):
             violations.append(
                 ChangedBudgetViolation(
                     path=file.path,
@@ -311,7 +395,11 @@ def changed_budget_violations(
     for function in functions:
         if function.path not in changed_python:
             continue
-        if function.lines > CHANGED_FUNCTION_LINE_LIMIT:
+        key = function.path, function.name
+        previous = previous_functions.get(key) if current_function_counts[key] == 1 else None
+        if function.lines > CHANGED_FUNCTION_LINE_LIMIT and (
+            previous is None or function.lines > previous.lines
+        ):
             violations.append(
                 ChangedBudgetViolation(
                     path=function.path,
@@ -323,7 +411,9 @@ def changed_budget_violations(
                     limit=CHANGED_FUNCTION_LINE_LIMIT,
                 )
             )
-        if function.branch_count > CHANGED_FUNCTION_BRANCH_LIMIT:
+        if function.branch_count > CHANGED_FUNCTION_BRANCH_LIMIT and (
+            previous is None or function.branch_count > previous.branch_count
+        ):
             violations.append(
                 ChangedBudgetViolation(
                     path=function.path,
@@ -336,7 +426,13 @@ def changed_budget_violations(
                 )
             )
     for class_block in classes:
-        if class_block.path in changed_python and class_block.lines > CHANGED_CLASS_LINE_LIMIT:
+        key = class_block.path, class_block.name
+        previous = previous_classes.get(key) if current_class_counts[key] == 1 else None
+        if (
+            class_block.path in changed_python
+            and class_block.lines > CHANGED_CLASS_LINE_LIMIT
+            and (previous is None or class_block.lines > previous.lines)
+        ):
             violations.append(
                 ChangedBudgetViolation(
                     path=class_block.path,
@@ -438,7 +534,7 @@ def render_block_rows(rows: list[CodeBlockMetric], limit: int) -> list[str]:
 def render_budget_rows(rows: list[ChangedBudgetViolation], limit: int) -> list[str]:
     if not rows:
         return [
-            "- Changed Python files are within budgets: "
+            "- No new or growing Python hotspots exceed budgets: "
             f"file <= {CHANGED_FILE_LOC_LIMIT} LOC, "
             f"function <= {CHANGED_FUNCTION_LINE_LIMIT} lines, "
             f"function <= {CHANGED_FUNCTION_BRANCH_LIMIT} branches, "
