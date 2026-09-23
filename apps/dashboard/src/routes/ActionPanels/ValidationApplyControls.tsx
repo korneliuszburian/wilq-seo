@@ -19,6 +19,7 @@ import {
   type ActionObject,
   type ActionPanelProps
 } from "./shared";
+import { LocalContentAuthorityApplyControl } from "./LocalContentAuthorityApplyControl";
 
 type ContentNewPageDraftBinding = z.infer<typeof ContentNewPageDraftBindingSchema>;
 
@@ -105,6 +106,7 @@ export function ActionValidationControls({ action }: ActionPanelProps) {
       <ActionImpactCheckControls action={action} />
       <ActionContentDevDraftApplyControl action={action} />
       <ActionNewPageDraftApplyControl action={action} />
+      <LocalContentAuthorityApplyControl action={action} />
     </div>
   );
 }

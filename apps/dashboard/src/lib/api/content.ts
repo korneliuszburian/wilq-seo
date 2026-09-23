@@ -14,6 +14,8 @@ import {
   ContentInventoryCatalogResponseSchema,
   ContentMaterialReviewActionReadySchema,
   ContentMaterialReviewActionBlockedSchema,
+  ResearchPacketV2ActionReadySchema,
+  ResearchPacketV2ActionBlockedSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
@@ -75,6 +77,7 @@ import {
   type ContentWorkItemInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentMaterialReviewActionResponse,
+  type ResearchPacketV2ActionResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
   type ContentNewPageCanonicalDocumentWorkspace,
@@ -360,6 +363,17 @@ export function prepareContentMaterialReviewAction(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/material-review-action/preview`,
     ContentMaterialReviewActionReadySchema,
     ContentMaterialReviewActionBlockedSchema,
+    {}
+  );
+}
+
+export function prepareContentResearchPacketV2Action(
+  workItemId: string
+): Promise<ResearchPacketV2ActionResponse> {
+  return apiPostWithConflict(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v2-action/preview`,
+    ResearchPacketV2ActionReadySchema,
+    ResearchPacketV2ActionBlockedSchema,
     {}
   );
 }

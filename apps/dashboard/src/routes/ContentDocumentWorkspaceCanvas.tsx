@@ -11,6 +11,7 @@ import { ContentOperatorJourney } from "./ContentOperatorJourney";
 import { ContentWorkflowWorkspaceHeader } from "./ContentWorkflowWorkspaceHeader";
 import { ContentDocumentPreparationAction } from "./DocumentCanvasSections/PreparationSection";
 import { CurrentMaterialReviewEntry } from "./DocumentCanvasSections/CurrentMaterialReviewEntry";
+import { CurrentResearchPacketEntry } from "./DocumentCanvasSections/CurrentResearchPacketEntry";
 import {
   DevTargetDetails,
   TargetDraftPreviewDetails,
@@ -126,7 +127,10 @@ export function ContentDocumentWorkspaceCanvas({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Szczegóły i dev</p>
           <StatusCard label="Materiał obecnej strony" value={workspace.source_snapshot.status_label} />
           {workspace.source_snapshot.url ? (
-            <CurrentMaterialReviewEntry workItemId={workspace.work_item_id} />
+            <>
+              <CurrentMaterialReviewEntry workItemId={workspace.work_item_id} />
+              <CurrentResearchPacketEntry workItemId={workspace.work_item_id} />
+            </>
           ) : null}
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage

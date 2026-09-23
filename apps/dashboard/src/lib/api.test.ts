@@ -16,6 +16,7 @@ import {
   postContentWorkItemLineageCleanup,
   postContentWorkItemInitialDraft,
   prepareContentMaterialReviewAction,
+  prepareContentResearchPacketV2Action,
   previewAction
 } from "./api";
 
@@ -140,6 +141,40 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("prepares a v2 packet action through its exact typed public endpoint", async () => {
+    let calls = 0;
+    vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(new URL(String(url)).pathname).toBe(
+        "/api/content/work-items/wi_exact/research-packet-v2-action/preview"
+      );
+      expect(init?.method).toBe("POST");
+      const ready = ++calls === 1;
+      return new Response(JSON.stringify(ready ? {
+        response_type: "research_packet_v2_action",
+        status: "preview_ready",
+        action_id: "act_content_research_packet_v2_exact",
+        external_write_attempted: false,
+        generation_allowed: false
+      } : {
+        response_type: "research_packet_v2_action",
+        status: "blocked",
+        blocker_code: "material_review_missing_or_stale",
+        blocker_owner: "WILQ content workflow",
+        evidence_ids: ["ev_current"],
+        safe_next_step: "Przejrzyj materiał.",
+        external_write_attempted: false,
+        generation_allowed: false
+      }), { status: ready ? 200 : 409, headers: { "Content-Type": "application/json" } });
+    }));
+
+    expect((await prepareContentResearchPacketV2Action("wi_exact")).status).toBe("preview_ready");
+    const blocked = await prepareContentResearchPacketV2Action("wi_exact");
+    expect(blocked.status).toBe("blocked");
+    if (blocked.status === "blocked") {
+      expect(blocked.blocker_owner).toBe("WILQ content workflow");
+    }
+  });
+
   it("parses exact material review preview and typed conflict on the public path", async () => {
     let calls = 0;
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {

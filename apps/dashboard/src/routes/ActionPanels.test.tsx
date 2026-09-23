@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionObject } from "../lib/api";
 import * as actionApi from "../lib/api";
-import { ActionFocus, ActionReviewGatePanel } from "./ActionPanels";
+import { ActionFocus, ActionReviewGatePanel, ActionValidationControls } from "./ActionPanels";
 import { ActionHumanReviewControls } from "./ActionPanels/ReviewControls";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -27,6 +27,51 @@ describe("ActionPanels", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it("applies only the reviewed local packet receipt after a separate confirmation", async () => {
+    const apply = vi.spyOn(actionApi, "applyAction").mockImplementation(
+      () => new Promise<never>(() => {})
+    );
+    const action = {
+      id: "act_content_research_packet_v2_exact",
+      payload: {
+        action_type: "content_research_packet_v2_approval",
+        local_authority_only: true
+      },
+      review_gate: { status: "ready_to_apply", apply_allowed: true }
+    } as unknown as ActionObject;
+
+    renderWithQueryClient(<ActionValidationControls action={action} />);
+    const save = screen.getByRole("button", { name: "Zapisz lokalny receipt pakietu" });
+    expect(save).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Potwierdzam dokładny review pakietu/ }));
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+    await waitFor(() => expect(apply).toHaveBeenCalledWith(action.id, {
+      confirm: true,
+      confirmed_by: "operator_local_dashboard"
+    }));
+  });
+
+  it("offers a local material receipt write without a WordPress draft payload", async () => {
+    const apply = vi.spyOn(actionApi, "applyAction").mockImplementation(
+      () => new Promise<never>(() => {})
+    );
+    const action = {
+      id: "act_content_material_review_exact",
+      payload: { action_type: "content_current_material_review_v2", local_authority_only: true },
+      review_gate: { status: "ready_to_apply", apply_allowed: true }
+    } as unknown as ActionObject;
+    renderWithQueryClient(<ActionValidationControls action={action} />);
+    const save = screen.getByRole("button", { name: "Zapisz lokalny review materiału" });
+    expect(save).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Potwierdzam dokładny review materiału/ }));
+    fireEvent.click(save);
+    await waitFor(() => expect(apply).toHaveBeenCalledWith(action.id, {
+      confirm: true,
+      confirmed_by: "operator_local_dashboard"
+    }));
   });
 
   it("requires an explicit full-material check before approving current material", async () => {
@@ -114,6 +159,116 @@ describe("ActionPanels", () => {
       "href",
       "https://www.ekologus.pl/oferta/bdo;"
     );
+  });
+
+  it("requires a separate full-packet attestation and shows reviewed facts", async () => {
+    const review = vi.spyOn(actionApi, "reviewAction").mockImplementation(
+      () => new Promise<never>(() => {})
+    );
+    const packet = {
+      schema_version: "wilq_research_packet_v2_preview_record_v1",
+      preview_hash: "a".repeat(64),
+      work_item_id: "wi_exact",
+      snapshot: {
+        status: "ready",
+        work_item_id: "wi_exact",
+        preview_hash: "a".repeat(64),
+        source_pack_hash: "b".repeat(64),
+        selected_facts: [{
+          source_fact_id: "fact_exact",
+          text: "Dokładny zatwierdzony fakt.",
+          source_reference: "https://eur-lex.europa.eu/eli/reg/2025/40/oj/pol",
+          freshness_date: "2026-09-23",
+          source_type: "legal_update",
+          source_connectors: ["official_regulatory_review"],
+          fact_digest: "c".repeat(64),
+          evidence_ids: ["ev_fact_exact"]
+        }],
+        planning_context: {
+          target_reader: "Przedsiębiorca",
+          buyer_problem: "Niejasny obowiązek",
+          buyer_trigger: "Zmiana prawa",
+          search_intent: "Sprawdzenie obowiązku"
+        },
+        legal_requirements: [{
+          requirement_id: "requirement_exact",
+          label: "Dokumentacja",
+          source_fact_ids: ["fact_exact"],
+          evidence_ids: ["ev_fact_exact"]
+        }],
+        regulatory_profile_id: "profile_exact",
+        regulatory_profile_version: "2026-09",
+        cta_direction: "Kontakt z doradcą",
+        minimum_cta_blocks: 2,
+        required_cta_patterns: ["kontakt"],
+        internal_links: [{
+          target_url: "https://www.ekologus.pl/kontakt/",
+          anchor_hint: "Kontakt",
+          evidence_ids: ["ev_link"]
+        }],
+        evidence_ids: ["ev_fact_exact", "ev_link"],
+        generation_allowed: false,
+        packet_write_allowed: false
+      }
+    };
+    const action = {
+      id: "act_content_research_packet_v2_exact",
+      payload: { action_type: "content_research_packet_v2_approval", research_packet_v2_preview: packet },
+      review_gate: {
+        status: "ready_to_apply",
+        status_label: "gotowe",
+        operator_checklist: ["validate_action_object", "human_review_before_apply"],
+        apply_blockers: []
+      }
+    } as unknown as ActionObject;
+
+    const view = renderWithQueryClient(<ActionHumanReviewControls action={action} />);
+    const save = screen.getByRole("button", { name: "Zapisz przegląd" });
+    expect(save).toBeDisabled();
+    expect(screen.getByText("Dokładny zatwierdzony fakt.")).toBeInTheDocument();
+    expect(screen.getByText(/^fact_exact$/)).toBeInTheDocument();
+    expect(screen.getByText("Dokumentacja")).toBeInTheDocument();
+    expect(screen.getByText(/Profil: profile_exact, wersja 2026-09/)).toBeInTheDocument();
+    expect(screen.getByText(/Minimalna liczba bloków CTA: 2/)).toBeInTheDocument();
+    expect(screen.getByText(/Dowody linku: ev_link/)).toBeInTheDocument();
+    expect(screen.getByText(/Dowody całego pakietu: ev_fact_exact, ev_link/)).toBeInTheDocument();
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActionHumanReviewControls action={{
+          ...action,
+          payload: {
+            ...action.payload,
+            research_packet_v2_preview: {
+              ...packet,
+              snapshot: { ...packet.snapshot, legal_requirements: [] }
+            }
+          }
+        }} />
+      </QueryClientProvider>
+    );
+    expect(screen.getByText(/Profil: profile_exact, wersja 2026-09/)).toBeInTheDocument();
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActionHumanReviewControls action={action} />
+      </QueryClientProvider>
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Przeczytałem cały pakiet/ }));
+    expect(save).toBeEnabled();
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActionHumanReviewControls action={{ ...action, id: "act_content_research_packet_v2_other" }} />
+      </QueryClientProvider>
+    );
+    expect(screen.getByRole("button", { name: "Zapisz przegląd" })).toBeDisabled();
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ActionHumanReviewControls action={action} />
+      </QueryClientProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz przegląd" }));
+    await waitFor(() => expect(review).toHaveBeenCalledWith(action.id, expect.objectContaining({
+      checked_items: ["reviewed_full_packet"]
+    })));
   });
 
   it("threads the exact dev-draft binding through every action control", async () => {

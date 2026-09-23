@@ -489,6 +489,7 @@ describe("ContentWorkflowSurface", () => {
     render(<App appRouter={appRouter} client={createWilqQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
 
     expect(await screen.findByTestId("content-text-workspace")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Przygotuj przegląd pakietu" })).toBeInTheDocument();
     expect(getContentSelectedWorkspace).toHaveBeenCalledWith("content_work_item_bdo");
     expect(getContentWorkItemPlanningProposal).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /przejdź do review/i }));

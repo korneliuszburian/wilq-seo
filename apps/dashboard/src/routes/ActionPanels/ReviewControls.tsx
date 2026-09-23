@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ClipboardCheck, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
+import { ResearchPacketV2PreviewRecordSchema } from "@wilq/shared-schemas";
+
 import { type ActionReviewRequest, reviewAction } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
 import { contentDevDraftBinding, type ActionPanelProps } from "./shared";
@@ -10,6 +12,8 @@ import {
   materialReviewCheckedItems,
   materialReviewPageUrl
 } from "./materialReviewDecision";
+import { ResearchPacketReviewDetails } from "./ResearchPacketReviewDetails";
+import { packetReviewApprovalAllowed, packetReviewCheckedItems } from "./packetReviewDecision";
 
 type ActionReviewOutcome = ActionReviewRequest["outcome"];
 
@@ -24,9 +28,16 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
   const wordpressDraft = contentDevDraftBinding(action);
   const materialReview = action.payload.action_type === "content_current_material_review_v2";
   const materialUrl = materialReview ? materialReviewPageUrl(action.payload.material_review_preview) : null;
+  const packetReview = action.payload.action_type === "content_research_packet_v2_approval";
+  const packetRecord = packetReview
+    ? ResearchPacketV2PreviewRecordSchema.safeParse(action.payload.research_packet_v2_preview)
+    : null;
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<ActionReviewOutcome>("approved_for_prepare");
-  const [reviewedFullMaterial, setReviewedFullMaterial] = useState(false);
+  const [reviewedMaterialActionId, setReviewedMaterialActionId] = useState<string | null>(null);
+  const [reviewedPacketActionId, setReviewedPacketActionId] = useState<string | null>(null);
+  const reviewedFullMaterial = reviewedMaterialActionId === action.id;
+  const reviewedFullPacket = packetReviewCheckedItems(action.id, reviewedPacketActionId).length > 0;
   const [notes, setNotes] = useState(
     "Przegląd operatora: zapisuję decyzję bez zapisu zmian."
   );
@@ -36,9 +47,11 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
         outcome,
         reviewed_by: "operator_local_dashboard",
         notes: notes.trim(),
-        checked_items: materialReview
-          ? materialReviewCheckedItems(reviewedFullMaterial)
-          : action.review_gate.operator_checklist.slice(0, 8),
+        checked_items: packetReview
+          ? packetReviewCheckedItems(action.id, reviewedPacketActionId)
+          : materialReview
+            ? materialReviewCheckedItems(reviewedFullMaterial)
+            : action.review_gate.operator_checklist.slice(0, 8),
         blockers: action.review_gate.apply_blockers.slice(0, 8),
         wordpress_draft: wordpressDraft
       }),
@@ -51,6 +64,10 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
     action.review_gate.last_review_outcome_label ?? action.review_gate.status_label;
   const canSave = notes.trim().length > 0 && !reviewMutation.isPending && (
     !materialReview || materialReviewApprovalAllowed(outcome, reviewedFullMaterial, materialUrl)
+  ) && (
+    !packetReview || packetReviewApprovalAllowed(
+      outcome, action.id, reviewedPacketActionId, packetRecord?.success === true
+    )
   );
 
   return (
@@ -84,13 +101,26 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
             <input
               type="checkbox"
               checked={reviewedFullMaterial}
-              onChange={(event) => setReviewedFullMaterial(event.target.checked)}
+              onChange={(event) => setReviewedMaterialActionId(event.target.checked ? action.id : null)}
               disabled={!materialUrl}
               className="mt-1"
             />
             <span>Przeczytałem pełny materiał tej strony i sprawdziłem dokładny URL przed decyzją.</span>
           </label>
         </div>
+      ) : null}
+      {packetReview ? (
+        packetRecord?.success ? (
+          <ResearchPacketReviewDetails
+            record={packetRecord.data}
+            checked={reviewedFullPacket}
+            onCheckedChange={(checked) => setReviewedPacketActionId(checked ? action.id : null)}
+          />
+        ) : (
+          <p className="mt-3 rounded-md border border-risk/30 p-3 text-risk">
+            Brakuje dokładnego pakietu do przeglądu. Odśwież akcję w WILQ.
+          </p>
+        )
       ) : null}
       <div className="mt-3 grid gap-3 md:grid-cols-[220px_1fr_auto]">
         <label className="grid gap-1">
