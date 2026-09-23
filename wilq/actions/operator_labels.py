@@ -292,8 +292,13 @@ def _string_list(value: Any) -> list[str]:
 def _hydrate_operator_labels_recursive(value: Any) -> None:
     if isinstance(value, dict):
         _hydrate_operator_label_fields(value)
-        for item in value.values():
-            _hydrate_operator_labels_recursive(item)
+        for key, item in value.items():
+            if key not in {
+                "promotion_snapshot",
+                "source_fact_authority",
+                "source_fact_authority_v2",
+            }:
+                _hydrate_operator_labels_recursive(item)
     elif isinstance(value, list):
         for item in value:
             _hydrate_operator_labels_recursive(item)

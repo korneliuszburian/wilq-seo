@@ -22,6 +22,7 @@ from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
 )
+from wilq.content.workflow.source_fact_authority_v2 import SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
@@ -63,7 +64,10 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
     ):
         return CURRENT_DISPOSITION_MUTATION_ADAPTER
     if (
-        action.payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE
+        action.payload.get("action_type") in {
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+        }
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):

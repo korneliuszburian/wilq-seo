@@ -128,6 +128,10 @@ from wilq.content.workflow.store.store_social_reuse import _SocialReuseStoreMixi
 from wilq.content.workflow.store.store_source_fact_authority import (
     ContentSourceFactAuthorityStoreMixin,
 )
+from wilq.content.workflow.store.store_source_fact_authority_v2 import (
+    SourceFactAuthorityV2StoreMixin,
+    ensure_source_fact_authority_v2_schema,
+)
 from wilq.content.workflow.store.store_source_pack_binding import (
     ContentSourcePackBindingStoreMixin,
 )
@@ -648,6 +652,7 @@ class ContentWorkflowStore(
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
     ContentSourceFactAuthorityStoreMixin,
+    SourceFactAuthorityV2StoreMixin,
     ContentServiceProfileCardReviewStoreMixin,
     ContentSourcePackBindingStoreMixin,
     EvidenceAcquisitionStoreMixin,
@@ -676,5 +681,6 @@ class ContentWorkflowStore(
         connection = sqlite3.connect(self.path)
         self.path.chmod(0o600)
         connection.row_factory = sqlite3.Row
+        ensure_source_fact_authority_v2_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection

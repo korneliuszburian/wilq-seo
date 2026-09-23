@@ -79,6 +79,9 @@ from wilq.content.workflow.research_promotion_authority import (
     load_content_research_fact_promotion_action,
 )
 from wilq.content.workflow.source_fact_authority import load_content_source_fact_authority_action
+from wilq.content.workflow.source_fact_authority_v2 import (
+    source_fact_authority_v2_action,
+)
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.target.dev_draft_action import load_content_target_draft_action
 from wilq.content.workflow.target.dev_draft_discard_action import (
@@ -157,9 +160,15 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_current_disposition_action(action_id)
         or load_current_page_disposition_v2_action(action_id)
         or load_content_source_fact_authority_action(action_id)
+        or _load_source_fact_authority_v2_action(action_id)
         or load_content_research_fact_promotion_action(action_id, store=content_workflow_store())
         or _action_registry().get(action_id)
     )
+
+
+def _load_source_fact_authority_v2_action(action_id: str) -> ActionObject | None:
+    proposal = content_workflow_store().load_source_fact_authority_v2_proposal(action_id)
+    return None if proposal is None else source_fact_authority_v2_action(proposal)
 
 
 def _read_action_list_cache() -> list[ActionObject] | None:

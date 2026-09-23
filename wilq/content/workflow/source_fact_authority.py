@@ -1,5 +1,7 @@
 """Public interface for exact, ActionObject-owned source-fact authority."""
 
+from typing import Any
+
 from wilq.content.workflow._source_fact_authority_contracts import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
@@ -38,13 +40,41 @@ from wilq.content.workflow._source_fact_authority_runtime import (
     build_content_source_fact_authority_candidate_projection,
     build_source_fact_authority_action,
     build_source_fact_authority_snapshot,
-    execute_content_source_fact_authority,
     load_content_source_fact_authority_action,
     prepare_content_source_fact_authority_preview,
     read_content_source_fact_authority,
     source_fact_authority_action_for_proposal,
     validate_source_fact_authority_action_payload,
 )
+from wilq.content.workflow._source_fact_authority_runtime import (
+    execute_content_source_fact_authority as _execute_content_source_fact_authority_v1,
+)
+from wilq.schemas import ActionObject, AuditEvent
+
+
+def execute_content_source_fact_authority(
+    action: ActionObject,
+    *,
+    store: Any,
+    audit_events: list[AuditEvent],
+) -> tuple[dict[str, Any] | None, list[str]]:
+    """Dispatch the shared local source-fact adapter to its typed authority version."""
+    if action.payload.get("action_type") == "content_source_fact_authority_v2":
+        from wilq.content.workflow.source_fact_authority_v2 import (
+            execute_source_fact_authority_v2,
+        )
+
+        return execute_source_fact_authority_v2(
+            action,
+            store=store,
+            audit_events=audit_events,
+        )
+    return _execute_content_source_fact_authority_v1(
+        action,
+        store=store,
+        audit_events=audit_events,
+    )
+
 
 __all__ = [
     "SOURCE_FACT_AUTHORITY_ACTION_TYPE",

@@ -91,6 +91,9 @@ from apps.api.wilq_api.routers.content_service_profile_card_reviews import (
 from apps.api.wilq_api.routers.content_source_fact_authority import (
     register_content_source_fact_authority_routes,
 )
+from apps.api.wilq_api.routers.content_source_fact_authority_v2 import (
+    register_content_source_fact_authority_v2_routes,
+)
 from apps.api.wilq_api.routers.content_source_pack_binding import (
     register_content_source_pack_binding_routes,
 )
@@ -132,6 +135,7 @@ def register_content_model_routes(
     register_content_current_disposition_authority_routes(router)
     register_content_source_pack_binding_routes(router)
     register_content_source_fact_authority_routes(router)
+    register_content_source_fact_authority_v2_routes(router)
     register_content_service_profile_card_review_routes(router)
     register_content_research_packet_routes(router, snapshot_loader=review_snapshot_loader)
     register_content_landing_hub_authorization_routes(router)

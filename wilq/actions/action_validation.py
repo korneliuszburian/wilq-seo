@@ -11,6 +11,7 @@ from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
+from wilq.content.workflow.source_fact_authority_v2 import SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
 )
@@ -77,6 +78,7 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
     return action_type in {
         CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
         SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+        SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
         CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     } or (
         action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE

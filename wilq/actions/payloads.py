@@ -57,6 +57,10 @@ from wilq.content.workflow.source_fact_authority import (
     SOURCE_FACT_AUTHORITY_ACTION_TYPE,
     validate_source_fact_authority_action_payload,
 )
+from wilq.content.workflow.source_fact_authority_v2 import (
+    SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+    validate_source_fact_authority_v2_payload,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -88,6 +92,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     SOURCE_FACT_AUTHORITY_ACTION_TYPE: (
         "Authority źródeł",
         validate_source_fact_authority_action_payload,
+    ),
+    SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE: (
+        "Authority źródeł v2",
+        validate_source_fact_authority_v2_payload,
     ),
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE: (
         "Research promotion",

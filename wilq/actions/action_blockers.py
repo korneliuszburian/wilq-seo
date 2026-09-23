@@ -15,6 +15,7 @@ from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
+from wilq.content.workflow.source_fact_authority_v2 import SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_TYPE,
@@ -257,7 +258,10 @@ def _is_content_dev_draft_action(action: ActionObject) -> bool:
 
 def _is_local_source_fact_authority_action(action: ActionObject) -> bool:
     return (
-        action.payload.get("action_type") == SOURCE_FACT_AUTHORITY_ACTION_TYPE
+        action.payload.get("action_type") in {
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+        }
         and action.payload.get("local_authority_only") is True
     )
 

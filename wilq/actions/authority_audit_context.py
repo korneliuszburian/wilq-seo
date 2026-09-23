@@ -27,6 +27,10 @@ from wilq.content.workflow.source_fact_authority import (
     parse_source_fact_authority_snapshot_json,
     source_fact_authority_action_payload_digest,
 )
+from wilq.content.workflow.source_fact_authority_v2 import (
+    SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+    ContentSourceFactAuthorityV2Proposal,
+)
 from wilq.schemas import ActionObject, AuditEvent
 
 
@@ -86,6 +90,18 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
             # the descriptive keys above remain the operator-facing contract.
             "context_digest": promotion_snapshot.context_digest,
             "payload_digest": promotion_action_payload_digest(action),
+        }
+        return
+    if action_type == SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE:
+        source_fact_proposal = ContentSourceFactAuthorityV2Proposal.model_validate(
+            action.payload.get("source_fact_authority_v2", {})
+        )
+        event.details = {
+            **event.details,
+            "source_fact_authority_v2_snapshot_digest": (
+                source_fact_proposal.snapshot.context_digest
+            ),
+            "source_fact_authority_v2_action_payload_digest": canonical_json_digest(action.payload),
         }
         return
     if action_type != SOURCE_FACT_AUTHORITY_ACTION_TYPE:

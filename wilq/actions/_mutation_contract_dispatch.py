@@ -18,6 +18,10 @@ from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
 from wilq.content.workflow.source_fact_authority import SOURCE_FACT_AUTHORITY_ACTION_TYPE
+from wilq.content.workflow.source_fact_authority_v2 import (
+    SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+    SOURCE_FACT_AUTHORITY_V2_PREVIEW_CONTRACT,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.dev_draft_discard_action import (
     CONTENT_DEV_DRAFT_DISCARD_ACTION_CONTRACT,
@@ -65,6 +69,13 @@ _LOCAL_CONTRACTS = {
         ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
         "Ta akcja zapisuje wyłącznie lokalny receipt doboru źródeł dla exact "
         "work itemu; nie wywołuje vendora, nie tworzy szkicu ani nie publikuje.",
+    ),
+    SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE: _LocalContractSpec(
+        "record_source_fact_authority_v2_receipt",
+        SOURCE_FACT_AUTHORITY_V2_PREVIEW_CONTRACT,
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
+        "Ta akcja zapisuje lokalny receipt exact źródeł dla bieżącego v2 KEEP; "
+        "nie wywołuje vendora ani nie tworzy treści.",
     ),
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE: _LocalContractSpec(
         "record_research_fact_promotion_receipt",

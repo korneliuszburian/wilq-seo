@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from wilq.content.canonical.urls import content_normalized_path, content_normalized_url
 from wilq.content.workflow.current_page_disposition_v2 import (
     CurrentPageDispositionV2Receipt,
+    build_current_page_disposition_v2_proposal,
 )
 from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
 
@@ -154,6 +155,38 @@ def project_current_page_identity_v2(
     )
 
 
+def resolve_current_page_identity_v2(
+    work_item_id: str,
+    *,
+    store: object,
+    evidence: CurrentPageEvidenceResponse,
+) -> CurrentPageIdentityV2Response:
+    """Resolve the exact current identity for domain and API consumers."""
+    latest_receipt = store.load_latest_current_page_disposition_v2_receipt_for_work_item(  # type: ignore[attr-defined]
+        work_item_id
+    )
+    pending_action_id = None
+    if evidence.status == "reviewed_material_current":
+        proposal = build_current_page_disposition_v2_proposal(evidence)
+        existing = store.load_current_page_disposition_v2_proposal(proposal.proposal_id)  # type: ignore[attr-defined]
+        if (
+            existing is not None
+            and existing.proposal_id == proposal.proposal_id
+            and existing.proposal_digest == proposal.proposal_digest
+            and existing.snapshot.work_item_id == proposal.snapshot.work_item_id
+            and existing.snapshot.normalized_page_url == proposal.snapshot.normalized_page_url
+            and existing.snapshot.canonical_path == proposal.snapshot.canonical_path
+            and existing.snapshot.material_meaning_digest
+            == proposal.snapshot.material_meaning_digest
+        ):
+            pending_action_id = existing.proposal_id
+    return project_current_page_identity_v2(
+        evidence=evidence,
+        latest_receipt=latest_receipt,
+        pending_action_id=pending_action_id,
+    )
+
+
 def _receipt_matches_current(
     receipt: CurrentPageDispositionV2Receipt,
     evidence: CurrentPageEvidenceResponse,
@@ -222,4 +255,5 @@ __all__ = [
     "CurrentPageIdentityBlockerOwner",
     "CurrentPageIdentityV2Response",
     "project_current_page_identity_v2",
+    "resolve_current_page_identity_v2",
 ]
