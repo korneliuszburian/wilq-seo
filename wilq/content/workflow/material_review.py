@@ -193,8 +193,58 @@ class ContentMaterialReviewReadResponse(BaseModel):
     preview: ContentMaterialReviewPreview | None = None
     review: ContentMaterialReviewReceipt | None = None
     current_observation: EvidenceObservationReceipt | None = None
+    material_meaning_digest: str | None = Field(default=None, pattern=_HEX64)
     blockers: list[str] = Field(default_factory=list, max_length=8)
     safe_next_step: str = Field(min_length=1, max_length=600)
+
+    @model_validator(mode="after")
+    def require_digest_for_approved_current(self) -> ContentMaterialReviewReadResponse:
+        if self.status != "approved_current":
+            if self.material_meaning_digest is not None:
+                raise ValueError(
+                    "Material meaning digest must be present only for approved current material."
+                )
+            return self
+        if self.material_meaning_digest is None:
+            raise ValueError(
+                "Approved current material requires a material meaning digest."
+            )
+        preview = self.preview
+        review = self.review
+        current_observation = self.current_observation
+        if preview is None or review is None or current_observation is None:
+            raise ValueError(
+                "Approved current material requires its preview, approved review, and observation."
+            )
+        if (
+            preview.work_item_id != self.work_item_id
+            or review.work_item_id != self.work_item_id
+            or review.decision != "approved"
+            or review.preview_id != preview.preview_id
+            or review.preview_digest != preview.preview_digest
+        ):
+            raise ValueError("Approved current material review is not bound to its preview.")
+        current_lineage_digest = material_review_source_field_lineage_digest(
+            (current_observation.extraction_region,)
+        )
+        mismatches = _current_mismatch_blockers(
+            preview,
+            current_observation=current_observation,
+            current_lineage_digest=current_lineage_digest,
+        )
+        if mismatches:
+            raise ValueError(
+                f"Approved current material observation is not exact: {mismatches[0]}"
+            )
+        # The read path supplies the store's latest receipt and performs live freshness checks.
+        expected_digest = _material_meaning_digest(
+            work_item_id=self.work_item_id,
+            preview=preview,
+            current_observation=current_observation,
+        )
+        if self.material_meaning_digest != expected_digest:
+            raise ValueError("Material meaning digest does not match its exact material.")
+        return self
 
 
 class ContentMaterialReviewPreviewResponse(BaseModel):
@@ -275,6 +325,25 @@ def material_review_receipt_digest(receipt: ContentMaterialReviewReceipt) -> str
             mode="json",
             exclude={"review_id", "review_digest", "reviewed_at"},
         )
+    )
+
+
+def _material_meaning_digest(
+    *,
+    work_item_id: str,
+    preview: ContentMaterialReviewPreview,
+    current_observation: EvidenceObservationReceipt,
+) -> str:
+    """Digest only the exact, freshly revalidated meaning-bearing material identity."""
+    return _digest_payload(
+        {
+            "schema_version": "wilq_material_meaning_digest_v1",
+            "work_item_id": work_item_id,
+            "canonical_url": preview.public_url,
+            "canonical_path": preview.canonical_path,
+            "body_digest": current_observation.body_digest,
+            "source_field_lineage_digest": preview.source_field_lineage_digest,
+        }
     )
 
 
@@ -441,13 +510,13 @@ def read_content_material_review(
         current_observation = None
     else:
         blockers = []
-    if blockers:
+    if blockers or current_observation is None:
         return _read_response(
             work_item_id=work_item_id,
             status="stale",
             preview=preview,
             review=review,
-            blockers=blockers,
+            blockers=blockers or ["content_material_review_current_observation_missing"],
             safe_next_step="Utwórz nowe preview po potwierdzeniu aktualnego materiału WordPress.",
         )
     return _read_response(
@@ -456,6 +525,11 @@ def read_content_material_review(
         preview=preview,
         review=review,
         current_observation=current_observation,
+        material_meaning_digest=_material_meaning_digest(
+            work_item_id=work_item_id,
+            preview=preview,
+            current_observation=current_observation,
+        ),
         safe_next_step="Materiał jest zatwierdzony i aktualny dla bieżącego katalogu.",
     )
 
@@ -554,6 +628,7 @@ def _read_response(
     safe_next_step: str,
     blockers: list[str] | None = None,
     current_observation: EvidenceObservationReceipt | None = None,
+    material_meaning_digest: str | None = None,
 ) -> ContentMaterialReviewReadResponse:
     return ContentMaterialReviewReadResponse(
         status=status,
@@ -561,6 +636,7 @@ def _read_response(
         preview=preview,
         review=review,
         current_observation=current_observation,
+        material_meaning_digest=material_meaning_digest,
         blockers=blockers or [],
         safe_next_step=safe_next_step,
     )
