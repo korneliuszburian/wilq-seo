@@ -96,6 +96,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_targeted_wordpress_refresh_keeps_baseline_change_contract.py",
     ),
+    ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"): (
+        "scripts/test.sh",
+        "tests/api_contracts/test_wordpress_sitemap_safety.py::"
+        "test_off_origin_sitemap_locations_are_not_fetched_or_persisted",
+    ),
     ("current-disposition", "exact-persisted-authority-chain"): (
         "scripts/test.sh",
         "tests/content/test_current_disposition_authority.py",
@@ -418,6 +423,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("change-contract-gate", "observed-before-state"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
+            ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),

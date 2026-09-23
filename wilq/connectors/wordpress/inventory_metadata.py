@@ -5,6 +5,7 @@ from html.parser import HTMLParser
 
 import httpx
 
+from wilq.connectors.wordpress.sitemap_read import _same_origin_sitemap_url
 from wilq.connectors.wordpress.text import clean_metadata_text
 
 WORDPRESS_METADATA_FETCH_LIMIT = 50
@@ -26,6 +27,7 @@ def _enrich_sitemap_objects_with_page_metadata(
     client: httpx.Client,
     objects: list[dict[str, str]],
     *,
+    sitemap_origin: str,
     distribute_content_groups: bool = False,
 ) -> list[dict[str, str]]:
     enriched: list[dict[str, str]] = []
@@ -47,7 +49,11 @@ def _enrich_sitemap_objects_with_page_metadata(
             enriched.append(item)
             continue
         group_counts[group] = group_count + 1
-        metadata = _fetch_public_page_metadata(client, item.get("content_url", ""))
+        metadata = _fetch_public_page_metadata(
+            client,
+            item.get("content_url", ""),
+            sitemap_origin=sitemap_origin,
+        )
         enriched.append({**item, **metadata} if metadata else item)
     return enriched
 
@@ -57,11 +63,20 @@ def _metadata_budget_group(item: dict[str, str]) -> str:
     return group if group in {"posts", "pages"} else "other"
 
 
-def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str]:
-    if not url:
+def _fetch_public_page_metadata(
+    client: httpx.Client,
+    url: str,
+    *,
+    sitemap_origin: str,
+) -> dict[str, str]:
+    if not _same_origin_sitemap_url(url, sitemap_origin):
         return {}
     try:
-        response = client.get(url, timeout=WORDPRESS_METADATA_TIMEOUT_SECONDS)
+        response = client.get(
+            url,
+            timeout=WORDPRESS_METADATA_TIMEOUT_SECONDS,
+            follow_redirects=False,
+        )
         response.raise_for_status()
     except httpx.HTTPError:
         return {}
@@ -72,6 +87,8 @@ def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str
     parser.feed(response.text[:WORDPRESS_METADATA_MAX_BYTES])
     title_or_h1 = clean_metadata_text(parser.title or parser.h1)
     canonical_url = clean_metadata_text(parser.canonical_url)
+    if not _same_origin_sitemap_url(canonical_url, sitemap_origin):
+        canonical_url = ""
     section_headings = [
         heading
         for heading in (clean_metadata_text(value) for value in parser.section_headings)

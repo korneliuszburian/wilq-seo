@@ -9,7 +9,11 @@ import pytest
 
 import wilq.connectors.wordpress.inventory_metadata as inventory_metadata_module
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
-from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRequest, ConnectorRefreshStatus
+from wilq.schemas import (
+    ConnectorRefreshMode,
+    ConnectorRefreshRequest,
+    ConnectorRefreshStatus,
+)
 
 BDO_URL = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
 OUTSOURCING_URL = (

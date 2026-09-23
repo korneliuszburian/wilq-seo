@@ -16,10 +16,10 @@ from wilq.connectors.wordpress.inventory_metadata import (
     _HtmlMetadataParser,  # noqa: F401 - compatibility export for WordPress material reads
     _summary_text,
 )
-from wilq.connectors.wordpress.sitemap_policy import (
-    is_commerce_only_url,
-    sitemap_group_for_url,
-    sitemap_url_object,
+from wilq.connectors.wordpress.sitemap_policy import is_commerce_only_url
+from wilq.connectors.wordpress.sitemap_read import (
+    WORDPRESS_SITEMAP_URL_LIMIT,
+    _sitemap_objects_from_xml,
 )
 from wilq.connectors.wordpress.text import (
     clean_metadata_text,
@@ -33,10 +33,8 @@ WORDPRESS_READ_FIELDS = (
     "id,status,modified_gmt,date_gmt,link,slug,title,content,acf,template"
 )
 WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
-WORDPRESS_SITEMAP_CHILD_LIMIT = 20
 # Keep the sitemap inventory broad enough to cover the whole Ekologus site
 # while remaining explicitly bounded for a single vendor read.
-WORDPRESS_SITEMAP_URL_LIMIT = 2000
 WORDPRESS_BLOCK_NAME_LIMIT = 16
 
 
@@ -45,16 +43,9 @@ class _SitemapFetchResult:
     objects: list[dict[str, str]]
     source_count: int
     returned_count: int
+    uncovered_count: int
     truncated: bool
     coverage_status: Literal["complete", "partial", "unavailable", "not_applicable"]
-
-
-@dataclass(frozen=True)
-class _SitemapParseResult:
-    objects: list[dict[str, str]]
-    source_count: int
-    truncated: bool
-    partial: bool
 
 
 class WordPressInventoryPayloadError(ValueError):
@@ -111,12 +102,14 @@ def fetch_content_inventory(
         "sitemap_url_count": len(sitemap_objects),
         "sitemap_url_source_count": sitemap_result.source_count,
         "sitemap_url_returned_count": sitemap_result.returned_count,
+        "sitemap_url_uncovered_count": sitemap_result.uncovered_count,
         "sitemap_url_truncated": sitemap_result.truncated,
         "sitemap_url_limit": WORDPRESS_SITEMAP_URL_LIMIT,
         "sitemap_coverage_status": sitemap_result.coverage_status,
         "public_sitemap_url_count": len(public_sitemap_objects),
         "public_sitemap_url_source_count": public_sitemap_result.source_count,
         "public_sitemap_url_returned_count": public_sitemap_result.returned_count,
+        "public_sitemap_url_uncovered_count": public_sitemap_result.uncovered_count,
         "public_sitemap_url_truncated": public_sitemap_result.truncated,
         "public_sitemap_url_limit": WORDPRESS_SITEMAP_URL_LIMIT,
         "public_sitemap_coverage_status": public_sitemap_result.coverage_status,
@@ -294,6 +287,7 @@ def _fetch_public_sitemap_objects(
             objects=[],
             source_count=0,
             returned_count=0,
+            uncovered_count=0,
             truncated=False,
             coverage_status="not_applicable",
         )
@@ -309,6 +303,7 @@ def _fetch_public_sitemap_objects(
     baseline_objects = _enrich_sitemap_objects_with_page_metadata(
         client,
         _prioritize_sitemap_objects(filtered_objects, [*priority_urls, public_url]),
+        sitemap_origin=public_url,
         distribute_content_groups=True,
     )
     if priority_urls:
@@ -333,6 +328,7 @@ def _fetch_public_sitemap_objects(
             enriched_targets = _enrich_sitemap_objects_with_page_metadata(
                 client,
                 targets_needing_metadata,
+                sitemap_origin=public_url,
                 distribute_content_groups=False,
             )
             enriched_by_url.update(
@@ -355,6 +351,7 @@ def _fetch_public_sitemap_objects(
             else sitemap_result.source_count
         ),
         returned_count=len(objects),
+        uncovered_count=sitemap_result.uncovered_count,
         truncated=sitemap_result.truncated,
         coverage_status=sitemap_result.coverage_status,
     )
@@ -468,7 +465,8 @@ def _fetch_sitemap_objects_with_coverage(
     suppressed_failure = False
     for sitemap_path in WORDPRESS_SITEMAP_PATHS:
         try:
-            response = client.get(urljoin(base_url, sitemap_path))
+            sitemap_url = urljoin(base_url, sitemap_path)
+            response = client.get(sitemap_url, follow_redirects=False)
             if response.status_code == 404:
                 continue
             response.raise_for_status()
@@ -476,12 +474,20 @@ def _fetch_sitemap_objects_with_coverage(
             suppressed_failure = True
             continue
         try:
-            parsed = _sitemap_objects_from_xml(client, response.text)
+            parsed = _sitemap_objects_from_xml(
+                client,
+                response.text,
+                sitemap_url=sitemap_url,
+            )
         except ElementTree.ParseError:
             suppressed_failure = True
             continue
         objects = (
-            _enrich_sitemap_objects_with_page_metadata(client, parsed.objects)
+            _enrich_sitemap_objects_with_page_metadata(
+                client,
+                parsed.objects,
+                sitemap_origin=sitemap_url,
+            )
             if enrich_metadata
             else parsed.objects
         )
@@ -490,6 +496,7 @@ def _fetch_sitemap_objects_with_coverage(
             objects=objects,
             source_count=parsed.source_count,
             returned_count=len(objects),
+            uncovered_count=parsed.uncovered_count,
             truncated=parsed.truncated,
             coverage_status="partial" if partial else "complete",
         )
@@ -497,6 +504,7 @@ def _fetch_sitemap_objects_with_coverage(
         objects=[],
         source_count=0,
         returned_count=0,
+        uncovered_count=0,
         truncated=False,
         coverage_status="unavailable",
     )
@@ -513,84 +521,6 @@ def _prioritize_sitemap_objects(
             0 if _normalize_base_url(item.get("content_url", "")) in priority_keys else 1
         ),
     )
-
-
-def _sitemap_objects_from_xml(
-    client: httpx.Client,
-    xml_text: str,
-) -> _SitemapParseResult:
-    entries = _parse_sitemap_xml(xml_text)
-    child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
-    if not child_sitemaps:
-        urls = [sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"]
-        return _SitemapParseResult(
-            objects=urls[:WORDPRESS_SITEMAP_URL_LIMIT],
-            source_count=len(urls),
-            truncated=len(urls) > WORDPRESS_SITEMAP_URL_LIMIT,
-            partial=False,
-        )
-    objects: list[dict[str, str]] = []
-    partial = len(child_sitemaps) > WORDPRESS_SITEMAP_CHILD_LIMIT
-    source_count = 0
-    for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
-        metadata_group = sitemap_group_for_url(sitemap["loc"])
-        try:
-            response = client.get(sitemap["loc"])
-            response.raise_for_status()
-        except httpx.HTTPError:
-            partial = True
-            continue
-        try:
-            child_entries = _parse_sitemap_xml(response.text)
-        except ElementTree.ParseError:
-            partial = True
-            continue
-        child_objects = [
-            sitemap_url_object(entry, metadata_group=metadata_group)
-            for entry in child_entries
-            if entry["kind"] == "url"
-        ]
-        source_count += len(child_objects)
-        remaining = WORDPRESS_SITEMAP_URL_LIMIT - len(objects)
-        objects.extend(child_objects[:remaining])
-        if len(child_objects) > remaining:
-            return _SitemapParseResult(
-                objects=objects,
-                source_count=source_count,
-                truncated=True,
-                partial=partial,
-            )
-    return _SitemapParseResult(
-        objects=objects,
-        source_count=source_count,
-        truncated=len(child_sitemaps) > WORDPRESS_SITEMAP_CHILD_LIMIT,
-        partial=partial,
-    )
-
-
-def _parse_sitemap_xml(xml_text: str) -> list[dict[str, str]]:
-    root = ElementTree.fromstring(xml_text)
-    if _local_name(root.tag) not in {"urlset", "sitemapindex"}:
-        raise ElementTree.ParseError("Unexpected sitemap root element.")
-    entries: list[dict[str, str]] = []
-    for element in root:
-        tag = _local_name(element.tag)
-        if tag not in {"url", "sitemap"}:
-            continue
-        values = {_local_name(child.tag): (child.text or "").strip() for child in element}
-        if values.get("loc"):
-            entries.append(
-                {
-                    "kind": tag,
-                    "loc": values["loc"],
-                    "lastmod": values.get("lastmod", ""),
-                }
-            )
-    return entries
-
-
-def _local_name(tag: str) -> str:
-    return tag.rsplit("}", 1)[-1]
 
 
 def _host(value: str) -> str:
