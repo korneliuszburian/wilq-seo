@@ -146,5 +146,26 @@ class CurrentPageDispositionV2StoreMixin:
             )
         )
 
+    def load_latest_current_page_disposition_v2_receipt_for_work_item(
+        self, work_item_id: str
+    ) -> CurrentPageDispositionV2Receipt | None:
+        """Read the newest appended v2 KEEP receipt for one exact work item."""
+
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM content_current_disposition_receipts "
+                "WHERE current_work_item_id = ? "
+                "AND json_extract(payload_json, '$.schema_version') = ? "
+                "ORDER BY rowid DESC LIMIT 1",
+                (work_item_id, "wilq_current_page_disposition_receipt_v2"),
+            ).fetchone()
+        return (
+            None
+            if row is None
+            else CurrentPageDispositionV2Receipt.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
+        )
+
 
 __all__ = ["CurrentPageDispositionV2StoreMixin"]

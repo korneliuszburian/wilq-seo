@@ -353,6 +353,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/content/test_current_page_disposition_v2_action.py",
     ),
+    ("current-page-identity-v2", "receipt-backed-exact-current"): (
+        "scripts/test.sh",
+        "tests/content/test_current_page_identity_v2.py",
+    ),
 }
 
 
@@ -448,6 +452,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             else ("tests/content/test_current_page_disposition_v2_action.py",)
             if key
             == ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning")
+            else ("tests/content/test_current_page_identity_v2.py",)
+            if key == ("current-page-identity-v2", "receipt-backed-exact-current")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
@@ -463,6 +469,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("material-review", "unchanged-material-stays-current"),
             ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
+            ("current-page-identity-v2", "receipt-backed-exact-current"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-disposition", "non-keep-candidate-blocked"),
