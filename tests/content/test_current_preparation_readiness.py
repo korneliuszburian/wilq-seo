@@ -9,9 +9,15 @@ import pytest
 import wilq.content.workflow.workspace.selected_workspace as selected_workspace_module
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
 from wilq.actions.authority_audit_context import stamp_authority_audit_context
-from wilq.content.workflow import current_inventory_reconciliation as reconciliation_module
+from wilq.content.canonical.urls import content_normalized_path
+from wilq.content.workflow.authoring_inventory_receipt import (
+    _build_content_authoring_inventory_receipt_from_catalog,
+)
 from wilq.content.workflow.current_preparation_readiness import (
     resolve_current_preparation_readiness,
+)
+from wilq.content.workflow.decisions.current_blocked import (
+    build_current_all_blocked_classification,
 )
 from wilq.content.workflow.decisions.production import (
     ContentProductionBlocker,
@@ -20,6 +26,7 @@ from wilq.content.workflow.decisions.production import (
     project_content_production_classification,
 )
 from wilq.content.workflow.delivery_identity import (
+    ContentDeliveryIdentityBinding,
     ContentDeliveryIdentityCommand,
     inventory_evidence_digest,
 )
@@ -99,23 +106,41 @@ def _freshness() -> ContentFreshnessAssessment:
 
 
 def _seed_exact_current_receipts(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[ContentWorkflowStore, ContentProductionClassificationRun]:
     store = ContentWorkflowStore(tmp_path / "current-readiness.sqlite3")
-    monkeypatch.setattr(reconciliation_module, "build_content_inventory_catalog", _catalog)
-    monkeypatch.setattr(
-        reconciliation_module,
-        "build_content_freshness_assessment_fast",
-        lambda **_kwargs: _freshness(),
+    run, identity = _seed_legacy_inventory(store)
+    _seed_exact_source_pack(store, identity)
+    return store, run
+
+
+def _seed_legacy_inventory(
+    store: ContentWorkflowStore,
+) -> tuple[ContentProductionClassificationRun, ContentDeliveryIdentityBinding]:
+    catalog = _catalog()
+    freshness = _freshness()
+    item = catalog.items[0]
+    receipt = _build_content_authoring_inventory_receipt_from_catalog(
+        item=item,
+        catalog=catalog,
+        recorded_by="readiness_test",
+        recorded_at=CHECKED_AT,
     )
-    monkeypatch.setattr(reconciliation_module, "content_workflow_store", lambda: store)
-    monkeypatch.setattr(reconciliation_module, "_current_checkout_revision", lambda: "a" * 40)
-    reconciliation = reconciliation_module.reconcile_current_authoring_inventory()
-    run = reconciliation.classification.run
+    run = build_current_all_blocked_classification(
+        catalog=catalog,
+        freshness=freshness,
+        base_revision="a" * 40,
+        recorded_at=CHECKED_AT,
+        inventory_receipts={content_normalized_path(item.path): receipt},
+    )
+    store.record_content_authoring_inventory_receipt(receipt)
+    store.record_production_classification(run)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
-    receipt = cast(ContentProductionRegisteredInventoryReceipt, row.source_receipt)
-    evidence_ids = tuple(sorted(receipt.catalog_snapshot_evidence_ids))
+    registered_receipt = cast(
+        ContentProductionRegisteredInventoryReceipt,
+        row.source_receipt,
+    )
+    evidence_ids = tuple(sorted(registered_receipt.catalog_snapshot_evidence_ids))
     identity_command = ContentDeliveryIdentityCommand(
         canonical_path=row.canonical_path,
         public_url=row.public_url,
@@ -127,17 +152,24 @@ def _seed_exact_current_receipts(
         inventory_evidence_ids=evidence_ids,
         inventory_evidence_digest=inventory_evidence_digest(evidence_ids),
         final_disposition="keep",
-        inventory_receipt_id=receipt.receipt_id,
-        inventory_receipt_digest=receipt.receipt_digest,
-        inventory_catalog_id=receipt.catalog_id,
-        inventory_catalog_item_digest=receipt.catalog_item_digest,
-        inventory_catalog_snapshot_digest=receipt.catalog_snapshot_digest,
+        inventory_receipt_id=registered_receipt.receipt_id,
+        inventory_receipt_digest=registered_receipt.receipt_digest,
+        inventory_catalog_id=registered_receipt.catalog_id,
+        inventory_catalog_item_digest=registered_receipt.catalog_item_digest,
+        inventory_catalog_snapshot_digest=registered_receipt.catalog_snapshot_digest,
         inventory_catalog_snapshot_evidence_ids=evidence_ids,
-        inventory_receipt=receipt,
+        inventory_receipt=registered_receipt,
         recorded_by="readiness_test",
         recorded_at=CHECKED_AT,
     )
     identity = store.record_content_delivery_identity(identity_command).binding
+    return run, identity
+
+
+def _seed_exact_source_pack(
+    store: ContentWorkflowStore,
+    identity: ContentDeliveryIdentityBinding,
+) -> None:
     preview = prepare_content_source_fact_authority_preview(
         store,
         ContentSourceFactAuthorityPreviewCommand(
@@ -203,7 +235,6 @@ def _seed_exact_current_receipts(
         )
     )
     assert source_pack.binding.status == "exact_current", source_pack.binding.blocker
-    return store, run
 
 
 def _operator_journey():
@@ -301,7 +332,7 @@ def test_exact_current_receipts_are_ready_without_changing_blocked_classificatio
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     before = (run.run_digest, row.source_packet_row_digest, row.model_dump(mode="json"))
 
@@ -324,7 +355,7 @@ def test_ready_receipts_open_existing_refresh_authorization_guidance(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     readiness = resolve_current_preparation_readiness(store, WORK_ITEM_ID)
     classified = classified_refresh_context(store, WORK_ITEM_ID)
@@ -369,7 +400,7 @@ def test_public_selected_workspace_rejects_misaligned_ready_state(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     readiness = resolve_current_preparation_readiness(store, WORK_ITEM_ID)
     assert readiness.status == "ready_for_refresh_authorization"
@@ -429,7 +460,7 @@ def test_receipt_drift_never_upgrades_current_blocked_row(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     baseline = resolve_current_preparation_readiness(store, WORK_ITEM_ID)
     assert baseline.status == "ready_for_refresh_authorization"

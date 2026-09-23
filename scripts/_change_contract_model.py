@@ -152,6 +152,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_other_blocked_or_write_rows",
         "tests/content/test_initial_draft_status_read_path.py::test_status_does_not_read_refresh_for_conflict_or_reuse",
     ),
+    ("current-inventory-reconciliation", "coverage-policy-blocks-before-write"): (
+        "scripts/test.sh",
+        "tests/content/test_current_inventory_reconciliation.py::"
+        "test_reconciliation_blocks_unknown_and_complete_coverage_before_store_access",
+    ),
     ("current-verification", "exact-draft-receipt-readback"): (
         "scripts/test.sh",
         "tests/content/test_current_verification_record.py",
@@ -430,6 +435,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-preparation", "exact-downstream-receipts"),
+            ("current-inventory-reconciliation", "coverage-policy-blocks-before-write"),
             ("current-verification", "exact-draft-receipt-readback"),
             ("ads-operator-labels", "api-owned-priority-and-risk"),
             ("recommendation-log", "canonical-workspace-guard"),
