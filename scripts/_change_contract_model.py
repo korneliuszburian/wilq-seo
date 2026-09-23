@@ -319,6 +319,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_revision_review_evidence.py",
         "tests/content/test_semantic_review_polling_read_path.py",
     ),
+    ("material-review", "unchanged-material-stays-current"): (
+        "scripts/test.sh",
+        "tests/content/test_material_review.py::"
+        "test_public_material_review_routes_are_immutable_idempotent_and_drift_aware",
+    ),
 }
 
 
@@ -415,6 +420,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
+            ("material-review", "unchanged-material-stays-current"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-preparation", "exact-downstream-receipts"),

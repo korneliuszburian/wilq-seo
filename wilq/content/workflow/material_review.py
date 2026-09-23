@@ -297,7 +297,9 @@ def build_content_material_review_preview(
     item = (selected_item_loader or _canonical_selected_item)(work_item_id)
     if item is None:
         raise MaterialReviewNotFoundError("content_material_review_work_item_not_found")
-    catalog_item = _catalog_item_for_selected(catalog, item)
+    if f"content_work_item_{getattr(item, 'id', '')}" != work_item_id:
+        raise MaterialReviewConflictError("content_material_review_work_item_changed")
+    catalog_item = _catalog_item_for_selected(catalog, item, work_item_id)
     public_url, canonical_path = _selected_identity(item)
     current_adapter = adapter or _adapter(
         material_reader_factory=material_reader_factory,
@@ -474,7 +476,11 @@ def revalidate_content_material_review_preview(
     item = (selected_item_loader or _canonical_selected_item)(work_item_id)
     if item is None:
         raise MaterialReviewConflictError("content_material_review_work_item_missing")
-    catalog_item = _catalog_item_for_selected(catalog, item)
+    if preview.work_item_id != work_item_id or (
+        f"content_work_item_{getattr(item, 'id', '')}" != work_item_id
+    ):
+        raise MaterialReviewConflictError("content_material_review_work_item_changed")
+    _catalog_item_for_selected(catalog, item, work_item_id)
     public_url, canonical_path = _selected_identity(item)
     current_adapter = adapter or _adapter(
         material_reader_factory=material_reader_factory,
@@ -485,15 +491,11 @@ def revalidate_content_material_review_preview(
         canonical_path=canonical_path,
     )
     now = _aware_now(clock)
-    if not current_page_receipt_is_fresh(preview.observation, now=now):
-        raise MaterialReviewConflictError("content_material_review_observation_stale")
     if not current_page_receipt_is_fresh(current_observation, now=now):
         raise MaterialReviewConflictError("content_material_review_current_observation_stale")
     lineage = (current_observation.extraction_region,)
     blockers = _current_mismatch_blockers(
         preview,
-        catalog=catalog,
-        catalog_item=catalog_item,
         current_observation=current_observation,
         current_lineage_digest=material_review_source_field_lineage_digest(lineage),
     )
@@ -505,21 +507,10 @@ def revalidate_content_material_review_preview(
 def _current_mismatch_blockers(
     preview: ContentMaterialReviewPreview,
     *,
-    catalog: ContentInventoryCatalogResponse,
-    catalog_item: ContentInventoryCatalogItem,
     current_observation: EvidenceObservationReceipt,
     current_lineage_digest: str,
 ) -> list[str]:
     blockers: list[str] = []
-    if content_inventory_catalog_item_digest(catalog_item) != preview.catalog_item_digest:
-        blockers.append("content_material_review_catalog_item_changed")
-    if content_inventory_catalog_snapshot_digest(catalog) != preview.catalog_snapshot_digest:
-        blockers.append("content_material_review_catalog_snapshot_changed")
-    snapshot_evidence_ids = _catalog_snapshot_evidence_ids(catalog, catalog_item)
-    if snapshot_evidence_ids != preview.catalog_snapshot_evidence_ids:
-        blockers.append("content_material_review_catalog_evidence_changed")
-    if catalog_item.evidence_id != preview.catalog_item_evidence_id:
-        blockers.append("content_material_review_catalog_item_evidence_changed")
     original = preview.observation
     if current_observation.body_digest != original.body_digest:
         blockers.append("content_material_review_body_changed")
@@ -586,12 +577,14 @@ def _canonical_selected_item(work_item_id: str) -> ContentDecisionItem | None:
 def _catalog_item_for_selected(
     catalog: ContentInventoryCatalogResponse,
     item: ContentDecisionItem,
+    work_item_id: str,
 ) -> ContentInventoryCatalogItem:
     public_url, canonical_path = _selected_identity(item)
     matches = [
         candidate
         for candidate in catalog.items
-        if candidate.url.rstrip("/") == public_url.rstrip("/")
+        if candidate.work_item_id == work_item_id
+        and candidate.url.rstrip("/") == public_url.rstrip("/")
         and content_normalized_path(candidate.path) == canonical_path
     ]
     if len(matches) != 1:

@@ -51,7 +51,7 @@ def test_public_material_review_routes_are_immutable_idempotent_and_drift_aware(
         evidence_ids=[catalog_item.evidence_id],
     )
     selected = SimpleNamespace(
-        id=WORK_ITEM_ID,
+        id=WORK_ITEM_ID.removeprefix("content_work_item_"),
         final_canonical_url=PAGE_URL,
         source_public_url=PAGE_URL,
         normalized_page_path=PAGE_PATH,
@@ -134,6 +134,41 @@ def test_public_material_review_routes_are_immutable_idempotent_and_drift_aware(
     current = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/material-review")
     assert current.status_code == 200
     assert current.json()["status"] == "approved_current"
+    original_preview = current.json()["preview"]
+    original_review = current.json()["review"]
+    original_observation_id = current.json()["current_observation"]["observation_id"]
+
+    # Catalog metrics/evidence can refresh without changing the reviewed page material.
+    refreshed_catalog_item = catalog_item.model_copy(
+        update={
+            "evidence_id": "ev_inventory_material_review_refresh",
+            "metrics_status": "available",
+            "metrics_evidence_ids": ["ev_metrics_material_review_refresh"],
+            "metrics_query_count": 4,
+            "metrics_clicks": 12,
+            "metrics_impressions": 180,
+            "collected_at": READ_AT + timedelta(hours=25),
+        }
+    )
+    catalog = catalog.model_copy(
+        update={
+            "items": [refreshed_catalog_item],
+            "evidence_ids": [
+                "ev_catalog_material_review_refresh",
+                refreshed_catalog_item.evidence_id,
+            ],
+        }
+    )
+    clock_now = READ_AT + timedelta(hours=25)
+    refreshed = client.get(f"/api/content/work-items/{WORK_ITEM_ID}/material-review")
+    assert refreshed.status_code == 200
+    assert refreshed.json()["status"] == "approved_current"
+    assert refreshed.json()["preview"] == original_preview
+    assert refreshed.json()["review"] == original_review
+    assert (
+        refreshed.json()["current_observation"]["observation_id"]
+        != original_observation_id
+    )
 
     # Keep the bounded excerpt stable while changing the body outside it.
     body["value"] = body["value"][:2400] + " drift after excerpt"
