@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts import audit_complexity
 from scripts.audit_complexity import (
     CHANGED_CLASS_LINE_LIMIT,
     CHANGED_FILE_LOC_LIMIT,
@@ -57,6 +58,14 @@ def test_changed_budget_violations_detect_changed_file_growth() -> None:
 def test_frozen_growth_gate_tracks_schema_compatibility_facade() -> None:
     assert Path("wilq/schemas/__init__.py") in FROZEN_GROWTH_FILES
     assert Path("wilq/schemas.py") not in FROZEN_GROWTH_FILES
+
+
+def test_frozen_growth_gate_accepts_a_shrinking_facade() -> None:
+    path = Path("wilq/actions/service.py")
+    assert hasattr(audit_complexity, "frozen_growth_files")
+    assert audit_complexity.frozen_growth_files({path}, {path: 799}, {path: 886}) == []
+    assert audit_complexity.frozen_growth_files({path}, {path: 887}, {path: 886}) == [path]
+    assert audit_complexity.frozen_growth_files({path}, {path: 799}, {}) == [path]
 
 
 def test_changed_budget_violations_ignore_unchanged_hotspots() -> None:

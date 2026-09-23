@@ -131,7 +131,7 @@ def main() -> int:
     parser.add_argument(
         "--changed",
         action="store_true",
-        help="Fail if changed files include frozen growth areas.",
+        help="Fail if changed frozen files grow or lack a readable baseline.",
     )
     parser.add_argument(
         "--limit",
@@ -154,7 +154,10 @@ def main() -> int:
     root = Path(args.root).resolve()
     files, functions, classes = collect_metrics(root)
     changed = changed_files(root)
-    frozen_changed = sorted(path for path in changed if path in FROZEN_GROWTH_FILES)
+    frozen_paths = changed & FROZEN_GROWTH_FILES
+    current_loc = {file.path: file.loc for file in files if file.path in frozen_paths}
+    baseline_loc = {path: baseline_code_lines(root, path) for path in frozen_paths}
+    frozen_changed = frozen_growth_files(changed, current_loc, baseline_loc)
     budget_violations = changed_budget_violations(files, functions, classes, changed)
 
     print(
@@ -172,7 +175,7 @@ def main() -> int:
 
     if args.changed and frozen_changed and not args.allow_frozen:
         print(
-            "\nFrozen growth files changed. Move new behavior into domain modules "
+            "\nFrozen growth files grew or lack a baseline. Move new behavior into domain modules "
             "or rerun with --allow-frozen for a documented extraction slice.",
             file=sys.stderr,
         )
@@ -257,6 +260,31 @@ def run_git_paths(root: Path, args: list[str]) -> list[str]:
     if result.returncode != 0:
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def baseline_code_lines(root: Path, path: Path) -> int | None:
+    result = subprocess.run(
+        ["git", "show", f"HEAD:{path.as_posix()}"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return count_code_lines(result.stdout) if result.returncode == 0 else None
+
+
+def frozen_growth_files(
+    changed: set[Path],
+    current_loc: dict[Path, int],
+    baseline_loc: dict[Path, int | None],
+) -> list[Path]:
+    growth: list[Path] = []
+    for path in changed & FROZEN_GROWTH_FILES:
+        baseline = baseline_loc.get(path)
+        current = current_loc.get(path)
+        if baseline is None or current is None or current > baseline:
+            growth.append(path)
+    return sorted(growth)
 
 
 def changed_budget_violations(

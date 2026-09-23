@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import Any
 from uuid import uuid4
 
 from wilq.actions import action_catalog
@@ -49,6 +49,7 @@ from wilq.actions.audit_store import (
     build_confirmation_audit_event,
     build_preview_audit_event,
 )
+from wilq.actions.audit_store import impact_status_from_event as _impact_status_from_event
 from wilq.actions.audit_store import (
     latest_action_confirmation_event as _latest_action_confirmation_event_impl,
 )
@@ -83,8 +84,8 @@ from wilq.actions.authority_audit_context import (
     stamp_authority_audit_context,
 )
 from wilq.actions.confirmation_lifecycle import confirm_action as confirm_action_lifecycle
+from wilq.actions.content_authority_payload_labels import payload_with_authority_snapshot_labels
 from wilq.actions.content_refresh import (
-    content_contract_label,
     content_payload_with_reviewed_wordpress_draft_previews,
 )
 from wilq.actions.content_review_details import (
@@ -95,9 +96,6 @@ from wilq.actions.content_review_details import (
 )
 from wilq.actions.content_review_details import (
     is_raw_content_review_audit_event as _is_raw_content_review_audit_event,
-)
-from wilq.actions.gate_labels import (
-    action_gate_label as _action_gate_label,
 )
 from wilq.actions.gate_labels import (
     action_gate_labels,
@@ -117,8 +115,13 @@ from wilq.actions.google_ads.demand_gen_preview import (
     demand_gen_readiness_preview_cards as build_demand_gen_readiness_preview_cards,
 )
 from wilq.actions.impact_lifecycle import impact_check_action as impact_check_action_lifecycle
+from wilq.actions.local_content_mutation_adapters import (
+    execute_local_content_mutation_adapter,
+    is_local_content_mutation_adapter,
+)
 from wilq.actions.metric_utils import (
     metric_fact_label,
+    plain_metric_value_label,
     unique_values,
 )
 from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_apply_contract
@@ -162,14 +165,24 @@ from wilq.actions.operator_labels import (
 )
 from wilq.actions.operator_labels import (
     ads_recommendation_type_label,
-    payload_with_operator_labels,
 )
 from wilq.actions.operator_labels import (
     review_gate_with_operator_labels as _review_gate_with_operator_labels_impl,
 )
+from wilq.actions.operator_projection_helpers import (
+    operator_review_blocker_label as _review_blocker_label,
+)
+from wilq.actions.operator_projection_helpers import (
+    operator_review_summary_item as _review_summary_item,
+)
+from wilq.actions.operator_projection_helpers import (
+    registered_source_connector_label as _source_connector_label,
+)
+from wilq.actions.operator_projection_helpers import (
+    registered_source_connector_labels as _source_connector_labels,
+)
 from wilq.actions.payload_readiness import (
     action_preview_item_view_models,
-    payload_api_mutation_ready,
     payload_apply_allowed,
 )
 from wilq.actions.payload_readiness import (
@@ -210,19 +223,7 @@ from wilq.actions.review_gate import (
     action_review_summary as build_action_review_summary,
 )
 from wilq.actions.review_gate import (
-    canonical_contract_key as canonical_review_contract_key,
-)
-from wilq.actions.review_gate import (
-    review_blocker_label as build_review_blocker_label,
-)
-from wilq.actions.review_gate import (
     review_outcome_label,
-)
-from wilq.actions.review_gate import (
-    review_source_type_label as build_review_source_type_label,
-)
-from wilq.actions.review_gate import (
-    review_summary_item as build_review_summary_item,
 )
 from wilq.actions.review_lifecycle import record_action_review as record_action_review_lifecycle
 from wilq.actions.wordpress_mutation_requirements import (
@@ -242,29 +243,11 @@ from wilq.audit.trusted_local_confirmation import (
     TrustedLocalPrincipalReceipt,
     trusted_local_confirmation_authority,
 )
-from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.registry import get_connector_status
-from wilq.content.workflow.current_disposition_authority import (
-    CURRENT_DISPOSITION_MUTATION_ADAPTER,
-    execute_current_disposition_authority,
-)
-from wilq.content.workflow.delivery_identity_authority import (
-    DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
-    execute_delivery_identity_authority,
-)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
-    CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
-    ContentResearchFactPromotionExecutionContext,
-    execute_research_fact_promotion,
     parse_content_research_fact_promotion_snapshot,
     promotion_action_payload_digest,
-    research_promotion_execution_context_digest,
-)
-from wilq.content.workflow.source_fact_authority import (
-    SOURCE_FACT_AUTHORITY_ACTION_TYPE,
-    SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
-    execute_content_source_fact_authority,
 )
 from wilq.content.workflow.store.store import (
     content_workflow_store as action_content_workflow_store,
@@ -286,7 +269,6 @@ from wilq.schemas import (
     ActionImpactCheckResult,
     ActionMutationAuditRecord,
     ActionMutationReadinessBlocker,
-    ActionMutationReadinessRequirement,
     ActionMutationReadinessResponse,
     ActionMutationReadinessSummaryResponse,
     ActionObject,
@@ -302,6 +284,20 @@ from wilq.schemas import (
     AuditEvent,
 )
 from wilq.storage.local_state import local_state_store
+
+_plain_metric_value_label = plain_metric_value_label
+_supported_mutation_adapter = _supported_mutation_adapter_impl
+_mutation_readiness_blockers = mutation_readiness_blockers
+_preview_contract = _payload_preview_contract_impl
+_action_gate_labels = action_gate_labels
+_operator_audit_summary_text = _operator_audit_summary_text_impl
+_payload_with_operator_labels = payload_with_authority_snapshot_labels
+_ads_recommendation_type_label = ads_recommendation_type_label
+_payload_preview_items = _payload_preview_items_impl
+_latest_preview_event = _latest_preview_event_impl
+_latest_action_confirmation_event = _latest_action_confirmation_event_impl
+_latest_action_impact_check_event = _latest_action_impact_check_event_impl
+_latest_mutation_audit = _latest_mutation_audit_impl
 
 
 def list_actions() -> list[ActionObject]:
@@ -326,22 +322,6 @@ def get_action(action_id: str) -> ActionObject | None:
         _persisted_audit_events_for_action(action.id),
         _persisted_mutation_audits_for_action(action.id),
     )
-
-
-def _plain_metric_value_label(
-    value: Any,
-    *,
-    missing_label: str = "wartość niepotwierdzona",
-) -> str:
-    if isinstance(value, bool):
-        return "tak" if value else "nie"
-    if isinstance(value, int):
-        return str(value)
-    if isinstance(value, float):
-        return f"{value:.2f}".rstrip("0").rstrip(".")
-    if isinstance(value, str) and value:
-        return value
-    return missing_label
 
 
 def validate_action(action: ActionObject) -> ActionValidationResult:
@@ -585,46 +565,17 @@ def _execute_supported_mutation_adapter(
     *,
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
-    if mutation_adapter == SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER:
-        return execute_content_source_fact_authority(
+    if is_local_content_mutation_adapter(mutation_adapter):
+        local_result = execute_local_content_mutation_adapter(
             action,
-            store=action_content_workflow_store(),
-            audit_events=action.audit_events,
+            mutation_adapter,
+            workflow_store=action_content_workflow_store(),
+            audit_store_factory=local_state_store,
+            trusted_principal_receipt=trusted_principal_receipt,
         )
-    if mutation_adapter == CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER:
-        workflow_store = action_content_workflow_store()
-        audit_store = local_state_store()
-        promotion_store_identity = str(workflow_store.path)
-        audit_store_identity = str(audit_store.path)
-        return execute_research_fact_promotion(
-            action,
-            context=ContentResearchFactPromotionExecutionContext(
-                promotion_store=workflow_store,
-                persisted_audit_events=tuple(
-                    audit_store.list_audit_events(action_id=action.id)
-                ),
-                promotion_store_identity=promotion_store_identity,
-                audit_store_identity=audit_store_identity,
-                context_digest=research_promotion_execution_context_digest(
-                    action.id,
-                    promotion_store_identity=promotion_store_identity,
-                    audit_store_identity=audit_store_identity,
-                ),
-                trusted_principal_receipt=trusted_principal_receipt,
-            ),
-        )
-    if mutation_adapter == CURRENT_DISPOSITION_MUTATION_ADAPTER:
-        return execute_current_disposition_authority(
-            action,
-            store=action_content_workflow_store(),
-            audit_events=action.audit_events,
-        )
-    if mutation_adapter == DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER:
-        return execute_delivery_identity_authority(
-            action,
-            store=action_content_workflow_store(),
-            audit_events=action.audit_events,
-        )
+        if local_result is None:
+            return None, ["Nieznany lokalny adapter treści."]
+        return local_result
     return execute_supported_wordpress_mutation_adapter(
         action, mutation_adapter, wordpress_capability
     )
@@ -758,16 +709,6 @@ def mutation_readiness_actions() -> ActionMutationReadinessSummaryResponse:
     )
 
 
-def _supported_mutation_adapter(action: ActionObject) -> str | None:
-    return _supported_mutation_adapter_impl(action)
-
-
-def _mutation_readiness_blockers(
-    requirements: list[ActionMutationReadinessRequirement],
-) -> list[ActionMutationReadinessBlocker]:
-    return mutation_readiness_blockers(requirements)
-
-
 def _mutation_readiness_next_step(
     action: ActionObject,
     blockers: list[ActionMutationReadinessBlocker],
@@ -897,41 +838,12 @@ def _action_review_summary(request: ActionReviewRequest) -> str:
     )
 
 
-def _review_summary_item(item: str) -> str:
-    return build_review_summary_item(
-        item,
-        contract_label=content_contract_label,
-        source_type_label=_review_source_type_label,
-    )
-
-
-def _review_blocker_label(item: str) -> str:
-    return build_review_blocker_label(
-        item,
-        gate_label=_action_gate_label,
-        contract_label=content_contract_label,
-        blocked_claim_labels=operator_blocked_claims,
-    )
-
-
-def _review_source_type_label(value: str) -> str:
-    return build_review_source_type_label(value, contract_label=content_contract_label)
-
-
-def _canonical_contract_key(value: str) -> str:
-    return canonical_review_contract_key(value)
-
-
 def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
     return build_action_review_details(
         request,
         content_url_review_details=_content_url_review_details_from_checked_items,
         draft_readiness_review_details=_draft_readiness_review_details_from_checked_items,
     )
-
-
-def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
-    return _payload_preview_contract_impl(payload, preview_items)
 
 
 def _action_required_checks(payload: dict[str, Any]) -> list[str]:
@@ -951,89 +863,5 @@ def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
     )
 
 
-def _action_gate_labels(values: Iterable[str]) -> list[str]:
-    return action_gate_labels(values)
-
-
-def _source_connector_label(connector_id: str) -> str:
-    connector = get_connector_status(connector_id)
-    return connector.label if connector is not None and connector.label else "źródło danych"
-
-
-def _source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
-    labels: list[str] = []
-    for connector_id in connector_ids:
-        label = _source_connector_label(connector_id)
-        if label not in labels:
-            labels.append(label)
-    return labels
-
-
-def _operator_audit_summary_text(summary: str) -> str:
-    """Compatibility facade for callers that import the legacy service helper."""
-    return _operator_audit_summary_text_impl(summary)
-
-
-def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:
-    if payload.get("action_type") in {
-        CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
-        SOURCE_FACT_AUTHORITY_ACTION_TYPE,
-    }:
-        snapshot_key = (
-            "promotion_snapshot"
-            if payload.get("action_type") == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE
-            else "source_fact_authority"
-        )
-        snapshot = payload.get(snapshot_key)
-        without_snapshot = {
-            key: value for key, value in payload.items() if key != snapshot_key
-        }
-        enriched = payload_with_operator_labels(without_snapshot)
-        enriched[snapshot_key] = snapshot
-        return enriched
-    return payload_with_operator_labels(payload)
-
-
-def _ads_recommendation_type_label(value: str) -> str:
-    """Compatibility facade for callers that import the legacy service helper."""
-    return ads_recommendation_type_label(value)
-
-
 def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:
     return payload_apply_allowed(payload, _payload_preview_items(payload))
-
-
-def _action_payload_api_mutation_ready(payload: dict[str, Any]) -> bool:
-    return payload_api_mutation_ready(payload, _payload_preview_items(payload))
-
-
-def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    return _payload_preview_items_impl(payload)
-
-
-def _latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
-    return _latest_preview_event_impl(events)
-
-
-def _latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | None:
-    return _latest_action_confirmation_event_impl(events)
-
-
-def _latest_action_impact_check_event(events: list[AuditEvent]) -> AuditEvent | None:
-    return _latest_action_impact_check_event_impl(events)
-
-
-def _latest_mutation_audit(
-    audits: list[ActionMutationAuditRecord],
-) -> ActionMutationAuditRecord | None:
-    return _latest_mutation_audit_impl(audits)
-
-
-def _impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "blocked"] | None:
-    if event is None:
-        return None
-    if event.event_type == "action_impact_check_completed":
-        return "checked"
-    if event.event_type == "action_impact_check_blocked":
-        return "blocked"
-    return None

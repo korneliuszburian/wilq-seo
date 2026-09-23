@@ -25,6 +25,16 @@ _MAX_EVENTS_PER_ACTION = 10
 StringList = Callable[[Any], list[str]]
 OperatorItemLabel = Callable[[str], str]
 
+
+def impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "blocked"] | None:
+    if event is None:
+        return None
+    if event.event_type == "action_impact_check_completed":
+        return "checked"
+    if event.event_type == "action_impact_check_blocked":
+        return "blocked"
+    return None
+
 RAW_AUDIT_IDENTIFIER_RE = re.compile(r"\baudit_[A-Za-z0-9_:-]+\b")
 RAW_AUDIT_REFERENCE_CLAUSE_RE = re.compile(
     r"\s*(Audyt podglądu|ID audytu|Ślad audytu):\s*audit_[A-Za-z0-9_:-]+\.?\s*",

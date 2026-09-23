@@ -4,6 +4,20 @@ from wilq.schemas import MetricFact
 unique_values = unique
 
 
+def plain_metric_value_label(
+    value: object, *, missing_label: str = "wartość niepotwierdzona"
+) -> str:
+    if isinstance(value, bool):
+        return "tak" if value else "nie"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+    if isinstance(value, str) and value:
+        return value
+    return missing_label
+
+
 def prioritize_action_metrics(
     facts: list[MetricFact], *, required_names: set[str]
 ) -> list[MetricFact]:

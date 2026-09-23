@@ -60,6 +60,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/scripts/test_changes_check.py::test_changes_check_observes_before_state_through_candidate_snapshot",
     ),
+    ("complexity-audit", "shrinking-frozen-facade"): (
+        "scripts/test.sh",
+        "tests/test_audit_complexity.py::test_frozen_growth_gate_accepts_a_shrinking_facade",
+    ),
     ("connector-refresh-recovery", "bodyless-api-and-full-payload-cas"): (
         "scripts/test.sh",
         "tests/connectors/test_connector_refresh_recovery.py",
@@ -474,12 +478,15 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-source-fact-authority-v2", "exact-keep-reviewed-facts")
             else ("tests/content/test_source_pack_v2.py",)
             if key == ("current-source-pack-v2", "exact-authority-packet")
+            else ("tests/test_audit_complexity.py",)
+            if key == ("complexity-audit", "shrinking-frozen-facade")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
         allow_new_mapping=key
         in {
             ("change-contract-gate", "observed-before-state"),
+            ("complexity-audit", "shrinking-frozen-facade"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),
