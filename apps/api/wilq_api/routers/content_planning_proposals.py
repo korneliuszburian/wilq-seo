@@ -155,16 +155,32 @@ def register_content_planning_proposal_routes(
         work_item_id: str,
         request: ContentPlanningProposalRequest,
     ) -> ContentPlanningProposalResponse | JSONResponse:
-        return _generate_content_work_item_planning_proposal(
-            work_item_id=work_item_id,
-            request=request,
-            snapshot_loader=snapshot_loader,
-            refresh_authority=(
-                refresh_authority_factory()
-                if refresh_authority_factory is not None
-                else _canonical_refresh_preparation_authority()
-            ),
-        )
+        return _research_packet_action_required_response(work_item_id, request)
+
+
+def _research_packet_action_required_response(
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+) -> JSONResponse:
+    next_step = (
+        "WILQ content workflow: przygotuj ActionObject dla dokładnego pakietu badawczego v2."
+    )
+    blocker = ContentPlanningProposalBlocker(
+        code="research_packet_action_required",
+        label="Zapis pakietu wymaga ActionObject",
+        reason="Ten punkt API nie ma autoryzowanej ścieżki zapisu pakietu przez ActionObject.",
+        next_step=next_step,
+        owner="WILQ content workflow",
+    )
+    response = ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        blockers=[blocker],
+        safe_next_step=next_step,
+    )
+    return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
 
 
 def _get_content_work_item_planning_proposal_status(

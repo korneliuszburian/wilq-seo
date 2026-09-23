@@ -53,6 +53,7 @@ ContentPlanningProposalBlockerCode = Literal[
     "scope_not_current",
     "content_kind_mismatch",
     "research_packet_missing",
+    "research_packet_action_required",
     "research_packet_blocked",
     "research_packet_conflict",
 ]
@@ -173,6 +174,7 @@ class ContentPlanningProposalBlocker(BaseModel):
     label: str
     reason: str
     next_step: str
+    owner: str | None = None
     source_codes: list[str] = Field(default_factory=list)
 
 

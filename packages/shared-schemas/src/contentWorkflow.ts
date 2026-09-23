@@ -4422,6 +4422,7 @@ export const ContentPlanningProposalBlockerSchema = z.object({
   label: z.string().min(1),
   reason: z.string().min(1),
   next_step: z.string().min(1),
+  owner: z.string().min(1).nullable().optional(),
   source_codes: z.array(z.string()).default([])
 });
 

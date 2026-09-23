@@ -10,6 +10,7 @@ import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
+import apps.api.wilq_api.routers.content_planning_proposals as planning_router
 import wilq.content.planning.proposal_read as proposal_read
 import wilq.content.workflow.decisions.production as production_module
 import wilq.content.workflow.workspace.api as workflow_api
@@ -25,6 +26,7 @@ from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or
 from tests.content import dynamic_planning_test_support as planning_support
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
+from tests.content.legacy_packet_test_routes import register_legacy_packet_fixture_route
 from tests.content.test_delivery_identity_binding import _command as identity_command
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning import planning_generation_queue
@@ -175,8 +177,6 @@ def test_classified_refresh_generates_one_bound_plan_and_revision(
 def test_classified_refresh_status_prefers_exact_packet_bound_job_over_old_proposal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from apps.api.wilq_api.routers import content_planning_proposals as planning_router
-
     binding = _packet_refresh_binding()
     current = _packet_bound_generating_response(binding)
     old = ContentPlanningProposalResponse(
@@ -237,27 +237,17 @@ def test_classified_refresh_status_prefers_exact_packet_bound_job_over_old_propo
         def load_planning_decisions(self, _work_item_id: str) -> list[Any]:
             return []
 
-        def load_content_research_packet(self, _packet_id: str) -> Any:
-            return SimpleNamespace(
-                packet_id="packet-current",
-                packet_digest="c" * 64,
-                current_work_item_id="work-item",
-                approved_source_fact_ids=(),
-            )
-
     monkeypatch.setattr(planning_router, "content_planning_proposal_store", ProposalStore)
     monkeypatch.setattr(planning_router, "content_workflow_store", lambda: WorkflowStore())
     monkeypatch.setattr(
         proposal_read,
-        "bind_research_packet_to_planning_input",
-        lambda planning_input, _packet: SimpleNamespace(
-            work_item_id=planning_input.work_item_id,
-            planning_input_digest=binding.planning_input_digest,
-        ),
+        "_packet_bound_refresh_input",
+        lambda **_kwargs: SimpleNamespace(planning_input_digest=binding.planning_input_digest),
     )
     monkeypatch.setattr(
-        "wilq.content.workflow.research_packet_preparation.current_research_packet_blocker",
-        lambda **_kwargs: None,
+        proposal_read,
+        "_revalidate_research_packet_response",
+        lambda **kwargs: kwargs["response"],
     )
 
     result = planning_router._get_content_work_item_planning_proposal_status(
@@ -712,6 +702,11 @@ def _app_client(
     app = FastAPI()
     router = APIRouter()
     register_content_refresh_preparation_routes(router, authority_factory=lambda: authority)
+    register_legacy_packet_fixture_route(
+        router,
+        lambda item_id: authority._snapshot_loader(item_id, None),  # noqa: SLF001
+        lambda: authority,
+    )
     register_content_planning_proposal_routes(
         router,
         snapshot_loader=lambda work_item_id: authority._snapshot_loader(  # noqa: SLF001
