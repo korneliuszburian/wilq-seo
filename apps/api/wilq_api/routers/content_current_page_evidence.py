@@ -50,32 +50,56 @@ def register_content_current_page_evidence_route(
         response_model=CurrentPageEvidenceResponse,
     )
     def current_page_evidence_endpoint(work_item_id: str) -> CurrentPageEvidenceResponse:
-        catalog = catalog_loader()
-        latest_evidence_ids = evidence_ids_loader()
-        freshness_state = make_freshness()
-        eligibility = build_current_page_evidence(
+        return read_current_page_evidence(
             work_item_id=work_item_id,
-            catalog=catalog,
-            latest_wordpress_evidence_ids=latest_evidence_ids,
-            wordpress_freshness_state=freshness_state,
-        )
-        if eligibility.blocker_code != "material_review_missing_or_stale":
-            return eligibility
-        current_review = read_content_material_review(
-            work_item_id=work_item_id,
-            store=make_store(),
-            catalog_loader=lambda: catalog,
+            store_factory=make_store,
+            catalog_loader=catalog_loader,
             selected_item_loader=selected_item_loader,
-            adapter=None if adapter_factory is None else adapter_factory(),
+            adapter_factory=adapter_factory,
             material_reader_factory=material_reader_factory,
+            freshness_loader=make_freshness,
+            evidence_ids_loader=evidence_ids_loader,
         )
-        return build_current_page_evidence(
-            work_item_id=work_item_id,
-            catalog=catalog,
-            latest_wordpress_evidence_ids=latest_evidence_ids,
-            wordpress_freshness_state=freshness_state,
-            material_review=current_review,
-        )
+
+
+def read_current_page_evidence(
+    *,
+    work_item_id: str,
+    store_factory: StoreFactory = content_workflow_store,
+    catalog_loader: CatalogLoader = build_content_inventory_catalog_cached,
+    selected_item_loader: SelectedItemLoader | None = None,
+    adapter_factory: AdapterFactory | None = None,
+    material_reader_factory: MaterialReaderFactory | None = None,
+    freshness_loader: FreshnessLoader | None = None,
+    evidence_ids_loader: EvidenceIdsLoader = latest_wordpress_vendor_read_evidence_ids,
+) -> CurrentPageEvidenceResponse:
+    """Resolve the same deep current-page evidence view used by its read route."""
+    catalog = catalog_loader()
+    latest_evidence_ids = evidence_ids_loader()
+    freshness_state = (freshness_loader or _wordpress_freshness_state)()
+    eligibility = build_current_page_evidence(
+        work_item_id=work_item_id,
+        catalog=catalog,
+        latest_wordpress_evidence_ids=latest_evidence_ids,
+        wordpress_freshness_state=freshness_state,
+    )
+    if eligibility.blocker_code != "material_review_missing_or_stale":
+        return eligibility
+    current_review = read_content_material_review(
+        work_item_id=work_item_id,
+        store=store_factory(),
+        catalog_loader=lambda: catalog,
+        selected_item_loader=selected_item_loader,
+        adapter=None if adapter_factory is None else adapter_factory(),
+        material_reader_factory=material_reader_factory,
+    )
+    return build_current_page_evidence(
+        work_item_id=work_item_id,
+        catalog=catalog,
+        latest_wordpress_evidence_ids=latest_evidence_ids,
+        wordpress_freshness_state=freshness_state,
+        material_review=current_review,
+    )
 
 
 def _wordpress_freshness_state() -> str | None:
@@ -83,4 +107,4 @@ def _wordpress_freshness_state() -> str | None:
     return None if status is None else status.freshness.state
 
 
-__all__ = ["register_content_current_page_evidence_route"]
+__all__ = ["read_current_page_evidence", "register_content_current_page_evidence_route"]

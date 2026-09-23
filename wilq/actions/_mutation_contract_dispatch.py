@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSITION_ACTION_TYPE
+from wilq.content.workflow.current_disposition_authority import (
+    CURRENT_DISPOSITION_ACTION_TYPE,
+)
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
@@ -45,6 +50,13 @@ _LOCAL_CONTRACTS = {
         "current_disposition_snapshot_v1",
         ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
         "Ta akcja zapisuje wyłącznie lokalny receipt bieżącej disposition exact URL-a; "
+        "nie wywołuje vendora ani nie tworzy treści.",
+    ),
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE: _LocalContractSpec(
+        "record_current_page_disposition_v2_receipt",
+        "wilq_current_page_disposition_snapshot_v2",
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
+        "Ta akcja zapisuje wyłącznie lokalny receipt KEEP dla exact bieżącego materiału; "
         "nie wywołuje vendora ani nie tworzy treści.",
     ),
     SOURCE_FACT_AUTHORITY_ACTION_TYPE: _LocalContractSpec(

@@ -7,6 +7,11 @@ from wilq.content.workflow.current_disposition_authority import (
     ContentCurrentDispositionSnapshot,
     current_disposition_action_payload_digest,
 )
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+    CurrentPageDispositionV2Proposal,
+)
+from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     ContentDeliveryIdentityAuthoritySnapshot,
@@ -29,6 +34,16 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
     """Add exact authority snapshot/payload digests without changing audit identity."""
 
     action_type = action.payload.get("action_type")
+    if action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE:
+        proposal = CurrentPageDispositionV2Proposal.model_validate(
+            action.payload.get("current_page_disposition_v2", {})
+        )
+        event.details = {
+            **event.details,
+            "current_disposition_snapshot_digest": proposal.snapshot.context_digest,
+            "current_disposition_action_payload_digest": canonical_json_digest(action.payload),
+        }
+        return
     if action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE:
         snapshot_payload = action.payload.get("delivery_identity_authority")
         if not isinstance(snapshot_payload, dict):

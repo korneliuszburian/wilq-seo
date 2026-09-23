@@ -7,6 +7,9 @@ from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
 )
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
@@ -49,6 +52,12 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
         return DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER
     if (
         action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return CURRENT_DISPOSITION_MUTATION_ADAPTER
+    if (
+        action.payload.get("action_type") == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):

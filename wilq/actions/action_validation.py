@@ -4,6 +4,9 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -39,12 +42,7 @@ def validate_action(
     elif (
         action.mode == ActionMode.apply
         and not connector.configured
-        and action.payload.get("action_type")
-        not in {
-            CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
-            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
-            CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
-        }
+        and not _local_connector_configuration_not_required(action)
     ):
         errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
     errors.extend(validate_action_payload(action.connector, action.payload))
@@ -71,4 +69,17 @@ def validate_action(
         status_label=status_label("valid" if valid else "invalid"),
         errors=errors,
         warnings=warnings,
+    )
+
+
+def _local_connector_configuration_not_required(action: ActionObject) -> bool:
+    action_type = action.payload.get("action_type")
+    return action_type in {
+        CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+        SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+        CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+    } or (
+        action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
     )

@@ -49,6 +49,9 @@ from wilq.content.workflow.store.store_content_kind_receipt import (
 from wilq.content.workflow.store.store_current_disposition_authority import (
     ContentCurrentDispositionAuthorityStoreMixin,
 )
+from wilq.content.workflow.store.store_current_page_disposition_v2 import (
+    CurrentPageDispositionV2StoreMixin,
+)
 from wilq.content.workflow.store.store_current_verification import (
     ContentCurrentVerificationStoreMixin,
 )
@@ -640,6 +643,7 @@ class ContentWorkflowStore(
     ContentAuthoringInventoryReceiptStoreMixin,
     ContentMaterialReviewStoreMixin,
     ContentCurrentDispositionAuthorityStoreMixin,
+    CurrentPageDispositionV2StoreMixin,
     ContentCurrentVerificationStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,

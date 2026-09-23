@@ -39,6 +39,12 @@ from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     validate_current_disposition_action_payload,
 )
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
+from wilq.content.workflow.current_page_disposition_v2_action import (
+    validate_current_page_disposition_v2_payload,
+)
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     validate_delivery_identity_authority_action_payload,
@@ -78,9 +84,7 @@ SERVICE_PROFILE_PRIVATE_PROPOSAL_PROMOTION_ACTION_TYPE = (
 )
 
 
-_LOCAL_ACTION_VALIDATORS: dict[
-    str, tuple[str, Callable[[dict[str, Any]], list[str]]]
-] = {
+_LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[str]]]] = {
     SOURCE_FACT_AUTHORITY_ACTION_TYPE: (
         "Authority źródeł",
         validate_source_fact_authority_action_payload,
@@ -92,6 +96,10 @@ _LOCAL_ACTION_VALIDATORS: dict[
     CURRENT_DISPOSITION_ACTION_TYPE: (
         "Disposition treści",
         validate_current_disposition_action_payload,
+    ),
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE: (
+        "Disposition bieżącej strony v2",
+        validate_current_page_disposition_v2_payload,
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
         "Identity treści",
@@ -165,9 +173,7 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
     if payload_connector is not None and payload_connector != connector_id:
         errors.append(wrong("Akcja", "źródło danych nie zgadza się z akcją"))
 
-    local_errors = _validate_local_action_payload(
-        connector_id, payload, action_type, errors
-    )
+    local_errors = _validate_local_action_payload(connector_id, payload, action_type, errors)
     if local_errors is not None:
         return local_errors
 

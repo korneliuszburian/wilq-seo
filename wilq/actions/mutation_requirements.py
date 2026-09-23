@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
 from wilq.content.workflow.target.dev_draft_action import CONTENT_DEV_DRAFT_ACTION_TYPE
 from wilq.content.workflow.target.new_page_draft_action import (
     CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
@@ -57,11 +60,8 @@ def base_mutation_readiness_requirements(
             satisfied=bool(action.evidence_ids),
             evidence=evidence_label(action.evidence_ids),
         ),
-        _requirement(
-            code="connector_configured",
-            label="Connector jest skonfigurowany",
-            satisfied=connector_configured,
-            evidence=connector_evidence,
+        _connector_readiness_requirement(
+            action, configured=connector_configured, evidence=connector_evidence
         ),
         _requirement(
             code="preview_audit",
@@ -110,6 +110,29 @@ def base_mutation_readiness_requirements(
             evidence=mutation_adapter,
         ),
     ]
+
+
+def _connector_readiness_requirement(
+    action: ActionObject,
+    *,
+    configured: bool,
+    evidence: str,
+) -> ActionMutationReadinessRequirement:
+    is_local_v2 = (
+        action.payload.get("action_type") == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    )
+    return _requirement(
+        code="connector_configured",
+        label=(
+            "Zapis lokalny nie wymaga konfiguracji vendora"
+            if is_local_v2
+            else "Connector jest skonfigurowany"
+        ),
+        satisfied=True if is_local_v2 else configured,
+        evidence="local_authority_only; no vendor write" if is_local_v2 else evidence,
+    )
 
 
 def _requirement(

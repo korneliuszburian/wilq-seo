@@ -349,6 +349,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_page_evidence.py::"
         "test_public_current_page_evidence_tracks_exact_material_meaning_per_url",
     ),
+    ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"): (
+        "scripts/test.sh",
+        "tests/content/test_current_page_disposition_v2_action.py",
+    ),
 }
 
 
@@ -441,6 +445,9 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
             else ("tests/content/test_current_page_evidence.py",)
             if key == ("current-page-evidence", "stable-per-url-material-meaning")
+            else ("tests/content/test_current_page_disposition_v2_action.py",)
+            if key
+            == ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
@@ -455,6 +462,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),
             ("current-page-evidence", "stable-per-url-material-meaning"),
+            ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-disposition", "non-keep-candidate-blocked"),

@@ -255,6 +255,21 @@ def execute_current_disposition_authority(
     audit_events: list[AuditEvent],
     confirmed_by: str | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
+    from wilq.content.workflow.current_page_disposition_v2 import (
+        CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+    )
+
+    if action.payload.get("action_type") == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE:
+        from wilq.content.workflow.current_page_disposition_v2_action import (
+            execute_current_page_disposition_v2,
+        )
+
+        return execute_current_page_disposition_v2(
+            action,
+            store=store,
+            audit_events=audit_events,
+            confirmed_by=confirmed_by,
+        )
     proposal = store.load_content_current_disposition_proposal(action.id)
     if proposal is None:
         return None, ["Current disposition proposal is missing."]
@@ -345,9 +360,7 @@ def build_current_disposition_snapshot(
     if run is None or run.input.policy_id in HISTORICAL_PRODUCTION_POLICY_IDS:
         raise ValueError("Current production classification is unavailable.")
     matches = [
-        row
-        for row in run.rows
-        if row.current_work_item_id == candidate.current_work_item_id
+        row for row in run.rows if row.current_work_item_id == candidate.current_work_item_id
     ]
     if len(matches) != 1:
         raise ValueError("Current disposition requires one exact current classification row.")
@@ -532,8 +545,7 @@ def non_keep_current_disposition_blocker() -> ContentCurrentDispositionBlocker:
         reason="technical_seo_disposition_unsupported_in_content_workflow",
         owner="WILQ technical SEO",
         next_step=(
-            "Przygotuj osobny exact technical-SEO ActionObject z bieżących dowodów "
-            "dla tego URL-a."
+            "Przygotuj osobny exact technical-SEO ActionObject z bieżących dowodów dla tego URL-a."
         ),
     )
 

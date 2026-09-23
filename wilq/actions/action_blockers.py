@@ -5,6 +5,9 @@ from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
 from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSITION_ACTION_TYPE
+from wilq.content.workflow.current_page_disposition_v2 import (
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
@@ -120,6 +123,7 @@ def action_impact_check_blockers(
         _is_content_dev_draft_action(action)
         or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
+        or _is_local_current_page_disposition_v2_action(action)
         or _is_local_delivery_identity_authority_action(action)
         or _is_local_research_fact_promotion_action(action)
     ):
@@ -179,6 +183,7 @@ def action_apply_preflight_blockers(
     if not connector_configured and not (
         _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
+        or _is_local_current_page_disposition_v2_action(action)
         or _is_local_delivery_identity_authority_action(action)
         or _is_local_research_fact_promotion_action(action)
     ):
@@ -264,6 +269,13 @@ def _is_local_current_disposition_action(action: ActionObject) -> bool:
     )
 
 
+def _is_local_current_page_disposition_v2_action(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    )
+
+
 def _is_local_delivery_identity_authority_action(action: ActionObject) -> bool:
     return (
         action.payload.get("action_type") == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
@@ -283,6 +295,7 @@ def _requires_approved_action_review(action: ActionObject) -> bool:
         _is_content_dev_draft_action(action)
         or _is_local_source_fact_authority_action(action)
         or _is_local_current_disposition_action(action)
+        or _is_local_current_page_disposition_v2_action(action)
         or _is_local_delivery_identity_authority_action(action)
         or _is_local_research_fact_promotion_action(action)
     )

@@ -120,6 +120,43 @@ def build_current_page_evidence(
     )
 
 
+def read_current_page_evidence_current(work_item_id: str) -> CurrentPageEvidenceResponse:
+    """Resolve current catalog, connector freshness, and exact material review."""
+    from wilq.connectors.registry import get_connector_status
+    from wilq.content.workflow.material_review import read_content_material_review
+    from wilq.content.workflow.store.store import content_workflow_store
+    from wilq.content.workflow.workspace.catalog import (
+        build_content_inventory_catalog_cached,
+        latest_wordpress_vendor_read_evidence_ids,
+    )
+
+    catalog = build_content_inventory_catalog_cached()
+    evidence_ids = latest_wordpress_vendor_read_evidence_ids()
+    connector = get_connector_status("wordpress_ekologus")
+    freshness = None if connector is None else connector.freshness.state
+    eligibility = build_current_page_evidence(
+        work_item_id=work_item_id,
+        catalog=catalog,
+        latest_wordpress_evidence_ids=evidence_ids,
+        wordpress_freshness_state=freshness,
+    )
+    if eligibility.blocker_code != "material_review_missing_or_stale":
+        return eligibility
+    review = read_content_material_review(
+        work_item_id=work_item_id,
+        store=content_workflow_store(),
+        catalog_loader=lambda: catalog,
+        adapter=None,
+    )
+    return build_current_page_evidence(
+        work_item_id=work_item_id,
+        catalog=catalog,
+        latest_wordpress_evidence_ids=evidence_ids,
+        wordpress_freshness_state=freshness,
+        material_review=review,
+    )
+
+
 def _current_catalog_blocker(
     *,
     work_item_id: str,
@@ -180,9 +217,7 @@ def _current_catalog_blocker(
             code="source_evidence_drift",
             decision="Katalog strony nie odpowiada najnowszemu odczytowi WordPress.",
             owner="WILQ WordPress connector",
-            safe_next_step=(
-                "Zsynchronizuj katalog z najnowszym odczytem WordPress."
-            ),
+            safe_next_step=("Zsynchronizuj katalog z najnowszym odczytem WordPress."),
             item=item,
             catalog_evidence_ids=catalog.evidence_ids,
             latest_wordpress_evidence_ids=latest_wordpress_evidence_ids,
@@ -204,9 +239,7 @@ def _current_catalog_blocker(
             code="page_material_url_only",
             decision="Katalog potwierdza adres, ale nie zawiera materiału strony do review.",
             owner="WILQ WordPress connector",
-            safe_next_step=(
-                "Udostępnij bieżący materiał przez odczyt WordPress."
-            ),
+            safe_next_step=("Udostępnij bieżący materiał przez odczyt WordPress."),
             item=item,
             catalog_evidence_ids=catalog.evidence_ids,
             latest_wordpress_evidence_ids=latest_wordpress_evidence_ids,
