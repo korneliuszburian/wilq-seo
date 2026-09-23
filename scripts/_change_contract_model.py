@@ -119,6 +119,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_disposition_approval.py",
         "tests/scripts/test_changes_check.py",
     ),
+    ("current-disposition", "non-keep-candidate-blocked"): (
+        "scripts/test.sh",
+        "tests/content/test_current_disposition_authority.py::"
+        "test_public_non_keep_dispositions_are_blocked_before_persistence",
+    ),
     ("current-disposition", "operator-decision-card"): (
         "pnpm",
         "--filter",
@@ -389,6 +394,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "operator-decision-card")
             else ("tests/content/test_current_disposition_approval_change_contract.py",)
             if key == ("current-disposition", "server-owned-approval-command")
+            else ("tests/content/test_current_disposition_authority.py",)
+            if key == ("current-disposition", "non-keep-candidate-blocked")
             else ("tests/content/test_current_preparation_readiness_change_contract.py",)
             if key == ("current-preparation", "exact-downstream-receipts")
             else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
@@ -421,6 +428,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-disposition", "operator-decision-card")
             else ("tests/content/test_current_disposition_approval_change_contract.py",)
             if key == ("current-disposition", "server-owned-approval-command")
+            else ("tests/content/test_current_disposition_authority.py",)
+            if key == ("current-disposition", "non-keep-candidate-blocked")
             else ("tests/content/test_current_preparation_readiness_change_contract.py",)
             if key == ("current-preparation", "exact-downstream-receipts")
             else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
@@ -440,6 +449,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("material-review", "unchanged-material-stays-current"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
+            ("current-disposition", "non-keep-candidate-blocked"),
             ("current-preparation", "exact-downstream-receipts"),
             ("current-inventory-reconciliation", "coverage-policy-blocks-before-write"),
             ("current-verification", "exact-draft-receipt-readback"),

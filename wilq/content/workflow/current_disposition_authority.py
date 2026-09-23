@@ -158,6 +158,7 @@ class ContentCurrentDispositionBlocker(_FrozenModel):
 
     seam: Literal["classification", "current_context", "receipt"]
     reason: str = Field(min_length=1, max_length=160)
+    owner: Literal["WILQ content workflow", "WILQ technical SEO"] = "WILQ content workflow"
     evidence_ids: tuple[str, ...] = Field(default=(), max_length=256)
     next_step: str = Field(min_length=1, max_length=600)
 
@@ -472,6 +473,9 @@ def build_current_disposition_proposal(
 def _rebuild_current_disposition_action(
     store: Any, proposal: ContentCurrentDispositionProposal
 ) -> tuple[ActionObject | None, tuple[ContentCurrentDispositionBlocker, ...]]:
+    if proposal.proposed_final_disposition != "keep":
+        return None, (non_keep_current_disposition_blocker(),)
+
     try:
         snapshot = build_current_disposition_snapshot(
             store,
@@ -522,6 +526,18 @@ def _current_disposition_blocker(
     )
 
 
+def non_keep_current_disposition_blocker() -> ContentCurrentDispositionBlocker:
+    return ContentCurrentDispositionBlocker(
+        seam="current_context",
+        reason="technical_seo_disposition_unsupported_in_content_workflow",
+        owner="WILQ technical SEO",
+        next_step=(
+            "Przygotuj osobny exact technical-SEO ActionObject z bieżących dowodów "
+            "dla tego URL-a."
+        ),
+    )
+
+
 def _current_disposition_rebuild_blocker(
     error_message: str,
 ) -> ContentCurrentDispositionBlocker:
@@ -566,6 +582,12 @@ def prepare_current_disposition_preview(
     candidate: ContentCurrentDispositionCandidate,
 ) -> ContentCurrentDispositionPreviewResponse:
     """Persist a candidate and rebuild its exact action preview server-side."""
+
+    if candidate.proposed_final_disposition != "keep":
+        return ContentCurrentDispositionPreviewResponse(
+            status="blocked",
+            blockers=(non_keep_current_disposition_blocker(),),
+        )
 
     proposal = store.record_content_current_disposition_proposal(candidate)
     action, blockers = _rebuild_current_disposition_action(store, proposal)
@@ -660,6 +682,7 @@ __all__ = [
     "current_disposition_receipt_digest",
     "execute_current_disposition_authority",
     "load_current_disposition_action",
+    "non_keep_current_disposition_blocker",
     "prepare_current_disposition_preview",
     "read_current_disposition_authority",
     "validate_current_disposition_action_payload",

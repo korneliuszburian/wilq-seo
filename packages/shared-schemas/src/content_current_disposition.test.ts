@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ContentCurrentDispositionBlockerSchema,
   ContentCurrentDispositionApprovalCurrentResponseSchema,
   ContentCurrentDispositionApprovalRequestSchema,
   ContentCurrentDispositionApprovalResponseSchema
@@ -15,6 +16,17 @@ const request = {
 };
 
 describe("current disposition approval contract", () => {
+  it("defaults legacy blockers to the content workflow owner", () => {
+    expect(
+      ContentCurrentDispositionBlockerSchema.parse({
+        seam: "classification",
+        reason: "current_disposition_classification_unavailable",
+        evidence_ids: [],
+        next_step: "Odczytaj bieżącą klasyfikację.",
+      }).owner
+    ).toBe("WILQ content workflow");
+  });
+
   it("accepts only the exact approval request", () => {
     expect(ContentCurrentDispositionApprovalRequestSchema.parse(request)).toEqual(request);
     expect(() =>
@@ -57,6 +69,7 @@ describe("current disposition approval contract", () => {
           {
             seam: "receipt",
             reason: "current_disposition_preview_mismatch",
+            owner: "WILQ content workflow",
             evidence_ids: [],
             next_step: "Odśwież preview."
           }

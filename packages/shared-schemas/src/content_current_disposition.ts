@@ -40,6 +40,7 @@ export const ContentCurrentDispositionBlockerSchema = z
   .object({
     seam: z.enum(["classification", "current_context", "receipt"]),
     reason: z.string().min(1),
+    owner: z.enum(["WILQ content workflow", "WILQ technical SEO"]).default("WILQ content workflow"),
     evidence_ids: z.array(z.string().min(1)).default([]),
     next_step: z.string().min(1)
   })

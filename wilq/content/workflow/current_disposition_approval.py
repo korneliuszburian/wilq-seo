@@ -26,6 +26,7 @@ from wilq.content.workflow.current_disposition_authority import (
     ContentCurrentDispositionProposal,
     ContentCurrentDispositionReceipt,
     current_disposition_action_for_proposal,
+    non_keep_current_disposition_blocker,
     read_current_disposition_authority,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
@@ -79,6 +80,10 @@ def approve_current_disposition_authority(
     read-only idempotent result and therefore does not append another lifecycle.
     """
 
+    proposal = store.load_content_current_disposition_proposal(action_id)
+    if proposal is not None and proposal.proposed_final_disposition != "keep":
+        raise CurrentDispositionApprovalError(non_keep_current_disposition_blocker())
+
     audit = audit_store or local_state_store()
     with _action_serialization(action_id):
         return _approve_current_disposition_authority_locked(
@@ -131,9 +136,27 @@ def _approve_current_disposition_authority_locked(
             audit_events=events,
         )
 
-    # The existing service facade owns identity stamping, redaction and audit
-    # persistence.  Keep this composition here so the route has one narrow
-    # authority seam and service.py remains unchanged.
+    return _run_current_disposition_lifecycle(
+        store,
+        action_id=action_id,
+        request=request,
+        action=action,
+        receipt=receipt,
+        audit=audit,
+    )
+
+
+def _run_current_disposition_lifecycle(
+    store: ContentWorkflowStore,
+    *,
+    action_id: str,
+    request: ContentCurrentDispositionApprovalRequest,
+    action: ActionObject,
+    receipt: ContentCurrentDispositionReceipt | None,
+    audit: LocalStateStore,
+) -> ContentCurrentDispositionApprovalResponse:
+    """Run review, confirmation and impact checks for one exact action."""
+
     validation = action_service.validate_action(action)
     if not validation.valid:
         raise _lifecycle_error(
@@ -189,6 +212,27 @@ def _approve_current_disposition_authority_locked(
             receipt=receipt,
             audit_ids=_audit_ids(action.audit_events),
         )
+
+    return _apply_current_disposition_receipt(
+        store,
+        action_id=action_id,
+        request=request,
+        action=action,
+        receipt=receipt,
+        audit=audit,
+    )
+
+
+def _apply_current_disposition_receipt(
+    store: ContentWorkflowStore,
+    *,
+    action_id: str,
+    request: ContentCurrentDispositionApprovalRequest,
+    action: ActionObject,
+    receipt: ContentCurrentDispositionReceipt | None,
+    audit: LocalStateStore,
+) -> ContentCurrentDispositionApprovalResponse:
+    """Apply the local receipt and resolve a racing idempotent receipt."""
 
     applied = action_service.apply_action(
         action,

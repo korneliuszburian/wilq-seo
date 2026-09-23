@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.production as production_module
 from apps.api.wilq_api.main import app
@@ -21,6 +23,7 @@ from wilq.actions.mutation_readiness import vendor_write_possible
 from wilq.actions.payloads import validate_action_payload
 from wilq.content.workflow.current_disposition_authority import (
     ContentCurrentDispositionCandidate,
+    ContentCurrentDispositionProposal,
     ContentCurrentDispositionReceipt,
     build_current_disposition_action,
     build_current_disposition_snapshot,
@@ -28,9 +31,11 @@ from wilq.content.workflow.current_disposition_authority import (
     current_disposition_action_payload_digest,
     current_disposition_receipt_digest,
     execute_current_disposition_authority,
+    load_current_disposition_action,
     prepare_current_disposition_preview,
     read_current_disposition_authority,
 )
+from wilq.content.workflow.store import store as content_store_module
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import ActionApplyRequest, AuditEvent
 from wilq.storage.local_state import LocalStateStore
@@ -48,6 +53,29 @@ def _preview_action(tmp_path) -> tuple[ContentWorkflowStore, object]:
         ),
     )
     return store, response.action
+
+
+def _seed_legacy_non_keep_receipt(
+    store: ContentWorkflowStore, current_work_item_id: str
+) -> tuple[ContentCurrentDispositionProposal, ContentCurrentDispositionReceipt]:
+    candidate = ContentCurrentDispositionCandidate(
+        current_work_item_id=current_work_item_id,
+        proposed_final_disposition="redirect",
+    )
+    proposal = store.record_content_current_disposition_proposal(candidate)
+    snapshot = build_current_disposition_snapshot(store, candidate)
+    receipt = ContentCurrentDispositionReceipt.create(
+        action=build_current_disposition_action(snapshot),
+        snapshot=snapshot,
+        preview_audit_id="legacy_preview",
+        review_audit_id="legacy_review",
+        confirmation_audit_id="legacy_confirmation",
+        impact_audit_id="legacy_impact",
+        reviewed_by="legacy_operator",
+        confirmed_by="legacy_operator",
+    )
+    store.record_content_current_disposition_receipt(receipt)
+    return proposal, receipt
 
 
 def _lifecycle_events(action) -> list[AuditEvent]:
@@ -454,6 +482,7 @@ def test_read_projection_returns_typed_blocker_when_current_row_disappears(
         lambda: current_run.model_copy(update={"rows": missing_rows}),
     )
     monkeypatch.setattr(authority_router, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(content_store_module, "content_workflow_store", lambda: store)
 
     projection = read_current_disposition_authority(store, action_id=action.id)
 
@@ -639,6 +668,149 @@ def test_current_disposition_api_exposes_preview_and_read_only() -> None:
     assert set(read_methods) >= {"get"}
     assert "post" not in read_methods
     assert set(approve_methods) >= {"post"}
+
+
+def _assert_technical_seo_disposition_blocker(blocker: dict[str, object]) -> None:
+    assert blocker["reason"] == (
+        "technical_seo_disposition_unsupported_in_content_workflow"
+    )
+    assert blocker["owner"] == "WILQ technical SEO"
+    assert blocker["next_step"] == (
+        "Przygotuj osobny exact technical-SEO ActionObject z bieżących dowodów "
+        "dla tego URL-a."
+    )
+
+
+def _assert_blocked_non_keep_preview(
+    client: TestClient,
+    current_work_item_id: str,
+    disposition: str,
+    proposal_writes: list[ContentCurrentDispositionCandidate],
+) -> None:
+    response = client.post(
+        "/api/content/current-disposition-authorities/preview",
+        json={
+            "current_work_item_id": current_work_item_id,
+            "proposed_final_disposition": disposition,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["action"] is None
+    assert len(body["blockers"]) == 1
+    _assert_technical_seo_disposition_blocker(body["blockers"][0])
+    assert proposal_writes == []
+
+
+def _assert_legacy_non_keep_readback(
+    client: TestClient, action_id: str, *, receipt_id: str | None = None
+) -> None:
+    response = client.get(f"/api/content/current-disposition-authorities/{action_id}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["action"] is None
+    _assert_technical_seo_disposition_blocker(body["blockers"][0])
+    if receipt_id is None:
+        assert body["receipt"] is None
+    else:
+        assert body["receipt"] is not None
+        assert body["receipt"]["receipt_id"] == receipt_id
+
+
+def test_public_non_keep_dispositions_are_blocked_before_persistence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "state.sqlite3"
+    store = ContentWorkflowStore(path)
+    run = exact_public_bdo_run()
+    store.record_production_classification(run)
+    current_work_item_id = run.rows[0].current_work_item_id
+    assert current_work_item_id is not None
+    audit = LocalStateStore(path)
+    monkeypatch.setattr(authority_router, "content_workflow_store", lambda: store)
+    monkeypatch.setenv("WILQ_STATE_DB", str(path))
+    client = TestClient(app)
+
+    # Old pending proposals remain readable, while their approval is blocked
+    # before the audit/review/confirmation/apply lifecycle starts.
+    legacy = store.record_content_current_disposition_proposal(
+        ContentCurrentDispositionCandidate(
+            current_work_item_id=current_work_item_id,
+            proposed_final_disposition="noindex",
+        )
+    )
+    old_receipt_proposal, old_receipt = _seed_legacy_non_keep_receipt(
+        store, current_work_item_id
+    )
+    _assert_legacy_non_keep_readback(client, legacy.action_id)
+    assert load_current_disposition_action(legacy.action_id) is None
+    legacy_snapshot = build_current_disposition_snapshot(
+        store,
+        ContentCurrentDispositionCandidate(
+            current_work_item_id=current_work_item_id,
+            proposed_final_disposition="noindex",
+        ),
+    )
+    legacy_action = build_current_disposition_action(legacy_snapshot)
+    preview_event = action_service.preview_action(legacy_action).audit_event
+    proposal_writes: list[ContentCurrentDispositionCandidate] = []
+    original_record = store.record_content_current_disposition_proposal
+
+    def record_proposal(
+        candidate: ContentCurrentDispositionCandidate,
+    ) -> ContentCurrentDispositionProposal:
+        proposal_writes.append(candidate)
+        return original_record(candidate)
+
+    monkeypatch.setattr(store, "record_content_current_disposition_proposal", record_proposal)
+
+    before_events = audit.list_audit_events()
+    for disposition in ("noindex", "redirect", "remove"):
+        _assert_blocked_non_keep_preview(
+            client, current_work_item_id, disposition, proposal_writes
+        )
+    assert audit.list_audit_events() == before_events
+
+    before_legacy_events = audit.list_audit_events(action_id=legacy.action_id)
+    approval = client.post(
+        f"/api/content/current-disposition-authorities/{legacy.action_id}/approve",
+        json={
+            "expected_snapshot_digest": legacy_action.payload[
+                "current_disposition_authority"
+            ]["context_digest"],
+            "expected_action_payload_digest": current_disposition_action_payload_digest(
+                legacy_action
+            ),
+            "expected_preview_audit_id": preview_event.id,
+            "confirm": True,
+            "notes": "Zatwierdzam legacy proposal.",
+        },
+    )
+    assert approval.status_code == 409
+    _assert_technical_seo_disposition_blocker(approval.json()["blockers"][0])
+    assert audit.list_audit_events(action_id=legacy.action_id) == before_legacy_events
+    assert store.load_content_current_disposition_receipt(legacy.action_id) is None
+    assert proposal_writes == []
+
+    _assert_legacy_non_keep_readback(
+        client, old_receipt_proposal.action_id, receipt_id=old_receipt.receipt_id
+    )
+    assert load_current_disposition_action(old_receipt_proposal.action_id) is None
+
+    keep = client.post(
+        "/api/content/current-disposition-authorities/preview",
+        json={
+            "current_work_item_id": run.rows[0].current_work_item_id,
+            "proposed_final_disposition": "keep",
+        },
+    )
+    assert keep.status_code == 200
+    assert keep.json()["status"] == "preview_ready"
+    assert keep.json()["action"] is not None
+    keep_action_id = keep.json()["action"]["id"]
+    assert store.load_content_current_disposition_proposal(keep_action_id) is not None
 
 
 def test_current_disposition_latest_rejected_review_blocks_direct_apply(tmp_path) -> None:
