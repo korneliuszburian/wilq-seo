@@ -1,17 +1,15 @@
-"""Public read/record seam for exact source-pack binding receipts."""
+"""Historical source-pack reads; direct v1 writes require a new ActionObject."""
 
 from __future__ import annotations
 
 import asyncio
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from wilq.content.workflow.source_pack_binding import (
-    ContentSourcePackBindingCommand,
     ContentSourcePackBindingReadResult,
-    ContentSourcePackBindingRecordResult,
     ContentSourcePackPrerequisites,
     build_content_source_pack_prerequisites,
 )
@@ -20,15 +18,26 @@ from wilq.content.workflow.store.store import content_workflow_store
 _PREFIX = "/api/content/source-pack-bindings"
 
 
-async def record_content_source_pack_binding(
-    command: ContentSourcePackBindingCommand,
-) -> JSONResponse:
-    result = await asyncio.to_thread(
-        content_workflow_store().record_content_source_pack_binding,
-        command,
+class LegacySourcePackActionRequiredResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    response_type: Literal["legacy_source_pack_action_required"] = (
+        "legacy_source_pack_action_required"
     )
-    status_code = {"created": 201, "idempotent": 200, "conflict": 409}[result.status]
-    return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))
+    status: Literal["blocked"] = "blocked"
+    code: Literal["legacy_source_pack_action_required"] = (
+        "legacy_source_pack_action_required"
+    )
+    blocker_owner: Literal["WILQ content workflow"] = "WILQ content workflow"
+    safe_next_step: str = (
+        "Odczytaj v2 source-pack-preview dla wybranej strony."
+    )
+    external_write_attempted: Literal[False] = False
+
+
+async def legacy_source_pack_write_blocker(
+) -> LegacySourcePackActionRequiredResponse:
+    return LegacySourcePackActionRequiredResponse()
 
 
 async def read_content_source_pack_binding(
@@ -84,10 +93,10 @@ async def read_content_source_pack_prerequisites(
 def register_content_source_pack_binding_routes(router: APIRouter) -> None:
     router.add_api_route(
         _PREFIX,
-        record_content_source_pack_binding,
+        legacy_source_pack_write_blocker,
         methods=["POST"],
-        response_model=ContentSourcePackBindingRecordResult,
-        responses={409: {"model": ContentSourcePackBindingRecordResult}},
+        status_code=409,
+        response_model=LegacySourcePackActionRequiredResponse,
         tags=["content"],
     )
     router.add_api_route(

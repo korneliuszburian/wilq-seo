@@ -12,6 +12,31 @@ from tests.content.test_delivery_identity_binding import _command as identity_co
 from tests.content.test_source_pack_binding import _setup_store, _source_command
 
 
+def test_legacy_source_pack_post_requires_an_action_without_persisting(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    store, identity = _setup_store(tmp_path)
+    monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
+    before = store.list_content_source_pack_bindings(
+        current_work_item_id=identity.current_work_item_id
+    )
+
+    response = TestClient(app).post(
+        "/api/content/source-pack-bindings",
+        json=_source_command(identity).model_dump(mode="json"),
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "legacy_source_pack_action_required"
+    assert response.json()["blocker_owner"] == "WILQ content workflow"
+    assert response.json()["safe_next_step"]
+    assert response.json()["external_write_attempted"] is False
+    assert store.list_content_source_pack_bindings(
+        current_work_item_id=identity.current_work_item_id
+    ) == before
+
+
 def test_source_pack_route_exposes_global_prerequisites_but_blocks_rowless_facts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -20,12 +45,9 @@ def test_source_pack_route_exposes_global_prerequisites_but_blocks_rowless_facts
     monkeypatch.setattr(route_module, "content_workflow_store", lambda: store)
     client = TestClient(app)
 
-    created = client.post(
-        "/api/content/source-pack-bindings",
-        json=_source_command(identity).model_dump(mode="json"),
-    )
-    assert created.status_code == 201
-    payload = created.json()
+    payload = store.record_content_source_pack_binding(
+        _source_command(identity)
+    ).model_dump(mode="json")
     assert payload["binding"]["status"] == "blocked"
     assert payload["binding"]["blocker"]["reason"] == "source_fact_row_binding_missing"
     assert payload["binding"]["source_facts_digest"]
@@ -50,26 +72,28 @@ def test_source_pack_route_exposes_global_prerequisites_but_blocks_rowless_facts
     assert prerequisite_payload["source_fact_registry_receipt"]["registry_digest"]
     assert prerequisite_payload["fresh_context_digest"]
 
-    round_trip_payload = _source_command(
-        identity,
-        source_pack_id="source_pack_round_trip",
-        source_pack_sha256="b" * 64,
-    ).model_dump(mode="json")
-    round_trip = client.post("/api/content/source-pack-bindings", json=round_trip_payload)
-    assert round_trip.status_code == 201
-    assert round_trip.json()["binding"]["status"] == "blocked"
+    round_trip = store.record_content_source_pack_binding(
+        _source_command(
+            identity,
+            source_pack_id="source_pack_round_trip",
+            source_pack_sha256="b" * 64,
+        )
+    )
+    assert round_trip.binding.status == "blocked"
+    assert round_trip.binding.blocker is not None
     assert (
-        round_trip.json()["binding"]["blocker"]["reason"]
+        round_trip.binding.blocker.reason
         == "source_fact_row_binding_missing"
     )
 
-    conflict_payload = {
-        **round_trip_payload,
-        "source_fact_ids": ["ekologus_public_bdo_faq_2026_07_01"],
-    }
-    conflict = client.post("/api/content/source-pack-bindings", json=conflict_payload)
-    assert conflict.status_code == 201
-    conflict_binding = conflict.json()["binding"]
+    conflict = store.record_content_source_pack_binding(
+        _source_command(
+            identity,
+            source_pack_id="source_pack_round_trip",
+            source_pack_sha256="b" * 64,
+        ).model_copy(update={"source_fact_ids": ("ekologus_public_bdo_faq_2026_07_01",)})
+    )
+    conflict_binding = conflict.binding.model_dump(mode="json")
     assert conflict_binding["status"] == "blocked"
     assert conflict_binding["blocker"]["reason"] == "source_fact_row_binding_missing"
     assert (
@@ -120,10 +144,7 @@ def test_missing_current_classification_blocks_prerequisites_and_pack_post(
     assert prerequisite_payload["row_authority_status"] == "blocked"
     assert prerequisite_payload["row_authority_blocker_reason"] == "classification_current_missing"
 
-    created = client.post(
-        "/api/content/source-pack-bindings",
-        json=_source_command(identity).model_dump(mode="json"),
-    )
-    assert created.status_code == 201
-    assert created.json()["binding"]["status"] == "blocked"
-    assert created.json()["binding"]["blocker"]["reason"] == "classification_current_missing"
+    created = store.record_content_source_pack_binding(_source_command(identity))
+    assert created.binding.status == "blocked"
+    assert created.binding.blocker is not None
+    assert created.binding.blocker.reason == "classification_current_missing"

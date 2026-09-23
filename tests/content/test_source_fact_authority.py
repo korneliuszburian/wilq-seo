@@ -35,6 +35,7 @@ from wilq.actions.mutation_readiness import vendor_write_possible
 from wilq.actions.payloads import validate_action_payload
 from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
 from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.workflow import source_pack_binding as source_pack
 from wilq.content.workflow.source_fact_authority import (
     ContentSourceFactAuthorityPreviewCommand,
     ContentSourceFactAuthorityProposal,
@@ -49,7 +50,6 @@ from wilq.content.workflow.source_fact_authority import (
     source_fact_authority_proposal_digest,
     validate_source_fact_authority_action_payload,
 )
-from wilq.content.workflow.source_pack_binding import build_content_source_pack_prerequisites
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import ActionApplyRequest, AuditEvent
 from wilq.storage.local_state import LocalStateStore
@@ -386,7 +386,7 @@ def test_new_authority_attempt_completes_lifecycle_and_is_current_for_source_pac
         "current"
     )
 
-    prerequisites = build_content_source_pack_prerequisites(
+    prerequisites = source_pack.build_content_source_pack_prerequisites(
         identity,
         authority_receipt=retry_receipt,
         authority_receipts=(stable_receipt, retry_receipt),
@@ -977,9 +977,9 @@ def test_public_authority_receipt_closes_source_pack_with_exact_current_binding(
         "recorded_by": "public_authority_pack_test",
         "recorded_at": prerequisite_payload["source_fact_registry_receipt"]["checked_at"],
     }
-    created = client.post("/api/content/source-pack-bindings", json=pack_command)
-    assert created.status_code == 201
-    binding_payload = created.json()["binding"]
+    binding_payload = store.record_content_source_pack_binding(
+        source_pack.ContentSourcePackBindingCommand.model_validate(pack_command)
+    ).binding.model_dump(mode="json")
     assert binding_payload["status"] == "exact_current"
     assert binding_payload["source_fact_authority_receipt_id"] == applied["receipt_id"]
 

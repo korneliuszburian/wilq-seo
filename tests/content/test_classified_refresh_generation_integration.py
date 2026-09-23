@@ -45,6 +45,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationBinding,
 )
 from wilq.content.workflow.refresh_preparation_models import RefreshPreparationRuntimeAuthorized
+from wilq.content.workflow.source_pack_binding import ContentSourcePackBindingCommand
 from wilq.content.workflow.store.refresh_preparation_atomic import RefreshPreparationAtomicityError
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.workspace.catalog import inventory_work_item_id
@@ -844,9 +845,8 @@ def _record_authority_source_pack(client: TestClient, identity: Any) -> None:
     )
     assert prerequisites.status_code == 200, prerequisites.text
     payload = prerequisites.json()
-    source_pack = client.post(
-        "/api/content/source-pack-bindings",
-        json={
+    source_pack = content_workflow_store().record_content_source_pack_binding(
+        ContentSourcePackBindingCommand.model_validate({
             "source_pack_id": "source_pack_classified_refresh",
             "source_pack_sha256": "a" * 64,
             "identity_binding_id": payload["identity_binding_id"],
@@ -859,10 +859,9 @@ def _record_authority_source_pack(client: TestClient, identity: Any) -> None:
             "fresh_context_attestation": payload["fresh_context_attestation"],
             "recorded_by": "classified_refresh_test",
             "recorded_at": payload["source_fact_registry_receipt"]["checked_at"],
-        },
+        }),
     )
-    assert source_pack.status_code == 201, source_pack.text
-    assert source_pack.json()["binding"]["status"] == "exact_current"
+    assert source_pack.binding.status == "exact_current"
 
 
 def _generate_authorized_plan(

@@ -39,6 +39,7 @@ from wilq.content.planning.generated_proposal_store import content_planning_prop
 from wilq.content.workflow.decisions.planning import build_content_planning_workspace
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityCommand
 from wilq.content.workflow.refresh_preparation import ContentRefreshPreparationAuthority
+from wilq.content.workflow.source_pack_binding import ContentSourcePackBindingCommand
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.storage.local_state import LocalStateStore
 
@@ -221,9 +222,8 @@ def _record_authority_source_pack(authority_client: TestClient, identity: Any) -
     )
     assert prerequisites.status_code == 200, prerequisites.text
     prerequisite_payload = prerequisites.json()
-    source_pack = authority_client.post(
-        "/api/content/source-pack-bindings",
-        json={
+    source_pack = workflow_store_module.content_workflow_store().record_content_source_pack_binding(
+        ContentSourcePackBindingCommand.model_validate({
             "source_pack_id": "source_pack_http_packet_chain",
             "source_pack_sha256": "a" * 64,
             "identity_binding_id": prerequisite_payload["identity_binding_id"],
@@ -236,10 +236,9 @@ def _record_authority_source_pack(authority_client: TestClient, identity: Any) -
             "fresh_context_attestation": prerequisite_payload["fresh_context_attestation"],
             "recorded_by": "http_packet_chain",
             "recorded_at": prerequisite_payload["source_fact_registry_receipt"]["checked_at"],
-        },
+        }),
     )
-    assert source_pack.status_code == 201, source_pack.text
-    source_pack_payload = source_pack.json()["binding"]
+    source_pack_payload = source_pack.binding.model_dump(mode="json")
     assert source_pack_payload["status"] == "exact_current"
     assert authority_client.get(
         f"/api/content/source-pack-bindings/{source_pack_payload['binding_id']}"

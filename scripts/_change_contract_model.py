@@ -74,6 +74,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/dashboard/test_material_review_ui_runtime.py::"
         "test_material_review_ui_requires_explicit_attestation_and_safe_source",
     ),
+    ("legacy-source-pack", "direct-post-action-required"): (
+        "scripts/test.sh",
+        "tests/content/test_source_pack_binding_api.py::"
+        "test_legacy_source_pack_post_requires_an_action_without_persisting",
+    ),
     ("connector-refresh-recovery", "bodyless-api-and-full-payload-cas"): (
         "scripts/test.sh",
         "tests/connectors/test_connector_refresh_recovery.py",
@@ -504,6 +509,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("complexity-audit", "shrinking-frozen-facade"),
             ("complexity-audit", "unchanged-hotspot-budget"),
             ("material-review-ui", "explicit-exact-attestation"),
+            ("legacy-source-pack", "direct-post-action-required"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),
