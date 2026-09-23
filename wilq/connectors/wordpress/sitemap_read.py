@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import urljoin
 
 import httpx
 from defusedxml import ElementTree
@@ -18,6 +19,36 @@ from wilq.content.canonical.urls import (
 
 WORDPRESS_SITEMAP_CHILD_LIMIT = 20
 WORDPRESS_SITEMAP_URL_LIMIT = 2000
+
+
+def _is_safe_configured_sitemap_alias(
+    location: str | None,
+    sitemap_url: str,
+    remaining_candidates: list[str],
+) -> bool:
+    """Accept only a same-origin HTTPS redirect to one remaining configured path."""
+
+    if not location:
+        return False
+    try:
+        target = httpx.URL(urljoin(sitemap_url, location))
+        origin = httpx.URL(sitemap_url)
+        if (
+            not (
+                content_is_safe_public_url(str(target))
+                or content_is_safe_authoring_url(str(target))
+            )
+            or target.scheme != "https"
+            or target.scheme != origin.scheme
+            or target.host != origin.host
+            or target.port != origin.port
+            or target.query
+            or target.fragment
+        ):
+            return False
+        return sum(target == httpx.URL(candidate) for candidate in remaining_candidates) == 1
+    except (TypeError, ValueError):
+        return False
 
 
 @dataclass(frozen=True)

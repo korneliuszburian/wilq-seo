@@ -19,6 +19,7 @@ from wilq.connectors.wordpress.inventory_metadata import (
 from wilq.connectors.wordpress.sitemap_policy import is_commerce_only_url
 from wilq.connectors.wordpress.sitemap_read import (
     WORDPRESS_SITEMAP_URL_LIMIT,
+    _is_safe_configured_sitemap_alias,
     _sitemap_objects_from_xml,
 )
 from wilq.connectors.wordpress.text import (
@@ -463,11 +464,23 @@ def _fetch_sitemap_objects_with_coverage(
     enrich_metadata: bool = True,
 ) -> _SitemapFetchResult:
     suppressed_failure = False
-    for sitemap_path in WORDPRESS_SITEMAP_PATHS:
+    for sitemap_index, sitemap_path in enumerate(WORDPRESS_SITEMAP_PATHS):
         try:
             sitemap_url = urljoin(base_url, sitemap_path)
             response = client.get(sitemap_url, follow_redirects=False)
             if response.status_code == 404:
+                continue
+            if 300 <= response.status_code < 400:
+                remaining_candidates = [
+                    urljoin(base_url, candidate_path)
+                    for candidate_path in WORDPRESS_SITEMAP_PATHS[sitemap_index + 1 :]
+                ]
+                if not _is_safe_configured_sitemap_alias(
+                    response.headers.get("location"),
+                    sitemap_url,
+                    remaining_candidates,
+                ):
+                    suppressed_failure = True
                 continue
             response.raise_for_status()
         except httpx.HTTPError:

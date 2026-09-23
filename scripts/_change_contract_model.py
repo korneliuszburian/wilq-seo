@@ -101,6 +101,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/api_contracts/test_wordpress_sitemap_safety.py::"
         "test_off_origin_sitemap_locations_are_not_fetched_or_persisted",
     ),
+    ("wordpress-sitemap-safety", "configured-alias-preserves-coverage"): (
+        "scripts/test.sh",
+        "tests/api_contracts/test_wordpress_sitemap_safety.py::"
+        "test_top_level_sitemap_redirect_alias_requires_exact_configured_candidate",
+    ),
     ("current-disposition", "exact-persisted-authority-chain"): (
         "scripts/test.sh",
         "tests/content/test_current_disposition_authority.py",
@@ -429,6 +434,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),
+            ("wordpress-sitemap-safety", "configured-alias-preserves-coverage"),
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),

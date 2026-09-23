@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -142,6 +143,77 @@ def test_sitemap_fetches_do_not_follow_off_origin_redirect(
             and fact.dimensions.get("content_url") == page_url
         )
         assert fact.dimensions["title_or_h1"] == ""
+
+
+@pytest.mark.parametrize(
+    ("base_url", "destination_host", "expected_coverage"),
+    [
+        ("https://www.ekologus.pl", "www.ekologus.pl", "complete"),
+        ("https://ekologus.dev.proudsite.pl", "ekologus.dev.proudsite.pl", "complete"),
+        ("https://www.ekologus.pl", "attacker.example", "partial"),
+    ],
+    ids=["public-origin-alias", "authoring-origin-alias", "off-origin-redirect"],
+)
+def test_top_level_sitemap_redirect_alias_requires_exact_configured_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    base_url: str,
+    destination_host: str,
+    expected_coverage: str,
+) -> None:
+    base_host = httpx.URL(base_url).host
+    destination = f"https://{destination_host}/sitemap_index.xml"
+    requested_sitemap_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/wp-json/wp/v2/"):
+            return httpx.Response(200, json=[])
+        if request.url.host == base_host and request.url.path in {
+            "/wp-sitemap.xml",
+            "/sitemap_index.xml",
+            "/sitemap.xml",
+        }:
+            requested_sitemap_paths.append(request.url.path)
+        if request.url.path == "/wp-sitemap.xml":
+            return httpx.Response(301, headers={"Location": destination})
+        if request.url.host == base_host and request.url.path == "/sitemap_index.xml":
+            return _xml_response(
+                f"<urlset><url><loc>{base_url}/alias-page/</loc></url></urlset>"
+            )
+        return httpx.Response(404)
+
+    _configure_wordpress_inventory(monkeypatch, tmp_path)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", base_url)
+
+    class RedirectTrackingClient(httpx.Client):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            self.redirect_request_count = 0
+
+        def get(self, url: Any, *args: Any, **kwargs: Any) -> httpx.Response:
+            if httpx.URL(url).host == base_host and httpx.URL(url).path in {
+                "/wp-sitemap.xml",
+                "/sitemap_index.xml",
+                "/sitemap.xml",
+            }:
+                assert kwargs.get("follow_redirects") is False
+                self.redirect_request_count += 1
+            return super().get(url, *args, **kwargs)
+
+    with RedirectTrackingClient(
+        follow_redirects=True,
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        result = refresh_wordpress_content_inventory(
+            "wordpress_ekologus",
+            ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+            http_client=client,
+        )
+
+    assert requested_sitemap_paths == ["/wp-sitemap.xml", "/sitemap_index.xml"]
+    assert client.redirect_request_count == 2
+    assert result.metric_summary["sitemap_coverage_status"] == expected_coverage
+    assert result.metric_summary["sitemap_url_count"] == 1
 
 
 def test_mixed_sitemap_index_counts_omitted_direct_url_as_uncovered(
