@@ -8,8 +8,8 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from wilq.content.knowledge.cards import ekologus_content_knowledge_cards
-from wilq.content.knowledge.source_facts import ekologus_source_facts
+from wilq.content.knowledge.cards import ContentKnowledgeCard, ekologus_content_knowledge_cards
+from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
 from wilq.content.regulatory.policy import regulatory_content_coverage
 from wilq.content.workflow.current_page_identity_v2 import (
     CurrentPageIdentityBlockerCode,
@@ -236,12 +236,15 @@ def source_fact_authority_v2_receipt_digest(
 
 
 def source_fact_authority_v2_projection(
-    *, identity: CurrentPageIdentityV2Response
+    *,
+    identity: CurrentPageIdentityV2Response,
+    facts: tuple[ContentSourceFact, ...] | None = None,
+    cards: tuple[ContentKnowledgeCard, ...] | None = None,
 ) -> ContentSourceFactCandidateV2Projection:
     return build_content_source_fact_candidates_v2_projection(
         identity=identity,
-        facts=ekologus_source_facts(),
-        cards=ekologus_content_knowledge_cards(),
+        facts=tuple(ekologus_source_facts()) if facts is None else facts,
+        cards=tuple(ekologus_content_knowledge_cards()) if cards is None else cards,
     )
 
 
@@ -249,8 +252,14 @@ def prepare_source_fact_authority_v2(
     command: ContentSourceFactAuthorityV2PreviewCommand,
     *,
     identity: CurrentPageIdentityV2Response,
+    facts: tuple[ContentSourceFact, ...] | None = None,
+    cards: tuple[ContentKnowledgeCard, ...] | None = None,
 ) -> ContentSourceFactAuthorityV2Proposal:
-    projection = source_fact_authority_v2_projection(identity=identity)
+    current_facts = tuple(ekologus_source_facts()) if facts is None else facts
+    current_cards = tuple(ekologus_content_knowledge_cards()) if cards is None else cards
+    projection = source_fact_authority_v2_projection(
+        identity=identity, facts=current_facts, cards=current_cards
+    )
     if identity.status != "exact_current":
         raise SourceFactAuthorityV2Blocked(
             identity.blocker_code or "missing_approved_keep_receipt",
@@ -296,7 +305,7 @@ def prepare_source_fact_authority_v2(
     selected = tuple(by_id[source_id] for source_id in command.source_fact_ids)
     _validate_selected_freshness_dates(selected)
     _validate_regulatory_facts(
-        selected, projection.canonical_path, projection.service_binding.card_id
+        selected, projection.canonical_path, projection.service_binding.card_id, current_facts
     )
     provisional = {
         "schema_version": "wilq_content_source_fact_authority_snapshot_v2",
@@ -490,11 +499,11 @@ def _validate_regulatory_facts(
     selected: tuple[ContentSourceFactCandidateV2, ...],
     canonical_path: str | None,
     service_card_id: str | None,
+    facts: tuple[ContentSourceFact, ...],
 ) -> None:
     legal_ids = {fact.source_fact_id for fact in selected if fact.source_type == "legal_update"}
     if not legal_ids:
         return
-    facts = ekologus_source_facts()
     try:
         coverage = regulatory_content_coverage(
             service_card_id=service_card_id,
