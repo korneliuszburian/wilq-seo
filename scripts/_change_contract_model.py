@@ -344,6 +344,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_material_review.py::"
         "test_public_material_review_routes_are_immutable_idempotent_and_drift_aware",
     ),
+    ("current-page-evidence", "stable-per-url-material-meaning"): (
+        "scripts/test.sh",
+        "tests/content/test_current_page_evidence.py::"
+        "test_public_current_page_evidence_tracks_exact_material_meaning_per_url",
+    ),
 }
 
 
@@ -434,6 +439,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-preparation", "exact-downstream-receipts")
             else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
             if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
+            else ("tests/content/test_current_page_evidence.py",)
+            if key == ("current-page-evidence", "stable-per-url-material-meaning")
             else tuple(dict.fromkeys(entry.split("::", 1)[0] for entry in _test_selectors(proof)))
         ),
         expectation="red-green",
@@ -447,6 +454,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("research-packet-legal-requirements", "accepts-domain-requirement-ids"),
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),
+            ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-disposition", "operator-decision-card"),
             ("current-disposition", "server-owned-approval-command"),
             ("current-disposition", "non-keep-candidate-blocked"),
