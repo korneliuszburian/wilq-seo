@@ -76,6 +76,9 @@ from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
 from apps.api.wilq_api.routers.content_research_packet import (
     register_content_research_packet_routes,
 )
+from apps.api.wilq_api.routers.content_research_packet_v2_preview import (
+    register_content_research_packet_v2_preview_route,
+)
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
 )
@@ -144,6 +147,9 @@ def register_content_model_routes(
     register_content_source_fact_authority_v2_routes(router)
     register_content_service_profile_card_review_routes(router)
     register_content_research_packet_routes(router, snapshot_loader=review_snapshot_loader)
+    register_content_research_packet_v2_preview_route(
+        router, snapshot_loader=snapshot_loader
+    )
     register_content_landing_hub_authorization_routes(router)
     register_content_material_review_routes(router)
     register_content_material_review_action_v2_routes(router)

@@ -40,18 +40,35 @@ def register_content_source_pack_v2_route(
         response_model=SourcePackV2Preview,
     )
     def read_source_pack_v2_preview(work_item_id: str) -> SourcePackV2Preview:
-        store = make_store()
-        identity = resolve_current_page_identity_v2(
-            work_item_id, store=store, evidence=load_evidence(work_item_id)
-        )
-        receipt = store.load_latest_source_fact_authority_v2_receipt_for_work_item(work_item_id)
-        return build_source_pack_v2_preview(
+        return read_current_source_pack_v2_preview(
             work_item_id,
-            identity=identity,
-            authority_receipts=() if receipt is None else (receipt,),
-            facts=load_facts(),
-            cards=load_cards(),
+            store_factory=make_store,
+            evidence_loader=load_evidence,
+            facts_loader=load_facts,
+            cards_loader=load_cards,
         )
 
 
-__all__ = ["register_content_source_pack_v2_route"]
+def read_current_source_pack_v2_preview(
+    work_item_id: str,
+    *,
+    store_factory: StoreFactory | None = None,
+    evidence_loader: EvidenceLoader | None = None,
+    facts_loader: FactsLoader | None = None,
+    cards_loader: CardsLoader | None = None,
+) -> SourcePackV2Preview:
+    """Read and validate one exact current source pack through the public GET seam."""
+    store = (store_factory or content_workflow_store)()
+    evidence = (evidence_loader or _read_current_page_evidence)(work_item_id)
+    identity = resolve_current_page_identity_v2(work_item_id, store=store, evidence=evidence)
+    receipt = store.load_latest_source_fact_authority_v2_receipt_for_work_item(work_item_id)
+    return build_source_pack_v2_preview(
+        work_item_id,
+        identity=identity,
+        authority_receipts=() if receipt is None else (receipt,),
+        facts=(facts_loader or (lambda: tuple(ekologus_source_facts())))(),
+        cards=(cards_loader or (lambda: tuple(ekologus_content_knowledge_cards())))(),
+    )
+
+
+__all__ = ["read_current_source_pack_v2_preview", "register_content_source_pack_v2_route"]
