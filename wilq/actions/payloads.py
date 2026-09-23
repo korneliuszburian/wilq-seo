@@ -53,6 +53,10 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_TYPE,
     validate_current_material_review_action_v2_payload,
 )
+from wilq.content.workflow.research_packet_v2_action import (
+    RESEARCH_PACKET_V2_ACTION_TYPE,
+    validate_research_packet_v2_action_payload,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     validate_research_fact_promotion_action_payload,
@@ -116,6 +120,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     MATERIAL_REVIEW_ACTION_V2_TYPE: (
         "Review materiału WordPress",
         validate_current_material_review_action_v2_payload,
+    ),
+    RESEARCH_PACKET_V2_ACTION_TYPE: (
+        "Review pakietu badawczego v2",
+        validate_research_packet_v2_action_payload,
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
         "Identity treści",

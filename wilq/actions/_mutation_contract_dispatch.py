@@ -15,6 +15,7 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
+from wilq.content.workflow.research_packet_v2_action import RESEARCH_PACKET_V2_ACTION_TYPE
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -70,6 +71,13 @@ _LOCAL_CONTRACTS = {
         ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
         "Ta akcja zapisuje wyłącznie lokalny receipt review dokładnego bieżącego materiału; "
         "nie wywołuje vendora ani nie generuje treści.",
+    ),
+    RESEARCH_PACKET_V2_ACTION_TYPE: _LocalContractSpec(
+        "approve_exact_research_packet_v2",
+        "wilq_research_packet_v2_preview_record_v1|reviewed_full_packet",
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
+        "Ta akcja zapisuje wyłącznie lokalny receipt przeglądu dokładnego pakietu; "
+        "nie generuje treści ani nie wywołuje vendora.",
     ),
     SOURCE_FACT_AUTHORITY_ACTION_TYPE: _LocalContractSpec(
         "record_source_fact_authority_receipt",

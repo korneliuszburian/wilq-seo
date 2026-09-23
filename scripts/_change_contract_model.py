@@ -89,6 +89,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_research_packet_v2_preview_change_contract.py::"
         "test_public_v2_packet_preview_preserves_exact_source_blocker",
     ),
+    ("research-packet-v2-action", "exact-reviewed-local-receipt"): (
+        "scripts/test.sh",
+        "tests/content/test_research_packet_v2_action.py::"
+        "test_public_packet_v2_action_reviews_exact_snapshot_and_records_local_receipt",
+    ),
     ("connector-refresh-recovery", "bodyless-api-and-full-payload-cas"): (
         "scripts/test.sh",
         "tests/connectors/test_connector_refresh_recovery.py",
@@ -522,6 +527,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("legacy-source-pack", "direct-post-action-required"),
             ("planning-packet", "action-required-before-write"),
             ("research-packet-v2", "exact-readonly-preview"),
+            ("research-packet-v2-action", "exact-reviewed-local-receipt"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),

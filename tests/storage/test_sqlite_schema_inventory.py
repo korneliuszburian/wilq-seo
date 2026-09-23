@@ -91,6 +91,10 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_source_pack_bindings",
         "content_source_fact_authority_proposals",
         "content_source_fact_authority_receipts",
+        "content_source_fact_authority_v2_proposals",
+        "content_source_fact_authority_v2_receipts",
+        "content_research_packet_v2_previews",
+        "content_research_packet_v2_approval_receipts",
         "content_public_deployments",
         "content_public_source_reviews",
         "content_quality_reviews",
@@ -167,6 +171,18 @@ EXPECTED_POST_S5_TRIGGERS = frozenset(
         "content_source_fact_authority_receipts_no_delete",
         "content_source_fact_authority_receipts_no_replace",
         "content_source_fact_authority_receipts_no_update",
+        "content_source_fact_authority_v2_proposals_no_delete",
+        "content_source_fact_authority_v2_proposals_no_replace",
+        "content_source_fact_authority_v2_proposals_no_update",
+        "content_source_fact_authority_v2_receipts_no_delete",
+        "content_source_fact_authority_v2_receipts_no_replace",
+        "content_source_fact_authority_v2_receipts_no_update",
+        "content_research_packet_v2_previews_no_delete",
+        "content_research_packet_v2_previews_no_replace",
+        "content_research_packet_v2_previews_no_update",
+        "content_research_packet_v2_approval_receipts_no_delete",
+        "content_research_packet_v2_approval_receipts_no_replace",
+        "content_research_packet_v2_approval_receipts_no_update",
         "content_source_pack_bindings_no_delete",
         "content_source_pack_bindings_no_replace",
         "content_source_pack_bindings_no_update",
@@ -459,7 +475,7 @@ def test_post_s5_inventory_is_complete_lineage_bound_and_byte_exact(tmp_path: Pa
         seed_sha256=SEED_SHA256,
     )
 
-    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 11
+    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 13
     assert inventory.identity.sqlite_application_id == 0
     assert inventory.identity.application_sha256 == APPLICATION_SHA256
     assert inventory.identity.seed_sha256 == SEED_SHA256
@@ -534,9 +550,9 @@ def test_catalog_and_identity_are_canonical_across_creation_order(tmp_path: Path
     assert first.identity.identity_sha256 == (
         "".join(
             (
-                    "02904c9fe4ae0b70dee868bf",  # pragma: allowlist secret
-                    "07e587ed4fff30d320fb95d4",  # pragma: allowlist secret
-                    "a36cea5b091a4327",  # pragma: allowlist secret
+                    "af87b77791315c52f7908bd3",  # pragma: allowlist secret
+                    "50fb7cf2a15bdae7adfa3e94",  # pragma: allowlist secret
+                    "09b19d006e831f11",  # pragma: allowlist secret
             )
         )
     )

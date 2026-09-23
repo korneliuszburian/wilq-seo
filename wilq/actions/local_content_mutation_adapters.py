@@ -18,6 +18,10 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_ADAPTER,
     execute_current_material_review_action_v2,
 )
+from wilq.content.workflow.research_packet_v2_action import (
+    RESEARCH_PACKET_V2_ACTION_ADAPTER,
+    execute_research_packet_v2_action,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
     ContentResearchFactPromotionExecutionContext,
@@ -34,6 +38,7 @@ from wilq.storage.local_state import LocalStateStore
 
 _LOCAL_ADAPTERS = frozenset(
     {
+        RESEARCH_PACKET_V2_ACTION_ADAPTER,
         MATERIAL_REVIEW_ACTION_V2_ADAPTER,
         SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
         CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
@@ -56,6 +61,13 @@ def execute_local_content_mutation_adapter(
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]] | None:
     """Run one local content receipt adapter, or return None for vendor adapters."""
+    if adapter == RESEARCH_PACKET_V2_ACTION_ADAPTER:
+        return execute_research_packet_v2_action(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
+        )
     if adapter == MATERIAL_REVIEW_ACTION_V2_ADAPTER:
         return execute_current_material_review_action_v2(
             action,

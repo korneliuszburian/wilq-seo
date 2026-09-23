@@ -28,6 +28,7 @@ from wilq.content.workflow.delivery_identity_authority import (
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
+from wilq.content.workflow.research_packet_v2_action import RESEARCH_PACKET_V2_ACTION_TYPE
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -245,6 +246,7 @@ def _resolve_apply_capability(
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
             CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
             MATERIAL_REVIEW_ACTION_V2_TYPE,
+            RESEARCH_PACKET_V2_ACTION_TYPE,
         }
         and action.payload.get("local_authority_only") is True
     ):

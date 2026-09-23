@@ -41,31 +41,42 @@ def register_content_research_packet_v2_preview_route(
         response_model=ResearchPacketV2Preview,
     )
     def read_research_packet_v2_preview(work_item_id: str) -> ResearchPacketV2Preview:
-        source_pack = load_source_pack(work_item_id)
-        if source_pack.status == "blocked":
-            return build_research_packet_v2_preview(
-                work_item_id, source_pack=source_pack, planning_input=None
-            )
-        if planning_input_loader is not None:
-            return build_research_packet_v2_preview(
-                work_item_id,
-                source_pack=source_pack,
-                planning_input=planning_input_loader(work_item_id),
-            )
-        snapshot = load_snapshot(work_item_id)
-        service_card_id = getattr(snapshot.service_profile_context, "service_card_id", None)
-        result = build_content_planning_input(snapshot, service_card_id=service_card_id)
-        planning_input = result.planning_input
-        blocker = _planning_blocker(
-            result,
-            tuple(snapshot.preflight.item.evidence_ids),
+        return read_current_research_packet_v2_preview(
+            work_item_id,
+            snapshot_loader=load_snapshot,
+            source_pack_loader=load_source_pack,
+            planning_input_loader=planning_input_loader,
         )
+
+
+def read_current_research_packet_v2_preview(
+    work_item_id: str,
+    *,
+    snapshot_loader: SnapshotLoader | None = None,
+    source_pack_loader: SourcePackLoader | None = None,
+    planning_input_loader: PlanningInputLoader | None = None,
+) -> ResearchPacketV2Preview:
+    source_pack = (source_pack_loader or read_current_source_pack_v2_preview)(work_item_id)
+    if source_pack.status == "blocked":
+        return build_research_packet_v2_preview(
+            work_item_id, source_pack=source_pack, planning_input=None
+        )
+    if planning_input_loader is not None:
         return build_research_packet_v2_preview(
             work_item_id,
             source_pack=source_pack,
-            planning_input=planning_input,
-            planning_blocker=blocker,
+            planning_input=planning_input_loader(work_item_id),
         )
+    snapshot = (snapshot_loader or snapshot_for_work_item_or_404)(work_item_id)
+    service_card_id = getattr(snapshot.service_profile_context, "service_card_id", None)
+    result = build_content_planning_input(snapshot, service_card_id=service_card_id)
+    blocker = _planning_blocker(result, tuple(snapshot.preflight.item.evidence_ids))
+    return build_research_packet_v2_preview(
+        work_item_id,
+        source_pack=source_pack,
+        planning_input=result.planning_input,
+        planning_blocker=blocker,
+    )
 
 
 def _planning_blocker(
@@ -84,4 +95,7 @@ def _planning_blocker(
     )
 
 
-__all__ = ["register_content_research_packet_v2_preview_route"]
+__all__ = [
+    "read_current_research_packet_v2_preview",
+    "register_content_research_packet_v2_preview_route",
+]

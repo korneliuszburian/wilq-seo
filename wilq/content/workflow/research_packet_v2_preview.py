@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
+from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.internal_link_candidates import ContentPlanningInternalLinkCandidate
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.source_pack_v2 import (
     SourcePackV2Blocker,
@@ -43,6 +43,22 @@ class ResearchPacketV2LegalRequirement(BaseModel):
     evidence_ids: tuple[str, ...] = Field(min_length=1)
 
 
+class ResearchPacketV2InternalLink(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_url: str = Field(min_length=1)
+    anchor_hint: str = Field(min_length=1)
+    source_connector: Literal["wordpress_ekologus"] = "wordpress_ekologus"
+    evidence_ids: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("target_url")
+    @classmethod
+    def require_safe_target(cls, value: str) -> str:
+        if not content_is_safe_public_url(value):
+            raise ValueError("Packet link requires a safe Ekologus URL.")
+        return value
+
+
 class ResearchPacketV2Preview(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -62,7 +78,7 @@ class ResearchPacketV2Preview(BaseModel):
     cta_direction: str | None = None
     minimum_cta_blocks: int | None = Field(default=None, ge=1, le=4)
     required_cta_patterns: tuple[str, ...] = ()
-    internal_links: tuple[ContentPlanningInternalLinkCandidate, ...] = ()
+    internal_links: tuple[ResearchPacketV2InternalLink, ...] = ()
     regulatory_profile_id: str | None = None
     regulatory_profile_version: str | None = None
     legal_requirements: tuple[ResearchPacketV2LegalRequirement, ...] = ()
@@ -210,7 +226,11 @@ def build_research_packet_v2_preview(
             "Odtwórz planning input dla bieżącego work itemu.",
         )
     candidate_links = tuple(
-        candidate
+        ResearchPacketV2InternalLink(
+            target_url=candidate.target_url,
+            anchor_hint=candidate.anchor_hint,
+            evidence_ids=tuple(sorted(set(candidate.evidence_ids))),
+        )
         for candidate in planning_input.internal_link_candidates
         if candidate.evidence_ids
         and set(candidate.evidence_ids).issubset(set(planning_input.evidence_ids))
@@ -296,7 +316,7 @@ def _ready_preview(
     work_item_id: str,
     source_pack: SourcePackV2Preview,
     planning_input: ContentPlanningInput,
-    internal_links: tuple[ContentPlanningInternalLinkCandidate, ...],
+    internal_links: tuple[ResearchPacketV2InternalLink, ...],
     legal_requirements: tuple[ResearchPacketV2LegalRequirement, ...],
 ) -> ResearchPacketV2Preview:
     if not source_pack.facts:

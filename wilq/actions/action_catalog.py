@@ -78,6 +78,7 @@ from wilq.content.workflow.delivery_identity_authority import (
 from wilq.content.workflow.material_review_action_v2 import (
     load_current_material_review_action_v2,
 )
+from wilq.content.workflow.research_packet_v2_action import load_research_packet_v2_action
 from wilq.content.workflow.research_promotion_authority import (
     load_content_research_fact_promotion_action,
 )
@@ -163,6 +164,7 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_current_disposition_action(action_id)
         or load_current_page_disposition_v2_action(action_id)
         or load_current_material_review_action_v2(action_id)
+        or load_research_packet_v2_action(action_id)
         or load_content_source_fact_authority_action(action_id)
         or _load_source_fact_authority_v2_action(action_id)
         or load_content_research_fact_promotion_action(action_id, store=content_workflow_store())
