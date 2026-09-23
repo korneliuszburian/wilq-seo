@@ -99,6 +99,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
         "test_packet_review_and_local_apply_require_exact_action_acknowledgement",
     ),
+    ("action-lifecycle-ui", "canonical-step-order"): (
+        "scripts/test.sh",
+        "tests/dashboard/test_action_lifecycle_ui_order_runtime.py::"
+        "test_action_ui_orders_validate_preview_review_and_completion",
+    ),
     ("connector-refresh-recovery", "bodyless-api-and-full-payload-cas"): (
         "scripts/test.sh",
         "tests/connectors/test_connector_refresh_recovery.py",
@@ -534,6 +539,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("research-packet-v2", "exact-readonly-preview"),
             ("research-packet-v2-action", "exact-reviewed-local-receipt"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
+            ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
             ("wordpress-refresh-coverage", "targeted-keeps-baseline"),
             ("wordpress-sitemap-safety", "off-origin-loc-fails-closed"),

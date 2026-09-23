@@ -332,6 +332,17 @@ describe("ActionPanels", () => {
     } as unknown as ActionObject;
 
     renderWithQueryClient(<ActionFocus actions={[action]} />);
+    const lifecycleButtons = [
+      "Sprawdź w WILQ",
+      "Generuj podgląd",
+      "Zapisz przegląd",
+      "Potwierdź podgląd",
+      "Sprawdź efekt"
+    ].map((name) => screen.getByRole("button", { name }));
+    for (let index = 0; index < lifecycleButtons.length - 1; index += 1) {
+      expect(lifecycleButtons[index]?.compareDocumentPosition(lifecycleButtons[index + 1]!))
+        .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
     fireEvent.click(screen.getByRole("button", { name: "Generuj podgląd" }));
     fireEvent.click(screen.getByRole("button", { name: "Zapisz przegląd" }));
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));

@@ -13,10 +13,8 @@ import {
 import { LoadingBand } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import {
-  ActionHumanReviewControls,
-  ActionPreviewControls,
+  ActionLifecycleControls,
   ActionReviewGatePanel,
-  ActionValidationControls
 } from "./ActionPanels";
 import { useActionDetailQueries } from "./actionDetailQueries";
 import { ActionOperatorDecisionHero } from "./DetailPanelsSections/DecisionHeroSection";
@@ -330,9 +328,7 @@ function ActionDetail({
           action={action}
           lastCreatedDraft={mutationReadiness?.last_created_draft}
         />
-        <ActionHumanReviewControls action={action} />
-        <ActionPreviewControls action={action} />
-        <ActionValidationControls action={action} />
+        <ActionLifecycleControls action={action} />
       </section>
       <ActionMutationReadinessPanel
         loading={mutationReadinessLoading}

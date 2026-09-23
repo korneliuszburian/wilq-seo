@@ -1959,6 +1959,17 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(screen.getByText("Problem pliku produktowego do sprawdzenia")).toBeInTheDocument()
     );
+    const lifecycleButtons = [
+      "Sprawdź w WILQ",
+      "Generuj podgląd",
+      "Zapisz przegląd",
+      "Potwierdź podgląd",
+      "Sprawdź efekt"
+    ].map((name) => screen.getByRole("button", { name }));
+    for (let index = 0; index < lifecycleButtons.length - 1; index += 1) {
+      expect(lifecycleButtons[index]?.compareDocumentPosition(lifecycleButtons[index + 1]!))
+        .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
     expect(screen.getByText("dostępność - zmiana dostępności")).toBeInTheDocument();
     expect(screen.getByText("Problem: zmiana dostępności")).toBeInTheDocument();
     expect(screen.getByText("Atrybut: dostępność")).toBeInTheDocument();

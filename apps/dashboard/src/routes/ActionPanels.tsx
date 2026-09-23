@@ -7,11 +7,14 @@ import { BlockerNotice } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionReviewGatePanel } from "./ActionPanels/GatePanel";
+import { ActionLifecycleControls } from "./ActionPanels/LifecycleControls";
 import { ActionPreviewControls } from "./ActionPanels/PreviewControls";
 import { ActionHumanReviewControls } from "./ActionPanels/ReviewControls";
 import type { ActionObject } from "./ActionPanels/shared";
 import {
+  ActionConfirmationApplyControls,
   ActionNewPageDraftApplyControl,
+  ActionValidationOnlyControls,
   ActionValidationControls
 } from "./ActionPanels/ValidationApplyControls";
 
@@ -20,6 +23,9 @@ export {
   ActionNewPageDraftApplyControl,
   ActionPreviewControls,
   ActionReviewGatePanel,
+  ActionLifecycleControls,
+  ActionValidationOnlyControls,
+  ActionConfirmationApplyControls,
   ActionValidationControls
 };
 
@@ -69,14 +75,12 @@ export function ActionFocus({ actions }: { actions: ActionObject[] }) {
                 ))}
               </div>
             ) : null}
-            <ActionHumanReviewControls action={action} />
-            <ActionPreviewControls action={action} />
+            <ActionLifecycleControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <TraceLine label="Akcja" values={["1 akcja do sprawdzenia"]} />
               <ActionEvidenceTrace action={action} />
             </div>
             {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
-            <ActionValidationControls action={action} />
             <ActionTechnicalDataToggle
               technicalData={action.payload}
               intro="Domyślnie schowany, żeby karta pokazywała decyzję i warunki przeglądu."

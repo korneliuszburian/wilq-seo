@@ -24,23 +24,18 @@ import { LocalContentAuthorityApplyControl } from "./LocalContentAuthorityApplyC
 type ContentNewPageDraftBinding = z.infer<typeof ContentNewPageDraftBindingSchema>;
 
 export function ActionValidationControls({ action }: ActionPanelProps) {
-  const wordpressDraft = contentDevDraftBinding(action);
+  return (
+    <>
+      <ActionValidationOnlyControls action={action} />
+      <ActionConfirmationApplyControls action={action} />
+    </>
+  );
+}
+
+export function ActionValidationOnlyControls({ action }: ActionPanelProps) {
   const queryClient = useQueryClient();
   const validationMutation = useMutation({
     mutationFn: () => validateAction(action.id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
-      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
-    }
-  });
-  const confirmMutation = useMutation({
-    mutationFn: () =>
-      confirmAction(action.id, {
-        confirmed_by: "operator_local_dashboard",
-        notes: "Operator potwierdza podgląd. Ten krok nie zapisuje zmian.",
-        preview_acknowledged: true,
-        wordpress_draft: wordpressDraft
-      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
@@ -77,6 +72,28 @@ export function ActionValidationControls({ action }: ActionPanelProps) {
         validation={validation}
         error={validationMutation.error instanceof Error ? validationMutation.error.message : null}
       />
+    </div>
+  );
+}
+
+export function ActionConfirmationApplyControls({ action }: ActionPanelProps) {
+  const wordpressDraft = contentDevDraftBinding(action);
+  const queryClient = useQueryClient();
+  const confirmMutation = useMutation({
+    mutationFn: () =>
+      confirmAction(action.id, {
+        confirmed_by: "operator_local_dashboard",
+        notes: "Operator potwierdza podgląd. Ten krok nie zapisuje zmian.",
+        preview_acknowledged: true,
+        wordpress_draft: wordpressDraft
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  return (
+    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3">
       <div className="mt-3 rounded-md border border-wait/30 bg-white p-3">
         <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
           Jawne potwierdzenie podglądu
