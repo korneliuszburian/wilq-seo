@@ -28,6 +28,7 @@ from wilq.content.workflow.current_disposition_authority import (
     build_current_disposition_action,
     build_current_disposition_snapshot,
     current_disposition_action_for_proposal,
+    current_disposition_action_id,
     current_disposition_action_payload_digest,
     current_disposition_receipt_digest,
     execute_current_disposition_authority,
@@ -637,19 +638,25 @@ def test_preview_router_uses_typed_server_side_current_disposition_preview(
     run = exact_public_bdo_run()
     store.record_production_classification(run)
     monkeypatch.setattr(authority_router, "content_workflow_store", lambda: store)
+    current_work_item_id = run.rows[0].current_work_item_id
+    assert current_work_item_id is not None
 
     response = authority_router.content_current_disposition_preview_endpoint(
         ContentCurrentDispositionCandidate(
-            current_work_item_id=run.rows[0].current_work_item_id,
+            current_work_item_id=current_work_item_id,
             proposed_final_disposition="keep",
         )
     )
 
-    assert response.status == "preview_ready"
-    assert response.action.payload["local_authority_only"] is True
-    assert authority_router.content_current_disposition_read_endpoint(
-        response.action.id
-    ).status == "preview_ready"
+    assert response.status == "blocked"
+    assert response.action is None
+    assert response.blockers[0].reason == "batch_current_disposition_authority_is_historical"
+    assert (
+        store.load_content_current_disposition_proposal(
+            current_disposition_action_id(current_work_item_id, "keep")
+        )
+        is None
+    )
 
 
 def test_current_disposition_api_exposes_preview_and_read_only() -> None:
@@ -711,7 +718,8 @@ def _assert_legacy_non_keep_readback(
     body = response.json()
     assert body["status"] == "blocked"
     assert body["action"] is None
-    _assert_technical_seo_disposition_blocker(body["blockers"][0])
+    assert body["blockers"][0]["reason"] == "batch_current_disposition_authority_is_historical"
+    assert body["blockers"][0]["owner"] == "WILQ content workflow"
     if receipt_id is None:
         assert body["receipt"] is None
     else:
@@ -789,7 +797,10 @@ def test_public_non_keep_dispositions_are_blocked_before_persistence(
         },
     )
     assert approval.status_code == 409
-    _assert_technical_seo_disposition_blocker(approval.json()["blockers"][0])
+    assert approval.json()["blockers"][0]["reason"] == (
+        "batch_current_disposition_authority_is_historical"
+    )
+    assert approval.json()["blockers"][0]["owner"] == "WILQ content workflow"
     assert audit.list_audit_events(action_id=legacy.action_id) == before_legacy_events
     assert store.load_content_current_disposition_receipt(legacy.action_id) is None
     assert proposal_writes == []
@@ -807,10 +818,12 @@ def test_public_non_keep_dispositions_are_blocked_before_persistence(
         },
     )
     assert keep.status_code == 200
-    assert keep.json()["status"] == "preview_ready"
-    assert keep.json()["action"] is not None
-    keep_action_id = keep.json()["action"]["id"]
-    assert store.load_content_current_disposition_proposal(keep_action_id) is not None
+    assert keep.json()["status"] == "blocked"
+    assert keep.json()["action"] is None
+    assert keep.json()["blockers"][0]["reason"] == (
+        "batch_current_disposition_authority_is_historical"
+    )
+    assert proposal_writes == []
 
 
 def test_current_disposition_latest_rejected_review_blocks_direct_apply(tmp_path) -> None:

@@ -26,6 +26,10 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_ADAPTER,
     MATERIAL_REVIEW_ACTION_V2_TYPE,
 )
+from wilq.content.workflow.per_url_disposition_authority import (
+    PER_URL_DISPOSITION_ACTION_TYPE,
+    PER_URL_DISPOSITION_MUTATION_ADAPTER,
+)
 from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_ADAPTER,
     RESEARCH_PACKET_V2_ACTION_TYPE,
@@ -59,6 +63,11 @@ from wilq.schemas import ActionMutationApplyContract, ActionObject
 _PLANNING_GENERATION_INTENT_ADAPTERS = {
     PLANNING_GENERATION_INTENT_ACTION_TYPE: PLANNING_GENERATION_INTENT_ADAPTER,
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: PLANNING_GENERATION_INTENT_V3_ADAPTER,
+}
+_LOCAL_DISPOSITION_ADAPTERS = {
+    CURRENT_DISPOSITION_ACTION_TYPE: CURRENT_DISPOSITION_MUTATION_ADAPTER,
+    CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE: CURRENT_DISPOSITION_MUTATION_ADAPTER,
+    PER_URL_DISPOSITION_ACTION_TYPE: PER_URL_DISPOSITION_MUTATION_ADAPTER,
 }
 
 
@@ -102,17 +111,11 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
     ):
         return DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER
     if (
-        action.payload.get("action_type") == CURRENT_DISPOSITION_ACTION_TYPE
+        action_type in _LOCAL_DISPOSITION_ADAPTERS
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):
-        return CURRENT_DISPOSITION_MUTATION_ADAPTER
-    if (
-        action.payload.get("action_type") == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
-        and action.payload.get("local_authority_only") is True
-        and action.connector == "wordpress_ekologus"
-    ):
-        return CURRENT_DISPOSITION_MUTATION_ADAPTER
+        return _LOCAL_DISPOSITION_ADAPTERS[action_type]
     if (
         action.payload.get("action_type")
         in {

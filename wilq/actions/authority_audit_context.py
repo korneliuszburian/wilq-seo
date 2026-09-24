@@ -28,6 +28,11 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_TYPE,
     material_review_action_id,
 )
+from wilq.content.workflow.per_url_disposition_authority import (
+    PER_URL_DISPOSITION_ACTION_TYPE,
+    PerUrlDispositionSnapshot,
+    per_url_disposition_action_payload_digest,
+)
 from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_TYPE,
     research_packet_v2_action_id,
@@ -111,6 +116,9 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
             ),
         }
         return
+    if action_type == PER_URL_DISPOSITION_ACTION_TYPE:
+        _stamp_per_url_disposition(action, event)
+        return
     if action_type == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
         promotion_snapshot = parse_content_research_fact_promotion_snapshot(
             action.payload.get("promotion_snapshot", {})
@@ -173,6 +181,19 @@ def _stamp_current_page_disposition(action: ActionObject, event: AuditEvent) -> 
         **event.details,
         "current_disposition_snapshot_digest": proposal.snapshot.context_digest,
         "current_disposition_action_payload_digest": canonical_json_digest(action.payload),
+    }
+
+
+def _stamp_per_url_disposition(action: ActionObject, event: AuditEvent) -> None:
+    snapshot = PerUrlDispositionSnapshot.model_validate(
+        action.payload.get("per_url_disposition_authority", {})
+    )
+    event.details = {
+        **event.details,
+        "per_url_disposition_snapshot_digest": snapshot.context_digest,
+        "per_url_disposition_action_payload_digest": (
+            per_url_disposition_action_payload_digest(action)
+        ),
     }
 
 

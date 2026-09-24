@@ -134,7 +134,7 @@ def test_identical_approval_threads_share_one_lifecycle(tmp_path, monkeypatch) -
     )
 
 
-def test_generic_action_apply_blocks_current_disposition_without_audit_append(
+def test_generic_action_apply_cannot_load_historical_current_disposition(
     tmp_path, monkeypatch
 ) -> None:
     store, audit, action, _preview_event = _prepare(tmp_path, monkeypatch)
@@ -145,10 +145,7 @@ def test_generic_action_apply_blocks_current_disposition_without_audit_append(
         json={"confirm": True, "confirmed_by": "local_operator"},
     )
 
-    assert response.status_code == 409
-    detail = response.json()["detail"]
-    assert detail["code"] == "current_disposition_approval_required"
-    assert detail["external_write_attempted"] is False
+    assert response.status_code == 404
     assert [event.id for event in audit.list_audit_events(action_id=action.id)] == before
 
 
@@ -207,24 +204,34 @@ def test_action_chain_uses_highest_id_when_created_at_ties() -> None:
     assert chain[0].id == "preview_z"
 
 
-def test_public_approval_and_readback_are_local_only(tmp_path, monkeypatch) -> None:
+def test_public_legacy_approval_is_historical_and_cannot_create_receipt(
+    tmp_path, monkeypatch
+) -> None:
     store, audit, action, preview_event = _prepare(tmp_path, monkeypatch)
     client = TestClient(app)
     payload = _request(action, preview_event).model_dump(mode="json")
+    before_events = audit.list_audit_events(action_id=action.id)
 
     response = client.post(
         f"/api/content/current-disposition-authorities/{action.id}/approve",
         json=payload,
     )
 
-    assert response.status_code == 200, response.text
+    assert response.status_code == 409, response.text
     body = response.json()
-    assert body["status"] == "current"
-    assert body["receipt"]["action_id"] == action.id
+    assert body["status"] == "blocked"
+    assert body["blockers"][0]["reason"] == "batch_current_disposition_authority_is_historical"
+    assert body["receipt"] is None
     assert body["external_write_attempted"] is False
+    assert store.load_content_current_disposition_receipt(action.id) is None
+    assert audit.list_audit_events(action_id=action.id) == before_events
     readback = client.get(f"/api/content/current-disposition-authorities/{action.id}")
     assert readback.status_code == 200
-    assert readback.json()["status"] == "current"
+    assert readback.json()["status"] == "blocked"
+    assert readback.json()["action"] is None
+    assert readback.json()["blockers"][0]["reason"] == (
+        "batch_current_disposition_authority_is_historical"
+    )
 
 
 def test_new_explicit_approval_supersedes_an_older_rejection(tmp_path, monkeypatch) -> None:
@@ -277,7 +284,9 @@ def test_public_approval_returns_typed_409_for_foreign_preview(tmp_path, monkeyp
 
     assert response.status_code == 409
     assert response.json()["status"] == "blocked"
-    assert response.json()["blockers"][0]["reason"] == "current_disposition_preview_mismatch"
+    assert response.json()["blockers"][0]["reason"] == (
+        "batch_current_disposition_authority_is_historical"
+    )
 
 
 def test_executor_uses_newest_valid_chain_over_older_invalid_chain(tmp_path) -> None:

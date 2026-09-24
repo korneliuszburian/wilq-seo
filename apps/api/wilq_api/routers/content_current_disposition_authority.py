@@ -15,6 +15,7 @@ from wilq.content.workflow.current_disposition_authority import (
     ContentCurrentDispositionCandidate,
     ContentCurrentDispositionPreviewResponse,
     ContentCurrentDispositionReadProjection,
+    historical_current_disposition_blocker,
     prepare_current_disposition_preview,
     read_current_disposition_authority,
 )
@@ -45,7 +46,13 @@ def register_content_current_disposition_authority_routes(router: APIRouter) -> 
 def content_current_disposition_preview_endpoint(
     candidate: ContentCurrentDispositionCandidate,
 ) -> ContentCurrentDispositionPreviewResponse:
-    """Persist only a candidate and return an exact server-built action preview."""
+    """Keep the batch-bound v1 path readable while new actions use per-URL authority."""
+
+    if candidate.proposed_final_disposition == "keep":
+        return ContentCurrentDispositionPreviewResponse(
+            status="blocked",
+            blockers=(historical_current_disposition_blocker(),),
+        )
 
     try:
         return prepare_current_disposition_preview(content_workflow_store(), candidate)
@@ -56,18 +63,46 @@ def content_current_disposition_preview_endpoint(
 def content_current_disposition_read_endpoint(
     action_id: str,
 ) -> ContentCurrentDispositionReadProjection:
-    return read_current_disposition_authority(content_workflow_store(), action_id=action_id)
+    store = content_workflow_store()
+    projection = read_current_disposition_authority(store, action_id=action_id)
+    if projection.status == "missing":
+        return projection
+    blocker = historical_current_disposition_blocker()
+    return ContentCurrentDispositionReadProjection(
+        status="blocked",
+        receipt=projection.receipt,
+        blockers=(blocker,),
+        safe_next_step=blocker.next_step,
+    )
 
 
 def content_current_disposition_approve_endpoint(
     action_id: str,
     request: ContentCurrentDispositionApprovalRequest,
 ) -> ContentCurrentDispositionApprovalResponse | JSONResponse:
-    """Run the exact local-only lifecycle and expose typed 409 conflicts."""
+    """Keep batch-bound v1 receipts historical and non-approvable."""
+
+    store = content_workflow_store()
+    if store.load_content_current_disposition_proposal(action_id) is not None:
+        blocker = historical_current_disposition_blocker()
+        projection = ContentCurrentDispositionReadProjection(
+            status="blocked",
+            receipt=store.load_content_current_disposition_receipt(action_id),
+            blockers=(blocker,),
+            safe_next_step=blocker.next_step,
+        )
+        response = ContentCurrentDispositionApprovalResponse(
+            status="blocked",
+            projection=projection,
+            receipt=projection.receipt,
+            blockers=(blocker,),
+            safe_next_step=blocker.next_step,
+        )
+        return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
 
     try:
         return approve_current_disposition_authority(
-            content_workflow_store(),
+            store,
             action_id=action_id,
             request=request,
         )

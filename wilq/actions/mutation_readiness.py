@@ -15,6 +15,9 @@ from wilq.content.workflow.current_page_disposition_v2 import (
 from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
+from wilq.content.workflow.per_url_disposition_authority import (
+    PER_URL_DISPOSITION_ACTION_TYPE,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -204,6 +207,7 @@ def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) ->
             CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
             CURRENT_DISPOSITION_ACTION_TYPE,
             CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+            PER_URL_DISPOSITION_ACTION_TYPE,
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
             PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
         }

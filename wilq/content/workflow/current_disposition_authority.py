@@ -550,6 +550,17 @@ def non_keep_current_disposition_blocker() -> ContentCurrentDispositionBlocker:
     )
 
 
+def historical_current_disposition_blocker() -> ContentCurrentDispositionBlocker:
+    return ContentCurrentDispositionBlocker(
+        seam="current_context",
+        reason="batch_current_disposition_authority_is_historical",
+        next_step=(
+            "Przygotuj nowy ActionObject z aktualnego semantic row exact URL-a "
+            "przez per-URL disposition authority."
+        ),
+    )
+
+
 def _current_disposition_rebuild_blocker(
     error_message: str,
 ) -> ContentCurrentDispositionBlocker:
@@ -634,14 +645,9 @@ def read_current_disposition_authority(
 
 
 def load_current_disposition_action(action_id: str) -> ActionObject | None:
-    from wilq.content.workflow.store.store import content_workflow_store
-
-    store = content_workflow_store()
-    proposal = store.load_content_current_disposition_proposal(action_id)
-    if proposal is None:
-        return None
-    action, _blockers = _rebuild_current_disposition_action(store, proposal)
-    return action
+    # Batch-classification proposals remain available from their dedicated
+    # historical read route, never as an approvable current ActionObject.
+    return None
 
 
 def validate_current_disposition_action_payload(payload: dict[str, Any]) -> list[str]:
@@ -693,6 +699,7 @@ __all__ = [
     "current_disposition_proposal_digest",
     "current_disposition_receipt_digest",
     "execute_current_disposition_authority",
+    "historical_current_disposition_blocker",
     "load_current_disposition_action",
     "non_keep_current_disposition_blocker",
     "prepare_current_disposition_preview",

@@ -28,6 +28,9 @@ def ensure_per_url_decision_authority_schema(connection: sqlite3.Connection) -> 
         CREATE INDEX IF NOT EXISTS content_per_url_decision_observations_by_path
         ON content_per_url_decision_observations(canonical_path, sequence);
 
+        CREATE INDEX IF NOT EXISTS content_per_url_decision_observations_by_work_item
+        ON content_per_url_decision_observations(current_work_item_id, sequence);
+
         CREATE TRIGGER IF NOT EXISTS content_per_url_decision_observations_no_update
         BEFORE UPDATE ON content_per_url_decision_observations
         BEGIN SELECT RAISE(ABORT, 'per-URL decision observations are append-only'); END;
@@ -114,6 +117,28 @@ class ContentPerUrlDecisionAuthorityStoreMixin:
                 "SELECT payload_json FROM content_per_url_decision_observations "
                 "WHERE canonical_path = ? ORDER BY sequence ASC",
                 (canonical_path,),
+            ).fetchall()
+        return [
+            ContentPerUrlDecisionObservation.model_validate_json(
+                cast(str, row["payload_json"]), strict=True
+            )
+            for row in rows
+        ]
+
+    def list_content_per_url_decision_observations_for_scope(
+        self,
+        *,
+        canonical_path: str,
+        current_work_item_id: str,
+    ) -> list[ContentPerUrlDecisionObservation]:
+        """Read the newest history visible through either stable scope identity."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload_json FROM content_per_url_decision_observations "
+                "WHERE canonical_path = ? OR current_work_item_id = ? "
+                "ORDER BY sequence ASC",
+                (canonical_path, current_work_item_id),
             ).fetchall()
         return [
             ContentPerUrlDecisionObservation.model_validate_json(

@@ -26,6 +26,10 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_ADAPTER,
     execute_current_material_review_action_v2,
 )
+from wilq.content.workflow.per_url_disposition_authority import (
+    PER_URL_DISPOSITION_MUTATION_ADAPTER,
+    execute_per_url_disposition_authority,
+)
 from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_ADAPTER,
     execute_research_packet_v2_action,
@@ -56,6 +60,7 @@ _LOCAL_ADAPTERS = frozenset(
         SOURCE_FACT_AUTHORITY_MUTATION_ADAPTER,
         CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
         CURRENT_DISPOSITION_MUTATION_ADAPTER,
+        PER_URL_DISPOSITION_MUTATION_ADAPTER,
         DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
         PLANNING_GENERATION_INTENT_ADAPTER,
         PLANNING_GENERATION_INTENT_V3_ADAPTER,
@@ -143,6 +148,13 @@ def execute_local_content_mutation_adapter(
             action,
             store=workflow_store,
             audit_events=action.audit_events,
+        )
+    if adapter == PER_URL_DISPOSITION_MUTATION_ADAPTER:
+        return execute_per_url_disposition_authority(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
         )
     if adapter == DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER:
         return execute_delivery_identity_authority(

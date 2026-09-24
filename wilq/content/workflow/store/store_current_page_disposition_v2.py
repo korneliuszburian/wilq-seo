@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import cast
 
@@ -55,12 +56,19 @@ class CurrentPageDispositionV2StoreMixin:
                 "WHERE action_id = ?",
                 (proposal_id,),
             ).fetchone()
-        return (
-            None
-            if row is None
-            else CurrentPageDispositionV2Proposal.model_validate_json(
-                cast(str, row["payload_json"]), strict=True
-            )
+        if row is None:
+            return None
+        payload_json = cast(str, row["payload_json"])
+        try:
+            payload = json.loads(payload_json)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(payload, dict) or payload.get("schema_version") != (
+            "wilq_current_page_disposition_proposal_v2"
+        ):
+            return None
+        return CurrentPageDispositionV2Proposal.model_validate_json(
+            payload_json, strict=True
         )
 
     def record_current_page_disposition_v2_receipt(

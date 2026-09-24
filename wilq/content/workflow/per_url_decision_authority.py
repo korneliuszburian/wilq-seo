@@ -405,6 +405,20 @@ def _policy_freshness_blocker(
     return None
 
 
+def per_url_decision_freshness_blocker(
+    policy_facts: ContentPerUrlDecisionPolicyFacts,
+    checked_at: datetime,
+) -> tuple[str, str] | None:
+    """Check the stored freshness assessment against the authority read time."""
+
+    if checked_at.tzinfo is None or checked_at.utcoffset() is None:
+        return (
+            "per_url_freshness_check_time_invalid",
+            "Odczytaj ponownie freshness wymaganych źródeł.",
+        )
+    return _policy_freshness_blocker(policy_facts, checked_at.astimezone(UTC))
+
+
 def _policy_freshness_evidence_payload(
     policy_facts: ContentPerUrlDecisionPolicyFacts,
 ) -> dict[str, object]:
@@ -470,6 +484,7 @@ __all__ = [
     "ContentPerUrlDecisionPolicyFacts",
     "ContentPerUrlPolicyFact",
     "build_content_per_url_decision_observation",
+    "per_url_decision_freshness_blocker",
     "per_url_decision_observation_digest",
     "project_content_per_url_currentness",
 ]
