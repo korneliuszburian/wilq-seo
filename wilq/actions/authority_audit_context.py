@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     ContentCurrentDispositionSnapshot,
@@ -48,6 +49,9 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
     """Add exact authority snapshot/payload digests without changing audit identity."""
 
     action_type = action.payload.get("action_type")
+    if action_type == PLANNING_GENERATION_INTENT_ACTION_TYPE:
+        _stamp_planning_generation_intent(action, event)
+        return
     if action_type == RESEARCH_PACKET_V2_ACTION_TYPE:
         _stamp_exact_preview(
             action,
@@ -167,6 +171,17 @@ def _stamp_current_page_disposition(action: ActionObject, event: AuditEvent) -> 
         "current_disposition_snapshot_digest": proposal.snapshot.context_digest,
         "current_disposition_action_payload_digest": canonical_json_digest(action.payload),
     }
+
+
+def _stamp_planning_generation_intent(action: ActionObject, event: AuditEvent) -> None:
+    snapshot = action.payload.get("planning_generation_intent")
+    context_digest = snapshot.get("context_digest") if isinstance(snapshot, dict) else None
+    if isinstance(context_digest, str):
+        event.details = {
+            **event.details,
+            "context_digest": context_digest,
+            "payload_digest": canonical_json_digest(action.payload),
+        }
 
 
 __all__ = ["stamp_authority_audit_context"]

@@ -3,6 +3,10 @@ from __future__ import annotations
 from wilq.actions._mutation_contract_dispatch import (
     mutation_apply_contract as _mutation_apply_contract,
 )
+from wilq.content.planning.generation_intent import (
+    PLANNING_GENERATION_INTENT_ACTION_TYPE,
+    PLANNING_GENERATION_INTENT_ADAPTER,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
@@ -54,6 +58,12 @@ def mutation_apply_contract(
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
     if (
+        action.payload.get("action_type") == PLANNING_GENERATION_INTENT_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ):
+        return PLANNING_GENERATION_INTENT_ADAPTER
+    if (
         action.payload.get("action_type") == RESEARCH_PACKET_V2_ACTION_TYPE
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
@@ -84,7 +94,8 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
     ):
         return CURRENT_DISPOSITION_MUTATION_ADAPTER
     if (
-        action.payload.get("action_type") in {
+        action.payload.get("action_type")
+        in {
             SOURCE_FACT_AUTHORITY_ACTION_TYPE,
             SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
         }

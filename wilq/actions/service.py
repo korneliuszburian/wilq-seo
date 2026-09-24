@@ -115,10 +115,6 @@ from wilq.actions.google_ads.demand_gen_preview import (
     demand_gen_readiness_preview_cards as build_demand_gen_readiness_preview_cards,
 )
 from wilq.actions.impact_lifecycle import impact_check_action as impact_check_action_lifecycle
-from wilq.actions.local_content_mutation_adapters import (
-    execute_local_content_mutation_adapter,
-    is_local_content_mutation_adapter,
-)
 from wilq.actions.metric_utils import (
     metric_fact_label,
     plain_metric_value_label,
@@ -127,6 +123,9 @@ from wilq.actions.metric_utils import (
 from wilq.actions.mutation_contract import mutation_apply_contract as _mutation_apply_contract
 from wilq.actions.mutation_contract import (
     supported_mutation_adapter as _supported_mutation_adapter_impl,
+)
+from wilq.actions.mutation_execution import (
+    execute_supported_mutation_adapter as execute_content_mutation_adapter,
 )
 from wilq.actions.mutation_lifecycle import (
     mutation_readiness_action as mutation_readiness_action_lifecycle,
@@ -227,7 +226,6 @@ from wilq.actions.review_gate import (
 )
 from wilq.actions.review_lifecycle import record_action_review as record_action_review_lifecycle
 from wilq.actions.wordpress_mutation_requirements import (
-    execute_supported_wordpress_mutation_adapter,
     wordpress_draft_activation_packet,
     wordpress_draft_apply_capability,
     wordpress_draft_execution_readiness_requirements,
@@ -244,6 +242,7 @@ from wilq.audit.trusted_local_confirmation import (
     trusted_local_confirmation_authority,
 )
 from wilq.connectors.registry import get_connector_status
+from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     parse_content_research_fact_promotion_snapshot,
@@ -497,6 +496,8 @@ def impact_check_action(
 def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
+    *,
+    content_snapshot_loader: CurrentSnapshotLoader | None = None,
 ) -> ActionApplyResult:
     submitted_actor_label = None if request is None else request.confirmed_by
     trusted_principal_receipt = _trusted_promotion_principal_receipt(
@@ -515,6 +516,7 @@ def apply_action(
         bound_request,
         dependencies=_apply_dependencies(
             trusted_principal_receipt=trusted_principal_receipt,
+            content_snapshot_loader=content_snapshot_loader,
         ),
     )
     if submitted_actor_label is not None:
@@ -535,6 +537,7 @@ def apply_action(
 def _apply_dependencies(
     *,
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
+    content_snapshot_loader: CurrentSnapshotLoader | None = None,
 ) -> ApplyDependencies:
     workflow_store = action_content_workflow_store()
     return ApplyDependencies(
@@ -542,11 +545,14 @@ def _apply_dependencies(
         wordpress_apply_capability=wordpress_draft_apply_capability,
         mutation_adapter=_supported_mutation_adapter,
         execute_mutation_adapter=lambda action, mutation_adapter, wordpress_capability: (
-            _execute_supported_mutation_adapter(
+            execute_content_mutation_adapter(
                 action,
                 mutation_adapter,
                 wordpress_capability,
+                workflow_store=workflow_store,
+                audit_store_factory=local_state_store,
                 trusted_principal_receipt=trusted_principal_receipt,
+                content_snapshot_loader=content_snapshot_loader,
             )
         ),
         connector_status=get_connector_status,
@@ -564,20 +570,14 @@ def _execute_supported_mutation_adapter(
     wordpress_capability: Any = None,
     *,
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
+    content_snapshot_loader: CurrentSnapshotLoader | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]]:
-    if is_local_content_mutation_adapter(mutation_adapter):
-        local_result = execute_local_content_mutation_adapter(
-            action,
-            mutation_adapter,
-            workflow_store=action_content_workflow_store(),
-            audit_store_factory=local_state_store,
-            trusted_principal_receipt=trusted_principal_receipt,
-        )
-        if local_result is None:
-            return None, ["Nieznany lokalny adapter treści."]
-        return local_result
-    return execute_supported_wordpress_mutation_adapter(
-        action, mutation_adapter, wordpress_capability
+    return execute_content_mutation_adapter(
+        action, mutation_adapter, wordpress_capability,
+        workflow_store=action_content_workflow_store(),
+        audit_store_factory=local_state_store,
+        trusted_principal_receipt=trusted_principal_receipt,
+        content_snapshot_loader=content_snapshot_loader,
     )
 
 

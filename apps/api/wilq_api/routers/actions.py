@@ -18,9 +18,11 @@ from wilq.actions.service import (
     validate_action,
 )
 from wilq.audit.trusted_local_confirmation import TrustedLocalConfirmationError
+from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
 )
+from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,
@@ -389,7 +391,12 @@ def _apply_action_endpoint(
             },
         )
     try:
-        result = apply_action(action, request)
+        snapshot_loader = (
+            _planning_generation_snapshot_loader()
+            if action.payload.get("action_type") == PLANNING_GENERATION_INTENT_ACTION_TYPE
+            else None
+        )
+        result = apply_action(action, request, content_snapshot_loader=snapshot_loader)
     except TrustedLocalConfirmationError as error:
         raise HTTPException(
             status_code=409,
@@ -399,6 +406,12 @@ def _apply_action_endpoint(
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
     return result
+
+
+def _planning_generation_snapshot_loader() -> CurrentSnapshotLoader:
+    from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
+
+    return snapshot_for_work_item_or_404
 
 
 def _action_mutation_readiness(action_id: str) -> ActionMutationReadinessResponse:

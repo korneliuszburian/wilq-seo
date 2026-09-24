@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
 )
@@ -44,6 +45,19 @@ class _LocalContractSpec:
 
 
 _LOCAL_CONTRACTS = {
+    PLANNING_GENERATION_INTENT_ACTION_TYPE: _LocalContractSpec(
+        "record_exact_local_planning_generation_intent",
+        "wilq_planning_generation_intent_snapshot_v1|approved_research_packet_v2",
+        (
+            "vendor_write",
+            "wordpress_publish",
+            "wordpress_draft",
+            "content_generation",
+            "model_enqueue",
+        ),
+        "Ta akcja zapisuje wyłącznie lokalny zamiar oparty na zatwierdzonym pakiecie v2; "
+        "nie uruchamia modelu ani vendora.",
+    ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: _LocalContractSpec(
         "record_content_delivery_identity_binding",
         f"delivery_identity_authority_snapshot_v1|{DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT}",

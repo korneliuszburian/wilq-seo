@@ -74,6 +74,10 @@ from wilq.content.workflow.store.store_landing_hub import (
 from wilq.content.workflow.store.store_material_review import (
     ContentMaterialReviewStoreMixin,
 )
+from wilq.content.workflow.store.store_planning_generation_intent import (
+    PlanningGenerationIntentStoreMixin,
+    ensure_planning_generation_intent_schema,
+)
 from wilq.content.workflow.store.store_production_classification import (
     ProductionClassificationStoreMixin,
 )
@@ -662,6 +666,7 @@ class ContentWorkflowStore(
     EvidenceAcquisitionStoreMixin,
     ContentResearchPacketStoreMixin,
     ResearchPacketV2StoreMixin,
+    PlanningGenerationIntentStoreMixin,
     ResearchProposalStoreMixin,
     ContentLandingHubAuthorizationStoreMixin,
     InitialDraftAuthorityStoreMixin,
@@ -688,5 +693,6 @@ class ContentWorkflowStore(
         connection.row_factory = sqlite3.Row
         ensure_source_fact_authority_v2_schema(connection)
         ensure_research_packet_v2_schema(connection)
+        ensure_planning_generation_intent_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection

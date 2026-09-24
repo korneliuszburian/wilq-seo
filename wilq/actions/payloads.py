@@ -35,6 +35,10 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
+from wilq.content.planning.generation_intent import (
+    PLANNING_GENERATION_INTENT_ACTION_TYPE,
+    validate_planning_generation_intent_action_payload,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     validate_current_disposition_action_payload,
@@ -128,6 +132,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
         "Identity treści",
         validate_delivery_identity_authority_action_payload,
+    ),
+    PLANNING_GENERATION_INTENT_ACTION_TYPE: (
+        "Zamiar planowania treści",
+        validate_planning_generation_intent_action_payload,
     ),
 }
 

@@ -71,6 +71,8 @@ EXPECTED_POST_S5_TABLES = frozenset(
         "content_new_page_foundations",
         "content_new_page_revision_apply_claims",
         "content_planning_generation_claims",
+        "content_planning_generation_intent_proposals",
+        "content_planning_generation_intent_receipts",
         "content_planning_generation_jobs",
         "content_planning_input_snapshots",
         "content_planning_proposal_repairs",
@@ -183,6 +185,12 @@ EXPECTED_POST_S5_TRIGGERS = frozenset(
         "content_research_packet_v2_approval_receipts_no_delete",
         "content_research_packet_v2_approval_receipts_no_replace",
         "content_research_packet_v2_approval_receipts_no_update",
+        "content_planning_generation_intent_proposals_no_delete",
+        "content_planning_generation_intent_proposals_no_replace",
+        "content_planning_generation_intent_proposals_no_update",
+        "content_planning_generation_intent_receipts_no_delete",
+        "content_planning_generation_intent_receipts_no_replace",
+        "content_planning_generation_intent_receipts_no_update",
         "content_source_pack_bindings_no_delete",
         "content_source_pack_bindings_no_replace",
         "content_source_pack_bindings_no_update",
@@ -475,7 +483,7 @@ def test_post_s5_inventory_is_complete_lineage_bound_and_byte_exact(tmp_path: Pa
         seed_sha256=SEED_SHA256,
     )
 
-    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 13
+    assert inventory.identity.sqlite_user_version == SQLITE_SCHEMA_VERSION == 14
     assert inventory.identity.sqlite_application_id == 0
     assert inventory.identity.application_sha256 == APPLICATION_SHA256
     assert inventory.identity.seed_sha256 == SEED_SHA256
@@ -550,9 +558,9 @@ def test_catalog_and_identity_are_canonical_across_creation_order(tmp_path: Path
     assert first.identity.identity_sha256 == (
         "".join(
             (
-                    "af87b77791315c52f7908bd3",  # pragma: allowlist secret
-                    "50fb7cf2a15bdae7adfa3e94",  # pragma: allowlist secret
-                    "09b19d006e831f11",  # pragma: allowlist secret
+                    "c3f966bb85f15b22024dd8bb",  # pragma: allowlist secret
+                    "9571afc7f448fd41642782ec",  # pragma: allowlist secret
+                    "3967a06f25f9c9f1",  # pragma: allowlist secret
             )
         )
     )

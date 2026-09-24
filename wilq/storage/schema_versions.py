@@ -4,7 +4,7 @@ import sqlite3
 
 import duckdb
 
-SQLITE_SCHEMA_VERSION = 13
+SQLITE_SCHEMA_VERSION = 14
 DUCKDB_SCHEMA_VERSION = 2
 _CONTENT_SECTION_FOCUS_SCHEMA_VERSION = 4
 _STOP_TELEMETRY_SCHEMA_VERSION = 5
@@ -16,6 +16,7 @@ _CONTENT_RESEARCH_PACKET_SCHEMA_VERSION = 10
 _CONTENT_LANDING_HUB_SCHEMA_VERSION = 11
 _SOURCE_FACT_AUTHORITY_V2_SCHEMA_VERSION = 12
 _RESEARCH_PACKET_V2_SCHEMA_VERSION = 13
+_PLANNING_GENERATION_INTENT_SCHEMA_VERSION = 14
 _SQLITE_SCHEMA_MILESTONES = (
     (_CONTENT_SECTION_FOCUS_SCHEMA_VERSION, "table", "content_section_focus"),
     (_STOP_TELEMETRY_SCHEMA_VERSION, "table", "codex_stop_events"),
@@ -63,6 +64,16 @@ _SQLITE_SCHEMA_MILESTONES = (
         _RESEARCH_PACKET_V2_SCHEMA_VERSION,
         "table",
         "content_research_packet_v2_approval_receipts",
+    ),
+    (
+        _PLANNING_GENERATION_INTENT_SCHEMA_VERSION,
+        "table",
+        "content_planning_generation_intent_proposals",
+    ),
+    (
+        _PLANNING_GENERATION_INTENT_SCHEMA_VERSION,
+        "table",
+        "content_planning_generation_intent_receipts",
     ),
 )
 

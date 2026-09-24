@@ -6,6 +6,10 @@ from collections.abc import Callable
 from typing import Any
 
 from wilq.audit.trusted_local_confirmation import TrustedLocalPrincipalReceipt
+from wilq.content.planning.generation_intent import (
+    PLANNING_GENERATION_INTENT_ADAPTER,
+    execute_planning_generation_intent_action,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
     execute_current_disposition_authority,
@@ -44,6 +48,7 @@ _LOCAL_ADAPTERS = frozenset(
         CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
         CURRENT_DISPOSITION_MUTATION_ADAPTER,
         DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
+        PLANNING_GENERATION_INTENT_ADAPTER,
     }
 )
 
@@ -59,6 +64,7 @@ def execute_local_content_mutation_adapter(
     workflow_store: ContentWorkflowStore,
     audit_store_factory: Callable[[], LocalStateStore],
     trusted_principal_receipt: TrustedLocalPrincipalReceipt | None = None,
+    content_snapshot_loader: Callable[[str], Any] | None = None,
 ) -> tuple[dict[str, Any] | None, list[str]] | None:
     """Run one local content receipt adapter, or return None for vendor adapters."""
     if adapter == RESEARCH_PACKET_V2_ACTION_ADAPTER:
@@ -67,6 +73,14 @@ def execute_local_content_mutation_adapter(
             store=workflow_store,
             audit_events=action.audit_events,
             confirmed_by=_confirmation_actor(action),
+        )
+    if adapter == PLANNING_GENERATION_INTENT_ADAPTER:
+        return execute_planning_generation_intent_action(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
+            current_snapshot_loader=content_snapshot_loader,
         )
     if adapter == MATERIAL_REVIEW_ACTION_V2_ADAPTER:
         return execute_current_material_review_action_v2(
