@@ -132,6 +132,9 @@ def register_content_model_routes(
     from apps.api.wilq_api.routers.content_current_page_identity_v2 import (
         register_content_current_page_identity_v2_route,
     )
+    from apps.api.wilq_api.routers.content_current_page_identity_v3 import (
+        register_content_current_page_identity_v3_route,
+    )
     from apps.api.wilq_api.routers.content_source_fact_candidate_v2 import (
         register_content_source_fact_candidate_v2_route,
     )
@@ -164,6 +167,7 @@ def register_content_model_routes(
     register_content_current_page_evidence_route(router)
     register_content_current_page_disposition_v2_routes(router)
     register_content_current_page_identity_v2_route(router)
+    register_content_current_page_identity_v3_route(router)
     register_content_source_fact_candidate_v2_route(router)
     register_content_source_pack_v2_route(router)
     register_content_production_command_route(router, snapshot_loader=snapshot_loader)
