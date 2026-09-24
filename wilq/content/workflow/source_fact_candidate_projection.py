@@ -48,6 +48,9 @@ _CandidateOrigin = Literal[
     "current_page_snapshot",
     "research_packet",
 ]
+SourceFactCandidateBlockerOwner = Literal[
+    "WILQ content workflow", "WILQ WordPress connector", "Wilku"
+]
 
 
 class _FrozenModel(BaseModel):
@@ -481,10 +484,14 @@ def _scoped_candidates(
     scoped: dict[str, tuple[ContentSourceFact, _CandidateOrigin]] = {}
     for fact in facts:
         origin: _CandidateOrigin | None = None
-        if any(
+        exact_path = any(
             content_normalized_path(path).casefold() == canonical_path.casefold()
             for path in fact.applicable_canonical_paths
-        ):
+        )
+        if fact.applicable_canonical_paths and not exact_path:
+            # An explicit page scope takes precedence over a service-card association.
+            continue
+        if exact_path:
             origin = "exact_canonical_path"
         elif fact.source_type == "official_guidance":
             # Official guidance is never service-scoped.  A matching card or
@@ -693,10 +700,69 @@ def _same_exact_public_url(left: str, right: str) -> bool:
     return bool(left_normalized and left_normalized == right_normalized)
 
 
+def scoped_candidate_review_blocker(
+    candidates: list[ContentSourceFactAuthorityCandidate],
+    binding_evidence_ids: tuple[str, ...],
+) -> tuple[ContentSourceFactAuthorityBlocker, SourceFactCandidateBlockerOwner]:
+    """Explain why exact-path facts cannot enter a reviewed source authority."""
+
+    reasons = {reason for candidate in candidates for reason in candidate.reasons}
+    evidence_ids = tuple(sorted(
+        {evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids}
+        | set(binding_evidence_ids)
+    ))
+    if reasons & {"source_evidence_missing", "source_connector_missing"}:
+        code = "source_fact_lineage_missing"
+        owner: SourceFactCandidateBlockerOwner = "WILQ content workflow"
+        next_step = (
+            "Uzupełnij evidence i source connector exact source factu, "
+            "a następnie ponów odczyt kandydatów."
+        )
+    elif reasons & {"source_origin_not_credible", "source_privacy_not_eligible"}:
+        code = "source_fact_source_ineligible"
+        owner = "WILQ content workflow"
+        next_step = (
+            "WILQ content workflow: zweryfikuj pochodzenie i prywatność źródła, "
+            "a następnie zastąp je kwalifikowanym faktem."
+        )
+    elif "service_card_review_required" in reasons:
+        code = "service_card_review_required"
+        owner = "Wilku"
+        next_step = (
+            "Wilku: sprawdź i zatwierdź dokładną kartę usługi "
+            "przed ponownym odczytem kandydatów."
+        )
+    elif any(candidate.review_status == "stale" for candidate in candidates):
+        code = "source_fact_stale"
+        owner = "WILQ content workflow"
+        next_step = "Odśwież źródło i ponownie sprawdź exact source fact."
+    elif any(candidate.review_status == "rejected" for candidate in candidates):
+        code = "source_fact_rejected"
+        owner = "WILQ content workflow"
+        next_step = "Zastąp lub ponownie pozyskaj odrzucony source fact."
+    else:
+        code = "source_fact_review_required"
+        owner = "Wilku"
+        next_step = (
+            "Wilku: sprawdź i zatwierdź exact source fact "
+            "przed ponownym odczytem kandydatów."
+        )
+    return (
+        ContentSourceFactAuthorityBlocker(
+            seam="source_fact_review",
+            reason=code,
+            evidence_ids=evidence_ids,
+            next_step=next_step,
+        ),
+        owner,
+    )
+
+
 __all__ = [
     "ContentSourceFactAuthorityCandidate",
     "ContentSourceFactAuthorityCandidateProjection",
     "ContentSourceFactAuthorityRegistryReceipt",
     "ContentSourceFactAuthorityServiceBinding",
     "build_content_source_fact_authority_candidate_projection",
+    "scoped_candidate_review_blocker",
 ]
