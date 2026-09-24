@@ -474,6 +474,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_page_identity_v3.py::"
         "test_public_receiptless_identity_tracks_exact_page_and_blocks_drift",
     ),
+    ("per-url-decision-authority", "two-wave-currentness"): (
+        "scripts/test.sh",
+        "tests/content/test_per_url_decision_authority.py::"
+        "test_per_url_authority_currentness_is_independent_and_append_only",
+    ),
     ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"): (
         "scripts/test.sh",
         "tests/content/test_source_fact_candidate_v3.py::"
@@ -654,6 +659,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-page-evidence", "auto-exact-observation"),
             ("current-page-identity-v3", "receiptless-exact-cas"),
+            ("per-url-decision-authority", "two-wave-currentness"),
             ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"),
             ("source-pack-v3", "approved-official-complete-read"),
             ("research-packet-v3", "exact-official-no-stale-demand"),

@@ -74,6 +74,10 @@ from wilq.content.workflow.store.store_landing_hub import (
 from wilq.content.workflow.store.store_material_review import (
     ContentMaterialReviewStoreMixin,
 )
+from wilq.content.workflow.store.store_per_url_decision_authority import (
+    ContentPerUrlDecisionAuthorityStoreMixin,
+    ensure_per_url_decision_authority_schema,
+)
 from wilq.content.workflow.store.store_planning_generation_intent import (
     PlanningGenerationIntentStoreMixin,
     ensure_planning_generation_intent_schema,
@@ -664,6 +668,7 @@ class ContentWorkflowStore(
     ContentMaterialReviewStoreMixin,
     ContentCurrentDispositionAuthorityStoreMixin,
     CurrentPageDispositionV2StoreMixin,
+    ContentPerUrlDecisionAuthorityStoreMixin,
     ContentCurrentVerificationStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
@@ -706,5 +711,6 @@ class ContentWorkflowStore(
         ensure_research_packet_v3_schema(connection)
         ensure_planning_generation_intent_schema(connection)
         ensure_planning_generation_intent_v3_schema(connection)
+        ensure_per_url_decision_authority_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection
