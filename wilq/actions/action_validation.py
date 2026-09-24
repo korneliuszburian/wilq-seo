@@ -10,6 +10,7 @@ from wilq.content.workflow.current_page_disposition_v2 import (
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.research_packet_v2_action import RESEARCH_PACKET_V2_ACTION_TYPE
+from wilq.content.workflow.research_packet_v3_action import RESEARCH_PACKET_V3_ACTION_TYPE
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -85,6 +86,7 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
         CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
         MATERIAL_REVIEW_ACTION_V2_TYPE,
         RESEARCH_PACKET_V2_ACTION_TYPE,
+        RESEARCH_PACKET_V3_ACTION_TYPE,
         PLANNING_GENERATION_INTENT_ACTION_TYPE,
     } or (
         action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE

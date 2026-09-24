@@ -61,6 +61,10 @@ from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_TYPE,
     validate_research_packet_v2_action_payload,
 )
+from wilq.content.workflow.research_packet_v3_action import (
+    RESEARCH_PACKET_V3_ACTION_TYPE,
+    validate_research_packet_v3_action_payload,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     validate_research_fact_promotion_action_payload,
@@ -128,6 +132,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     RESEARCH_PACKET_V2_ACTION_TYPE: (
         "Review pakietu badawczego v2",
         validate_research_packet_v2_action_payload,
+    ),
+    RESEARCH_PACKET_V3_ACTION_TYPE: (
+        "Review pakietu badawczego v3",
+        validate_research_packet_v3_action_payload,
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: (
         "Identity treści",

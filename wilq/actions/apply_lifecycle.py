@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Any, Literal, cast
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from wilq.actions.action_blockers import action_apply_preflight_blockers
 from wilq.actions.audit_store import (
     action_mutation_audit_record,
@@ -30,6 +32,7 @@ from wilq.content.workflow.documents.revision_binding import ContentDraftRevisio
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
 from wilq.content.workflow.research_packet_v2_action import RESEARCH_PACKET_V2_ACTION_TYPE
+from wilq.content.workflow.research_packet_v3_action import RESEARCH_PACKET_V3_ACTION_TYPE
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
 )
@@ -55,6 +58,7 @@ from wilq.schemas import (
     ActionWordPressDraftApplyBlocker,
     AuditEvent,
 )
+from wilq.schemas.actions import ActionTypedApplyBlocker
 
 WordPressApplyCapability = Callable[..., tuple[Any, list[ActionWordPressDraftApplyBlocker]]]
 ExecuteMutationAdapter = Callable[
@@ -175,6 +179,7 @@ def apply_action(
             errors=errors,
             wordpress_revision_blockers=wordpress_revision_blockers,
             adapter_result=adapter_result,
+            typed_blocker=_typed_adapter_blocker(adapter_result),
         )
     action.status = ActionStatus.applied
     action.review_gate = dependencies.review_gate(action)
@@ -188,6 +193,18 @@ def apply_action(
         wordpress_revision_blockers=wordpress_revision_blockers,
         adapter_result=adapter_result,
     )
+
+
+def _typed_adapter_blocker(adapter_result: dict[str, Any] | None) -> ActionTypedApplyBlocker | None:
+    if not isinstance(adapter_result, dict) or adapter_result.get("status") != "blocked":
+        return None
+    fields = {name: adapter_result.get(name) for name in (
+        "code", "owner", "evidence_ids", "safe_next_step"
+    )}
+    try:
+        return ActionTypedApplyBlocker.model_validate(fields)
+    except ValidationError:
+        return None
 
 
 def _payload_apply_allowed(payload: dict[str, Any]) -> bool:
@@ -248,6 +265,7 @@ def _resolve_apply_capability(
             CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
             MATERIAL_REVIEW_ACTION_V2_TYPE,
             RESEARCH_PACKET_V2_ACTION_TYPE,
+            RESEARCH_PACKET_V3_ACTION_TYPE,
             PLANNING_GENERATION_INTENT_ACTION_TYPE,
         }
         and action.payload.get("local_authority_only") is True

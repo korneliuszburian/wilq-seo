@@ -127,6 +127,10 @@ from wilq.content.workflow.store.store_research_packet_v2 import (
     ResearchPacketV2StoreMixin,
     ensure_research_packet_v2_schema,
 )
+from wilq.content.workflow.store.store_research_packet_v3 import (
+    ResearchPacketV3StoreMixin,
+    ensure_research_packet_v3_schema,
+)
 from wilq.content.workflow.store.store_research_proposal import ResearchProposalStoreMixin
 from wilq.content.workflow.store.store_schema import ensure_content_workflow_schema
 from wilq.content.workflow.store.store_service_profile_card_review import (
@@ -666,6 +670,7 @@ class ContentWorkflowStore(
     EvidenceAcquisitionStoreMixin,
     ContentResearchPacketStoreMixin,
     ResearchPacketV2StoreMixin,
+    ResearchPacketV3StoreMixin,
     PlanningGenerationIntentStoreMixin,
     ResearchProposalStoreMixin,
     ContentLandingHubAuthorizationStoreMixin,
@@ -693,6 +698,7 @@ class ContentWorkflowStore(
         connection.row_factory = sqlite3.Row
         ensure_source_fact_authority_v2_schema(connection)
         ensure_research_packet_v2_schema(connection)
+        ensure_research_packet_v3_schema(connection)
         ensure_planning_generation_intent_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection

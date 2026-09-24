@@ -26,6 +26,10 @@ from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_ADAPTER,
     RESEARCH_PACKET_V2_ACTION_TYPE,
 )
+from wilq.content.workflow.research_packet_v3_action import (
+    RESEARCH_PACKET_V3_ACTION_ADAPTER,
+    RESEARCH_PACKET_V3_ACTION_TYPE,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     CONTENT_RESEARCH_FACT_PROMOTION_MUTATION_ADAPTER,
@@ -64,11 +68,16 @@ def supported_mutation_adapter(action: ActionObject) -> str | None:
     ):
         return PLANNING_GENERATION_INTENT_ADAPTER
     if (
-        action.payload.get("action_type") == RESEARCH_PACKET_V2_ACTION_TYPE
+        action.payload.get("action_type")
+        in {RESEARCH_PACKET_V2_ACTION_TYPE, RESEARCH_PACKET_V3_ACTION_TYPE}
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):
-        return RESEARCH_PACKET_V2_ACTION_ADAPTER
+        return (
+            RESEARCH_PACKET_V2_ACTION_ADAPTER
+            if action.payload.get("action_type") == RESEARCH_PACKET_V2_ACTION_TYPE
+            else RESEARCH_PACKET_V3_ACTION_ADAPTER
+        )
     if (
         action.payload.get("action_type") == MATERIAL_REVIEW_ACTION_V2_TYPE
         and action.payload.get("local_authority_only") is True

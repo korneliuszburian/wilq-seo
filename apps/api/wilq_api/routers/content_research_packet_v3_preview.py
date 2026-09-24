@@ -56,3 +56,31 @@ def _current_planning_result(work_item_id: str) -> ContentPlanningInputBuildResu
     snapshot = snapshot_for_work_item_or_404(work_item_id)
     card_id = getattr(snapshot.service_profile_context, "service_card_id", None)
     return build_content_planning_input(snapshot, service_card_id=card_id)
+
+
+def read_current_research_packet_v3_preview(work_item_id: str) -> ResearchPacketV3Preview:
+    try:
+        pack = read_current_source_pack_v3_preview(work_item_id)
+    except (HTTPException, ValueError, RuntimeError):
+        from wilq.content.workflow.research_packet_v3_preview import ResearchPacketV3Blocker
+
+        return ResearchPacketV3Preview(
+            status="blocked",
+            work_item_id=work_item_id,
+            blocker=ResearchPacketV3Blocker(
+                code="research_packet_v3_current_read_unavailable",
+                owner="WILQ content workflow",
+                safe_next_step="Ponów dokładny odczyt bieżącego pakietu v3.",
+            ),
+        )
+    if pack.status == "blocked":
+        return build_research_packet_v3_preview(
+            work_item_id, source_pack=pack, planning_result=ContentPlanningInputBuildResult()
+        )
+    try:
+        planning = _current_planning_result(work_item_id)
+    except (HTTPException, ValueError, RuntimeError):
+        planning = ContentPlanningInputBuildResult()
+    return build_research_packet_v3_preview(
+        work_item_id, source_pack=pack, planning_result=planning
+    )

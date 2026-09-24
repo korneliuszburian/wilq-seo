@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.actions import ads_external_execution
 from wilq.actions.service import (
@@ -48,6 +49,34 @@ from wilq.storage.local_state import local_state_store
 
 if TYPE_CHECKING:
     from wilq.content.planning.generation_intent_dispatch import PlanningGenerationDispatchOutcome
+
+
+class _TrustedApplyConflictDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+
+
+class _CurrentDispositionApplyConflictDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Literal["current_disposition_approval_required"]
+    status: Literal["blocked"]
+    action_id: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    canonical_endpoint: str = Field(min_length=1)
+    external_write_attempted: Literal[False]
+
+
+class _ActionApplyConflictResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    detail: (
+        ActionApplyResult
+        | _TrustedApplyConflictDetail
+        | _CurrentDispositionApplyConflictDetail
+    )
 
 
 def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> APIRouter:
@@ -197,7 +226,11 @@ def _register_action_lifecycle_routes(
             clear_api_view_model_caches=clear_api_view_model_caches,
         )
 
-    @router.post("/api/actions/{action_id}/apply", response_model=ActionApplyResult)
+    @router.post(
+        "/api/actions/{action_id}/apply",
+        response_model=ActionApplyResult,
+        responses={409: {"model": _ActionApplyConflictResponse}},
+    )
     def apply_action_endpoint(
         action_id: str,
         request: ActionApplyRequest | None = None,

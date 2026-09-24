@@ -28,6 +28,10 @@ from wilq.content.workflow.research_packet_v2_action import (
     RESEARCH_PACKET_V2_ACTION_TYPE,
     research_packet_v2_action_id,
 )
+from wilq.content.workflow.research_packet_v3_action import (
+    RESEARCH_PACKET_V3_ACTION_TYPE,
+    research_packet_v3_action_id,
+)
 from wilq.content.workflow.research_promotion_authority import (
     CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
     parse_content_research_fact_promotion_snapshot,
@@ -52,13 +56,14 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
     if action_type == PLANNING_GENERATION_INTENT_ACTION_TYPE:
         _stamp_planning_generation_intent(action, event)
         return
-    if action_type == RESEARCH_PACKET_V2_ACTION_TYPE:
+    if action_type in {RESEARCH_PACKET_V2_ACTION_TYPE, RESEARCH_PACKET_V3_ACTION_TYPE}:
+        snapshot_key, action_id_for_digest = (
+            ("research_packet_v2_preview", research_packet_v2_action_id)
+            if action_type == RESEARCH_PACKET_V2_ACTION_TYPE
+            else ("research_packet_v3_preview", research_packet_v3_action_id)
+        )
         _stamp_exact_preview(
-            action,
-            event,
-            "research_packet_v2_preview",
-            "preview_hash",
-            research_packet_v2_action_id,
+            action, event, snapshot_key, "preview_hash", action_id_for_digest
         )
         return
     if action_type == MATERIAL_REVIEW_ACTION_V2_TYPE:

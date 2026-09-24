@@ -411,6 +411,13 @@ export const ActionMutationReadinessSummaryResponseSchema = z.object({
   items: z.array(ActionMutationReadinessResponseSchema).default([])
 });
 
+export const ActionTypedApplyBlockerSchema = z.object({
+  code: z.string().min(1),
+  owner: z.string().min(1),
+  evidence_ids: z.array(z.string()),
+  safe_next_step: z.string().min(1)
+}).strict();
+
 export const ActionApplyResultSchema = z.object({
   action_id: z.string(),
   applied: z.boolean(),
@@ -420,7 +427,8 @@ export const ActionApplyResultSchema = z.object({
   mutation_audit: ActionMutationAuditRecordSchema,
   errors: z.array(z.string()),
   wordpress_revision_blockers: z.array(ActionWordPressDraftApplyBlockerSchema).default([]),
-  adapter_result: z.record(z.string(), z.unknown()).nullable().optional()
+  adapter_result: z.record(z.string(), z.unknown()).nullable().optional(),
+  typed_blocker: ActionTypedApplyBlockerSchema.nullable().optional()
 });
 
 export const ActionWordPressDraftApplyInputSchema = ContentDraftRevisionBindingSchema;
@@ -533,6 +541,7 @@ export type ActionMutationReadinessSummaryResponse = z.infer<
   typeof ActionMutationReadinessSummaryResponseSchema
 >;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
+export type ActionTypedApplyBlocker = z.infer<typeof ActionTypedApplyBlockerSchema>;
 export type ContentDraftRevisionBinding = z.infer<typeof ContentDraftRevisionBindingSchema>;
 export type ActionWordPressDraftApplyBlocker = z.infer<
   typeof ActionWordPressDraftApplyBlockerSchema

@@ -88,6 +88,9 @@ from apps.api.wilq_api.routers.content_research_packet_v2_action import (
 from apps.api.wilq_api.routers.content_research_packet_v2_preview import (
     register_content_research_packet_v2_preview_route,
 )
+from apps.api.wilq_api.routers.content_research_packet_v3_action import (
+    register_content_research_packet_v3_action_routes,
+)
 from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
     register_content_research_packet_v3_preview_route,
 )
@@ -171,6 +174,7 @@ def register_content_model_routes(
     register_content_research_packet_v2_preview_route(router, snapshot_loader=snapshot_loader)
     register_content_research_packet_v3_preview_route(router)
     register_content_research_packet_v2_action_routes(router)
+    register_content_research_packet_v3_action_routes(router)
     register_content_landing_hub_authorization_routes(router)
     register_content_material_review_routes(router)
     register_content_material_review_action_v2_routes(router)

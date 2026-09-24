@@ -38,6 +38,15 @@ class ActionWordPressDraftApplyBlocker(BaseModel):
     next_step: str = Field(min_length=1)
 
 
+class ActionTypedApplyBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    owner: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(default_factory=list)
+    safe_next_step: str = Field(min_length=1)
+
+
 class ActionMutationAuditRecord(BaseModel):
     id: str
     action_id: str
@@ -356,6 +365,7 @@ class ActionApplyResult(BaseModel):
         default_factory=list
     )
     adapter_result: dict[str, Any] | None = None
+    typed_blocker: ActionTypedApplyBlocker | None = None
 
 
 class ActionPreviewRequest(BaseModel):

@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { CodexRunHistoryPageSchema, CodexRunSchema } from "./actions";
+import {
+  ActionTypedApplyBlockerSchema,
+  CodexRunHistoryPageSchema,
+  CodexRunSchema
+} from "./actions";
+
+describe("ActionTypedApplyBlockerSchema", () => {
+  it("keeps an actionable owner and step while rejecting raw adapter payload fields", () => {
+    const blocker = {
+      code: "research_packet_v3_current_drift",
+      owner: "WILQ content workflow",
+      evidence_ids: ["ev_current"],
+      safe_next_step: "Przygotuj nowy dokładny review."
+    };
+    expect(ActionTypedApplyBlockerSchema.parse(blocker)).toEqual(blocker);
+    expect(ActionTypedApplyBlockerSchema.safeParse({ ...blocker, raw_payload: "private" }).success)
+      .toBe(false);
+  });
+});
 
 describe("CodexRunSchema", () => {
   it("validates the AI trace and strips fields that could expose a raw prompt", () => {
