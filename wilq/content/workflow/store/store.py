@@ -78,6 +78,10 @@ from wilq.content.workflow.store.store_per_url_decision_authority import (
     ContentPerUrlDecisionAuthorityStoreMixin,
     ensure_per_url_decision_authority_schema,
 )
+from wilq.content.workflow.store.store_per_url_delivery_identity_authority import (
+    PerUrlDeliveryIdentityAuthorityStoreMixin,
+    ensure_per_url_delivery_identity_authority_schema,
+)
 from wilq.content.workflow.store.store_per_url_disposition_authority import (
     PerUrlDispositionAuthorityStoreMixin,
     ensure_per_url_disposition_authority_schema,
@@ -674,6 +678,7 @@ class ContentWorkflowStore(
     CurrentPageDispositionV2StoreMixin,
     ContentPerUrlDecisionAuthorityStoreMixin,
     PerUrlDispositionAuthorityStoreMixin,
+    PerUrlDeliveryIdentityAuthorityStoreMixin,
     ContentCurrentVerificationStoreMixin,
     ContentDeliveryIdentityAuthorityStoreMixin,
     ContentDeliveryIdentityStoreMixin,
@@ -718,5 +723,6 @@ class ContentWorkflowStore(
         ensure_planning_generation_intent_v3_schema(connection)
         ensure_per_url_decision_authority_schema(connection)
         ensure_per_url_disposition_authority_schema(connection)
+        ensure_per_url_delivery_identity_authority_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection

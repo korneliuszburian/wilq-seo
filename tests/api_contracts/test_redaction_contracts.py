@@ -12,6 +12,8 @@ from wilq.security.redaction import redact_mapping
         "current_disposition_action_payload_digest",
         "per_url_disposition_snapshot_digest",
         "per_url_disposition_action_payload_digest",
+        "per_url_delivery_identity_snapshot_digest",
+        "per_url_delivery_identity_action_payload_digest",
         "delivery_identity_authority_snapshot_digest",
         "delivery_identity_authority_action_payload_digest",
         "source_fact_authority_snapshot_digest",

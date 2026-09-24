@@ -12,6 +12,9 @@ from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
 )
@@ -96,6 +99,7 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
         PLANNING_GENERATION_INTENT_ACTION_TYPE,
         PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
         PER_URL_DISPOSITION_ACTION_TYPE,
+        PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
     } or (
         action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
         and action.payload.get("local_authority_only") is True

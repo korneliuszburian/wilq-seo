@@ -19,6 +19,9 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
 )
@@ -98,6 +101,13 @@ _LOCAL_CONTRACTS = {
         "wilq_per_url_disposition_snapshot_v1|semantic_row_digest|fresh_required_sources",
         ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
         "Ta akcja zapisuje lokalny receipt powiązany z exact per-URL semantic row; "
+        "nie wywołuje vendora ani nie generuje treści.",
+    ),
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE: _LocalContractSpec(
+        "record_per_url_delivery_identity_binding",
+        "wilq_per_url_delivery_identity_snapshot_v1|semantic_row_digest|fresh_required_sources",
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
+        "Ta akcja zapisuje lokalne identity exact strony z per-URL semantic row; "
         "nie wywołuje vendora ani nie generuje treści.",
     ),
     MATERIAL_REVIEW_ACTION_V2_TYPE: _LocalContractSpec(

@@ -16,6 +16,9 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
 )
@@ -136,6 +139,7 @@ def action_impact_check_blockers(
         or _is_local_current_disposition_action(action)
         or _is_local_current_page_disposition_v2_action(action)
         or _is_local_per_url_disposition_action(action)
+        or _is_local_per_url_delivery_identity_action(action)
         or _is_local_material_review_action_v2(action)
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)
@@ -202,6 +206,7 @@ def action_apply_preflight_blockers(
         or _is_local_current_disposition_action(action)
         or _is_local_current_page_disposition_v2_action(action)
         or _is_local_per_url_disposition_action(action)
+        or _is_local_per_url_delivery_identity_action(action)
         or _is_local_material_review_action_v2(action)
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)
@@ -310,6 +315,13 @@ def _is_local_per_url_disposition_action(action: ActionObject) -> bool:
     )
 
 
+def _is_local_per_url_delivery_identity_action(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == PER_URL_DELIVERY_IDENTITY_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+    )
+
+
 def _is_local_material_review_action_v2(action: ActionObject) -> bool:
     return (
         action.payload.get("action_type") == MATERIAL_REVIEW_ACTION_V2_TYPE
@@ -366,6 +378,7 @@ def _requires_approved_action_review(action: ActionObject) -> bool:
         or _is_local_current_disposition_action(action)
         or _is_local_current_page_disposition_v2_action(action)
         or _is_local_per_url_disposition_action(action)
+        or _is_local_per_url_delivery_identity_action(action)
         or _is_local_material_review_action_v2(action)
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)

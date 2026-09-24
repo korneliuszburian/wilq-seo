@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -626,3 +627,224 @@ def test_public_http_lifecycle_persists_exact_identity_and_no_vendor_write(
         for event in audit_events
         if event["event_type"] != "apply_succeeded"
     )
+
+
+def _assert_per_url_identity_binding_is_audited_and_append_only(
+    client: TestClient,
+    store: ContentWorkflowStore,
+    action_id: str,
+    action_payload: dict[str, Any],
+    snapshot: dict[str, Any],
+    binding: Any,
+) -> None:
+    from wilq.content.workflow.decisions.production import canonical_json_digest
+
+    payload_digest = canonical_json_digest(action_payload)
+    audit_events = client.get("/api/audit/events", params={"action_id": action_id}).json()
+    assert all(
+        event["details"]["per_url_delivery_identity_snapshot_digest"]
+        == snapshot["context_digest"]
+        and event["details"]["per_url_delivery_identity_action_payload_digest"]
+        == payload_digest
+        for event in audit_events
+        if event["event_type"] != "apply_succeeded"
+    )
+    with sqlite3.connect(store.path) as connection:
+        for statement in (
+            "UPDATE content_per_url_delivery_identity_bindings "
+            "SET payload_json = '{}' WHERE binding_id = ?",
+            "DELETE FROM content_per_url_delivery_identity_bindings WHERE binding_id = ?",
+        ):
+            try:
+                connection.execute(statement, (binding.binding_id,))
+            except sqlite3.DatabaseError as error:
+                assert "append-only" in str(error)
+            else:
+                raise AssertionError("Per-URL identity binding accepted mutation.")
+
+
+def _approve_per_url_keep_for_identity(client: TestClient, observation_id: str) -> str:
+    from tests.content.test_per_url_disposition_authority import _run_public_lifecycle
+
+    response = client.post(
+        "/api/content/per-url-disposition-authorities/preview",
+        json={"observation_id": observation_id},
+    )
+    assert response.status_code == 200, response.text
+    action_id = response.json()["action"]["id"]
+    _run_public_lifecycle(client, action_id)
+    return action_id
+
+
+def _run_per_url_identity_lifecycle(client: TestClient, action_id: str) -> None:
+    from tests.content.test_per_url_disposition_authority import _run_public_lifecycle
+
+    _run_public_lifecycle(client, action_id)
+
+
+def _assert_identity_survives_evidence_rotation(
+    client: TestClient,
+    store: ContentWorkflowStore,
+    record_observation: Any,
+    identity_action_id: str,
+    first: Any,
+) -> None:
+    current = record_observation(
+        store,
+        material_digest="a" * 64,
+        fact_digest="b" * 64,
+        evidence_suffix="identity-rotated-evidence",
+        observed_at=datetime.now(UTC),
+        wave_id="identity-wave-b",
+    )
+    assert current.semantic_row_digest == first.semantic_row_digest
+    assert current.evidence_digest != first.evidence_digest
+    record_observation(
+        store,
+        material_digest="e" * 64,
+        fact_digest="f" * 64,
+        evidence_suffix="identity-unrelated-page",
+        observed_at=datetime.now(UTC),
+        wave_id="identity-wave-unrelated",
+        page_key="identity-unrelated-page",
+    )
+    readback = client.get(
+        f"/api/content/per-url-delivery-identity-authorities/{identity_action_id}"
+    )
+    assert readback.status_code == 200, readback.text
+    assert readback.json()["status"] == "current", readback.json()
+
+
+def _assert_identity_blocks_semantic_change(
+    client: TestClient,
+    store: ContentWorkflowStore,
+    record_observation: Any,
+    identity_action_id: str,
+) -> None:
+    record_observation(
+        store,
+        material_digest="c" * 64,
+        fact_digest="d" * 64,
+        evidence_suffix="identity-semantic-change",
+        observed_at=datetime.now(UTC),
+        wave_id="identity-wave-c",
+    )
+    readback = client.get(
+        f"/api/content/per-url-delivery-identity-authorities/{identity_action_id}"
+    )
+    assert readback.status_code == 200, readback.text
+    assert readback.json()["status"] == "blocked"
+    assert readback.json()["blockers"][0]["code"] == "per_url_semantic_row_superseded"
+
+
+def test_per_url_identity_currentness_tracks_semantic_row_not_batch_run(
+    tmp_path, monkeypatch
+) -> None:
+    from apps.api.wilq_api.routers import content_per_url_disposition_authority
+    from tests.content.test_per_url_disposition_authority import (
+        _record_observation,
+    )
+
+    database = tmp_path / "per-url-identity.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(database))
+    store = ContentWorkflowStore(database)
+    audit = LocalStateStore(database)
+    now = datetime.now(UTC) - timedelta(minutes=5)
+    first = _record_observation(
+        store,
+        material_digest="a" * 64,
+        fact_digest="b" * 64,
+        evidence_suffix="identity-first",
+        observed_at=now,
+        wave_id="identity-wave-a",
+    )
+    monkeypatch.setattr(workflow_store_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        content_per_url_disposition_authority, "content_workflow_store", lambda: store
+    )
+    monkeypatch.setattr(action_service, "local_state_store", lambda: audit)
+    monkeypatch.setattr(action_service, "action_content_workflow_store", lambda: store)
+
+    client = TestClient(app)
+    disposition_action_id = _approve_per_url_keep_for_identity(
+        client, first.observation_id
+    )
+
+    identity_preview = client.post(
+        "/api/content/per-url-delivery-identity-authorities/preview",
+        json={"disposition_action_id": disposition_action_id},
+    )
+    assert identity_preview.status_code == 200, identity_preview.text
+    identity_action_id = identity_preview.json()["action"]["id"]
+    identity_action = client.get(f"/api/actions/{identity_action_id}").json()
+    snapshot = identity_action["payload"]["per_url_delivery_identity_authority"]
+    assert snapshot["semantic_row_digest"] == first.semantic_row_digest
+    assert snapshot["observation_id"] == first.observation_id
+    assert "classification_run_digest" not in snapshot
+    _run_per_url_identity_lifecycle(client, identity_action_id)
+    bindings = store.list_per_url_delivery_identity_bindings(
+        current_work_item_id=first.policy_facts.current_work_item_id
+    )
+    assert len(bindings) == 1
+    binding = bindings[0]
+    _assert_per_url_identity_binding_is_audited_and_append_only(
+        client,
+        store,
+        identity_action_id,
+        identity_action["payload"],
+        snapshot,
+        binding,
+    )
+
+    _assert_identity_survives_evidence_rotation(
+        client, store, _record_observation, identity_action_id, first
+    )
+    _assert_identity_blocks_semantic_change(
+        client, store, _record_observation, identity_action_id
+    )
+
+
+def test_per_url_identity_preview_retries_are_idempotent(tmp_path, monkeypatch) -> None:
+    from apps.api.wilq_api.routers import content_per_url_disposition_authority
+    from tests.content.test_per_url_disposition_authority import _record_observation
+
+    database = tmp_path / "per-url-identity-retry.sqlite3"
+    monkeypatch.setenv("WILQ_STATE_DB", str(database))
+    store = ContentWorkflowStore(database)
+    audit = LocalStateStore(database)
+    observation = _record_observation(
+        store,
+        material_digest="a" * 64,
+        fact_digest="b" * 64,
+        evidence_suffix="identity-retry",
+        observed_at=datetime.now(UTC) - timedelta(minutes=2),
+        wave_id="identity-retry-wave",
+    )
+    monkeypatch.setattr(workflow_store_module, "content_workflow_store", lambda: store)
+    monkeypatch.setattr(
+        content_per_url_disposition_authority, "content_workflow_store", lambda: store
+    )
+    monkeypatch.setattr(action_service, "local_state_store", lambda: audit)
+    monkeypatch.setattr(action_service, "action_content_workflow_store", lambda: store)
+
+    client = TestClient(app, raise_server_exceptions=False)
+    disposition_action_id = _approve_per_url_keep_for_identity(
+        client, observation.observation_id
+    )
+    candidate = {"disposition_action_id": disposition_action_id}
+    first = client.post(
+        "/api/content/per-url-delivery-identity-authorities/preview", json=candidate
+    )
+    second = client.post(
+        "/api/content/per-url-delivery-identity-authorities/preview", json=candidate
+    )
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    assert first.json()["action"]["id"] == second.json()["action"]["id"]
+    assert first.json()["action"]["created_at"] == second.json()["action"]["created_at"]
+    with sqlite3.connect(store.path) as connection:
+        count = connection.execute(
+            "SELECT COUNT(*) FROM content_per_url_delivery_identity_proposals"
+        ).fetchone()[0]
+    assert count == 1

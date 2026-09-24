@@ -82,6 +82,9 @@ from wilq.content.workflow.delivery_identity_authority import (
 from wilq.content.workflow.material_review_action_v2 import (
     load_current_material_review_action_v2,
 )
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    load_per_url_delivery_identity_action,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     load_per_url_disposition_action,
 )
@@ -170,6 +173,7 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_new_page_draft_action(action_id)
         or load_delivery_identity_authority_action(action_id)
         or load_per_url_disposition_action(action_id)
+        or load_per_url_delivery_identity_action(action_id)
         or load_current_disposition_action(action_id)
         or load_current_page_disposition_v2_action(action_id)
         or load_current_material_review_action_v2(action_id)

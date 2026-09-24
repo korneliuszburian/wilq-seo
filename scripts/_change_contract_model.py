@@ -244,6 +244,13 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/storage/test_sqlite_schema_inventory.py::test_delivery_identity_authority_schema_hunks_are_exact",
         "tests/api_contracts/test_redaction_contracts.py",
     ),
+    ("per-url-delivery-identity", "semantic-row-currentness"): (
+        "scripts/test.sh",
+        "tests/content/test_delivery_identity_authority.py::"
+        "test_per_url_identity_currentness_tracks_semantic_row_not_batch_run",
+        "tests/content/test_delivery_identity_authority.py::"
+        "test_per_url_identity_preview_retries_are_idempotent",
+    ),
     ("source-fact-source-pack", "exact-reviewed-row-consumption"): (
         "scripts/test.sh",
         "tests/content/test_source_fact_authority.py",
@@ -660,6 +667,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-page-evidence", "auto-exact-observation"),
             ("current-page-identity-v3", "receiptless-exact-cas"),
             ("per-url-decision-authority", "two-wave-currentness"),
+            ("per-url-delivery-identity", "semantic-row-currentness"),
             ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"),
             ("source-pack-v3", "approved-official-complete-read"),
             ("research-packet-v3", "exact-official-no-stale-demand"),

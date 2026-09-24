@@ -8,6 +8,9 @@ from wilq.content.planning.generation_intent_v3 import (
 from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
 )
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
 )
@@ -139,7 +142,17 @@ def _connector_readiness_requirement(
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     )
-    is_local_only = is_local_v2 or is_local_v3_intent or is_local_per_url_disposition
+    is_local_per_url_delivery_identity = (
+        action.payload.get("action_type") == PER_URL_DELIVERY_IDENTITY_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    )
+    is_local_only = (
+        is_local_v2
+        or is_local_v3_intent
+        or is_local_per_url_disposition
+        or is_local_per_url_delivery_identity
+    )
     return _requirement(
         code="connector_configured",
         label=(

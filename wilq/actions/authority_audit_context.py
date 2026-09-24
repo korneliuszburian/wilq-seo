@@ -28,6 +28,11 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_TYPE,
     material_review_action_id,
 )
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+    PerUrlDeliveryIdentitySnapshot,
+    per_url_delivery_identity_action_payload_digest,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
     PerUrlDispositionSnapshot,
@@ -119,6 +124,9 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
     if action_type == PER_URL_DISPOSITION_ACTION_TYPE:
         _stamp_per_url_disposition(action, event)
         return
+    if action_type == PER_URL_DELIVERY_IDENTITY_ACTION_TYPE:
+        _stamp_per_url_delivery_identity(action, event)
+        return
     if action_type == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE:
         promotion_snapshot = parse_content_research_fact_promotion_snapshot(
             action.payload.get("promotion_snapshot", {})
@@ -193,6 +201,19 @@ def _stamp_per_url_disposition(action: ActionObject, event: AuditEvent) -> None:
         "per_url_disposition_snapshot_digest": snapshot.context_digest,
         "per_url_disposition_action_payload_digest": (
             per_url_disposition_action_payload_digest(action)
+        ),
+    }
+
+
+def _stamp_per_url_delivery_identity(action: ActionObject, event: AuditEvent) -> None:
+    snapshot = PerUrlDeliveryIdentitySnapshot.model_validate(
+        action.payload.get("per_url_delivery_identity_authority", {})
+    )
+    event.details = {
+        **event.details,
+        "per_url_delivery_identity_snapshot_digest": snapshot.context_digest,
+        "per_url_delivery_identity_action_payload_digest": (
+            per_url_delivery_identity_action_payload_digest(action)
         ),
     }
 

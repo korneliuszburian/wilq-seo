@@ -33,6 +33,9 @@ from wilq.content.workflow.delivery_identity_authority import (
 )
 from wilq.content.workflow.documents.revision_binding import ContentDraftRevisionBinding
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
 )
@@ -268,6 +271,7 @@ def _resolve_apply_capability(
             CURRENT_DISPOSITION_ACTION_TYPE,
             CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
             PER_URL_DISPOSITION_ACTION_TYPE,
+            PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
             CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
             MATERIAL_REVIEW_ACTION_V2_TYPE,

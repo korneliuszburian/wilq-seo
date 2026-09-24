@@ -61,6 +61,10 @@ from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_TYPE,
     validate_current_material_review_action_v2_payload,
 )
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+    validate_per_url_delivery_identity_action_payload,
+)
 from wilq.content.workflow.per_url_disposition_authority import (
     PER_URL_DISPOSITION_ACTION_TYPE,
     validate_per_url_disposition_action_payload,
@@ -136,6 +140,10 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     PER_URL_DISPOSITION_ACTION_TYPE: (
         "Disposition semantic row per URL",
         validate_per_url_disposition_action_payload,
+    ),
+    PER_URL_DELIVERY_IDENTITY_ACTION_TYPE: (
+        "Identity semantic row per URL",
+        validate_per_url_delivery_identity_action_payload,
     ),
     MATERIAL_REVIEW_ACTION_V2_TYPE: (
         "Review materiału WordPress",
