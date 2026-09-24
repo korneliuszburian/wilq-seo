@@ -9,9 +9,13 @@ from fastapi.responses import JSONResponse
 from pydantic import TypeAdapter
 
 from apps.api.wilq_api.routers.content_codex_runtime import content_codex_app_server_client
+from apps.api.wilq_api.routers.content_initial_draft_action_boundary import (
+    initial_draft_action_required_response,
+)
 from apps.api.wilq_api.routers.content_workflow_http import revision_conflict_next_step
 from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.drafts.initial_full_draft_contracts import (
+    ContentInitialDraftConflictResponse,
     ContentInitialDraftGenerationResponse,
     ContentInitialDraftRequest,
 )
@@ -332,28 +336,39 @@ def register_content_new_page_document_routes(router: APIRouter) -> None:
     @router.post(
         "/api/content/new-page-briefs/{brief_id}/initial-draft",
         response_model=ContentInitialDraftGenerationResponse,
+        responses={409: {"model": ContentInitialDraftConflictResponse}},
     )
     def create_new_page_initial_draft(
         brief_id: str, request: ContentInitialDraftRequest
-    ) -> ContentInitialDraftGenerationResponse:
-        brief, foundation, planning_input, proposal, workspace = _new_page_draft_inputs(brief_id)
-        result = generate_new_page_initial_draft(
-            brief=brief,
-            foundation=foundation,
-            planning_input=planning_input,
-            proposal=proposal,
-            workspace=workspace,
-            request=request,
-            client=content_codex_app_server_client(),
-            workflow_store=content_workflow_store(),
-            run_store=local_state_store(),
-            endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
-        )
-        return _CONTENT_INITIAL_DRAFT_GENERATION_RESPONSE_ADAPTER.validate_python(
-            result.model_dump(mode="python")
-        )
+    ) -> ContentInitialDraftGenerationResponse | JSONResponse:
+        foundation = new_page_brief_store().load_new_page_foundation(brief_id)
+        if foundation is None:
+            raise HTTPException(status_code=404, detail="Nie znaleziono foundation nowej strony.")
+        return initial_draft_action_required_response(foundation.work_item_id, request)
 
     register_content_new_page_revision_review_routes(router)
+
+
+def _run_private_new_page_initial_draft(
+    brief_id: str,
+    request: ContentInitialDraftRequest,
+) -> ContentInitialDraftGenerationResponse:
+    brief, foundation, planning_input, proposal, workspace = _new_page_draft_inputs(brief_id)
+    result = generate_new_page_initial_draft(
+        brief=brief,
+        foundation=foundation,
+        planning_input=planning_input,
+        proposal=proposal,
+        workspace=workspace,
+        request=request,
+        client=content_codex_app_server_client(),
+        workflow_store=content_workflow_store(),
+        run_store=local_state_store(),
+        endpoint_path=f"/api/content/new-page-briefs/{brief_id}/initial-draft",
+    )
+    return _CONTENT_INITIAL_DRAFT_GENERATION_RESPONSE_ADAPTER.validate_python(
+        result.model_dump(mode="python")
+    )
 
 
 def _new_page_delivery_readiness(brief_id: str) -> ContentNewPageDeliveryReadiness:

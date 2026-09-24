@@ -66,6 +66,7 @@ import {
   ContentDraftRevisionWorkspaceSchema,
   ContentPlanningPageAssetsSchema,
   ContentRevisionRepairProposalRequestSchema,
+  ContentRevisionRepairProposalBlockerSchema,
   ContentKnowledgeCardSchema,
   ContentTargetDiscoverySchema,
   ContentTargetMappingPreviewSchema,
@@ -343,6 +344,19 @@ describe("ContentRevisionRepairProposalRequestSchema", () => {
       selected_section_ids: ["   "],
       selected_cta_ids: []
     }).success).toBe(false);
+  });
+});
+
+describe("ContentRevisionRepairProposalBlockerSchema", () => {
+  it("keeps the owner and next step of an ActionObject repair blocker", () => {
+    const blocker = ContentRevisionRepairProposalBlockerSchema.parse({
+      code: "repair_action_required",
+      label: "Poprawka wymaga ActionObject",
+      reason: "Zapis dziecka wymaga akcji.",
+      next_step: "Przygotuj dokładną akcję.",
+      owner: "WILQ content workflow"
+    });
+    expect(blocker.owner).toBe("WILQ content workflow");
   });
 });
 

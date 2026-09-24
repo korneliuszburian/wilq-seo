@@ -31,6 +31,7 @@ ContentCodexSectionProposalBlockerCode = Literal[
     "proposal_contract_blocked",
     "quality_blocked",
     "revision_conflict",
+    "repair_action_required",
 ]
 
 
@@ -107,6 +108,7 @@ class ContentCodexSectionProposalBlocker(BaseModel):
     label: str
     reason: str
     next_step: str
+    owner: str | None = None
     source_codes: list[str] = Field(default_factory=list)
 
 

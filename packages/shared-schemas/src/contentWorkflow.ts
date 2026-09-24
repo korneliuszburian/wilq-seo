@@ -3792,11 +3792,13 @@ export const ContentRevisionRepairProposalBlockerSchema = z.object({
     "section_scope_mismatch",
     "proposal_contract_blocked",
     "quality_blocked",
-    "revision_conflict"
+    "revision_conflict",
+    "repair_action_required"
   ]),
   label: z.string().min(1),
   reason: z.string().min(1),
   next_step: z.string().min(1),
+  owner: z.string().min(1).nullable().optional(),
   source_codes: z.array(z.string()).default([])
 });
 

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_codex_proposal, content_workflow
+from tests.content.legacy_repair_test_routes import register_legacy_repair_test_route
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.drafts import codex_section_proposal
 from wilq.content.drafts.codex_section_proposal import propose_content_section_revision
@@ -117,6 +118,7 @@ def test_revision_repair_route_adapts_one_stable_component_without_prompt_fields
         )
 
     monkeypatch.setattr(content_codex_proposal, "propose_content_section_revision", proposal)
+    register_legacy_repair_test_route(router, snapshot_loader=snapshot_loader)
     content_codex_proposal.register_content_revision_repair_route(
         router,
         snapshot_loader=snapshot_loader,
@@ -194,9 +196,8 @@ def test_revision_repair_route_uses_bounded_codex_deadline(
     )
     monkeypatch.setattr(content_codex_proposal, "content_workflow_store", lambda: object())
     monkeypatch.setattr(content_codex_proposal, "local_state_store", lambda: object())
-    content_codex_proposal.register_content_revision_repair_route(
-        router,
-        snapshot_loader=lambda _work_item_id: SimpleNamespace(
+    def snapshot_loader(_work_item_id: str) -> SimpleNamespace:
+        return SimpleNamespace(
             revision_workspace=SimpleNamespace(
                 latest_revision=persisted_revision,
                 status="needs_changes",
@@ -204,7 +205,10 @@ def test_revision_repair_route_uses_bounded_codex_deadline(
                 can_save=True,
             ),
             planning_workspace=None,
-        ),
+        )
+    register_legacy_repair_test_route(router, snapshot_loader=snapshot_loader)
+    content_codex_proposal.register_content_revision_repair_route(
+        router, snapshot_loader=snapshot_loader
     )
 
     request = ContentRevisionRepairProposalRequest(
@@ -285,6 +289,7 @@ def test_refresh_bound_repair_uses_binding_aware_snapshot(
         )
 
     monkeypatch.setattr(content_codex_proposal, "propose_content_section_revision", proposal)
+    register_legacy_repair_test_route(router, snapshot_loader=lambda _work_item_id: fallback)
     content_codex_proposal.register_content_revision_repair_route(
         router,
         snapshot_loader=lambda _work_item_id: fallback,

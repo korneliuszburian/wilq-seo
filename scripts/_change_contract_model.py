@@ -136,6 +136,13 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_production_command_action_boundary.py::"
         "test_public_production_command_blocks_before_private_writer",
     ),
+    ("generated-content-action", "remaining-posts-blocked"): (
+        "scripts/test.sh",
+        "tests/content/test_generated_content_action_boundary.py::"
+        "test_new_page_initial_draft_blocks_before_loading_model_inputs",
+        "tests/content/test_generated_content_action_boundary.py::"
+        "test_repair_proposal_blocks_before_snapshot_or_model",
+    ),
     ("initial-draft-action", "direct-post-blocked"): (
         "scripts/test.sh",
         "tests/content/test_initial_draft_action_boundary.py::"
@@ -593,6 +600,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("planning-generation-dispatch", "audited-intent-only"),
             ("planning-auto-dispatch", "audit-before-enqueue"),
             ("draft-action-boundary", "direct-writers-blocked"),
+            ("generated-content-action", "remaining-posts-blocked"),
             ("initial-draft-action", "direct-post-blocked"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),

@@ -10,6 +10,8 @@ from wilq.content.drafts.codex_section_proposal import (
     propose_content_section_revision,
 )
 from wilq.content.drafts.codex_section_proposal_contracts import (
+    ContentCodexRuntimeTrace,
+    ContentCodexSectionProposalBlocker,
     ContentCodexSectionProposalRequest,
     ContentRevisionRepairProposalRequest,
     ContentRevisionRepairProposalResponse,
@@ -44,46 +46,74 @@ def register_content_revision_repair_route(
         base_revision_id: str,
         request: ContentRevisionRepairProposalRequest,
     ) -> ContentRevisionRepairProposalResponse | JSONResponse:
-        snapshot = snapshot_loader(work_item_id)
-        base_revision = snapshot.revision_workspace.latest_revision
-        # Refresh-bound editorial revisions must be evaluated against the
-        # exact persisted planning binding, not the generic diagnostics
-        # fallback (which has no editorial service selection).
-        if base_revision is not None and base_revision.refresh_preparation_binding is not None:
-            from apps.api.wilq_api.routers.content_workflow import (
-                semantic_review_snapshot_for_work_item_or_404,
-            )
+        return _repair_action_required_response(work_item_id, base_revision_id)
 
-            snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
-            base_revision = snapshot.revision_workspace.latest_revision
-        semantic_review = (
-            None
-            if base_revision is None
-            else content_semantic_review_store().for_revision(
-                work_item_id,
-                base_revision.revision_id,
-                base_revision.content_digest,
-            )
+
+def _repair_action_required_response(work_item_id: str, base_revision_id: str) -> JSONResponse:
+    next_step = "Przygotuj ActionObject dla dokładnej poprawki bieżącej rewizji."
+    blocker = ContentCodexSectionProposalBlocker(
+        code="repair_action_required",
+        label="Poprawka wymaga ActionObject",
+        reason="Ten punkt API nie ma zatwierdzonej akcji uruchomienia modelu i zapisu child.",
+        next_step=next_step,
+        owner="WILQ content workflow",
+    )
+    response = ContentRevisionRepairProposalResponse(
+        status="blocked",
+        work_item_id=work_item_id,
+        base_revision_id=base_revision_id,
+        selected_section_headings=[],
+        runtime=ContentCodexRuntimeTrace(status="not_started"),
+        blockers=[blocker],
+        safe_next_step=next_step,
+    )
+    return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
+
+
+def _run_private_revision_repair(
+    work_item_id: str,
+    base_revision_id: str,
+    request: ContentRevisionRepairProposalRequest,
+    snapshot_loader: ContentSnapshotLoader,
+) -> ContentRevisionRepairProposalResponse | JSONResponse:
+    snapshot = snapshot_loader(work_item_id)
+    base_revision = snapshot.revision_workspace.latest_revision
+    # Refresh-bound editorial revisions must use the persisted planning binding.
+    if base_revision is not None and base_revision.refresh_preparation_binding is not None:
+        from apps.api.wilq_api.routers.content_workflow import (
+            semantic_review_snapshot_for_work_item_or_404,
         )
-        planning_input = _current_planning_input(snapshot)
-        result = propose_content_section_revision(
-            snapshot=snapshot,
-            base_revision_id=base_revision_id,
-            request=ContentCodexSectionProposalRequest(
-                expected_base_digest=request.expected_base_digest,
-                selected_section_ids=request.selected_section_ids,
-                selected_cta_ids=request.selected_cta_ids,
-                requested_by=request.requested_by,
-            ),
-            client=StdioCodexAppServerClient(timeout_seconds=section_repair_timeout_seconds()),
-            workflow_store=content_workflow_store(),
-            run_store=local_state_store(),
-            semantic_review=semantic_review,
-            planning_input=planning_input,
+
+        snapshot = semantic_review_snapshot_for_work_item_or_404(work_item_id)
+        base_revision = snapshot.revision_workspace.latest_revision
+    semantic_review = (
+        None
+        if base_revision is None
+        else content_semantic_review_store().for_revision(
+            work_item_id,
+            base_revision.revision_id,
+            base_revision.content_digest,
         )
-        if result.status == "conflict":
-            return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
-        return ContentRevisionRepairProposalResponse.model_validate(result.model_dump())
+    )
+    planning_input = _current_planning_input(snapshot)
+    result = propose_content_section_revision(
+        snapshot=snapshot,
+        base_revision_id=base_revision_id,
+        request=ContentCodexSectionProposalRequest(
+            expected_base_digest=request.expected_base_digest,
+            selected_section_ids=request.selected_section_ids,
+            selected_cta_ids=request.selected_cta_ids,
+            requested_by=request.requested_by,
+        ),
+        client=StdioCodexAppServerClient(timeout_seconds=section_repair_timeout_seconds()),
+        workflow_store=content_workflow_store(),
+        run_store=local_state_store(),
+        semantic_review=semantic_review,
+        planning_input=planning_input,
+    )
+    if result.status == "conflict":
+        return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
+    return ContentRevisionRepairProposalResponse.model_validate(result.model_dump())
 
 
 def _current_planning_input(
