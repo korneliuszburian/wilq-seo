@@ -14,6 +14,7 @@ import {
   ContentInventoryCatalogResponseSchema,
   ContentMaterialReviewActionReadySchema,
   ContentMaterialReviewActionBlockedSchema,
+  CurrentMaterialTextResponseSchema,
   ResearchPacketV2ActionReadySchema,
   ResearchPacketV2ActionBlockedSchema,
   ContentNewPageBriefInputSchema,
@@ -77,6 +78,7 @@ import {
   type ContentWorkItemInitialDraftResponse,
   type ContentInventoryCatalogResponse,
   type ContentMaterialReviewActionResponse,
+  type CurrentMaterialTextResponse,
   type ResearchPacketV2ActionResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
@@ -130,6 +132,8 @@ import {
 import {
   CODEX_PROPOSAL_TIMEOUT_MS,
   apiGet,
+  apiFetch,
+  apiErrorMessage,
   apiPost,
   apiPostWithConflict
 } from "./common";
@@ -365,6 +369,18 @@ export function prepareContentMaterialReviewAction(
     ContentMaterialReviewActionBlockedSchema,
     {}
   );
+}
+
+export async function getCurrentMaterialText(
+  workItemId: string,
+  actionId: string
+): Promise<CurrentMaterialTextResponse> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/material-review-action/${encodeURIComponent(actionId)}/text`;
+  const response = await apiFetch(path);
+  if (!response.ok && response.status !== 409) {
+    throw new Error(await apiErrorMessage(response, path));
+  }
+  return CurrentMaterialTextResponseSchema.parse(await response.json());
 }
 
 export function prepareContentResearchPacketV2Action(

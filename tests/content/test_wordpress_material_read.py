@@ -8,6 +8,7 @@ from pydantic import ValidationError
 import wilq.content.workflow.workspace.catalog as catalog_module
 from wilq.connectors.wordpress.client import (
     WordPressCredentials,
+    WordPressDraftReadError,
     _read_wordpress_material_from_html,
     read_wordpress_content_material,
 )
@@ -129,6 +130,33 @@ def test_html_material_preserves_final_observed_url() -> None:
     assert material.url == observed_url
     assert material.content_text == "Materiał HTML."
     assert material.extraction_region == "public_html.main"
+
+
+def test_html_material_never_presents_a_truncated_page_as_full_text() -> None:
+    page_url = "https://www.ekologus.pl/material/"
+
+    class Response:
+        url = page_url
+        text = (
+            "<html><body><main><article><p>Początek artykułu.</p><script>"
+            + ("x" * 210_000)
+            + "</script><p>Końcowy akapit artykułu.</p></article></main></body></html>"
+        )
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, _url: str, *, timeout: float) -> Response:
+            return Response()
+
+    material = _read_wordpress_material_from_html(Client(), url=page_url)
+    assert "Początek artykułu." in material.content_text
+    assert "Końcowy akapit artykułu." in material.content_text
+
+    Response.text += "x" * 1_000_000
+    with pytest.raises(WordPressDraftReadError, match="pełnego materiału"):
+        _read_wordpress_material_from_html(Client(), url=page_url)
 
 
 def test_html_material_prefers_article_boundary_over_layout_tail() -> None:

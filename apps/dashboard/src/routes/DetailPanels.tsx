@@ -27,6 +27,8 @@ import {
   type ActionMutationReadiness
 } from "./DetailPanelsSections/Shared";
 import { TechnicalDetailsPanel } from "./DetailPanelsSections/TechnicalSection";
+import { CurrentMaterialView } from "./CurrentMaterialView";
+import { useCurrentMaterialText } from "./materialReviewQueries";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
 
@@ -307,6 +309,9 @@ function ActionDetail({
   mutationReadinessError: unknown;
   mutationReadinessLoading: boolean;
 }) {
+  if (action.payload.action_type === "content_current_material_review_v2") {
+    return <CurrentMaterialActionDetail action={action} />;
+  }
   const visibleAuditEvents = action.audit_events.slice(0, 6);
   const hiddenAuditEventCount = Math.max(0, action.audit_events.length - visibleAuditEvents.length);
   const currentDispositionReceipt = getCurrentDispositionReceipt(action);
@@ -401,6 +406,17 @@ function ActionDetail({
         )}
       </section>
     </main>
+  );
+}
+
+function CurrentMaterialActionDetail({ action }: { action: ActionObject }) {
+  const { query, workItemId } = useCurrentMaterialText(action);
+  return (
+    <CurrentMaterialView
+      material={query.data}
+      loading={query.isLoading && workItemId !== null}
+      unavailable={workItemId === null}
+    />
   );
 }
 

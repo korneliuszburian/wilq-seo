@@ -5,7 +5,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html.parser import HTMLParser
 
+from wilq.connectors.wordpress.errors import WordPressDraftReadError
 from wilq.connectors.wordpress.text import clean_metadata_text
+
+_MAX_COMPLETE_HTML_CHARS = 1_000_000
+
+
+def require_complete_material_html(value: str) -> str:
+    """Reject oversized HTML rather than silently hashing a truncated article."""
+
+    if len(value) > _MAX_COMPLETE_HTML_CHARS:
+        raise WordPressDraftReadError(
+            "WordPress HTML przekroczył limit pełnego materiału; odczyt wymaga weryfikacji."
+        )
+    return value
 
 _CONTENT_CLASSES = frozenset(
     {
@@ -252,4 +265,4 @@ class HtmlMaterialParser(HTMLParser):
             self._ignored_root_tag = None
 
 
-__all__ = ["HtmlMaterialParser"]
+__all__ = ["HtmlMaterialParser", "require_complete_material_html"]

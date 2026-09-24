@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from typing import Protocol
@@ -45,6 +46,19 @@ class CurrentPageSnapshotReadError(RuntimeError):
         super().__init__(message)
         self.code = code
 
+
+@dataclass(frozen=True)
+class CurrentPageText:
+    """Transient sanitized full text; never stored in a receipt or ActionObject."""
+
+    url: str
+    canonical_path: str
+    title: str
+    text: str
+    extraction_region: str
+    body_digest: str
+    read_at: datetime
+
 class WordPressCurrentPageSnapshotAdapter:
     """Read one exact public page and retain only a redacted receipt."""
 
@@ -63,35 +77,19 @@ class WordPressCurrentPageSnapshotAdapter:
         source_url: str,
         canonical_path: str,
     ) -> EvidenceObservationReceipt:
-        _validate_requested_identity(source_url, canonical_path)
-        try:
-            material = self._material_reader(source_url)
-        except CurrentPageSnapshotReadError:
-            raise
-        except Exception as exc:
-            raise CurrentPageSnapshotReadError(
-                "current_page_snapshot_unavailable",
-                "WordPress current-page read did not complete safely.",
-            ) from exc
-        _validate_material_identity(material, source_url, canonical_path)
-        safe_body = _sanitized_text(material.content_text)
-        if not safe_body:
-            raise CurrentPageSnapshotReadError(
-                "current_page_snapshot_unavailable",
-                "WordPress current-page read returned no readable body.",
-            )
-        read_at = self._read_time()
-        body_digest = sha256(safe_body.encode("utf-8")).hexdigest()
-        excerpt = _bounded_excerpt(safe_body)
+        page = self.read_text(source_url=source_url, canonical_path=canonical_path)
+        read_at = page.read_at
+        body_digest = page.body_digest
+        excerpt = _bounded_excerpt(page.text)
         excerpt_digest = sha256(excerpt.encode("utf-8")).hexdigest()
-        observed_url = material.url
+        observed_url = page.url
         snapshot_digest = canonical_json_digest(
             _snapshot_digest_payload(
                 source_url=observed_url,
                 canonical_path=canonical_path,
                 body_digest=body_digest,
                 excerpt_digest=excerpt_digest,
-                extraction_region=material.extraction_region,
+                extraction_region=page.extraction_region,
                 read_at=read_at,
             )
         )
@@ -109,7 +107,7 @@ class WordPressCurrentPageSnapshotAdapter:
                 freshness_date=read_at.date().isoformat(),
                 evidence_ids=(evidence_id,),
                 source_connectors=(_WORDPRESS_CONNECTOR_ID,),
-                extraction_region=material.extraction_region,
+                extraction_region=page.extraction_region,
                 sanitized_excerpt=excerpt,
             )
         except ValueError as exc:
@@ -117,6 +115,36 @@ class WordPressCurrentPageSnapshotAdapter:
                 "current_page_snapshot_unavailable",
                 "WordPress current-page receipt failed its safety contract.",
             ) from exc
+
+    def read_text(self, *, source_url: str, canonical_path: str) -> CurrentPageText:
+        """Return the exact current page text for a read-only operator inspection."""
+
+        _validate_requested_identity(source_url, canonical_path)
+        try:
+            material = self._material_reader(source_url)
+        except CurrentPageSnapshotReadError:
+            raise
+        except Exception as exc:
+            raise CurrentPageSnapshotReadError(
+                "current_page_snapshot_unavailable",
+                "WordPress current-page read did not complete safely.",
+            ) from exc
+        _validate_material_identity(material, source_url, canonical_path)
+        safe_body = _sanitized_text(material.content_text)
+        if not safe_body or len(safe_body) > 500_000:
+            raise CurrentPageSnapshotReadError(
+                "current_page_snapshot_unavailable",
+                "WordPress current-page read returned no bounded readable body.",
+            )
+        return CurrentPageText(
+            url=material.url,
+            canonical_path=canonical_path,
+            title=_sanitized_text(getattr(material, "title", ""))[:300],
+            text=safe_body,
+            extraction_region=material.extraction_region,
+            body_digest=sha256(safe_body.encode("utf-8")).hexdigest(),
+            read_at=self._read_time(),
+        )
 
     def _read_time(self) -> datetime:
         value = self._clock()
@@ -189,6 +217,7 @@ __all__ = [
     "CurrentPageSnapshotReadError",
     "CURRENT_PAGE_RECEIPT_MAX_AGE",
     "EvidenceObservationReceipt",
+    "CurrentPageText",
     "WordPressCurrentPageSnapshotAdapter",
     "current_page_receipt_is_fresh",
 ]

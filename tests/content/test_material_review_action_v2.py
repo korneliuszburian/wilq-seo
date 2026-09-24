@@ -114,6 +114,7 @@ def runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     def read_material(_url: str) -> SimpleNamespace:
         return SimpleNamespace(
             url=PAGE_URL,
+            title="Bieżąca strona testowa",
             content_text=body["text"],
             extraction_region="public_html.main_or_article",
         )
@@ -168,10 +169,7 @@ def runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
             revalidate_fixture_material,
         )
     return SimpleNamespace(
-        body=body,
-        client=TestClient(app),
-        store=store,
-        work_item_id=WORK_ITEM_ID,
+        body=body, client=TestClient(app), store=store, work_item_id=WORK_ITEM_ID
     )
 
 
@@ -183,6 +181,36 @@ def _preview(client: TestClient, work_item_id: str = WORK_ITEM_ID) -> dict[str, 
     assert payload["external_write_attempted"] is False
     assert "content_text" not in str(payload)
     return cast(dict[str, Any], payload)
+
+
+def test_public_exact_material_text_read_is_complete_and_blocks_changed_page(
+    runtime: SimpleNamespace,
+) -> None:
+    runtime.body["text"] = "Exact current material " + ("body " * 600)
+    prepared = _preview(runtime.client)
+    action_id = prepared["action_id"]
+    path = (
+        f"/api/content/work-items/{WORK_ITEM_ID}/material-review-action/"
+        f"{action_id}/text"
+    )
+    exact = runtime.client.get(path)
+    assert exact.status_code == 200, exact.text
+    body = exact.json()
+    assert body["status"] == "exact"
+    assert body["title"] == "Bieżąca strona testowa"
+    assert body["text"] == runtime.body["text"].strip()
+    assert len(body["text"]) > len(prepared["preview"]["observation"]["sanitized_excerpt"])
+    assert body["body_digest"] == prepared["preview"]["observation"]["body_digest"]
+    assert body["source_url"] == PAGE_URL
+    assert runtime.store.latest_content_material_review(WORK_ITEM_ID) is None
+    assert "content_text" not in str(runtime.client.get(f"/api/actions/{action_id}").json())
+
+    runtime.body["text"] += " changed"
+    stale = runtime.client.get(path)
+    assert stale.status_code == 409, stale.text
+    assert stale.json()["status"] == "blocked"
+    assert stale.json()["blocker_code"] == "material_review_text_changed"
+    assert "text" not in stale.json()
 
 
 def _complete_action(

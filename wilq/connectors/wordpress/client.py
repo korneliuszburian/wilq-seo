@@ -10,7 +10,8 @@ from urllib.parse import urljoin, urlparse
 import httpx
 
 from wilq.connectors.vendor import VendorReadResult
-from wilq.connectors.wordpress.html_material import HtmlMaterialParser
+from wilq.connectors.wordpress import html_material
+from wilq.connectors.wordpress.errors import WordPressDraftReadError
 from wilq.connectors.wordpress.inventory import (
     WORDPRESS_CONTENT_PER_PAGE,
     WORDPRESS_CONTENT_TYPES,
@@ -247,12 +248,6 @@ class WordPressDraftVerificationError(WordPressDraftWriteError):
         self.code = code
         self.expected_digest = expected_digest
         self.observed_digest = observed_digest
-
-
-class WordPressDraftReadError(RuntimeError):
-    def __init__(self, public_message: str) -> None:
-        super().__init__(public_message)
-        self.public_message = public_message
 
 
 class WordPressAuthoringReadError(RuntimeError):
@@ -1171,9 +1166,10 @@ def _read_wordpress_material_from_html(
     if not observed_url:
         raise WordPressDraftReadError("WordPress nie zwrócił obserwowanego adresu materiału.")
     parser = _HtmlMetadataParser()
-    material_parser = HtmlMaterialParser()
-    parser.feed(response.text[:200_000])
-    material_parser.feed(response.text[:200_000])
+    material_parser = html_material.HtmlMaterialParser()
+    full_html = html_material.require_complete_material_html(response.text)
+    parser.feed(full_html)
+    material_parser.feed(full_html)
     material_parser.close()
     text, extraction_region, section_headings = material_parser.material
     if not text:

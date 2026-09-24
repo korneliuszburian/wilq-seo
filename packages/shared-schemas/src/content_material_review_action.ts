@@ -31,3 +31,35 @@ export const ContentMaterialReviewActionResponseSchema = z.discriminatedUnion("s
 export type ContentMaterialReviewActionResponse = z.infer<
   typeof ContentMaterialReviewActionResponseSchema
 >;
+
+const CurrentMaterialTextCommonSchema = z.object({
+  response_type: z.literal("current_material_text_v1"),
+  is_generated: z.literal(false),
+  evidence_ids: z.array(z.string().min(1))
+});
+
+export const CurrentMaterialTextExactSchema = CurrentMaterialTextCommonSchema.extend({
+  status: z.literal("exact"),
+  action_id: z.string().min(1),
+  preview_id: z.string().min(1),
+  preview_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  source_url: z.string().url(),
+  title: z.string(),
+  text: z.string().min(1),
+  body_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  read_at: z.string().min(1)
+});
+
+export const CurrentMaterialTextBlockedSchema = CurrentMaterialTextCommonSchema.extend({
+  status: z.literal("blocked"),
+  blocker_code: z.enum(["material_review_text_changed", "material_review_text_unavailable"]),
+  blocker_owner: z.string().min(1),
+  safe_next_step: z.string().min(1)
+});
+
+export const CurrentMaterialTextResponseSchema = z.discriminatedUnion("status", [
+  CurrentMaterialTextExactSchema,
+  CurrentMaterialTextBlockedSchema
+]);
+
+export type CurrentMaterialTextResponse = z.infer<typeof CurrentMaterialTextResponseSchema>;

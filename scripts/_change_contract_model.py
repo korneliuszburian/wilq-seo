@@ -447,6 +447,13 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_material_review_action_v2.py::"
         "test_public_action_lifecycle_approves_only_exact_reviewed_current_material",
     ),
+    ("current-material-text", "exact-full-read"): (
+        "scripts/test.sh",
+        "tests/content/test_material_review_action_v2.py::"
+        "test_public_exact_material_text_read_is_complete_and_blocks_changed_page",
+        "tests/content/test_wordpress_material_read.py::"
+        "test_html_material_never_presents_a_truncated_page_as_full_text",
+    ),
     ("current-page-evidence", "stable-per-url-material-meaning"): (
         "scripts/test.sh",
         "tests/content/test_current_page_evidence.py::"
@@ -612,6 +619,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("content-review", "exact-packet-revision"),
             ("material-review", "unchanged-material-stays-current"),
             ("current-material-review-action-v2", "exact-reviewed-material"),
+            ("current-material-text", "exact-full-read"),
             ("current-page-evidence", "stable-per-url-material-meaning"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),

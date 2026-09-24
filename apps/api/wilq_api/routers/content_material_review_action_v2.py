@@ -9,6 +9,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.workflow.current_material_text import (
+    CurrentMaterialTextBlocked,
+    CurrentMaterialTextExact,
+    read_exact_current_material_text,
+)
 from wilq.content.workflow.evidence_acquisition_snapshot import WordPressCurrentPageSnapshotAdapter
 from wilq.content.workflow.material_review import (
     CatalogLoader,
@@ -124,6 +129,32 @@ def register_content_material_review_action_v2_routes(
             action=action,
             preview=preview,
         )
+
+    @router.get(
+        "/api/content/work-items/{work_item_id}/material-review-action/{action_id}/text",
+        response_model=CurrentMaterialTextExact,
+        responses={409: {"model": CurrentMaterialTextBlocked}},
+    )
+    def read_action_text(
+        work_item_id: str, action_id: str
+    ) -> CurrentMaterialTextExact | JSONResponse:
+        adapter = _build_adapter(adapter_factory) or WordPressCurrentPageSnapshotAdapter(
+            material_reader=(
+                material_reader_factory() if material_reader_factory is not None else None
+            ),
+            clock=clock,
+        )
+        result = read_exact_current_material_text(
+            work_item_id=work_item_id,
+            action_id=action_id,
+            store=make_store(),
+            adapter=adapter,
+        )
+        if result is None:
+            raise HTTPException(status_code=404, detail="material_review_action_not_found")
+        if isinstance(result, CurrentMaterialTextBlocked):
+            return JSONResponse(status_code=409, content=result.model_dump(mode="json"))
+        return result
 
 
 def _build_adapter(
