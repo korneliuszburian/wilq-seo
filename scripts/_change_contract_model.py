@@ -104,6 +104,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_v2_planner_worker_change_contract.py::"
         "test_direct_v2_planner_requires_guard_before_model",
     ),
+    ("v2-planning-route", "exact-readonly-binding"): (
+        "scripts/test.sh",
+        "tests/content/test_route_packet_v2_binding.py::"
+        "test_route_binds_approved_v2_without_entering_legacy_packet_writer",
+    ),
     ("research-packet-v2-ui", "explicit-review-local-apply"): (
         "scripts/test.sh",
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
@@ -550,6 +555,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("research-packet-v2-action", "exact-reviewed-local-receipt"),
             ("approved-v2-planner-projection", "exact-selected-facts"),
             ("v2-planning-worker", "guard-before-model-and-save"),
+            ("v2-planning-route", "exact-readonly-binding"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),

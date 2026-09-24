@@ -67,9 +67,34 @@ def prepare_and_bind_research_packet(
     work_item_id = canonical_inventory_work_item_id(work_item_id)
     planning_input = _planning_input_for_work_item(planning_input, work_item_id)
     workflow_store = store or content_workflow_store()
-    has_source_pack = bool(
-        request.source_pack_binding_id
-        or store_has_source_pack_for_work_item(work_item_id, store=workflow_store)
+    if request.research_packet_id and request.research_packet_id.startswith(
+        "content_research_packet_v2_"
+    ):
+        return _bind_approved_v2_research_packet(
+            snapshot=snapshot,
+            planning_input=planning_input,
+            request=request,
+            workflow_store=cast(ContentWorkflowStore, workflow_store),
+        )
+    return _prepare_legacy_research_packet(
+        work_item_id=work_item_id,
+        request=request,
+        planning_input=planning_input,
+        snapshot=snapshot,
+        workflow_store=workflow_store,
+    )
+
+
+def _prepare_legacy_research_packet(
+    *,
+    work_item_id: str,
+    request: ContentPlanningProposalRequest,
+    planning_input: ContentPlanningInput,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    workflow_store: ResearchPacketPreparationStore,
+) -> ContentResearchPacketRouteBinding:
+    has_source_pack = bool(request.source_pack_binding_id) or store_has_source_pack_for_work_item(
+        work_item_id, store=workflow_store
     )
     if not has_source_pack:
         missing = ContentResearchPacketBlocker(
@@ -159,6 +184,42 @@ def prepare_and_bind_research_packet(
         response=None,
         planning_input=bound_input,
         request=bound_request,
+    )
+
+
+def _bind_approved_v2_research_packet(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    planning_input: ContentPlanningInput,
+    request: ContentPlanningProposalRequest,
+    workflow_store: ContentWorkflowStore,
+) -> ContentResearchPacketRouteBinding:
+    bound_input, blocked = bind_research_packet(
+        snapshot=snapshot,
+        planning_input=planning_input,
+        request=request,
+        require_packet=True,
+        workflow_store=workflow_store,
+    )
+    if blocked is not None or bound_input is None:
+        return ContentResearchPacketRouteBinding(
+            response=blocked
+            or _v2_guard_blocked(
+                request,
+                planning_input,
+                "research_packet_blocked",
+                (),
+                "Ponów odczyt zatwierdzonego pakietu v2 przed planowaniem.",
+            ),
+            planning_input=None,
+            request=request,
+        )
+    return ContentResearchPacketRouteBinding(
+        response=None,
+        planning_input=bound_input,
+        request=request.model_copy(
+            update={"expected_planning_input_digest": bound_input.planning_input_digest}
+        ),
     )
 
 
