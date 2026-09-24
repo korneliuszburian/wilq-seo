@@ -479,6 +479,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_source_pack_v3.py::"
         "test_public_v3_pack_uses_only_current_approved_official_facts_without_keep",
     ),
+    ("research-packet-v3", "exact-official-no-stale-demand"): (
+        "scripts/test.sh",
+        "tests/content/test_research_packet_v3_preview.py::"
+        "test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims",
+    ),
     ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"): (
         "scripts/test.sh",
         "tests/content/test_current_page_disposition_v2_action.py",
@@ -645,6 +650,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-page-identity-v3", "receiptless-exact-cas"),
             ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"),
             ("source-pack-v3", "approved-official-complete-read"),
+            ("research-packet-v3", "exact-official-no-stale-demand"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),
             ("current-source-fact-candidates-v2", "exact-keep-scoped-selection"),

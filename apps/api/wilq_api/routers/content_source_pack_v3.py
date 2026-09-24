@@ -41,12 +41,34 @@ def register_content_source_pack_v3_route(
         response_model=SourcePackV3Preview,
     )
     def read_source_pack_v3_preview(work_item_id: str) -> SourcePackV3Preview:
-        facts = load_facts()
-        cards = load_cards()
-        identity = resolve_current_page_identity_v3(work_item_id, load_evidence(work_item_id))
-        candidates = build_content_source_fact_candidates_v3_projection(
-            identity=identity, facts=facts, cards=cards
+        return read_current_source_pack_v3_preview(
+            work_item_id,
+            evidence_loader=load_evidence,
+            facts_loader=load_facts,
+            cards_loader=load_cards,
         )
-        return build_source_pack_v3_preview(
-            work_item_id, identity=identity, candidates=candidates, facts=facts
+
+
+def read_current_source_pack_v3_preview(
+    work_item_id: str,
+    *,
+    evidence_loader: EvidenceLoader | None = None,
+    facts_loader: FactsLoader | None = None,
+    cards_loader: CardsLoader | None = None,
+) -> SourcePackV3Preview:
+    """Resolve one exact pack through the same public read path used by its route."""
+
+    load_evidence = evidence_loader or (
+        lambda item_id: content_current_page_evidence.read_current_page_evidence(
+            work_item_id=item_id
         )
+    )
+    facts = (facts_loader or (lambda: tuple(ekologus_source_facts())))()
+    cards = (cards_loader or (lambda: tuple(ekologus_content_knowledge_cards())))()
+    identity = resolve_current_page_identity_v3(work_item_id, load_evidence(work_item_id))
+    candidates = build_content_source_fact_candidates_v3_projection(
+        identity=identity, facts=facts, cards=cards
+    )
+    return build_source_pack_v3_preview(
+        work_item_id, identity=identity, candidates=candidates, facts=facts
+    )
