@@ -47,6 +47,8 @@ function record(pageIdentity = true) {
         buyer_trigger: "Zmiana prawa",
         search_intent: null
       },
+      content_kind: "editorial",
+      service_card_id: null,
       cta_direction: "Kontakt z doradcą",
       minimum_cta_blocks: 1,
       required_cta_patterns: [],
@@ -81,6 +83,12 @@ function recordWithPageIdentity(pageUrl: string, canonicalPath: string) {
 }
 
 describe("v3 research packet action contracts", () => {
+  it("carries the exact planning subject when the preview has one", () => {
+    const parsed = ResearchPacketV3PreviewRecordSchema.parse(record());
+    expect(parsed.snapshot.content_kind).toBe("editorial");
+    expect(parsed.snapshot.service_card_id).toBeNull();
+  });
+
   it("preserves a historical snapshot without page identity but admits only an exact review", () => {
     const historical = record(false);
     expect(ResearchPacketV3PreviewRecordSchema.safeParse(historical).success).toBe(true);

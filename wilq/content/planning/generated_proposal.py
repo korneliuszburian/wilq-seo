@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from wilq.codex.app_server import CodexAppServerClientProtocol
+from wilq.codex.app_server import CodexAppServerClientProtocol, CodexAppServerStructuredTurnRequest
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.operator_copy import build_blocker
@@ -85,6 +85,10 @@ from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.storage.local_state import LocalStateStore, local_state_store
 
+PlanningTurnRequestBuilder = Callable[
+    [ContentPlanningInput, str], CodexAppServerStructuredTurnRequest
+]
+
 
 def with_current_planning_workspace(
     response: ContentPlanningProposalResponse,
@@ -114,6 +118,8 @@ def generate_content_planning_proposal(
     run_store: LocalStateStore,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     pre_persistence_guard: Callable[[], ContentPlanningProposalResponse | None] | None = None,
+    prepared_planning_input: ContentPlanningInput | None = None,
+    turn_request_builder: PlanningTurnRequestBuilder | None = None,
 ) -> ContentPlanningProposalResponse:
     if (
         request.research_packet_id is not None
@@ -137,11 +143,11 @@ def generate_content_planning_proposal(
             blockers=[unguarded_v2_blocker],
             safe_next_step=unguarded_v2_blocker.next_step,
         )
-    planning_input, early_response = _prepare_generation(
+    planning_input, early_response = _prepare_model_generation_input(
         snapshot=snapshot,
         request=request,
         store=store,
-        require_research_packet=True,
+        prepared_planning_input=prepared_planning_input,
     )
     if early_response is not None:
         return early_response
@@ -152,6 +158,7 @@ def generate_content_planning_proposal(
         planning_input=planning_input,
         operator_hint=request.operator_hint,
         client=client,
+        turn_request_builder=turn_request_builder,
     )
     if blocker is not None or output is None:
         failure_status: Literal["blocked", "failed"] = status or "failed"
@@ -192,6 +199,52 @@ def generate_content_planning_proposal(
         runtime_failure_response=_persistence_failure_response,
         runtime_trace_with_run_id=_runtime_trace_with_run_id,
     )
+
+
+def _prepare_model_generation_input(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentPlanningProposalRequest,
+    store: ContentPlanningProposalStore,
+    prepared_planning_input: ContentPlanningInput | None,
+) -> tuple[ContentPlanningInput | None, ContentPlanningProposalResponse | None]:
+    if prepared_planning_input is None:
+        return _prepare_generation(
+            snapshot=snapshot,
+            request=request,
+            store=store,
+            require_research_packet=True,
+        )
+    planning_input = prepared_planning_input
+    exact = (
+        planning_input.work_item_id == snapshot.preflight.item.id
+        and planning_input.content_kind == request.content_kind
+        and planning_input.confirmed_service_card_id == request.service_card_id
+        and planning_input.planning_input_digest == request.expected_planning_input_digest
+        and planning_input.research_packet_id == request.research_packet_id
+        and planning_input.research_packet_digest == request.expected_research_packet_digest
+    )
+    if exact:
+        return planning_input, None
+    blocker = ContentPlanningProposalBlocker(
+        code="research_packet_conflict",
+        label="Zatwierdzony pakiet nie pasuje do dokładnego planning input",
+        reason="Worker odtworzył inny input lub subject niż zatwierdzony intent v3.",
+        next_step="Odczytaj ponownie bieżący intent i pakiet v3 przed dispatch.",
+        owner="WILQ content workflow",
+    )
+    response = ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=planning_input.work_item_id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        research_packet_id=request.research_packet_id,
+        research_packet_digest=request.expected_research_packet_digest,
+        planning_input_digest=planning_input.planning_input_digest,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
+    return None, response
 
 
 def queue_content_planning_proposal(
@@ -337,6 +390,7 @@ def _run_planning_turn(
     planning_input: ContentPlanningInput,
     operator_hint: str,
     client: CodexAppServerClientProtocol,
+    turn_request_builder: PlanningTurnRequestBuilder | None = None,
 ) -> tuple[
     ContentPlanningModelOutput | None,
     ContentCodexRuntimeTrace | None,
@@ -344,12 +398,12 @@ def _run_planning_turn(
     Literal["blocked", "failed"] | None,
 ]:
     try:
-        runtime_result = client.run_structured_turn(
-            content_planning_turn_request(
-                planning_input,
-                operator_hint=operator_hint,
-            )
+        turn_request = (
+            content_planning_turn_request(planning_input, operator_hint=operator_hint)
+            if turn_request_builder is None
+            else turn_request_builder(planning_input, operator_hint)
         )
+        runtime_result = client.run_structured_turn(turn_request)
     except Exception as error:
         blocker = build_blocker(
             ContentPlanningProposalBlocker,

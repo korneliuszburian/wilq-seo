@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from typing import Protocol
 from uuid import uuid4
 
-from wilq.codex.app_server import StdioCodexAppServerClient
+from wilq.codex.app_server import CodexAppServerClientProtocol, StdioCodexAppServerClient
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -37,11 +38,25 @@ from wilq.content.planning.runtime_contract import planning_codex_timeout_second
 from wilq.content.planning.subject import ContentPlanningSubject, PlanningContentKind
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.refresh_preparation_contracts import ContentRefreshPreparationBinding
-from wilq.storage.local_state import local_state_store
+from wilq.storage.local_state import LocalStateStore, local_state_store
 
 ContentPlanningSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 PlanningClientFactory = Callable[[], StdioCodexAppServerClient]
 PlanningGenerationGuard = Callable[[], ContentPlanningProposalResponse | None]
+
+
+class PlanningGenerationRunner(Protocol):
+    def __call__(
+        self,
+        *,
+        snapshot: ContentWorkItemWorkflowSnapshotResponse,
+        request: ContentPlanningProposalRequest,
+        client: CodexAppServerClientProtocol,
+        store: ContentPlanningProposalStore,
+        run_store: LocalStateStore,
+        pre_persistence_guard: PlanningGenerationGuard | None,
+        refresh_preparation_binding: ContentRefreshPreparationBinding | None,
+    ) -> ContentPlanningProposalResponse: ...
 
 _PLANNING_GENERATION_EXECUTOR = ThreadPoolExecutor(
     max_workers=2,
@@ -220,6 +235,7 @@ def enqueue_planning_generation(
     store: ContentPlanningProposalStore,
     generation_guard: PlanningGenerationGuard | None = None,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+    generation_runner: PlanningGenerationRunner | None = None,
 ) -> ContentPlanningProposalResponse:
     if generation_guard is not None:
         guarded = generation_guard()
@@ -269,6 +285,7 @@ def enqueue_planning_generation(
         store=store,
         generation_guard=generation_guard,
         refresh_preparation_binding=refresh_preparation_binding,
+        generation_runner=generation_runner,
     )
 
 
@@ -369,6 +386,7 @@ def schedule_queued_planning_generation(
     store: ContentPlanningProposalStore,
     generation_guard: PlanningGenerationGuard | None = None,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+    generation_runner: PlanningGenerationRunner | None = None,
 ) -> ContentPlanningProposalResponse:
     if outcome not in {"queued", "existing"}:
         return result
@@ -401,6 +419,7 @@ def schedule_queued_planning_generation(
             claim.claim_version,
             generation_guard,
             refresh_preparation_binding,
+            generation_runner,
         )
     except Exception as error:
         result = planning_generation_failure_response(
@@ -453,6 +472,7 @@ def run_queued_planning_generation(
     claim_version: int,
     generation_guard: PlanningGenerationGuard | None = None,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
+    generation_runner: PlanningGenerationRunner | None = None,
 ) -> ContentPlanningProposalResponse:
     store = content_planning_proposal_store()
     claim_status: PlanningGenerationClaimFinalStatus = "failed"
@@ -461,15 +481,29 @@ def run_queued_planning_generation(
         if guarded is not None:
             result = guarded
         else:
-            result = generate_content_planning_proposal(
-                snapshot=snapshot_loader(work_item_id),
-                request=request,
-                client=planning_codex_client(_default_client_factory),
-                store=store,
-                run_store=local_state_store(),
-                refresh_preparation_binding=refresh_preparation_binding,
-                pre_persistence_guard=generation_guard,
-            )
+            snapshot = snapshot_loader(work_item_id)
+            client = planning_codex_client(_default_client_factory)
+            run_store = local_state_store()
+            if generation_runner is None:
+                result = generate_content_planning_proposal(
+                    snapshot=snapshot,
+                    request=request,
+                    client=client,
+                    store=store,
+                    run_store=run_store,
+                    refresh_preparation_binding=refresh_preparation_binding,
+                    pre_persistence_guard=generation_guard,
+                )
+            else:
+                result = generation_runner(
+                    snapshot=snapshot,
+                    request=request,
+                    client=client,
+                    store=store,
+                    run_store=run_store,
+                    pre_persistence_guard=generation_guard,
+                    refresh_preparation_binding=refresh_preparation_binding,
+                )
     except Exception as error:
         result = planning_generation_failure_response(
             work_item_id=work_item_id,

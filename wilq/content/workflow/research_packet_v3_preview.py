@@ -80,6 +80,8 @@ class ResearchPacketV3Preview(BaseModel):
     identity_digest: str | None = Field(default=None, pattern=_HEX64)
     material_meaning_digest: str | None = Field(default=None, pattern=_HEX64)
     planning_input_digest: str | None = Field(default=None, pattern=_HEX64)
+    content_kind: Literal["service", "editorial"] | None = None
+    service_card_id: str | None = None
     demand_evidence_status: Literal["available", "missing"] | None = None
     selected_facts: tuple[SourcePackV3Fact, ...] = ()
     planning_context: ResearchPacketV3PlanningContext | None = None
@@ -125,6 +127,12 @@ class ResearchPacketV3Preview(BaseModel):
             return self
         if (self.page_url is None) != (self.canonical_path is None):
             raise ValueError("Research packet page identity must be complete when present.")
+        if self.content_kind == "service" and not self.service_card_id:
+            raise ValueError("Service research packet requires its exact service card ID.")
+        if self.content_kind == "editorial" and self.service_card_id is not None:
+            raise ValueError("Editorial research packet cannot carry a service card ID.")
+        if self.content_kind is None and self.service_card_id is not None:
+            raise ValueError("Historical packet subject cannot carry an unversioned service card.")
         if (
             self.blocker is not None
             or not self.preview_id
@@ -193,6 +201,10 @@ class ResearchPacketV3Preview(BaseModel):
         if self.page_url is not None and self.canonical_path is not None:
             payload["page_url"] = self.page_url
             payload["canonical_path"] = self.canonical_path
+        # Historical v3 records predate exact generation subject binding.
+        if self.content_kind is not None:
+            payload["content_kind"] = self.content_kind
+            payload["service_card_id"] = self.service_card_id
         return payload
 
 
@@ -233,6 +245,14 @@ def build_research_packet_v3_preview(
     ):
         return _blocked(work_item_id, "planning_page_identity_mismatch", source_evidence,
                         "Odtwórz plan dla dokładnego bieżącego adresu i profilu prawnego.")
+    if planning.content_kind == "service" and (
+        planning.confirmed_service_card_id is None
+        or source_pack.service_binding is None
+        or source_pack.service_binding.card_id != planning.confirmed_service_card_id
+        or source_pack.service_binding.binding_url != source_pack.page_url
+    ):
+        return _blocked(work_item_id, "planning_service_binding_mismatch", source_evidence,
+                        "Potwierdź dokładną kartę usługi przypisaną do adresu strony.")
     policy_blocker = _planning_policy_blocker(planning, planning_result)
     if policy_blocker is not None:
         return _blocked(work_item_id, policy_blocker, source_evidence,
@@ -362,6 +382,8 @@ def _ready(
         "identity_digest": source_pack.identity_digest,
         "material_meaning_digest": source_pack.material_meaning_digest,
         "planning_input_digest": planning.planning_input_digest,
+        "content_kind": planning.content_kind,
+        "service_card_id": planning.confirmed_service_card_id,
         "demand_evidence_status": demand_status,
         "selected_facts": source_pack.facts,
         "planning_context": context,

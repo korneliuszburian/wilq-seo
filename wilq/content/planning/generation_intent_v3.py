@@ -65,6 +65,8 @@ class ApprovedPacketV3PlanningProjection(_FrozenModel):
     work_item_id: str = Field(min_length=1, max_length=240)
     packet_id: str = Field(min_length=1, max_length=240)
     packet_digest: str = Field(pattern=_HEX64)
+    content_kind: Literal["service", "editorial"]
+    service_card_id: str | None = Field(default=None, min_length=1, max_length=240)
     page_url: str = Field(min_length=1, max_length=2048)
     canonical_path: str = Field(min_length=1, max_length=2048)
     identity_digest: str = Field(pattern=_HEX64)
@@ -88,6 +90,8 @@ class ApprovedPacketV3PlanningProjection(_FrozenModel):
             self.packet_id != f"content_research_packet_v3_{self.packet_digest[:24]}"
             or not content_is_safe_public_url(self.page_url)
             or content_normalized_path(self.page_url) != self.canonical_path
+            or (self.content_kind == "service" and not self.service_card_id)
+            or (self.content_kind == "editorial" and self.service_card_id is not None)
         ):
             raise ValueError("Approved packet v3 planning projection identity does not match.")
         for name in ("selected_fact_ids", "evidence_ids", "required_cta_patterns"):
@@ -108,6 +112,8 @@ class PlanningGenerationIntentV3Snapshot(_FrozenModel):
     work_item_id: str = Field(min_length=1, max_length=240)
     packet_id: str = Field(min_length=1, max_length=240)
     packet_digest: str = Field(pattern=_HEX64)
+    content_kind: Literal["service", "editorial"] | None = None
+    service_card_id: str | None = Field(default=None, min_length=1, max_length=240)
     page_url: str = Field(min_length=1, max_length=2048)
     canonical_path: str = Field(min_length=1, max_length=2048)
     identity_digest: str = Field(pattern=_HEX64)
@@ -130,15 +136,31 @@ class PlanningGenerationIntentV3Snapshot(_FrozenModel):
 
     @model_validator(mode="after")
     def validate_snapshot(self) -> Self:
-        projection = ApprovedPacketV3PlanningProjection.model_validate(
-            self.model_dump(mode="python", exclude={
-                "schema_version", "intent_digest", "context_digest",
-                "generation_performed", "model_enqueued", "external_write_attempted",
-            }),
-            strict=True,
+        projection_payload = self.model_dump(
+            mode="python",
+            exclude={
+                "schema_version",
+                "intent_digest",
+                "context_digest",
+                "generation_performed",
+                "model_enqueued",
+                "external_write_attempted",
+            },
         )
+        if self.content_kind is None:
+            # Historical v3 intent snapshots remain readable, but have no
+            # exact subject binding and therefore cannot dispatch a new plan.
+            projection_payload.pop("content_kind", None)
+            projection_payload.pop("service_card_id", None)
+            context_digest = planning_generation_intent_v3_context_digest(projection_payload)
+        else:
+            projection = ApprovedPacketV3PlanningProjection.model_validate(
+                projection_payload,
+                strict=True,
+            )
+            context_digest = planning_generation_intent_v3_context_digest(projection)
         if (
-            self.context_digest != planning_generation_intent_v3_context_digest(projection)
+            self.context_digest != context_digest
             or self.intent_digest != planning_generation_intent_v3_digest(self.context_digest)
         ):
             raise ValueError("Planning generation intent v3 digest does not match.")
@@ -303,6 +325,8 @@ def project_approved_packet_v3_for_planning(
         raise ValueError("Approved research packet v3 is missing exact page identity.")
     if packet.planning_context is None or packet.preview_hash is None:
         raise ValueError("Approved research packet v3 is missing planning context.")
+    if packet.content_kind is None:
+        raise ValueError("Approved research packet v3 is missing exact generation subject.")
     evidence = set(view.receipt.verification_evidence_ids)
     evidence.update(
         evidence_id for fact in packet.selected_facts for evidence_id in fact.evidence_ids
@@ -320,6 +344,8 @@ def project_approved_packet_v3_for_planning(
         work_item_id=view.work_item_id,
         packet_id=view.packet_id,
         packet_digest=view.packet_digest,
+        content_kind=packet.content_kind,
+        service_card_id=packet.service_card_id,
         page_url=packet.page_url,
         canonical_path=packet.canonical_path,
         identity_digest=packet.identity_digest or "",
@@ -439,6 +465,8 @@ def planning_generation_intent_v3_action(
                     "work_item_id": snapshot.work_item_id,
                     "packet_id": snapshot.packet_id,
                     "packet_digest": snapshot.packet_digest,
+                    "content_kind": snapshot.content_kind,
+                    "service_card_id": snapshot.service_card_id,
                     "page_url": snapshot.page_url,
                     "canonical_path": snapshot.canonical_path,
                     "selected_fact_ids": list(snapshot.selected_fact_ids),

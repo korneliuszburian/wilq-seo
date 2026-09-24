@@ -49,6 +49,14 @@ def bind_research_packet(
     """Reload and validate the packet before a planner turn can start."""
 
     store = workflow_store or content_workflow_store()
+    if (
+        request.research_packet_id is not None
+        and request.research_packet_id.startswith("content_research_packet_v3_")
+    ):
+        return None, _v3_packet_requires_intent_response(
+            planning_input=planning_input,
+            request=request,
+        )
     if request.research_packet_id and request.research_packet_id.startswith(
         "content_research_packet_v2_"
     ):
@@ -113,6 +121,34 @@ def bind_research_packet(
             ),
         )
     return bind_research_packet_to_planning_input(projected_input, packet), None
+
+
+def _v3_packet_requires_intent_response(
+    *,
+    planning_input: ContentPlanningInput,
+    request: ContentPlanningProposalRequest,
+) -> ContentPlanningProposalResponse:
+    blocker = ContentPlanningProposalBlocker(
+        code="research_packet_action_required",
+        label="Pakiet v3 wymaga audytowanego intentu generowania",
+        reason=(
+            "Pakiet v3 nie może wejść do historycznego source-pack bindingu "
+            "ani do surowego model turnu."
+        ),
+        next_step="Użyj exact v3 planning intent z aktualnym receipt i audytowanym dispatch.",
+        owner="WILQ content workflow",
+        source_codes=["research_packet_v3_intent_required"],
+    )
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=planning_input.work_item_id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        research_packet_id=request.research_packet_id,
+        research_packet_digest=request.expected_research_packet_digest,
+        blockers=[blocker],
+        safe_next_step=blocker.next_step,
+    )
 
 
 def _bind_approved_v2_packet(

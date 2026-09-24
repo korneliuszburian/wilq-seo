@@ -178,6 +178,8 @@ def test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims() 
     assert ready.get("canonical_path") == pack["current"].canonical_path
     assert ready["demand_evidence_status"] == "missing"
     assert ready["generation_allowed"] is False
+    assert ready["content_kind"] == "editorial"
+    assert ready["service_card_id"] is None
     assert "UNREVIEWED OLD PAGE CLAIM" not in str(ready)
     assert "keep_receipt_id" not in ready
     assert ready["selected_facts"][0]["source_fact_id"] == "fact_exact"

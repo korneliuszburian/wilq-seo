@@ -66,6 +66,33 @@ def prepare_and_bind_research_packet(
 
     work_item_id = canonical_inventory_work_item_id(work_item_id)
     planning_input = _planning_input_for_work_item(planning_input, work_item_id)
+    if (
+        request.research_packet_id is not None
+        and request.research_packet_id.startswith("content_research_packet_v3_")
+    ):
+        blocker = ContentPlanningProposalBlocker(
+            code="research_packet_action_required",
+            label="Pakiet v3 wymaga audytowanego intentu generowania",
+            reason="Pakiet v3 nie może wejść do historycznego route packet bindingu.",
+            next_step="Użyj v3 planning intent z aktualnym receipt i audytowanym dispatch.",
+            owner="WILQ content workflow",
+            source_codes=["research_packet_v3_intent_required"],
+        )
+        response = ContentPlanningProposalResponse(
+            status="blocked",
+            work_item_id=planning_input.work_item_id,
+            content_kind=request.content_kind,
+            service_card_id=request.service_card_id,
+            research_packet_id=request.research_packet_id,
+            research_packet_digest=request.expected_research_packet_digest,
+            blockers=[blocker],
+            safe_next_step=blocker.next_step,
+        )
+        return ContentResearchPacketRouteBinding(
+            response=response,
+            planning_input=None,
+            request=request,
+        )
     workflow_store = store or content_workflow_store()
     if request.research_packet_id and request.research_packet_id.startswith(
         "content_research_packet_v2_"

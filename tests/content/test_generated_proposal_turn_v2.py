@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import wilq.content.planning.generated_proposal_turn as generated_proposal_turn
 import wilq.content.planning.packet_model_projection as packet_model_projection
 from tests.content.test_research_packet_v2_preview import _ready_inputs
 from tests.content.test_research_packet_v2_store import _receipt
@@ -58,6 +59,28 @@ def test_model_turn_does_not_treat_v2_packet_as_missing_v1_and_leak_caller_facts
         assert "approved v2" in str(error).lower()
     else:
         assert "UNREVIEWED CLAIM" not in request.untrusted_context
+
+
+def test_model_turn_does_not_fall_through_from_v3_packet_to_raw_input(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _source_pack, planning_input = _ready_inputs()
+    planning_input = _planning_input_with_caller_context(planning_input)
+    digest = "e" * 64
+    planning_input = planning_input.model_copy(
+        update={
+            "research_packet_id": f"content_research_packet_v3_{digest[:24]}",
+            "research_packet_digest": digest,
+        }
+    )
+    monkeypatch.setattr(
+        generated_proposal_turn,
+        "current_research_packet_for_model",
+        lambda *_: None,
+    )
+
+    with pytest.raises(ValueError, match="Approved v3"):
+        content_planning_turn_request(planning_input, operator_hint="")
 
 
 def _selected_fact() -> ContentSourceFact:

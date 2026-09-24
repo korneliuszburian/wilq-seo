@@ -21,10 +21,14 @@ from wilq.actions.service import (
 )
 from wilq.audit.trusted_local_confirmation import TrustedLocalConfirmationError
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
 )
 from wilq.content.workflow.research_packet_current import CurrentSnapshotLoader
+from wilq.content.workflow.research_packet_v3_preview import ResearchPacketV3Blocker
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,
@@ -49,6 +53,9 @@ from wilq.storage.local_state import local_state_store
 
 if TYPE_CHECKING:
     from wilq.content.planning.generation_intent_dispatch import PlanningGenerationDispatchOutcome
+    from wilq.content.planning.generation_intent_v3_dispatch import (
+        PlanningGenerationIntentV3DispatchOutcome,
+    )
 
 
 class _TrustedApplyConflictDetail(BaseModel):
@@ -465,6 +472,32 @@ def _apply_action_endpoint(
             **(result.adapter_result or {}),
             "dispatch": dispatch.model_dump(mode="json"),
         }
+    elif action.payload.get("action_type") == PLANNING_GENERATION_INTENT_V3_ACTION_TYPE:
+        try:
+            dispatch_v3 = _post_apply_planning_dispatch_v3(action.id)
+        except Exception:
+            from wilq.content.planning.generation_intent_v3_dispatch import (
+                PlanningGenerationIntentV3DispatchOutcome,
+            )
+
+            blocker_v3 = ResearchPacketV3Blocker(
+                code="planning_generation_v3_dispatch_unavailable",
+                owner="WILQ content workflow",
+                evidence_ids=tuple(action.evidence_ids),
+                safe_next_step=(
+                    "Ponów dispatch tej samej exact intencji v3 po odczycie audytu apply."
+                ),
+            )
+            dispatch_v3 = PlanningGenerationIntentV3DispatchOutcome(
+                status="blocked",
+                action_id=action.id,
+                blocker=blocker_v3,
+                safe_next_step=blocker_v3.safe_next_step,
+            )
+        result.adapter_result = {
+            **(result.adapter_result or {}),
+            "dispatch": dispatch_v3.model_dump(mode="json"),
+        }
     return result
 
 
@@ -480,6 +513,24 @@ def _post_apply_planning_dispatch(action_id: str) -> PlanningGenerationDispatchO
     from wilq.content.workflow.store.store import content_workflow_store
 
     return dispatch_applied_planning_intent(
+        action_id,
+        workflow_store=content_workflow_store(),
+        audit_store=local_state_store(),
+        proposal_store=content_planning_proposal_store(),
+        snapshot_loader=_planning_generation_snapshot_loader(),
+    )
+
+
+def _post_apply_planning_dispatch_v3(
+    action_id: str,
+) -> PlanningGenerationIntentV3DispatchOutcome:
+    from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+    from wilq.content.planning.generation_intent_v3_dispatch import (
+        dispatch_applied_planning_intent_v3,
+    )
+    from wilq.content.workflow.store.store import content_workflow_store
+
+    return dispatch_applied_planning_intent_v3(
         action_id,
         workflow_store=content_workflow_store(),
         audit_store=local_state_store(),

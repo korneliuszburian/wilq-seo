@@ -136,6 +136,13 @@ def content_planning_turn_request(
     *,
     operator_hint: str,
 ) -> CodexAppServerStructuredTurnRequest:
+    if (
+        planning_input.research_packet_id is not None
+        and planning_input.research_packet_id.startswith("content_research_packet_v3_")
+    ):
+        raise ValueError(
+            "Approved v3 packet requires the exact v3 model projection and currentness guard."
+        )
     packet_v2 = current_research_packet_v2_for_model(planning_input)
     packet = None
     if packet_v2 is not None:

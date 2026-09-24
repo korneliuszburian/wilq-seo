@@ -110,6 +110,9 @@ export const ResearchPacketV3PreviewReadySchema = z.object({
   // These are optional only for immutable v3 snapshots written before page identity.
   page_url: NonBlankStringSchema.nullable().optional(),
   canonical_path: CanonicalPathSchema.nullable().optional(),
+  // Historical v3 previews predate explicit content-subject binding.
+  content_kind: z.enum(["service", "editorial"]).optional(),
+  service_card_id: NonBlankStringSchema.nullable().optional(),
   identity_digest: Hex64Schema,
   material_meaning_digest: Hex64Schema,
   planning_input_digest: Hex64Schema,
@@ -141,6 +144,15 @@ export const ResearchPacketV3PreviewReadySchema = z.object({
   if ((packet.page_url === undefined || packet.page_url === null)
     !== (packet.canonical_path === undefined || packet.canonical_path === null)) {
     context.addIssue({ code: "custom", message: "Research packet page identity is incomplete." });
+  }
+  if (packet.content_kind === "service" && !packet.service_card_id) {
+    context.addIssue({ code: "custom", message: "Service packet subject requires a card ID." });
+  }
+  if (packet.content_kind === "editorial" && packet.service_card_id != null) {
+    context.addIssue({ code: "custom", message: "Editorial packet cannot carry a service card ID." });
+  }
+  if (packet.content_kind === undefined && packet.service_card_id != null) {
+    context.addIssue({ code: "custom", message: "Historical packet cannot carry an unversioned card ID." });
   }
 });
 
