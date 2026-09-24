@@ -10,6 +10,10 @@ from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ADAPTER,
     execute_planning_generation_intent_action,
 )
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ADAPTER,
+    execute_planning_generation_intent_v3_action,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
     execute_current_disposition_authority,
@@ -54,6 +58,7 @@ _LOCAL_ADAPTERS = frozenset(
         CURRENT_DISPOSITION_MUTATION_ADAPTER,
         DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
         PLANNING_GENERATION_INTENT_ADAPTER,
+        PLANNING_GENERATION_INTENT_V3_ADAPTER,
     }
 )
 
@@ -93,6 +98,13 @@ def execute_local_content_mutation_adapter(
             audit_events=action.audit_events,
             confirmed_by=_confirmation_actor(action),
             current_snapshot_loader=content_snapshot_loader,
+        )
+    if adapter == PLANNING_GENERATION_INTENT_V3_ADAPTER:
+        return execute_planning_generation_intent_v3_action(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
         )
     if adapter == MATERIAL_REVIEW_ACTION_V2_ADAPTER:
         return execute_current_material_review_action_v2(

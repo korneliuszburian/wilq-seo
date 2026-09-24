@@ -5,6 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+    PlanningGenerationIntentV3Snapshot,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     ContentCurrentDispositionSnapshot,
@@ -55,6 +59,9 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
     action_type = action.payload.get("action_type")
     if action_type == PLANNING_GENERATION_INTENT_ACTION_TYPE:
         _stamp_planning_generation_intent(action, event)
+        return
+    if action_type == PLANNING_GENERATION_INTENT_V3_ACTION_TYPE:
+        _stamp_planning_generation_intent_v3(action, event)
         return
     if action_type in {RESEARCH_PACKET_V2_ACTION_TYPE, RESEARCH_PACKET_V3_ACTION_TYPE}:
         snapshot_key, action_id_for_digest = (
@@ -119,16 +126,7 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
         }
         return
     if action_type == SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE:
-        source_fact_proposal = ContentSourceFactAuthorityV2Proposal.model_validate(
-            action.payload.get("source_fact_authority_v2", {})
-        )
-        event.details = {
-            **event.details,
-            "source_fact_authority_v2_snapshot_digest": (
-                source_fact_proposal.snapshot.context_digest
-            ),
-            "source_fact_authority_v2_action_payload_digest": canonical_json_digest(action.payload),
-        }
+        _stamp_source_fact_authority_v2(action, event)
         return
     if action_type != SOURCE_FACT_AUTHORITY_ACTION_TYPE:
         return
@@ -187,6 +185,28 @@ def _stamp_planning_generation_intent(action: ActionObject, event: AuditEvent) -
             "context_digest": context_digest,
             "payload_digest": canonical_json_digest(action.payload),
         }
+
+
+def _stamp_planning_generation_intent_v3(action: ActionObject, event: AuditEvent) -> None:
+    snapshot = PlanningGenerationIntentV3Snapshot.model_validate(
+        action.payload.get("planning_generation_intent_v3", {})
+    )
+    event.details = {
+        **event.details,
+        "context_digest": snapshot.context_digest,
+        "payload_digest": canonical_json_digest(action.payload),
+    }
+
+
+def _stamp_source_fact_authority_v2(action: ActionObject, event: AuditEvent) -> None:
+    source_fact_proposal = ContentSourceFactAuthorityV2Proposal.model_validate(
+        action.payload.get("source_fact_authority_v2", {})
+    )
+    event.details = {
+        **event.details,
+        "source_fact_authority_v2_snapshot_digest": source_fact_proposal.snapshot.context_digest,
+        "source_fact_authority_v2_action_payload_digest": canonical_json_digest(action.payload),
+    }
 
 
 __all__ = ["stamp_authority_audit_context"]

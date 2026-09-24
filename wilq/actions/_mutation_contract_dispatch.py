@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
 )
@@ -58,6 +61,13 @@ _LOCAL_CONTRACTS = {
         ),
         "Apply zapisuje lokalny zamiar bez modelu; po trwałym audycie wolno raz zlecić "
         "plan dla dokładnego zatwierdzonego pakietu v2. Vendor pozostaje zablokowany.",
+    ),
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: _LocalContractSpec(
+        "record_one_v3_planning_generation_intent",
+        "wilq_planning_generation_intent_snapshot_v3|approved_research_packet_v3|local_receipt_only",
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "content_generation"),
+        "Apply zapisuje wyłącznie lokalny receipt zamiaru z dokładnego zatwierdzonego "
+        "pakietu v3; nie uruchamia modelu ani WordPressa.",
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: _LocalContractSpec(
         "record_content_delivery_identity_binding",

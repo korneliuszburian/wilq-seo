@@ -78,6 +78,10 @@ from wilq.content.workflow.store.store_planning_generation_intent import (
     PlanningGenerationIntentStoreMixin,
     ensure_planning_generation_intent_schema,
 )
+from wilq.content.workflow.store.store_planning_generation_intent_v3 import (
+    PlanningGenerationIntentV3StoreMixin,
+    ensure_planning_generation_intent_v3_schema,
+)
 from wilq.content.workflow.store.store_production_classification import (
     ProductionClassificationStoreMixin,
 )
@@ -672,6 +676,7 @@ class ContentWorkflowStore(
     ResearchPacketV2StoreMixin,
     ResearchPacketV3StoreMixin,
     PlanningGenerationIntentStoreMixin,
+    PlanningGenerationIntentV3StoreMixin,
     ResearchProposalStoreMixin,
     ContentLandingHubAuthorizationStoreMixin,
     InitialDraftAuthorityStoreMixin,
@@ -700,5 +705,6 @@ class ContentWorkflowStore(
         ensure_research_packet_v2_schema(connection)
         ensure_research_packet_v3_schema(connection)
         ensure_planning_generation_intent_schema(connection)
+        ensure_planning_generation_intent_v3_schema(connection)
         ensure_content_workflow_schema(connection)
         return connection

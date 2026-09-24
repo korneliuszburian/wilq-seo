@@ -5,6 +5,9 @@ from wilq.actions.payload_readiness import (
     payload_apply_allowed,
     payload_preview_items,
 )
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+)
 from wilq.content.workflow.current_disposition_authority import CURRENT_DISPOSITION_ACTION_TYPE
 from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
@@ -202,6 +205,7 @@ def vendor_write_possible(action: ActionObject, mutation_adapter: str | None) ->
             CURRENT_DISPOSITION_ACTION_TYPE,
             CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
             DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
+            PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
         }
         and action.payload.get("local_authority_only") is True
     ):

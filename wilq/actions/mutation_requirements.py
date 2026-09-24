@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+)
 from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
 )
@@ -123,15 +126,21 @@ def _connector_readiness_requirement(
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     )
+    is_local_v3_intent = (
+        action.payload.get("action_type") == PLANNING_GENERATION_INTENT_V3_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    )
+    is_local_only = is_local_v2 or is_local_v3_intent
     return _requirement(
         code="connector_configured",
         label=(
             "Zapis lokalny nie wymaga konfiguracji vendora"
-            if is_local_v2
+            if is_local_only
             else "Connector jest skonfigurowany"
         ),
-        satisfied=True if is_local_v2 else configured,
-        evidence="local_authority_only; no vendor write" if is_local_v2 else evidence,
+        satisfied=True if is_local_only else configured,
+        evidence="local_authority_only; no vendor write" if is_local_only else evidence,
     )
 
 

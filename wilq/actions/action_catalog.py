@@ -69,6 +69,9 @@ from wilq.actions.wordpress_handoff import (
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.planning.generation_intent import load_planning_generation_intent_action
+from wilq.content.planning.generation_intent_v3 import (
+    load_planning_generation_intent_v3_action,
+)
 from wilq.content.workflow.current_disposition_authority import load_current_disposition_action
 from wilq.content.workflow.current_page_disposition_v2_action import (
     load_current_page_disposition_v2_action,
@@ -169,6 +172,7 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_research_packet_v2_action(action_id)
         or load_research_packet_v3_action(action_id)
         or load_planning_generation_intent_action(action_id, store=content_workflow_store())
+        or load_planning_generation_intent_v3_action(action_id, store=content_workflow_store())
         or load_content_source_fact_authority_action(action_id)
         or _load_source_fact_authority_v2_action(action_id)
         or load_content_research_fact_promotion_action(action_id, store=content_workflow_store())

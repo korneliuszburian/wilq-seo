@@ -7,6 +7,10 @@ from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ACTION_TYPE,
     PLANNING_GENERATION_INTENT_ADAPTER,
 )
+from wilq.content.planning.generation_intent_v3 import (
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+    PLANNING_GENERATION_INTENT_V3_ADAPTER,
+)
 from wilq.content.workflow.current_disposition_authority import (
     CURRENT_DISPOSITION_ACTION_TYPE,
     CURRENT_DISPOSITION_MUTATION_ADAPTER,
@@ -52,6 +56,11 @@ from wilq.content.workflow.target.new_page_draft_executor import (
 )
 from wilq.schemas import ActionMutationApplyContract, ActionObject
 
+_PLANNING_GENERATION_INTENT_ADAPTERS = {
+    PLANNING_GENERATION_INTENT_ACTION_TYPE: PLANNING_GENERATION_INTENT_ADAPTER,
+    PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: PLANNING_GENERATION_INTENT_V3_ADAPTER,
+}
+
 
 def mutation_apply_contract(
     action: ActionObject,
@@ -61,12 +70,14 @@ def mutation_apply_contract(
 
 
 def supported_mutation_adapter(action: ActionObject) -> str | None:
+    action_type = action.payload.get("action_type")
     if (
-        action.payload.get("action_type") == PLANNING_GENERATION_INTENT_ACTION_TYPE
+        action_type
+        in (PLANNING_GENERATION_INTENT_ACTION_TYPE, PLANNING_GENERATION_INTENT_V3_ACTION_TYPE)
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):
-        return PLANNING_GENERATION_INTENT_ADAPTER
+        return _PLANNING_GENERATION_INTENT_ADAPTERS[action_type]
     if (
         action.payload.get("action_type")
         in {RESEARCH_PACKET_V2_ACTION_TYPE, RESEARCH_PACKET_V3_ACTION_TYPE}
