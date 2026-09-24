@@ -243,6 +243,8 @@ def _accepted_preview_record(
     )
     preview = accepted.snapshot
     visible = {
+        "page_url": preview.page_url,
+        "canonical_path": preview.canonical_path,
         "selected_facts": [
             {"text": fact.text, "source_reference": fact.source_reference}
             for fact in preview.selected_facts

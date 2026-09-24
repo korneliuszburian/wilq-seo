@@ -109,6 +109,14 @@ def register_content_research_packet_v3_action_routes(
                     list(blocker.evidence_ids),
                     blocker.safe_next_step,
                 )
+            if not preview.has_exact_page_identity():
+                return _blocked_response(
+                    work_item_id,
+                    "research_packet_v3_page_identity_missing",
+                    "WILQ content workflow",
+                    list(preview.verification_evidence_ids),
+                    "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
+                )
             record = ResearchPacketV3PreviewRecord.from_preview(preview)
             action = prepare_research_packet_v3_action(record, store=make_store())
         except (ValueError, RuntimeError, HTTPException):

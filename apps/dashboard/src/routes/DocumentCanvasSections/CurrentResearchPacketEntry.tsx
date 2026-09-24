@@ -1,17 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
 
-import { prepareContentResearchPacketV2Action } from "../../lib/api";
+import { prepareContentResearchPacketV3Action } from "../../lib/api";
 
 export function CurrentResearchPacketEntry({ workItemId }: { workItemId: string }) {
   const preview = useMutation({
-    mutationFn: () => prepareContentResearchPacketV2Action(workItemId)
+    mutationFn: () => prepareContentResearchPacketV3Action(workItemId)
   });
 
   return (
     <div className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
-      <p className="font-semibold text-ink">Pakiet badawczy v2</p>
+      <p className="font-semibold text-ink">Pakiet badawczy v3</p>
       <p className="mt-1 leading-5">
-        Sprawdź fakty, źródła i wymagania po zatwierdzeniu materiału obecnej strony.
+        Sprawdź dokładny adres strony, oficjalne fakty i wymagania przed decyzją.
       </p>
       <button
         type="button"

@@ -6,7 +6,7 @@ from typing import Any, Literal, Self, cast
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from wilq.content.canonical.urls import content_is_safe_public_url
+from wilq.content.canonical.urls import content_is_safe_public_url, content_normalized_path
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     ContentPlanningInputBuildResult,
@@ -75,6 +75,8 @@ class ResearchPacketV3Preview(BaseModel):
     preview_hash: str | None = Field(default=None, pattern=_HEX64)
     source_pack_id: str | None = None
     source_pack_hash: str | None = Field(default=None, pattern=_HEX64)
+    page_url: str | None = None
+    canonical_path: str | None = None
     identity_digest: str | None = Field(default=None, pattern=_HEX64)
     material_meaning_digest: str | None = Field(default=None, pattern=_HEX64)
     planning_input_digest: str | None = Field(default=None, pattern=_HEX64)
@@ -94,12 +96,35 @@ class ResearchPacketV3Preview(BaseModel):
     generation_allowed: Literal[False] = False
     packet_write_allowed: Literal[False] = False
 
+    @field_validator("page_url")
+    @classmethod
+    def require_safe_page_url_when_present(cls, value: str | None) -> str | None:
+        if value is not None and not content_is_safe_public_url(value):
+            raise ValueError("Research packet page URL must be a safe public Ekologus URL.")
+        return value
+
+    @field_validator("canonical_path")
+    @classmethod
+    def require_canonical_path_when_present(cls, value: str | None) -> str | None:
+        if value is not None and (
+            not value
+            or value != value.strip()
+            or not value.startswith("/")
+            or any(ord(character) < 0x20 or ord(character) == 0x7F for character in value)
+            or "?" in value
+            or "#" in value
+        ):
+            raise ValueError("Research packet canonical path is invalid.")
+        return value
+
     @model_validator(mode="after")
     def require_exact_preview_or_blocker(self) -> Self:
         if self.status == "blocked":
             if self.blocker is None or self.preview_id or self.preview_hash or self.selected_facts:
                 raise ValueError("Blocked research packet cannot expose an artifact.")
             return self
+        if (self.page_url is None) != (self.canonical_path is None):
+            raise ValueError("Research packet page identity must be complete when present.")
         if (
             self.blocker is not None
             or not self.preview_id
@@ -129,8 +154,18 @@ class ResearchPacketV3Preview(BaseModel):
             raise ValueError("Missing demand cannot carry a search-intent recommendation.")
         return self
 
+    def has_exact_page_identity(self) -> bool:
+        """Old v3 snapshots predate page identity; new review never accepts them."""
+
+        return (
+            self.page_url is not None
+            and self.canonical_path is not None
+            and content_is_safe_public_url(self.page_url)
+            and content_normalized_path(self.page_url) == self.canonical_path
+        )
+
     def semantic_payload(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "contract": self.contract_version,
             "work_item_id": self.work_item_id,
             "source_pack_id": self.source_pack_id,
@@ -154,6 +189,11 @@ class ResearchPacketV3Preview(BaseModel):
                 item.model_dump(mode="json") for item in self.legal_requirements
             ],
         }
+        # v3 records created before exact page identity remain immutable historical reads.
+        if self.page_url is not None and self.canonical_path is not None:
+            payload["page_url"] = self.page_url
+            payload["canonical_path"] = self.canonical_path
+        return payload
 
 
 def build_research_packet_v3_preview(
@@ -317,6 +357,8 @@ def _ready(
         "work_item_id": work_item_id,
         "source_pack_id": source_pack.source_pack_id,
         "source_pack_hash": source_pack.source_pack_hash,
+        "page_url": source_pack.page_url,
+        "canonical_path": source_pack.canonical_path,
         "identity_digest": source_pack.identity_digest,
         "material_meaning_digest": source_pack.material_meaning_digest,
         "planning_input_digest": planning.planning_input_digest,

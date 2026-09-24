@@ -20,24 +20,27 @@ describe("current research packet entry", () => {
   });
 
   it("links the exact prepared action without claiming generation authority", async () => {
-    const prepare = vi.spyOn(api, "prepareContentResearchPacketV2Action").mockResolvedValue({
-      response_type: "research_packet_v2_action",
+    const prepare = vi.spyOn(api, "prepareContentResearchPacketV3Action").mockResolvedValue({
+      response_type: "research_packet_v3_action",
       status: "preview_ready",
-      action_id: "act_content_research_packet_v2_exact",
+      action_id: "act_content_research_packet_v3_exact",
       external_write_attempted: false,
-      generation_allowed: false
+      generation_allowed: false,
+      action: {} as never,
+      preview: {} as never
     });
     renderEntry();
     fireEvent.click(screen.getByRole("button", { name: "Przygotuj przegląd pakietu" }));
     await waitFor(() => expect(prepare).toHaveBeenCalledWith("wi_exact"));
     expect(await screen.findByRole("link", { name: "Otwórz cały pakiet i decyzję" }))
-      .toHaveAttribute("href", "/actions/act_content_research_packet_v2_exact");
+      .toHaveAttribute("href", "/actions/act_content_research_packet_v3_exact");
   });
 
   it("shows the current typed blocker and owner", async () => {
-    vi.spyOn(api, "prepareContentResearchPacketV2Action").mockResolvedValue({
-      response_type: "research_packet_v2_action",
+    vi.spyOn(api, "prepareContentResearchPacketV3Action").mockResolvedValue({
+      response_type: "research_packet_v3_action",
       status: "blocked",
+      work_item_id: "wi_exact",
       blocker_code: "missing_approved_keep_receipt",
       blocker_owner: "Wilku",
       evidence_ids: ["ev_current"],

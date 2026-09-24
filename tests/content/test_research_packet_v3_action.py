@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ from wilq.content.workflow.research_packet_v3_preview import (
     ResearchPacketV3Preview,
     build_research_packet_v3_preview,
 )
+from wilq.content.workflow.research_packet_v3_receipt import ResearchPacketV3PreviewRecord
 from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.storage.local_state import LocalStateStore
 
@@ -205,3 +207,62 @@ def test_v3_action_current_preview_unavailable_blocks_before_receipt(
     assert store.load_research_packet_v3_approval_receipt(
         f"content_research_packet_v3_{prepared.json()['preview']['preview_hash'][:24]}"
     ) is None
+
+
+def test_v3_action_keeps_legacy_snapshot_readable_but_blocks_new_review_without_page_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _store, current = _client(tmp_path, monkeypatch)
+    preview = current["preview"]
+    legacy_seed = preview.model_copy(update={"page_url": None, "canonical_path": None})
+    legacy_hash = canonical_json_digest(legacy_seed.semantic_payload())
+    legacy = ResearchPacketV3Preview.model_validate(
+        legacy_seed.model_dump(mode="python")
+        | {
+            "preview_hash": legacy_hash,
+            "preview_id": f"content_research_packet_v3_{legacy_hash[:24]}",
+        }
+    )
+    legacy_payload = {
+        "schema_version": "wilq_research_packet_v3_preview_record_v1",
+        "preview_hash": legacy_hash,
+        "work_item_id": "wi_exact",
+        "snapshot": legacy.model_dump(mode="json", exclude={"page_url", "canonical_path"}),
+    }
+    historical = ResearchPacketV3PreviewRecord.model_validate_json(json.dumps(legacy_payload))
+    assert historical.snapshot.page_url is None
+    assert historical.snapshot.canonical_path is None
+
+    current["preview"] = legacy
+    response = client.post("/api/content/work-items/wi_exact/research-packet-v3-action/preview")
+    assert response.status_code == 409, response.text
+    assert response.json()["blocker_code"] == "research_packet_v3_page_identity_missing"
+
+
+def test_v3_page_identity_matches_raw_and_percent_encoded_paths_exactly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _client_instance, _store, current = _client(tmp_path, monkeypatch)
+    preview = current["preview"]
+
+    raw_unicode = preview.model_copy(update={
+        "page_url": "https://www.ekologus.pl/zażółć/",
+        "canonical_path": "/zażółć",
+    })
+    percent_encoded = preview.model_copy(update={
+        "page_url": "https://www.ekologus.pl/%C5%BC/",
+        "canonical_path": "/%C5%BC",
+    })
+    raw_url_encoded_path = preview.model_copy(update={
+        "page_url": "https://www.ekologus.pl/zażółć/",
+        "canonical_path": "/%C5%BC",
+    })
+    encoded_url_raw_path = preview.model_copy(update={
+        "page_url": "https://www.ekologus.pl/%C5%BC/",
+        "canonical_path": "/zażółć",
+    })
+
+    assert raw_unicode.has_exact_page_identity()
+    assert percent_encoded.has_exact_page_identity()
+    assert not raw_url_encoded_path.has_exact_page_identity()
+    assert not encoded_url_raw_path.has_exact_page_identity()

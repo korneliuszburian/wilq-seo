@@ -45,6 +45,8 @@ def research_packet_v3_action_id(preview_hash: str) -> str:
 
 
 def research_packet_v3_action(record: ResearchPacketV3PreviewRecord) -> ActionObject:
+    if not record.has_exact_page_identity():
+        raise ValueError("research_packet_v3_page_identity_missing")
     preview = record.snapshot
     return ActionObject(
         id=research_packet_v3_action_id(record.preview_hash),
@@ -94,7 +96,9 @@ def load_research_packet_v3_action(
     if len(preview_hash) != 64 or any(char not in "0123456789abcdef" for char in preview_hash):
         return None
     record = (store or content_workflow_store()).load_research_packet_v3_preview(preview_hash)
-    return None if record is None else research_packet_v3_action(record)
+    if record is None or not record.has_exact_page_identity():
+        return None
+    return research_packet_v3_action(record)
 
 
 def prepare_research_packet_v3_action(
@@ -102,6 +106,8 @@ def prepare_research_packet_v3_action(
     *,
     store: ContentWorkflowStore | None = None,
 ) -> ActionObject:
+    if not record.has_exact_page_identity():
+        raise ValueError("research_packet_v3_page_identity_missing")
     workflow_store = store or content_workflow_store()
     status = workflow_store.record_research_packet_v3_preview(record)
     if status == "conflict":
@@ -125,6 +131,8 @@ def validate_research_packet_v3_action_payload(payload: dict[str, Any]) -> list[
         )
     except (TypeError, ValueError, ValidationError):
         return ["Exact research packet v3 action preview is invalid."]
+    if not record.has_exact_page_identity():
+        return ["Exact research packet v3 page identity is missing."]
     return (
         []
         if payload == research_packet_v3_action(record).payload
@@ -146,6 +154,12 @@ def execute_research_packet_v3_action(
     except (TypeError, ValueError, ValidationError):
         return _blocked("research_packet_v3_action_invalid", tuple(action.evidence_ids),
                         "Odczytaj ponownie dokładną akcję pakietu v3.")
+    if not record.has_exact_page_identity():
+        return _blocked(
+            "research_packet_v3_page_identity_missing",
+            record.snapshot.verification_evidence_ids,
+            "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
+        )
     stored = store.load_research_packet_v3_preview(record.preview_hash)
     if (
         stored != record
@@ -172,6 +186,12 @@ def execute_research_packet_v3_action(
                             "Ponów odczyt bieżącego pakietu v3.")
         return _blocked(blocker.code, blocker.evidence_ids,
                         blocker.safe_next_step, blocker.owner)
+    if not current.has_exact_page_identity():
+        return _blocked(
+            "research_packet_v3_page_identity_missing",
+            current.verification_evidence_ids,
+            "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
+        )
     if current.preview_hash != record.preview_hash:
         return _blocked("research_packet_v3_current_drift",
                         current.verification_evidence_ids,

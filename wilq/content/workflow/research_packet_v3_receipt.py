@@ -42,11 +42,16 @@ class ResearchPacketV3PreviewRecord(BaseModel):
         )
         if accepted.status != "ready" or accepted.preview_hash is None:
             raise ValueError("Only a ready research packet v3 preview can be recorded.")
+        if not accepted.has_exact_page_identity():
+            raise ValueError("research_packet_v3_page_identity_missing")
         return cls(
             preview_hash=accepted.preview_hash,
             work_item_id=accepted.work_item_id,
             snapshot=accepted,
         )
+
+    def has_exact_page_identity(self) -> bool:
+        return self.snapshot.has_exact_page_identity()
 
 
 class ResearchPacketV3ApprovalReceipt(BaseModel):

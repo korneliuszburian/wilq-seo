@@ -17,6 +17,9 @@ import {
   CurrentMaterialTextResponseSchema,
   ResearchPacketV2ActionReadySchema,
   ResearchPacketV2ActionBlockedSchema,
+  ResearchPacketV3ActionReadySchema,
+  ResearchPacketV3ActionBlockedSchema,
+  ResearchPacketV3PreviewResponseSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
@@ -80,6 +83,8 @@ import {
   type ContentMaterialReviewActionResponse,
   type CurrentMaterialTextResponse,
   type ResearchPacketV2ActionResponse,
+  type ResearchPacketV3ActionResponse,
+  type ResearchPacketV3PreviewResponse,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
   type ContentNewPageCanonicalDocumentWorkspace,
@@ -390,6 +395,26 @@ export function prepareContentResearchPacketV2Action(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v2-action/preview`,
     ResearchPacketV2ActionReadySchema,
     ResearchPacketV2ActionBlockedSchema,
+    {}
+  );
+}
+
+export function getContentResearchPacketV3Preview(
+  workItemId: string
+): Promise<ResearchPacketV3PreviewResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-preview`,
+    ResearchPacketV3PreviewResponseSchema
+  );
+}
+
+export function prepareContentResearchPacketV3Action(
+  workItemId: string
+): Promise<ResearchPacketV3ActionResponse> {
+  return apiPostWithConflict(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-action/preview`,
+    ResearchPacketV3ActionReadySchema,
+    ResearchPacketV3ActionBlockedSchema,
     {}
   );
 }

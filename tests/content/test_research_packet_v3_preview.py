@@ -174,6 +174,8 @@ def test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims() 
     ready = response.json()
     assert ready["status"] == "ready"
     assert ready["source_pack_hash"] == pack["current"].source_pack_hash
+    assert ready.get("page_url") == pack["current"].page_url
+    assert ready.get("canonical_path") == pack["current"].canonical_path
     assert ready["demand_evidence_status"] == "missing"
     assert ready["generation_allowed"] is False
     assert "UNREVIEWED OLD PAGE CLAIM" not in str(ready)
