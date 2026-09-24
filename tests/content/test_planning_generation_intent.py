@@ -19,6 +19,7 @@ from tests.content.test_material_review_action_v2 import _configure_local_action
 from tests.content.test_research_packet_v2_preview import _ready_inputs
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.generation_intent import PlanningGenerationIntentSnapshot
 from wilq.content.planning.input_sources import ContentPlanningInventory, ContentPlanningSourceFact
 from wilq.content.planning.packet_input_binding import bind_packet_identity_to_planning_input
 from wilq.content.planning.source_pack_projection import project_research_packet_v2_facts
@@ -259,6 +260,17 @@ def test_public_generation_intent_records_only_exact_local_intent(
     )
     assert prepared.status_code == 200, prepared.text
     action_id = prepared.json()["action_id"]
+    assert prepared.json()["snapshot"]["schema_version"] == (
+        "wilq_planning_generation_intent_snapshot_v2"
+    )
+    assert prepared.json()["snapshot"]["dispatch_after_apply_audit"] is True
+    assert prepared.json()["action"]["payload"]["dispatch_after_apply_audit"] is True
+    assert prepared.json()["action"]["payload"]["model_enqueued_at_apply"] is False
+    legacy_snapshot = dict(prepared.json()["snapshot"])
+    legacy_snapshot["schema_version"] = "wilq_planning_generation_intent_snapshot_v1"
+    legacy_snapshot.pop("dispatch_after_apply_audit")
+    with pytest.raises(ValueError):
+        PlanningGenerationIntentSnapshot.model_validate(legacy_snapshot)
     assert prepared.json()["generation_performed"] is False
     assert prepared.json()["model_enqueued"] is False
     assert "Zatwierdzony fakt." not in prepared.text

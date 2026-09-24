@@ -38,9 +38,9 @@ from wilq.schemas import (
 if TYPE_CHECKING:
     from wilq.content.workflow.store.store import ContentWorkflowStore
 
-PLANNING_GENERATION_INTENT_ACTION_TYPE = "content_planning_generation_intent_v1"
+PLANNING_GENERATION_INTENT_ACTION_TYPE = "content_planning_generation_intent_v2"
 PLANNING_GENERATION_INTENT_ADAPTER = "content_planning_generation_intent_local_authority"
-_ACTION_PREFIX = "act_content_planning_generation_intent_"
+_ACTION_PREFIX = "act_content_planning_generation_intent_v2_"
 _HEX64 = r"^[0-9a-f]{64}$"
 
 
@@ -49,8 +49,8 @@ class _FrozenModel(BaseModel):
 
 
 class PlanningGenerationIntentSnapshot(_FrozenModel):
-    schema_version: Literal["wilq_planning_generation_intent_snapshot_v1"] = (
-        "wilq_planning_generation_intent_snapshot_v1"
+    schema_version: Literal["wilq_planning_generation_intent_snapshot_v2"] = (
+        "wilq_planning_generation_intent_snapshot_v2"
     )
     intent_digest: str = Field(pattern=_HEX64)
     work_item_id: str = Field(min_length=1, max_length=240)
@@ -63,6 +63,7 @@ class PlanningGenerationIntentSnapshot(_FrozenModel):
     selected_fact_ids: tuple[str, ...] = Field(min_length=1, max_length=256)
     evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=512)
     context_digest: str = Field(pattern=_HEX64)
+    dispatch_after_apply_audit: Literal[True]
 
     @model_validator(mode="after")
     def validate_snapshot(self) -> Self:
@@ -82,8 +83,8 @@ class PlanningGenerationIntentSnapshot(_FrozenModel):
 
 
 class PlanningGenerationIntentProposal(_FrozenModel):
-    schema_version: Literal["wilq_planning_generation_intent_proposal_v1"] = (
-        "wilq_planning_generation_intent_proposal_v1"
+    schema_version: Literal["wilq_planning_generation_intent_proposal_v2"] = (
+        "wilq_planning_generation_intent_proposal_v2"
     )
     action_id: str = Field(min_length=1, max_length=240)
     snapshot: PlanningGenerationIntentSnapshot
@@ -114,8 +115,8 @@ class PlanningGenerationIntentPreviewCommand(_FrozenModel):
 
 
 class PlanningGenerationIntentReceipt(_FrozenModel):
-    schema_version: Literal["wilq_planning_generation_intent_receipt_v1"] = (
-        "wilq_planning_generation_intent_receipt_v1"
+    schema_version: Literal["wilq_planning_generation_intent_receipt_v2"] = (
+        "wilq_planning_generation_intent_receipt_v2"
     )
     receipt_id: str = Field(min_length=1, max_length=240)
     receipt_digest: str = Field(pattern=_HEX64)
@@ -172,7 +173,7 @@ def planning_generation_intent_context_digest(
 def planning_generation_intent_digest(context_digest: str) -> str:
     return canonical_json_digest(
         {
-            "schema_version": "wilq_planning_generation_intent_snapshot_v1",
+            "schema_version": "wilq_planning_generation_intent_snapshot_v2",
             "context_digest": context_digest,
         }
     )
@@ -186,7 +187,7 @@ def planning_generation_intent_action(proposal: PlanningGenerationIntentProposal
     snapshot = proposal.snapshot
     return ActionObject(
         id=proposal.action_id,
-        title="Zatwierdź zamiar przygotowania planu dla exact pakietu v2",
+        title="Zatwierdź jeden odroczony plan z pakietu v2",
         domain=OpportunityDomain.content,
         connector="wordpress_ekologus",
         mode=ActionMode.apply,
@@ -194,9 +195,12 @@ def planning_generation_intent_action(proposal: PlanningGenerationIntentProposal
         status=ActionStatus.ready_to_apply,
         evidence_ids=list(snapshot.evidence_ids),
         human_diagnosis=(
-            "ActionObject zapisuje wyłącznie exact lokalny zamiar; nie uruchamia modelu."
+            "Apply zapisuje lokalny zamiar. Po audycie worker może uruchomić jeden plan "
+            "dla dokładnego pakietu; WordPress nie jest zapisywany."
         ),
-        recommended_reason="Sprawdź pakiet, wybraną usługę i oba digesty wejścia.",
+        recommended_reason=(
+            "Sprawdź pakiet, usługę i oba skróty wejścia przed zgodą na odroczone uruchomienie."
+        ),
         payload={
             "action_type": PLANNING_GENERATION_INTENT_ACTION_TYPE,
             "connector": "wordpress_ekologus",
@@ -206,7 +210,7 @@ def planning_generation_intent_action(proposal: PlanningGenerationIntentProposal
             "payload_preview": [
                 {
                     "id": proposal.action_id,
-                    "operation_type": "record_local_planning_generation_intent",
+                    "operation_type": "authorize_one_deferred_planning_generation",
                     "work_item_id": snapshot.work_item_id,
                     "content_kind": snapshot.content_kind,
                     "service_card_id": snapshot.service_card_id,
@@ -217,17 +221,19 @@ def planning_generation_intent_action(proposal: PlanningGenerationIntentProposal
                     "apply_allowed": True,
                     "generation_performed": False,
                     "model_enqueued": False,
+                    "dispatch_after_apply_audit": True,
                 }
             ],
             "apply_allowed": True,
             "api_mutation_ready": True,
             "destructive": False,
-            "generation_allowed": False,
-            "model_enqueue_allowed": False,
+            "generation_performed_at_apply": False,
+            "model_enqueued_at_apply": False,
+            "dispatch_after_apply_audit": True,
             "external_write_attempted": False,
         },
         validation_status="not_validated",
-        created_by="system_core_planning_generation_intent_v1",
+        created_by="system_core_planning_generation_intent_v2",
     )
 
 
@@ -244,7 +250,7 @@ def build_planning_generation_intent_proposal(
     evidence_ids: tuple[str, ...],
 ) -> PlanningGenerationIntentProposal:
     provisional: dict[str, object] = {
-        "schema_version": "wilq_planning_generation_intent_snapshot_v1",
+        "schema_version": "wilq_planning_generation_intent_snapshot_v2",
         "work_item_id": work_item_id,
         "content_kind": content_kind,
         "service_card_id": service_card_id,
@@ -254,6 +260,7 @@ def build_planning_generation_intent_proposal(
         "projected_planning_input_digest": projected_planning_input_digest,
         "selected_fact_ids": tuple(sorted(set(selected_fact_ids))),
         "evidence_ids": tuple(sorted(set(evidence_ids))),
+        "dispatch_after_apply_audit": True,
         "context_digest": "0" * 64,
         "intent_digest": "0" * 64,
     }

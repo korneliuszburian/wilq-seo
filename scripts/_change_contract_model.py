@@ -114,6 +114,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_planning_generation_intent_change_contract.py::"
         "test_public_generation_intent_exposes_typed_blocked_preview_contract",
     ),
+    ("planning-deferred-dispatch", "explicit-post-audit-authority"): (
+        "scripts/test.sh",
+        "tests/content/test_planning_deferred_dispatch_change_contract.py::"
+        "test_planning_action_authorizes_only_exact_post_audit_dispatch",
+    ),
     ("research-packet-v2-ui", "explicit-review-local-apply"): (
         "scripts/test.sh",
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
@@ -562,6 +567,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("v2-planning-worker", "guard-before-model-and-save"),
             ("v2-planning-route", "exact-readonly-binding"),
             ("planning-generation-intent", "exact-local-action-preview"),
+            ("planning-deferred-dispatch", "explicit-post-audit-authority"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),

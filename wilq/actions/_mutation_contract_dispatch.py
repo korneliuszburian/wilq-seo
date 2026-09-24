@@ -46,17 +46,17 @@ class _LocalContractSpec:
 
 _LOCAL_CONTRACTS = {
     PLANNING_GENERATION_INTENT_ACTION_TYPE: _LocalContractSpec(
-        "record_exact_local_planning_generation_intent",
-        "wilq_planning_generation_intent_snapshot_v1|approved_research_packet_v2",
+        "authorize_one_deferred_planning_generation",
+        "wilq_planning_generation_intent_snapshot_v2|approved_research_packet_v2|apply_audit_before_dispatch",
         (
             "vendor_write",
             "wordpress_publish",
             "wordpress_draft",
-            "content_generation",
-            "model_enqueue",
+            "pre_audit_model_enqueue",
+            "unbound_content_generation",
         ),
-        "Ta akcja zapisuje wyłącznie lokalny zamiar oparty na zatwierdzonym pakiecie v2; "
-        "nie uruchamia modelu ani vendora.",
+        "Apply zapisuje lokalny zamiar bez modelu; po trwałym audycie wolno raz zlecić "
+        "plan dla dokładnego zatwierdzonego pakietu v2. Vendor pozostaje zablokowany.",
     ),
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE: _LocalContractSpec(
         "record_content_delivery_identity_binding",
