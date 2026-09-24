@@ -11,7 +11,10 @@ from wilq.content.workflow.current_page_disposition_v2 import (
     CurrentPageDispositionV2Receipt,
     build_current_page_disposition_v2_proposal,
 )
-from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
+from wilq.content.workflow.current_page_evidence import (
+    CurrentPageEvidenceResponse,
+    current_page_material_is_current,
+)
 
 CurrentPageIdentityBlockerCode = Literal[
     "source_catalog_incomplete",
@@ -20,6 +23,8 @@ CurrentPageIdentityBlockerCode = Literal[
     "page_absent_from_catalog",
     "page_material_url_only",
     "material_review_missing_or_stale",
+    "current_page_snapshot_unavailable",
+    "current_page_snapshot_mismatch",
     "missing_approved_keep_receipt",
     "page_identity_changed",
     "material_meaning_changed",
@@ -82,7 +87,7 @@ def project_current_page_identity_v2(
 
     current_ids = sorted(set(evidence.current_evidence_ids + evidence.catalog_evidence_ids))
     receipt = latest_receipt
-    if evidence.status == "reviewed_material_current":
+    if current_page_material_is_current(evidence):
         assert evidence.page_url is not None and evidence.material_meaning_digest is not None
         if receipt is not None and not _receipt_matches_page_identity(receipt, evidence):
             return _blocked_current_identity(
@@ -166,7 +171,7 @@ def resolve_current_page_identity_v2(
         work_item_id
     )
     pending_action_id = None
-    if evidence.status == "reviewed_material_current":
+    if current_page_material_is_current(evidence):
         proposal = build_current_page_disposition_v2_proposal(evidence)
         existing = store.load_current_page_disposition_v2_proposal(proposal.proposal_id)  # type: ignore[attr-defined]
         if (

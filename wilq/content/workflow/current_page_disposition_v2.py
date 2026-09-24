@@ -12,7 +12,10 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_normalized_url,
 )
-from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
+from wilq.content.workflow.current_page_evidence import (
+    CurrentPageEvidenceResponse,
+    current_page_material_is_current,
+)
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.schemas import ActionObject
 
@@ -159,13 +162,13 @@ def current_page_disposition_v2_receipt_digest(
 def build_current_page_disposition_v2_proposal(
     evidence: CurrentPageEvidenceResponse,
 ) -> CurrentPageDispositionV2Proposal:
-    """Build a local KEEP proposal only from reviewed current material evidence."""
+    """Build a local KEEP proposal only from exact current material evidence."""
 
     accepted = CurrentPageEvidenceResponse.model_validate_json(
         evidence.model_dump_json(), strict=True
     )
-    if accepted.status != "reviewed_material_current" or accepted.page_url is None:
-        raise ValueError("A current page disposition requires reviewed current page material.")
+    if not current_page_material_is_current(accepted) or accepted.page_url is None:
+        raise ValueError("A current page disposition requires exact current page material.")
     assert accepted.material_meaning_digest is not None
     provisional = {
         "schema_version": "wilq_current_page_disposition_snapshot_v2",

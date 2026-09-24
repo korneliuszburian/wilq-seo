@@ -2,18 +2,32 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from wilq.content.canonical.urls import content_normalized_path
-from wilq.content.workflow.material_review import ContentMaterialReviewReadResponse
+from wilq.content.workflow.decisions.production import canonical_json_digest
+from wilq.content.workflow.evidence_acquisition_contracts import EvidenceObservationReceipt
+from wilq.content.workflow.evidence_acquisition_snapshot import (
+    CurrentPageSnapshotReadError,
+    WordPressCurrentPageSnapshotAdapter,
+)
+from wilq.content.workflow.material_review import (
+    ContentMaterialReviewReadResponse,
+    MaterialReaderFactory,
+    MaterialReviewStore,
+    SelectedItemLoader,
+    read_content_material_review,
+)
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
 )
 
-CurrentPageEvidenceStatus = Literal["reviewed_material_current", "blocked"]
+CurrentPageEvidenceStatus = Literal[
+    "reviewed_material_current", "observed_material_current", "blocked"
+]
 CurrentPageEvidenceBlockerCode = Literal[
     "source_catalog_incomplete",
     "source_evidence_drift",
@@ -21,7 +35,19 @@ CurrentPageEvidenceBlockerCode = Literal[
     "page_absent_from_catalog",
     "page_material_url_only",
     "material_review_missing_or_stale",
+    "current_page_snapshot_unavailable",
+    "current_page_snapshot_mismatch",
 ]
+CurrentPageObservationError = Literal[
+    "current_page_snapshot_unavailable", "current_page_snapshot_mismatch"
+]
+
+
+class _EvidenceContext(TypedDict):
+    work_item_id: str
+    catalog: ContentInventoryCatalogResponse
+    latest_wordpress_evidence_ids: tuple[str, ...]
+    wordpress_freshness_state: str | None
 
 
 class CurrentPageEvidenceResponse(BaseModel):
@@ -42,7 +68,7 @@ class CurrentPageEvidenceResponse(BaseModel):
 
     @model_validator(mode="after")
     def validate_decision_shape(self) -> CurrentPageEvidenceResponse:
-        if self.status == "reviewed_material_current":
+        if current_page_material_is_current(self):
             if (
                 self.material_meaning_digest is None
                 or not self.current_evidence_ids
@@ -60,6 +86,12 @@ class CurrentPageEvidenceResponse(BaseModel):
         return self
 
 
+def current_page_material_is_current(evidence: CurrentPageEvidenceResponse) -> bool:
+    """Both historical human review and fresh exact observation establish page identity."""
+
+    return evidence.status in {"reviewed_material_current", "observed_material_current"}
+
+
 def build_current_page_evidence(
     *,
     work_item_id: str,
@@ -67,6 +99,8 @@ def build_current_page_evidence(
     latest_wordpress_evidence_ids: tuple[str, ...],
     wordpress_freshness_state: str | None,
     material_review: ContentMaterialReviewReadResponse | None = None,
+    observation: EvidenceObservationReceipt | None = None,
+    observation_error: CurrentPageObservationError | None = None,
 ) -> CurrentPageEvidenceResponse:
     """Project catalog, connector state, and the existing exact review read."""
     item, blocker = _current_catalog_blocker(
@@ -78,6 +112,33 @@ def build_current_page_evidence(
     if blocker is not None:
         return blocker
     assert item is not None
+    if observation is not None:
+        return _project_observed_material(
+            work_item_id=work_item_id,
+            item=item,
+            catalog=catalog,
+            latest_wordpress_evidence_ids=latest_wordpress_evidence_ids,
+            observation=observation,
+        )
+    if observation_error is not None:
+        return _blocked(
+            work_item_id,
+            code=observation_error,
+            decision=(
+                "Odczyt strony nie pasuje do dokładnego adresu z katalogu."
+                if observation_error == "current_page_snapshot_mismatch"
+                else "Nie udało się odczytać pełnego bieżącego tekstu tej strony."
+            ),
+            owner=(
+                "WILQ content workflow"
+                if observation_error == "current_page_snapshot_mismatch"
+                else "WILQ WordPress connector"
+            ),
+            safe_next_step="Ponów dokładny odczyt tej strony z WordPress.",
+            item=item,
+            catalog_evidence_ids=catalog.evidence_ids,
+            latest_wordpress_evidence_ids=latest_wordpress_evidence_ids,
+        )
     if material_review is None or material_review.status != "approved_current":
         return _blocked(
             work_item_id,
@@ -120,10 +181,49 @@ def build_current_page_evidence(
     )
 
 
+def _project_observed_material(
+    *,
+    work_item_id: str,
+    item: ContentInventoryCatalogItem,
+    catalog: ContentInventoryCatalogResponse,
+    latest_wordpress_evidence_ids: tuple[str, ...],
+    observation: EvidenceObservationReceipt,
+) -> CurrentPageEvidenceResponse:
+    if not _observation_matches_item(observation, item):
+        return _blocked(
+            work_item_id,
+            code="current_page_snapshot_mismatch",
+            decision="Odczyt strony nie pasuje do dokładnego adresu z katalogu.",
+            owner="WILQ content workflow",
+            safe_next_step="Ponów dokładny odczyt tej strony z WordPress.",
+            item=item,
+            catalog_evidence_ids=catalog.evidence_ids,
+            latest_wordpress_evidence_ids=latest_wordpress_evidence_ids,
+        )
+    return CurrentPageEvidenceResponse(
+        status="observed_material_current",
+        decision="Pełny bieżący tekst strony ma świeży, dokładny odczyt WordPress.",
+        work_item_id=work_item_id,
+        page_url=item.url,
+        material_meaning_digest=canonical_json_digest(
+            {
+                "schema_version": "wilq_observed_material_meaning_v1",
+                "work_item_id": work_item_id,
+                "page_url": item.url,
+                "canonical_path": observation.canonical_path,
+                "body_digest": observation.body_digest,
+                "extraction_region": observation.extraction_region,
+            }
+        ),
+        current_evidence_ids=list(observation.evidence_ids),
+        catalog_evidence_ids=sorted(set(catalog.evidence_ids)),
+        safe_next_step="Sprawdź kierunek treści i zatwierdzone źródła twierdzeń.",
+    )
+
+
 def read_current_page_evidence_current(work_item_id: str) -> CurrentPageEvidenceResponse:
     """Resolve current catalog, connector freshness, and exact material review."""
     from wilq.connectors.registry import get_connector_status
-    from wilq.content.workflow.material_review import read_content_material_review
     from wilq.content.workflow.store.store import content_workflow_store
     from wilq.content.workflow.workspace.catalog import (
         build_content_inventory_catalog_cached,
@@ -134,27 +234,66 @@ def read_current_page_evidence_current(work_item_id: str) -> CurrentPageEvidence
     evidence_ids = latest_wordpress_vendor_read_evidence_ids()
     connector = get_connector_status("wordpress_ekologus")
     freshness = None if connector is None else connector.freshness.state
-    eligibility = build_current_page_evidence(
+    return resolve_current_page_evidence(
         work_item_id=work_item_id,
         catalog=catalog,
         latest_wordpress_evidence_ids=evidence_ids,
         wordpress_freshness_state=freshness,
+        store=content_workflow_store(),
     )
+
+
+def resolve_current_page_evidence(
+    *,
+    work_item_id: str,
+    catalog: ContentInventoryCatalogResponse,
+    latest_wordpress_evidence_ids: tuple[str, ...],
+    wordpress_freshness_state: str | None,
+    store: MaterialReviewStore,
+    selected_item_loader: SelectedItemLoader | None = None,
+    adapter: WordPressCurrentPageSnapshotAdapter | None = None,
+    material_reader_factory: MaterialReaderFactory | None = None,
+) -> CurrentPageEvidenceResponse:
+    """Use an existing exact review or observe current text without human attestation."""
+
+    context: _EvidenceContext = {
+        "work_item_id": work_item_id,
+        "catalog": catalog,
+        "latest_wordpress_evidence_ids": latest_wordpress_evidence_ids,
+        "wordpress_freshness_state": wordpress_freshness_state,
+    }
+    eligibility = build_current_page_evidence(**context)
     if eligibility.blocker_code != "material_review_missing_or_stale":
         return eligibility
     review = read_content_material_review(
         work_item_id=work_item_id,
-        store=content_workflow_store(),
+        store=store,
         catalog_loader=lambda: catalog,
-        adapter=None,
+        selected_item_loader=selected_item_loader,
+        adapter=adapter,
+        material_reader_factory=material_reader_factory,
     )
-    return build_current_page_evidence(
-        work_item_id=work_item_id,
-        catalog=catalog,
-        latest_wordpress_evidence_ids=evidence_ids,
-        wordpress_freshness_state=freshness,
-        material_review=review,
+    if review.status == "approved_current":
+        reviewed = build_current_page_evidence(**context, material_review=review)
+        if reviewed.status == "reviewed_material_current":
+            return reviewed
+    item = next(item for item in catalog.items if item.work_item_id == work_item_id)
+    reader = adapter or WordPressCurrentPageSnapshotAdapter(
+        material_reader=(material_reader_factory() if material_reader_factory else None)
     )
+    try:
+        observation = reader.read(
+            source_url=item.url,
+            canonical_path=content_normalized_path(item.path),
+        )
+    except CurrentPageSnapshotReadError as error:
+        code: CurrentPageObservationError = (
+            "current_page_snapshot_mismatch"
+            if error.code == "current_page_snapshot_lineage_mismatch"
+            else "current_page_snapshot_unavailable"
+        )
+        return build_current_page_evidence(**context, observation_error=code)
+    return build_current_page_evidence(**context, observation=observation)
 
 
 def _current_catalog_blocker(
@@ -263,6 +402,19 @@ def _material_review_matches_item(
         and preview.canonical_path == canonical_path
         and observation.source_url.rstrip("/") == item.url.rstrip("/")
         and observation.canonical_path == canonical_path
+    )
+
+
+def _observation_matches_item(
+    observation: EvidenceObservationReceipt,
+    item: ContentInventoryCatalogItem,
+) -> bool:
+    canonical_path = content_normalized_path(item.path)
+    return (
+        observation.source_url == item.url
+        and observation.canonical_path == canonical_path
+        and bool(observation.body_digest)
+        and bool(observation.extraction_region)
     )
 
 

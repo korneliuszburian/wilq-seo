@@ -5,14 +5,19 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
+import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers import content_model_routes
 from apps.api.wilq_api.routers.content_material_review import (
     register_content_material_review_routes,
+)
+from wilq.content.workflow.evidence_acquisition_snapshot import (
+    CurrentPageSnapshotReadError,
+    WordPressCurrentPageSnapshotAdapter,
 )
 from wilq.content.workflow.material_review import MaterialReaderFactory, SelectedItemLoader
 from wilq.content.workflow.store.store import ContentWorkflowStore
@@ -60,14 +65,10 @@ def test_public_current_page_evidence_tracks_exact_material_meaning_per_url(
         f"/api/content/work-items/{work_item_ids[PAGE_A]}/current-page-evidence"
     )
     assert initial.status_code == 200, initial.text
-    assert initial.json()["blocker_code"] == "material_review_missing_or_stale"
+    assert initial.json()["status"] == "observed_material_current"
 
-    digest_a_first = _approve_and_read_material(client, work_item_ids[PAGE_A])[
-        "material_meaning_digest"
-    ]
-    digest_b_first = _approve_and_read_material(client, work_item_ids[PAGE_B])[
-        "material_meaning_digest"
-    ]
+    digest_a_first = _get_page_evidence(client, work_item_ids[PAGE_A]).material_meaning_digest
+    digest_b_first = _get_page_evidence(client, work_item_ids[PAGE_B]).material_meaning_digest
     wave_one_catalog = harness.catalog()
     state.wave = 2
     state.bodies[PAGE_B] = "B changed " + ("different material " * 360)
@@ -79,11 +80,10 @@ def test_public_current_page_evidence_tracks_exact_material_meaning_per_url(
     assert drift.json()["blocker_code"] == "source_evidence_drift"
     state.latest_source_ids = tuple(wave_two_catalog.evidence_ids)
 
-    _approve_and_read_material(client, work_item_ids[PAGE_B])
     result_a = _get_page_evidence(client, work_item_ids[PAGE_A])
     result_b = _get_page_evidence(client, work_item_ids[PAGE_B])
-    assert result_a.status == "reviewed_material_current", result_a
-    assert result_b.status == "reviewed_material_current", result_b
+    assert result_a.status == "observed_material_current", result_a
+    assert result_b.status == "observed_material_current", result_b
     assert result_a.material_meaning_digest == digest_a_first
     assert result_b.material_meaning_digest != digest_b_first
     assert result_a.generation_allowed is False
@@ -103,6 +103,53 @@ def test_public_current_page_evidence_tracks_exact_material_meaning_per_url(
     state.coverage = "partial"
     incomplete = _get_page_evidence(client, work_item_ids[PAGE_A])
     assert incomplete.blocker_code == "source_catalog_incomplete"
+
+
+def test_public_current_page_evidence_observes_full_material_without_human_receipt(
+    tmp_path: Path,
+) -> None:
+    harness = _build_harness(tmp_path)
+    work_a = harness.work_item_ids[PAGE_A]
+    work_b = harness.work_item_ids[PAGE_B]
+    first_a = _get_page_evidence(harness.client, work_a)
+    first_b = _get_page_evidence(harness.client, work_b)
+    assert first_a.status == "observed_material_current"
+    assert first_b.status == "observed_material_current"
+    assert first_a.material_meaning_digest != first_b.material_meaning_digest
+    assert first_a.generation_allowed is False
+    assert first_a.current_evidence_ids
+    review = harness.client.get(f"/api/content/work-items/{work_a}/material-review")
+    assert review.status_code == 200
+    assert review.json()["status"] == "missing"
+
+    rotated = harness.catalog()
+    harness.state.wave = 2
+    refreshed = harness.catalog()
+    harness.state.latest_source_ids = tuple(refreshed.evidence_ids)
+    assert refreshed.evidence_ids != rotated.evidence_ids
+    same_a = _get_page_evidence(harness.client, work_a)
+    assert same_a.material_meaning_digest == first_a.material_meaning_digest
+    harness.state.bodies[PAGE_B] += " changed"
+    changed_b = _get_page_evidence(harness.client, work_b)
+    assert changed_b.material_meaning_digest != first_b.material_meaning_digest
+
+
+def test_public_current_page_evidence_keeps_url_drift_typed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    harness = _build_harness(tmp_path)
+
+    def wrong_url(*_args: object, **_kwargs: object) -> None:
+        raise CurrentPageSnapshotReadError(
+            "current_page_snapshot_lineage_mismatch", "Observed URL differs."
+        )
+
+    monkeypatch.setattr(WordPressCurrentPageSnapshotAdapter, "read", wrong_url)
+    result = _get_page_evidence(harness.client, harness.work_item_ids[PAGE_A])
+    assert result.status == "blocked"
+    assert result.blocker_code == "current_page_snapshot_mismatch"
+    assert result.blocker_owner == "WILQ content workflow"
+    assert result.safe_next_step
 
 
 def _build_harness(tmp_path: Path) -> _Harness:
@@ -235,28 +282,3 @@ def _get_page_evidence(
     from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
 
     return CurrentPageEvidenceResponse.model_validate(response.json())
-
-
-def _approve_and_read_material(
-    client: TestClient,
-    work_item_id: str,
-) -> dict[str, Any]:
-    root = f"/api/content/work-items/{work_item_id}/material-review"
-    preview_response = client.post(f"{root}/preview")
-    assert preview_response.status_code == 200, preview_response.text
-    preview = preview_response.json()["preview"]
-    approved = client.post(
-        root,
-        json={
-            "preview_id": preview["preview_id"],
-            "preview_digest": preview["preview_digest"],
-            "decision": "approved",
-            "reviewer": "wilku",
-            "reviewed_full_material": True,
-        },
-    )
-    assert approved.status_code == 200, approved.text
-    readback = client.get(root)
-    assert readback.status_code == 200, readback.text
-    assert readback.json()["status"] == "approved_current"
-    return cast(dict[str, Any], readback.json())

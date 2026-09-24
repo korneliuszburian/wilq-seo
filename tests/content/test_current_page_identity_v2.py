@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,7 +25,10 @@ from wilq.content.workflow.current_page_disposition_v2 import (
 from wilq.content.workflow.current_page_disposition_v2_action import (
     current_page_disposition_v2_action,
 )
-from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
+from wilq.content.workflow.current_page_evidence import (
+    CurrentPageEvidenceBlockerCode,
+    CurrentPageEvidenceResponse,
+)
 from wilq.content.workflow.store import store as workflow_store_module
 from wilq.content.workflow.store.store import ContentWorkflowStore
 
@@ -229,3 +233,51 @@ def test_public_identity_uses_latest_v2_receipt_and_exact_material(
     assert blocked_source["safe_next_step"] == "Odśwież źródło WordPress."
 
     _assert_v1_receipt_stays_on_v1_route(client, store, current)
+
+
+def test_observed_material_identity_links_existing_keep_preview(
+    identity_runtime: tuple[
+        TestClient,
+        ContentWorkflowStore,
+        dict[str, CurrentPageEvidenceResponse],
+    ],
+) -> None:
+    client, store, current = identity_runtime
+    current["wi_a"] = CurrentPageEvidenceResponse.model_validate(
+        current["wi_a"].model_dump() | {"status": "observed_material_current"}
+    )
+    proposal = build_current_page_disposition_v2_proposal(current["wi_a"])
+    store.record_current_page_disposition_v2_proposal(proposal)
+    response = client.get("/api/content/work-items/wi_a/current-identity")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["pending_action_id"] == proposal.proposal_id
+    assert body["blocker_code"] == "missing_approved_keep_receipt"
+
+
+@pytest.mark.parametrize(
+    "code", ["current_page_snapshot_unavailable", "current_page_snapshot_mismatch"]
+)
+def test_identity_preserves_automatic_observation_blocker(
+    identity_runtime: tuple[
+        TestClient,
+        ContentWorkflowStore,
+        dict[str, CurrentPageEvidenceResponse],
+    ],
+    code: str,
+) -> None:
+    client, _store, current = identity_runtime
+    current["wi_a"] = CurrentPageEvidenceResponse(
+        status="blocked",
+        decision="Odczyt bieżącej strony zablokowany.",
+        work_item_id="wi_a",
+        blocker_code=cast(CurrentPageEvidenceBlockerCode, code),
+        blocker_owner="WILQ WordPress connector",
+        safe_next_step="Ponów dokładny odczyt bieżącej strony.",
+    )
+    response = client.get("/api/content/work-items/wi_a/current-identity")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["blocker_code"] == code

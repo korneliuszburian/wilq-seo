@@ -29,8 +29,8 @@ def _evidence(
 ) -> CurrentPageEvidenceResponse:
     slug = "a" if work_item_id == "wi_a" else "b"
     return CurrentPageEvidenceResponse(
-        status="reviewed_material_current",
-        decision="Materiał ma aktualne review.",
+        status="observed_material_current",
+        decision="Materiał ma dokładny bieżący odczyt.",
         work_item_id=work_item_id,
         page_url=f"https://www.ekologus.pl/{slug}/",
         material_meaning_digest=digest,

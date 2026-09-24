@@ -9,7 +9,7 @@ from fastapi import APIRouter
 from wilq.connectors.registry import get_connector_status
 from wilq.content.workflow.current_page_evidence import (
     CurrentPageEvidenceResponse,
-    build_current_page_evidence,
+    resolve_current_page_evidence,
 )
 from wilq.content.workflow.evidence_acquisition_snapshot import WordPressCurrentPageSnapshotAdapter
 from wilq.content.workflow.material_review import (
@@ -17,7 +17,6 @@ from wilq.content.workflow.material_review import (
     MaterialReaderFactory,
     MaterialReviewStore,
     SelectedItemLoader,
-    read_content_material_review,
 )
 from wilq.content.workflow.store.store import content_workflow_store
 from wilq.content.workflow.workspace.catalog import (
@@ -77,28 +76,15 @@ def read_current_page_evidence(
     catalog = catalog_loader()
     latest_evidence_ids = evidence_ids_loader()
     freshness_state = (freshness_loader or _wordpress_freshness_state)()
-    eligibility = build_current_page_evidence(
+    return resolve_current_page_evidence(
         work_item_id=work_item_id,
         catalog=catalog,
         latest_wordpress_evidence_ids=latest_evidence_ids,
         wordpress_freshness_state=freshness_state,
-    )
-    if eligibility.blocker_code != "material_review_missing_or_stale":
-        return eligibility
-    current_review = read_content_material_review(
-        work_item_id=work_item_id,
         store=store_factory(),
-        catalog_loader=lambda: catalog,
         selected_item_loader=selected_item_loader,
         adapter=None if adapter_factory is None else adapter_factory(),
         material_reader_factory=material_reader_factory,
-    )
-    return build_current_page_evidence(
-        work_item_id=work_item_id,
-        catalog=catalog,
-        latest_wordpress_evidence_ids=latest_evidence_ids,
-        wordpress_freshness_state=freshness_state,
-        material_review=current_review,
     )
 
 

@@ -17,6 +17,7 @@ from wilq.content.workflow.current_page_disposition_v2 import (
 )
 from wilq.content.workflow.current_page_evidence import (
     CurrentPageEvidenceResponse,
+    current_page_material_is_current,
 )
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.schemas import (
@@ -36,7 +37,7 @@ def current_page_disposition_v2_action(
 ) -> ActionObject:
     snapshot = proposal.snapshot
     stale = current_evidence is not None and (
-        current_evidence.status != "reviewed_material_current"
+        not current_page_material_is_current(current_evidence)
         or current_evidence.material_meaning_digest != snapshot.material_meaning_digest
     )
     payload = {
@@ -128,7 +129,7 @@ def execute_current_page_disposition_v2(
     if action.payload != expected.payload:
         return None, ["Current page disposition v2 ActionObject payload changed before apply."]
     if (
-        current_evidence.status != "reviewed_material_current"
+        not current_page_material_is_current(current_evidence)
         or current_evidence.material_meaning_digest != proposal.snapshot.material_meaning_digest
     ):
         return None, ["Current page material or WordPress freshness changed before apply."]

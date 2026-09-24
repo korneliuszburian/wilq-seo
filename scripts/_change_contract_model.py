@@ -459,6 +459,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_current_page_evidence.py::"
         "test_public_current_page_evidence_tracks_exact_material_meaning_per_url",
     ),
+    ("current-page-evidence", "auto-exact-observation"): (
+        "scripts/test.sh",
+        "tests/content/test_current_page_evidence.py::"
+        "test_public_current_page_evidence_observes_full_material_without_human_receipt",
+    ),
     ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"): (
         "scripts/test.sh",
         "tests/content/test_current_page_disposition_v2_action.py",
@@ -621,6 +626,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-material-review-action-v2", "exact-reviewed-material"),
             ("current-material-text", "exact-full-read"),
             ("current-page-evidence", "stable-per-url-material-meaning"),
+            ("current-page-evidence", "auto-exact-observation"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),
             ("current-source-fact-candidates-v2", "exact-keep-scoped-selection"),

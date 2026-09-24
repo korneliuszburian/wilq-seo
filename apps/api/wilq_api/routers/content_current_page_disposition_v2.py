@@ -17,7 +17,10 @@ from wilq.content.workflow.current_page_disposition_v2 import (
 from wilq.content.workflow.current_page_disposition_v2_action import (
     current_page_disposition_v2_action,
 )
-from wilq.content.workflow.current_page_evidence import CurrentPageEvidenceResponse
+from wilq.content.workflow.current_page_evidence import (
+    CurrentPageEvidenceResponse,
+    current_page_material_is_current,
+)
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 from wilq.schemas import ActionObject
 
@@ -120,7 +123,7 @@ def _preview_current_page_disposition_v2(
 ) -> CurrentPageDispositionV2ReadResponse:
     evidence = evidence_loader(request.work_item_id)
     if (
-        evidence.status != "reviewed_material_current"
+        not current_page_material_is_current(evidence)
         or evidence.material_meaning_digest != request.expected_material_meaning_digest
     ):
         response.status_code = 409
@@ -172,7 +175,7 @@ def _read_current_page_disposition_v2(
     evidence = evidence_loader(proposal.snapshot.work_item_id)
     receipt = store.load_current_page_disposition_v2_receipt(action_id)
     is_current = (
-        evidence.status == "reviewed_material_current"
+        current_page_material_is_current(evidence)
         and evidence.material_meaning_digest == proposal.snapshot.material_meaning_digest
     )
     safe_next_step = None
