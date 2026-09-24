@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, HTTPException
 
@@ -44,6 +45,9 @@ from wilq.schemas import (
     AuditEvent,
 )
 from wilq.storage.local_state import local_state_store
+
+if TYPE_CHECKING:
+    from wilq.content.planning.generation_intent_dispatch import PlanningGenerationDispatchOutcome
 
 
 def create_actions_router(clear_api_view_model_caches: Callable[[], None]) -> APIRouter:
@@ -405,6 +409,29 @@ def _apply_action_endpoint(
     clear_api_view_model_caches()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
+    if action.payload.get("action_type") == PLANNING_GENERATION_INTENT_ACTION_TYPE:
+        try:
+            dispatch = _post_apply_planning_dispatch(action.id)
+        except Exception:
+            from wilq.content.planning.generation_intent import PlanningGenerationIntentApplyBlocker
+            from wilq.content.planning.generation_intent_dispatch import (
+                PlanningGenerationDispatchOutcome,
+            )
+
+            blocker = PlanningGenerationIntentApplyBlocker(
+                code="planning_dispatch_unavailable",
+                safe_next_step="Ponów dispatch tej samej intencji po odczycie audytu apply.",
+            )
+            dispatch = PlanningGenerationDispatchOutcome(
+                status="blocked",
+                action_id=action.id,
+                blocker=blocker,
+                safe_next_step=blocker.safe_next_step,
+            )
+        result.adapter_result = {
+            **(result.adapter_result or {}),
+            "dispatch": dispatch.model_dump(mode="json"),
+        }
     return result
 
 
@@ -412,6 +439,20 @@ def _planning_generation_snapshot_loader() -> CurrentSnapshotLoader:
     from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or_404
 
     return snapshot_for_work_item_or_404
+
+
+def _post_apply_planning_dispatch(action_id: str) -> PlanningGenerationDispatchOutcome:
+    from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+    from wilq.content.planning.generation_intent_dispatch import dispatch_applied_planning_intent
+    from wilq.content.workflow.store.store import content_workflow_store
+
+    return dispatch_applied_planning_intent(
+        action_id,
+        workflow_store=content_workflow_store(),
+        audit_store=local_state_store(),
+        proposal_store=content_planning_proposal_store(),
+        snapshot_loader=_planning_generation_snapshot_loader(),
+    )
 
 
 def _action_mutation_readiness(action_id: str) -> ActionMutationReadinessResponse:

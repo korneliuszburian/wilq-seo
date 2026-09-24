@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from typing import cast
 
@@ -16,7 +17,11 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
-from wilq.content.planning.generation_intent_dispatch import dispatch_applied_planning_intent
+from wilq.content.planning.generation_intent import PlanningGenerationIntentApplyBlocker
+from wilq.content.planning.generation_intent_dispatch import (
+    PlanningGenerationDispatchOutcome,
+    dispatch_applied_planning_intent,
+)
 from wilq.content.planning.packet_input_binding import bind_packet_identity_to_planning_input
 from wilq.content.planning.source_pack_projection import project_research_packet_v2_facts
 from wilq.storage.local_state import LocalStateStore
@@ -107,3 +112,57 @@ def test_dispatch_requires_persisted_apply_audit_then_reuses_exact_queue_key(
     assert request.research_packet_id == bound.research_packet_id
     assert request.source_pack_binding_id is None
     assert callable(queue_calls[0]["generation_guard"])
+
+
+def test_apply_dispatches_only_after_its_audit_is_persisted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, store, preview, raw_input, registry = _client(tmp_path, monkeypatch)
+    projected = project_research_packet_v2_facts(
+        raw_input, preview.selected_facts, (registry["fact"],)
+    )
+    bound = bind_packet_identity_to_planning_input(
+        projected,
+        work_item_id=raw_input.work_item_id,
+        packet_id=f"content_research_packet_v2_{preview.preview_hash[:24]}",
+        packet_digest=preview.preview_hash,
+    )
+    prepared = client.post(
+        "/api/content/work-items/wi_exact/planning-generation-intent/preview",
+        json={
+            "content_kind": "service",
+            "service_card_id": "card_exact",
+            "packet_id": bound.research_packet_id,
+            "packet_digest": bound.research_packet_digest,
+            "expected_raw_planning_input_digest": raw_input.planning_input_digest,
+            "expected_projected_planning_input_digest": bound.planning_input_digest,
+        },
+    )
+    assert prepared.status_code == 200
+    action_id = prepared.json()["action_id"]
+    observed: list[str] = []
+
+    def dispatch_after_apply(value: str) -> PlanningGenerationDispatchOutcome:
+        events = LocalStateStore(tmp_path / "audit.sqlite3").list_audit_events(action_id=value)
+        assert any(event.event_type == "apply_succeeded" for event in events)
+        assert store.load_planning_generation_intent_receipt(value) is not None
+        observed.append(value)
+        blocker = PlanningGenerationIntentApplyBlocker(
+            code="synthetic_no_model",
+            safe_next_step="Synthetic test ends after audit.",
+        )
+        return PlanningGenerationDispatchOutcome(
+            status="blocked",
+            action_id=value,
+            blocker=blocker,
+            safe_next_step=blocker.safe_next_step,
+        )
+
+    actions_module = importlib.import_module("apps.api.wilq_api.routers.actions")
+    monkeypatch.setattr(
+        actions_module, "_post_apply_planning_dispatch", dispatch_after_apply, raising=False
+    )
+    applied = _lifecycle(client, action_id)
+
+    assert observed == [action_id]
+    assert applied["applied"] is True

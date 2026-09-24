@@ -124,6 +124,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_planning_generation_dispatch_boundary.py::"
         "test_unknown_intent_dispatch_returns_typed_blocker_without_starting_model",
     ),
+    ("planning-auto-dispatch", "audit-before-enqueue"): (
+        "scripts/test.sh",
+        "tests/content/test_planning_generation_dispatch.py::"
+        "test_apply_dispatches_only_after_its_audit_is_persisted",
+    ),
     ("research-packet-v2-ui", "explicit-review-local-apply"): (
         "scripts/test.sh",
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
@@ -574,6 +579,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("planning-generation-intent", "exact-local-action-preview"),
             ("planning-deferred-dispatch", "explicit-post-audit-authority"),
             ("planning-generation-dispatch", "audited-intent-only"),
+            ("planning-auto-dispatch", "audit-before-enqueue"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
