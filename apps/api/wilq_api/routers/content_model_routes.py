@@ -58,6 +58,9 @@ from apps.api.wilq_api.routers.content_new_page_brief import (
 from apps.api.wilq_api.routers.content_official_source_lineage import (
     register_content_official_source_lineage_route,
 )
+from apps.api.wilq_api.routers.content_planning_generation_dispatch import (
+    register_content_planning_generation_dispatch_route,
+)
 from apps.api.wilq_api.routers.content_planning_generation_intent import (
     register_content_planning_generation_intent_routes,
 )
@@ -181,6 +184,7 @@ def register_content_model_routes(
     register_content_revision_html_package_route(router)
     register_content_planning_proposal_routes(router, snapshot_loader=snapshot_loader)
     register_content_planning_generation_intent_routes(router, snapshot_loader=snapshot_loader)
+    register_content_planning_generation_dispatch_route(router, snapshot_loader=snapshot_loader)
     register_content_refresh_preparation_routes(router)
     register_content_section_focus_routes(
         router,

@@ -453,9 +453,9 @@ def execute_planning_generation_intent_action(
             "Odczytaj ponownie niezmieniony ActionObject zamiaru.",
             proposal.snapshot.evidence_ids,
         )
-    blocker = _currentness_blocker(proposal, store, current_snapshot_loader)
-    if blocker is not None:
-        return _apply_blocker_result(blocker)
+    current = current_generation_intent_input(proposal, store, current_snapshot_loader)
+    if isinstance(current, PlanningGenerationIntentApplyBlocker):
+        return _apply_blocker_result(current)
 
     return _record_generation_intent_receipt(
         action=action,
@@ -604,11 +604,11 @@ def _apply_blocker_result(
     )
 
 
-def _currentness_blocker(
+def current_generation_intent_input(
     proposal: PlanningGenerationIntentProposal,
     store: ContentWorkflowStore,
     snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
-) -> PlanningGenerationIntentApplyBlocker | None:
+) -> ContentPlanningInput | PlanningGenerationIntentApplyBlocker:
     snapshot = proposal.snapshot
     try:
         current_snapshot = snapshot_loader(snapshot.work_item_id)
@@ -680,7 +680,7 @@ def _currentness_blocker(
             "Odczytaj aktualny planning input i zatwierdzony pakiet v2.",
             snapshot.evidence_ids,
         )
-    return None
+    return projected
 
 
 def planning_generation_intent_receipt_digest(
@@ -708,6 +708,7 @@ __all__ = [
     "PlanningGenerationIntentReceipt",
     "PlanningGenerationIntentSnapshot",
     "build_planning_generation_intent_proposal",
+    "current_generation_intent_input",
     "execute_planning_generation_intent_action",
     "load_planning_generation_intent_action",
     "planning_generation_intent_action",
