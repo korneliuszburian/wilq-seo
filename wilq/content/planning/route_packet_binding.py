@@ -11,6 +11,8 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     _digest,
     bind_research_packet_to_planning_input,
+    build_content_planning_input,
+    planning_generation_blockers,
 )
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
@@ -19,6 +21,8 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
 from wilq.content.planning.input_summary import content_planning_input_summary
+from wilq.content.planning.proposal_packet_binding import bind_research_packet
+from wilq.content.planning.service_selection import with_explicit_content_service_selection
 from wilq.content.planning.source_pack_projection import (
     project_selected_source_pack_facts,
 )
@@ -38,7 +42,7 @@ from wilq.content.workflow.research_packet_preparation import (
     current_research_packet_blocker,
     prepare_content_research_packet,
 )
-from wilq.content.workflow.store.store import content_workflow_store
+from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,6 +238,13 @@ def packet_generation_guard(
     if request.research_packet_id is None or request.expected_research_packet_digest is None:
         return None
     workflow_store = store or content_workflow_store()
+    if request.research_packet_id.startswith("content_research_packet_v2_"):
+        return _approved_v2_packet_generation_guard(
+            request=request,
+            planning_input=planning_input,
+            snapshot=snapshot,
+            store=cast(ContentWorkflowStore, workflow_store),
+        )
     packet = workflow_store.load_content_research_packet(request.research_packet_id)
     if packet is None:
         reason = "source_pack_binding_missing"
@@ -265,6 +276,107 @@ def packet_generation_guard(
         reason=reason,
         next_step=next_step,
         evidence_ids=evidence_ids,
+    )
+
+
+def _approved_v2_packet_generation_guard(
+    *,
+    request: ContentPlanningProposalRequest,
+    planning_input: ContentPlanningInput,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    store: ContentWorkflowStore,
+) -> ContentPlanningProposalResponse | None:
+    if (
+        planning_input.research_packet_id != request.research_packet_id
+        or planning_input.research_packet_digest != request.expected_research_packet_digest
+        or planning_input.planning_input_digest != request.expected_planning_input_digest
+    ):
+        return _v2_guard_blocked(
+            request, planning_input, "research_packet_conflict", (),
+            "Odśwież dokładne ID i digest pakietu oraz inputu planu.",
+        )
+    try:
+        current_base, blockers = _rebuild_current_v2_base_input(snapshot, request)
+    except Exception:
+        return _v2_guard_blocked(
+            request, planning_input, "research_packet_blocked", (),
+            "Ponów odczyt bieżącego snapshotu i inputu planowania.",
+        )
+    if current_base is None:
+        return _v2_guard_blocked(
+            request, planning_input, "research_packet_blocked", blockers,
+            "Usuń wskazane blokady bieżącego inputu i ponów planowanie.",
+        )
+    try:
+        current_bound, blocked = bind_research_packet(
+            snapshot=snapshot,
+            planning_input=current_base,
+            request=request,
+            require_packet=True,
+            workflow_store=store,
+        )
+    except Exception:
+        return _v2_guard_blocked(
+            request, planning_input, "research_packet_blocked", (),
+            "Ponów odczyt zatwierdzonego pakietu v2 i bieżących źródeł.",
+        )
+    if blocked is not None:
+        return blocked
+    if (
+        current_bound is None
+        or current_bound.planning_input_digest != planning_input.planning_input_digest
+    ):
+        return _v2_guard_blocked(
+            request, planning_input, "research_packet_conflict", (),
+            "Przygotuj nowy plan dla bieżącego inputu i zatwierdzonego pakietu.",
+        )
+    return None
+
+
+def _rebuild_current_v2_base_input(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    request: ContentPlanningProposalRequest,
+) -> tuple[ContentPlanningInput | None, tuple[str, ...]]:
+    selected = (
+        with_explicit_content_service_selection(snapshot, request.service_card_id)
+        if request.content_kind == "service" and request.service_card_id is not None
+        else snapshot
+    )
+    result = build_content_planning_input(
+        selected, service_card_id=request.service_card_id
+    )
+    blocking = planning_generation_blockers(result.blockers)
+    return (
+        result.planning_input if not blocking else None,
+        tuple(blocker.code for blocker in blocking),
+    )
+
+
+def _v2_guard_blocked(
+    request: ContentPlanningProposalRequest,
+    planning_input: ContentPlanningInput,
+    code: Literal["research_packet_conflict", "research_packet_blocked"],
+    source_codes: tuple[str, ...],
+    next_step: str,
+) -> ContentPlanningProposalResponse:
+    return ContentPlanningProposalResponse(
+        status="blocked",
+        work_item_id=planning_input.work_item_id,
+        content_kind=request.content_kind,
+        service_card_id=request.service_card_id,
+        research_packet_id=request.research_packet_id,
+        research_packet_digest=request.expected_research_packet_digest,
+        blockers=[
+            ContentPlanningProposalBlocker(
+                code=code,
+                label="Pakiet v2 zmienił się przed zapisem planu",
+                reason="Bieżący input lub zatwierdzony pakiet nie zgadza się z zadaniem w kolejce.",
+                next_step=next_step,
+                owner="WILQ content workflow",
+                source_codes=list(source_codes),
+            )
+        ],
+        safe_next_step=next_step,
     )
 
 

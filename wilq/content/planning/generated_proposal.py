@@ -10,13 +10,6 @@ from pydantic import ValidationError
 from wilq.codex.app_server import CodexAppServerClientProtocol
 from wilq.content.codex_turn import runtime_trace
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
-from wilq.content.knowledge.cards import (
-    match_content_knowledge_cards,
-    select_content_knowledge_service_card,
-)
-from wilq.content.knowledge.work_item_service_profile import (
-    build_content_work_item_service_profile_context,
-)
 from wilq.content.operator_copy import build_blocker
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
@@ -78,6 +71,7 @@ from wilq.content.planning.section_mapping import (
     build_inventory_mapping,
     canonicalize_model_inventory_headings,
 )
+from wilq.content.planning.service_selection import with_explicit_content_service_selection
 from wilq.content.planning.subject import ContentPlanningSubject
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.decisions.planning import (
@@ -121,6 +115,28 @@ def generate_content_planning_proposal(
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     pre_persistence_guard: Callable[[], ContentPlanningProposalResponse | None] | None = None,
 ) -> ContentPlanningProposalResponse:
+    if (
+        request.research_packet_id is not None
+        and request.research_packet_id.startswith("content_research_packet_v2_")
+        and pre_persistence_guard is None
+    ):
+        unguarded_v2_blocker = ContentPlanningProposalBlocker(
+            code="research_packet_blocked",
+            label="Plan v2 wymaga ponownej kontroli przed zapisem",
+            reason="Bez bieżącej bramki nie można utrwalić wyniku pracy modelu.",
+            next_step="Uruchom plan przez kolejkę z kontrolą pakietu przed zapisem.",
+            owner="WILQ content workflow",
+        )
+        return ContentPlanningProposalResponse(
+            status="blocked",
+            work_item_id=snapshot.preflight.item.id,
+            content_kind=request.content_kind,
+            service_card_id=request.service_card_id,
+            research_packet_id=request.research_packet_id,
+            research_packet_digest=request.expected_research_packet_digest,
+            blockers=[unguarded_v2_blocker],
+            safe_next_step=unguarded_v2_blocker.next_step,
+        )
     planning_input, early_response = _prepare_generation(
         snapshot=snapshot,
         request=request,
@@ -314,30 +330,6 @@ def _prepare_generation(
             safe_next_step="Sprawdź zapisaną wersję planu; model nie został uruchomiony ponownie.",
         )
     return planning_input, None
-
-
-def with_explicit_content_service_selection(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    service_card_id: str,
-) -> ContentWorkItemWorkflowSnapshotResponse:
-    """Bind an exact service choice to one planning-derived command.
-
-    This deliberately does not write a legacy planning decision. The only
-    human approval in the active content journey belongs to the immutable
-    document revision, after the full document is visible.
-    """
-
-    item = snapshot.preflight.item
-    match = select_content_knowledge_service_card(
-        match_content_knowledge_cards(item),
-        service_card_id,
-    )
-    context = build_content_work_item_service_profile_context(
-        item,
-        knowledge_match=match,
-        service_selection_confirmed=True,
-    )
-    return snapshot.model_copy(update={"service_profile_context": context})
 
 
 def _run_planning_turn(

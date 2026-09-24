@@ -20,7 +20,9 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningModelOutput,
 )
 from wilq.content.planning.packet_model_projection import (
+    ResearchPacketV2ModelProjection,
     current_research_packet_for_model,
+    current_research_packet_v2_for_model,
     project_planning_input_for_packet,
 )
 from wilq.content.planning.source_pack_projection import (
@@ -66,6 +68,8 @@ def _model_inventory_sections(sections: object) -> list[object]:
 def compact_planning_input_for_model(
     planning_input: ContentPlanningInput,
     packet: ContentResearchPacket | None = None,
+    *,
+    packet_v2: ResearchPacketV2ModelProjection | None = None,
 ) -> tuple[dict[str, object], dict[str, int]]:
     """Build a bounded, lineage-preserving model view without changing the digest.
 
@@ -76,11 +80,20 @@ def compact_planning_input_for_model(
     so the model can still cite any allowed evidence id.
     """
 
-    payload = (
-        project_planning_input_for_packet(planning_input, packet)
-        if packet is not None
-        else planning_input.model_dump(mode="json", exclude_none=True)
-    )
+    if packet is not None and packet_v2 is not None:
+        raise ValueError("Model projection cannot mix v1 and v2 research packets.")
+    if packet_v2 is not None:
+        if packet_v2.planning_input.planning_input_digest != planning_input.planning_input_digest:
+            raise ValueError("V2 packet model projection differs from its verified planning input.")
+        from wilq.content.planning.packet_model_projection import (
+            project_planning_input_for_packet_v2,
+        )
+
+        payload = project_planning_input_for_packet_v2(packet_v2)
+    elif packet is not None:
+        payload = project_planning_input_for_packet(planning_input, packet)
+    else:
+        payload = planning_input.model_dump(mode="json", exclude_none=True)
     payload = {key: value for key, value in payload.items() if value is not None}
     inventory = payload.get("inventory")
     if isinstance(inventory, dict):
@@ -123,7 +136,12 @@ def content_planning_turn_request(
     *,
     operator_hint: str,
 ) -> CodexAppServerStructuredTurnRequest:
-    packet = current_research_packet_for_model(planning_input)
+    packet_v2 = current_research_packet_v2_for_model(planning_input)
+    packet = None
+    if packet_v2 is not None:
+        planning_input = packet_v2.planning_input
+    else:
+        packet = current_research_packet_for_model(planning_input)
     if packet is not None:
         planning_input = project_selected_source_pack_facts(
             planning_input,
@@ -152,7 +170,9 @@ def content_planning_turn_request(
         sort_keys=True,
         separators=(",", ":"),
     )
-    model_input, coverage = compact_planning_input_for_model(planning_input, packet)
+    model_input, coverage = compact_planning_input_for_model(
+        planning_input, packet, packet_v2=packet_v2
+    )
     untrusted_context = json.dumps(
         {
             "planning_input": model_input,
