@@ -9,12 +9,14 @@ import wilq.content.quality.review_packet_binding as review_packet_binding
 import wilq.content.regulatory.policy as regulatory_policy
 import wilq.content.workflow.research_packet_derivation as packet_derivation
 from wilq.content.briefs.sales import ContentSalesBrief
+from wilq.content.claims.ledger import ContentClaimLedgerEntry
 from wilq.content.drafts.initial_full_draft_document import (
     official_source_references_for_planning_input,
 )
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
+    _digest,
     bind_research_packet_to_planning_input,
 )
 from wilq.content.planning.input_sources import (
@@ -24,12 +26,15 @@ from wilq.content.planning.input_sources import (
     ContentPlanningSourceFact,
 )
 from wilq.content.planning.source_pack_projection import (
+    project_research_packet_v2_facts,
     project_selected_source_pack_facts,
 )
 from wilq.content.regulatory.policy import ContentRegulatoryCoverage
 from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
+from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.documents.revisions import ContentDraftRevision
+from wilq.content.workflow.source_pack_v2 import SourcePackV2Fact
 
 BDO_EDITORIAL_PATH = "/bdo-co-musi-wiedziec-przedsiebiorca"
 BDO_PROFILE_VERSION = "2026-07-31-r2"
@@ -429,3 +434,227 @@ def test_packet_context_excludes_foreign_regulatory_evidence_after_projection(
     assert command.context_receipt is not None
     assert "ev_foreign_bdo_fact" not in command.context_receipt.regulatory_evidence_ids
     assert set(command.context_receipt.regulatory_evidence_ids) == set(selected_evidence[1:])
+
+
+def _v2_packet_fact(fact: ContentSourceFact) -> SourcePackV2Fact:
+    return SourcePackV2Fact(
+        source_fact_id=fact.source_id,
+        fact_digest=canonical_json_digest(fact.model_dump(mode="json")),
+        text=fact.extracted_fact,
+        source_reference=fact.source_url_or_path,
+        freshness_date=fact.freshness_date,
+        source_type=fact.source_type,
+        source_connectors=tuple(sorted(set(fact.source_connectors))),
+        evidence_ids=tuple(sorted(set(fact.evidence_ids))),
+    )
+
+
+def _v2_projection_input(
+    content_kind: str, selected: ContentSourceFact, caller_only: ContentSourceFact
+) -> ContentPlanningInput:
+    return _planning_input(selected, caller_only).model_copy(
+        update={
+            "content_kind": content_kind,
+            "confirmed_service_card_id": "ekologus_service_bdo_reporting",
+            "source_facts": [
+                fact.model_copy(update={"source_fact_ids": []})
+                for fact in _planning_input(selected, caller_only).source_facts
+            ],
+            "evidence_ids": [
+                f"ev_{selected.source_id}",
+                f"ev_{caller_only.source_id}",
+                "ev_inventory_independent",
+                "ev_query_independent",
+            ],
+            "source_connectors": [
+                "public_site",
+                "localo",
+                "wordpress_ekologus",
+                "google_search_console",
+            ],
+            "inventory": _planning_input(selected).inventory.model_copy(
+                update={
+                    "evidence_ids": ["ev_inventory_independent"],
+                    "source_connectors": ["wordpress_ekologus"],
+                }
+            ),
+            "query_portfolio": _planning_input(selected).query_portfolio.model_copy(
+                update={
+                    "evidence_ids": ["ev_query_independent"],
+                    "source_connectors": ["google_search_console"],
+                }
+            ),
+            "regulatory_coverage": ContentRegulatoryCoverage.model_construct(
+                applicability_status="required",
+                profile_id="bdo",
+                profile_version=BDO_PROFILE_VERSION,
+                canonical_path=BDO_EDITORIAL_PATH,
+                source_fact_ids=[caller_only.source_id],
+                evidence_ids=caller_only.evidence_ids,
+                source_facts=[caller_only],
+            ),
+            "claim_ledger": [
+                ContentClaimLedgerEntry(
+                    id=f"claim_{fact.source_id}",
+                    claim_text=fact.extracted_fact,
+                    claim_type="service_claim",
+                    status="allowed_with_evidence",
+                    evidence_ids=fact.evidence_ids,
+                    source_connectors=fact.source_connectors,
+                    reason="Synthetic reviewed claim.",
+                )
+                for fact in (selected, caller_only)
+            ],
+        }
+    )
+
+
+@pytest.mark.parametrize("content_kind", ["service", "editorial"])
+def test_v2_packet_projection_uses_only_exact_selected_facts_for_planning(
+    content_kind: str,
+) -> None:
+    selected = _fact("selected_packet_fact")
+    caller_only = _fact("caller_only_fact", connector="localo")
+    registry = (selected, caller_only)
+    planning_input = _v2_projection_input(content_kind, selected, caller_only)
+    projected = project_research_packet_v2_facts(
+        planning_input,
+        (_v2_packet_fact(selected),),
+        registry,
+    )
+
+    assert [fact.source_fact_ids for fact in projected.source_facts] == [[selected.source_id]]
+    assert [fact.summary for fact in projected.source_facts] == [selected.extracted_fact]
+    assert [fact.source_fact_id for fact in projected.source_provenance] == [selected.source_id]
+    assert caller_only.source_id not in projected.regulatory_coverage.source_fact_ids
+    assert caller_only.source_id not in {
+        source_fact.source_id for source_fact in projected.regulatory_coverage.source_facts
+    }
+    assert f"ev_{caller_only.source_id}" not in projected.evidence_ids
+    assert [entry.id for entry in projected.claim_ledger] == [f"claim_{selected.source_id}"]
+    assert {"ev_inventory_independent", "ev_query_independent"}.issubset(
+        projected.evidence_ids
+    )
+    assert "localo" not in projected.source_connectors
+    assert {"wordpress_ekologus", "google_search_console"}.issubset(
+        projected.source_connectors
+    )
+    assert projected.planning_input_digest != planning_input.planning_input_digest
+    digest_payload = projected.model_dump(mode="json")
+    digest_payload.pop("planning_input_digest")
+    expected_digest = _digest(
+        {
+            "schema_name": projected.schema_name,
+            "criteria_version": projected.criteria_version,
+            "inventory_mapping_policy": projected.inventory_mapping_policy,
+            **digest_payload,
+        }
+    )
+    assert projected.planning_input_digest == expected_digest
+
+    if content_kind == "service":
+        assert (
+            project_selected_source_pack_facts(
+                planning_input, [selected.source_id], registry
+            )
+            is planning_input
+        )
+
+
+@pytest.mark.parametrize(
+    "drift",
+    [
+        "id",
+        "digest",
+        "text",
+        "source_reference",
+        "source_type",
+        "connectors",
+        "freshness",
+        "evidence",
+        "registry_text",
+        "review_status",
+        "privacy_class",
+    ],
+)
+def test_v2_packet_projection_blocks_any_selected_fact_drift(drift: str) -> None:
+    selected = _fact("selected_packet_fact")
+    planning_input = _planning_input(selected)
+    packet_fact = _v2_packet_fact(selected)
+    registry = (selected,)
+    if drift == "id":
+        packet_fact = packet_fact.model_copy(update={"source_fact_id": "missing_fact"})
+    elif drift == "digest":
+        packet_fact = packet_fact.model_copy(update={"fact_digest": "0" * 64})
+    elif drift == "text":
+        packet_fact = packet_fact.model_copy(update={"text": "Different preview text."})
+    elif drift == "source_reference":
+        packet_fact = packet_fact.model_copy(update={"source_reference": "https://example.org"})
+    elif drift == "source_type":
+        packet_fact = packet_fact.model_copy(update={"source_type": "reviewed_internal"})
+    elif drift == "connectors":
+        packet_fact = packet_fact.model_copy(update={"source_connectors": ("other_connector",)})
+    elif drift == "freshness":
+        packet_fact = packet_fact.model_copy(update={"freshness_date": "2025-01-01"})
+    elif drift == "evidence":
+        packet_fact = packet_fact.model_copy(update={"evidence_ids": ("ev_other",)})
+    elif drift == "registry_text":
+        registry = (selected.model_copy(update={"extracted_fact": "Changed registry text."}),)
+    elif drift == "review_status":
+        registry = (selected.model_copy(update={"review_status": "rejected"}),)
+    elif drift == "privacy_class":
+        registry = (selected.model_copy(update={"privacy_class": "private_local"}),)
+
+    with pytest.raises(ValueError):
+        project_research_packet_v2_facts(planning_input, (packet_fact,), registry)
+
+
+def test_v2_packet_projection_blocks_required_claim_outside_selected_facts() -> None:
+    selected = _fact("selected_packet_fact")
+    unselected = _fact("caller_only_fact")
+    planning_input = _planning_input(selected, unselected).model_copy(
+        update={
+            "claim_ledger": [
+                ContentClaimLedgerEntry(
+                    id="required_unselected_claim",
+                    claim_text=unselected.extracted_fact,
+                    claim_type="service_claim",
+                    status="allowed_with_evidence",
+                    required=True,
+                    evidence_ids=unselected.evidence_ids,
+                    source_connectors=unselected.source_connectors,
+                    reason="Synthetic required claim.",
+                )
+            ]
+        }
+    )
+
+    with pytest.raises(ValueError, match="Required planning claim"):
+        project_research_packet_v2_facts(
+            planning_input, (_v2_packet_fact(selected),), (selected, unselected)
+        )
+
+
+@pytest.mark.parametrize("claim_type", ["guarantee_claim", "legal_requirement_claim"])
+def test_v2_packet_projection_rejects_ledger_inconsistent_claims(claim_type: str) -> None:
+    selected = _fact("selected_packet_fact")
+    planning_input = _planning_input(selected).model_copy(
+        update={
+            "claim_ledger": [
+                ContentClaimLedgerEntry(
+                    id="inconsistent_claim",
+                    claim_text=selected.extracted_fact,
+                    claim_type=claim_type,
+                    status="allowed_with_evidence",
+                    evidence_ids=selected.evidence_ids,
+                    source_connectors=selected.source_connectors,
+                    reason="Synthetic inconsistent claim.",
+                )
+            ]
+        }
+    )
+
+    projected = project_research_packet_v2_facts(
+        planning_input, (_v2_packet_fact(selected),), (selected,)
+    )
+    assert projected.claim_ledger == []

@@ -94,6 +94,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_research_packet_v2_action.py::"
         "test_public_packet_v2_action_reviews_exact_snapshot_and_records_local_receipt",
     ),
+    ("approved-v2-planner-projection", "exact-selected-facts"): (
+        "scripts/test.sh",
+        "tests/content/test_approved_packet_v2_change_contract.py::"
+        "test_planner_projects_only_exact_approved_v2_packet_facts",
+    ),
     ("research-packet-v2-ui", "explicit-review-local-apply"): (
         "scripts/test.sh",
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
@@ -538,6 +543,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("planning-packet", "action-required-before-write"),
             ("research-packet-v2", "exact-readonly-preview"),
             ("research-packet-v2-action", "exact-reviewed-local-receipt"),
+            ("approved-v2-planner-projection", "exact-selected-facts"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),
