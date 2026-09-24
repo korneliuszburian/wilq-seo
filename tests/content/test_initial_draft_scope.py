@@ -2,7 +2,6 @@ from types import SimpleNamespace
 from typing import get_args
 
 import pytest
-from fastapi import FastAPI
 from pydantic import BaseModel, ValidationError
 
 from apps.api.wilq_api.routers import content_initial_draft
@@ -1418,19 +1417,7 @@ def test_initial_draft_route_returns_emitted_regulatory_planning_blocker(
     )
     monkeypatch.setattr(content_initial_draft, "content_workflow_store", lambda: object())
     monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: object())
-    app = FastAPI()
-    content_initial_draft.register_content_initial_draft_route(
-        app,
-        snapshot_loader=lambda _work_item_id: snapshot,
-    )
-
-    route = next(
-        route
-        for route in app.routes
-        if getattr(route, "path", "") == "/api/content/work-items/{work_item_id}/initial-draft"
-        and "POST" in getattr(route, "methods", set())
-    )
-    result = route.endpoint(
+    result = content_initial_draft._submit_initial_draft(
         proposal.work_item_id,
         ContentInitialDraftRequest(
             expected_proposal_id=proposal.proposal_id,
@@ -1438,6 +1425,7 @@ def test_initial_draft_route_returns_emitted_regulatory_planning_blocker(
             expected_planning_input_digest=proposal.planning_input_digest,
             requested_by="wilku",
         ),
+        lambda _work_item_id: snapshot,
     )
     body = result.model_dump(mode="json")
 
@@ -1447,6 +1435,7 @@ def test_initial_draft_route_returns_emitted_regulatory_planning_blocker(
         "label": "Brakuje pokrycia źródłem urzędowym",
         "reason": "Profil regulacyjny nie ma zatwierdzonego źródła.",
         "next_step": "Zatwierdź dokładne źródło urzędowe.",
+        "owner": None,
         "source_codes": ["missing_regulatory_source_coverage"],
         "retry_after_seconds": None,
     }

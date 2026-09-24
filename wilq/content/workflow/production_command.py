@@ -47,6 +47,7 @@ class ContentProductionCommandBlocker(BaseModel):
     label: str = Field(min_length=1, max_length=240)
     reason: str = Field(min_length=1, max_length=600)
     next_step: str = Field(min_length=1, max_length=600)
+    owner: str | None = None
 
 
 class ContentProductionCommandResponse(BaseModel):

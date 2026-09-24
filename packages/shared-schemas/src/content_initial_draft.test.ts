@@ -94,7 +94,11 @@ describe("content initial draft contracts", () => {
 
   it.each([
     "draft_plan_source_support_missing",
-    "draft_plan_no_writable_targets"
+    "draft_plan_no_writable_targets",
+    "research_packet_missing",
+    "research_packet_blocked",
+    "research_packet_conflict",
+    "initial_draft_action_required"
   ])("accepts the draft-plan blocker code %s", (code) => {
     const parsed = ContentInitialDraftBlockerSchema.parse({
       code,
@@ -104,6 +108,17 @@ describe("content initial draft contracts", () => {
     });
 
     expect(parsed.code).toBe(code);
+  });
+
+  it("keeps the owner of an ActionObject draft blocker", () => {
+    const parsed = ContentInitialDraftBlockerSchema.parse({
+      code: "initial_draft_action_required",
+      label: "Szkic wymaga akcji",
+      reason: "Zapis wymaga review.",
+      next_step: "Przygotuj akcję.",
+      owner: "WILQ content workflow"
+    });
+    expect(parsed.owner).toBe("WILQ content workflow");
   });
 
   it("keeps existing-work success and conflict HTTP channels disjoint", () => {

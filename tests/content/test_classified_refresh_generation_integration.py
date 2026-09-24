@@ -10,6 +10,7 @@ import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
+import apps.api.wilq_api.routers.content_initial_draft as initial_draft_router
 import apps.api.wilq_api.routers.content_planning_proposals as planning_router
 import wilq.content.planning.proposal_read as proposal_read
 import wilq.content.workflow.decisions.production as production_module
@@ -26,6 +27,10 @@ from apps.api.wilq_api.routers.content_snapshot import snapshot_for_work_item_or
 from tests.content import dynamic_planning_test_support as planning_support
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import exact_public_bdo_run
+from tests.content.initial_draft_authority_fakes import refresh_run as _refresh_run
+from tests.content.legacy_initial_draft_test_routes import (
+    register_legacy_initial_draft_test_route,
+)
 from tests.content.legacy_packet_test_routes import register_legacy_packet_fixture_route
 from tests.content.test_delivery_identity_binding import _command as identity_command
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
@@ -714,6 +719,16 @@ def _app_client(
         ),
         refresh_authority_factory=lambda: authority,
     )
+    register_legacy_initial_draft_test_route(
+        router,
+        snapshot_loader=cast(
+            initial_draft_router.ContentInitialDraftSnapshotLoader,
+            lambda work_item_id: authority._snapshot_loader(  # noqa: SLF001
+                work_item_id, None
+            ),
+        ),
+        refresh_authority_factory=lambda: authority,
+    )
     register_content_initial_draft_route(
         router,
         snapshot_loader=lambda work_item_id: authority._snapshot_loader(  # noqa: SLF001
@@ -919,34 +934,6 @@ def _wait_for_plan(client: TestClient, response: Any) -> Any:
         time.sleep(0.02)
         response = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
     return response
-
-
-def _refresh_run():
-    run = exact_public_bdo_run()
-    payload = run.rows[0].model_dump(mode="python")
-    payload.update(
-        {
-            "decision": "refresh",
-            "retained_work_item_id": None,
-            "revision_id": None,
-            "revision_digest": None,
-            "revision_approved": False,
-            "revision_complete": False,
-            "retained_binding": None,
-            "verified_actions": (),
-            "verified_drafts": (),
-        }
-    )
-    row = ContentProductionClassificationRow.model_validate(payload)
-    return production_module._build_run(
-        input_receipt=run.input,
-        counts=classification_counts((row, run.rows[1])),
-        freshness=run.freshness,
-        source_receipts=run.source_receipts,
-        judge_receipt=run.judge_receipt,
-        rows=(row, run.rows[1]),
-        audit=run.audit,
-    )
 
 
 def _drifted_run(run: object):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import json
 from dataclasses import dataclass
 
 from fastapi.testclient import TestClient
@@ -306,7 +308,7 @@ def test_production_command_rejects_invalid_path_without_echo() -> None:
     assert response.json() == {"detail": "production_command_request_invalid"}
 
 
-def test_production_command_route_reuses_approved_revision_without_model(
+def test_private_production_command_reuses_approved_revision_without_model(
     monkeypatch,
 ) -> None:
     revision = draft_revision(
@@ -334,17 +336,19 @@ def test_production_command_route_reuses_approved_revision_without_model(
         lambda *_args: (_ for _ in ()).throw(AssertionError("reuse reached model")),
     )
 
-    response = TestClient(app).post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/production-command",
-        json=_initial_request().model_dump(mode="json"),
+    response = asyncio.run(
+        command_route._run_private_production_command(
+            WORK_ITEM_ID, _initial_request(), lambda _id: None  # type: ignore[arg-type]
+        )
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "reused"
-    assert response.json()["revision"]["revision_id"] == revision.revision_id
+    body = json.loads(bytes(response.body))
+    assert body["status"] == "reused"
+    assert body["revision"]["revision_id"] == revision.revision_id
 
 
-def test_production_command_route_repair_is_single_child_attempt(monkeypatch) -> None:
+def test_private_production_command_repair_is_single_child_attempt(monkeypatch) -> None:
     base = draft_revision(WORK_ITEM_ID, "route-needs-changes", REVISION_DIGEST)
     child = base.model_copy(
         update={
@@ -393,18 +397,22 @@ def test_production_command_route_repair_is_single_child_attempt(monkeypatch) ->
         "requested_by": "wilku",
     }
 
-    client = TestClient(app)
-    created = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/production-command",
-        json=payload,
+    request = ContentProductionRepairCommand.model_validate(payload)
+    created = asyncio.run(
+        command_route._run_private_production_command(
+            WORK_ITEM_ID, request, lambda _id: None  # type: ignore[arg-type]
+        )
     )
-    repeated = client.post(
-        f"/api/content/work-items/{WORK_ITEM_ID}/production-command",
-        json=payload,
+    repeated = asyncio.run(
+        command_route._run_private_production_command(
+            WORK_ITEM_ID, request, lambda _id: None  # type: ignore[arg-type]
+        )
     )
 
     assert created.status_code == 201
-    assert created.json()["revision"]["base_revision_id"] == base.revision_id
+    assert json.loads(bytes(created.body))["revision"]["base_revision_id"] == base.revision_id
     assert repeated.status_code == 409
-    assert repeated.json()["blockers"][0]["code"] == "repair_requires_needs_changes"
+    assert json.loads(bytes(repeated.body))["blockers"][0]["code"] == (
+        "repair_requires_needs_changes"
+    )
     assert calls == 1

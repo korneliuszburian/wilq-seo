@@ -102,6 +102,10 @@ export const ContentInitialDraftBlockerCodeSchema = z.enum([
   "production_classification_digest_required",
   "stale_production_classification",
   "production_generation_disabled",
+  "research_packet_missing",
+  "research_packet_blocked",
+  "research_packet_conflict",
+  "initial_draft_action_required",
   "refresh_preparation_alias_not_current",
   "refresh_preparation_decision_not_refresh",
   "refresh_preparation_service_required",
@@ -131,6 +135,7 @@ export const ContentInitialDraftBlockerSchema = z.strictObject({
   label: NonBlankStringSchema,
   reason: NonBlankStringSchema,
   next_step: NonBlankStringSchema,
+  owner: NonBlankStringSchema.nullable().optional(),
   source_codes: z.array(z.string()).default([]),
   retry_after_seconds: z.number().int().positive().nullable().optional()
 });

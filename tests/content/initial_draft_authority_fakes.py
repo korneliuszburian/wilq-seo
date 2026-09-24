@@ -84,6 +84,27 @@ def exact_public_bdo_run() -> ContentProductionClassificationRun:
     )
 
 
+def refresh_run() -> ContentProductionClassificationRun:
+    """Historical exact refresh row for packet-bound integration fixtures."""
+    run = exact_public_bdo_run()
+    payload = run.rows[0].model_dump(mode="python")
+    payload.update(
+        {
+            "decision": "refresh",
+            "retained_work_item_id": None,
+            "revision_id": None,
+            "revision_digest": None,
+            "revision_approved": False,
+            "revision_complete": False,
+            "retained_binding": None,
+            "verified_actions": (),
+            "verified_drafts": (),
+        }
+    )
+    row = ContentProductionClassificationRow.model_validate(payload)
+    return _rebuild_run(run, (row, run.rows[1]))
+
+
 def retained_missing_run(*, historical_owner: str | None) -> ContentProductionClassificationRun:
     run = exact_public_bdo_run()
     payload = run.rows[0].model_dump(mode="python")

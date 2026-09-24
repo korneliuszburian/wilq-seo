@@ -34,6 +34,7 @@ from wilq.content.planning.dynamic_input import (
 )
 from wilq.content.planning.generated_proposal import with_explicit_content_service_selection
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.quality import semantic_review_service
 from wilq.content.workflow import refresh_preparation_resolution as refresh_resolution_module
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.delivery_identity import (
@@ -235,6 +236,7 @@ def install_packet_harness(
     monkeypatch.setattr(route_packet_binding, "content_workflow_store", lambda: packet_store)
     monkeypatch.setattr(content_snapshot_router, "content_workflow_store", lambda: packet_store)
     monkeypatch.setattr(workflow_store_module, "content_workflow_store", lambda: packet_store)
+    monkeypatch.setattr(semantic_review_service, "content_workflow_store", lambda: packet_store)
     monkeypatch.setattr(
         planning_generation_queue,
         "_PLANNING_GENERATION_EXECUTOR",

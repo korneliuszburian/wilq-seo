@@ -4,9 +4,10 @@ import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import wilq.content.workflow.decisions.inventory_binding as inventory_binding
@@ -16,8 +17,15 @@ import wilq.content.workflow.workspace.catalog as inventory_catalog
 import wilq.content.workflow.workspace.document_workspace as document_workspace
 from apps.api.wilq_api.main import app
 from apps.api.wilq_api.routers import content_initial_draft as initial_draft_router
+from apps.api.wilq_api.routers import content_planning_proposals as planning_router
 from apps.api.wilq_api.routers import content_semantic_review as semantic_review_router
 from apps.api.wilq_api.routers import content_snapshot as content_snapshot_router
+from tests.content.legacy_initial_draft_test_routes import (
+    register_legacy_initial_draft_test_route_before_production,
+)
+from tests.content.legacy_packet_test_routes import (
+    register_legacy_packet_fixture_route_before_production,
+)
 from wilq.briefing import content_diagnostics
 from wilq.codex.app_server import CodexAppServerTurnResult
 from wilq.content.knowledge import cards as knowledge_cards
@@ -506,7 +514,25 @@ def configure_planning_harness(
     monkeypatch.setattr(regulatory_policy, "regulatory_content_profiles", lambda: ())
     runtime = PlanningClient()
     _patch_codex_clients(monkeypatch, runtime)
-    return TestClient(app), runtime
+    test_app = FastAPI()
+    test_app.router.routes = list(app.router.routes)
+    register_legacy_initial_draft_test_route_before_production(
+        test_app,
+        monkeypatch=monkeypatch,
+        snapshot_loader=cast(
+            initial_draft_router.ContentInitialDraftSnapshotLoader,
+            content_snapshot_router.snapshot_for_work_item_or_404,
+        ),
+    )
+    register_legacy_packet_fixture_route_before_production(
+        test_app,
+        monkeypatch=monkeypatch,
+        snapshot_loader=content_snapshot_router.snapshot_for_work_item_or_404,
+        refresh_authority_factory=(
+            lambda: planning_router._canonical_refresh_preparation_authority()
+        ),
+    )
+    return TestClient(test_app), runtime
 
 
 def _patch_approved_service_cards(monkeypatch: pytest.MonkeyPatch) -> None:

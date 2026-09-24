@@ -78,6 +78,7 @@ ContentInitialDraftBlockerCode = Literal[
     "research_packet_missing",
     "research_packet_blocked",
     "research_packet_conflict",
+    "initial_draft_action_required",
     "draft_plan_source_support_missing",
     "draft_plan_no_writable_targets",
 ]
@@ -264,6 +265,7 @@ class ContentInitialDraftBlocker(BaseModel):
     label: _NonBlankWireString
     reason: _NonBlankWireString
     next_step: _NonBlankWireString
+    owner: str | None = None
     source_codes: list[str] = Field(default_factory=list)
     retry_after_seconds: int | None = Field(default=None, ge=1)
 

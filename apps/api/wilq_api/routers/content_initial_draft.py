@@ -12,6 +12,9 @@ from pydantic import TypeAdapter
 from apps.api.wilq_api.routers.content_codex_runtime import (
     content_codex_app_server_client,
 )
+from apps.api.wilq_api.routers.content_initial_draft_action_boundary import (
+    initial_draft_action_required_response,
+)
 from apps.api.wilq_api.routers.content_initial_draft_refresh import (
     read_authorized_refresh_initial_draft_status,
     submit_authorized_refresh_initial_draft,
@@ -160,8 +163,6 @@ def register_content_initial_draft_route(
     authority_resolver: ContentInitialDraftAuthorityResolver | None = None,
     refresh_authority_factory: ContentRefreshPreparationAuthorityFactory | None = None,
 ) -> None:
-    resolver = authority_resolver or _canonical_initial_draft_authority_resolver
-
     @router.post(
         "/api/content/work-items/{work_item_id}/initial-draft",
         response_model=ContentWorkItemInitialDraftResponse,
@@ -171,18 +172,7 @@ def register_content_initial_draft_route(
         work_item_id: str,
         request: ContentWorkItemInitialDraftRequest,
     ) -> ContentWorkItemInitialDraftResponse | JSONResponse:
-        result = _submit_initial_draft(
-            work_item_id,
-            request,
-            snapshot_loader,
-            authority_resolver=resolver,
-            refresh_authority_factory=(
-                refresh_authority_factory or _canonical_refresh_preparation_authority
-            ),
-        )
-        if isinstance(result, JSONResponse):
-            return result
-        return _content_work_item_initial_draft_response(result)
+        return initial_draft_action_required_response(work_item_id, request)
 
     @router.get(
         "/api/content/work-items/{work_item_id}/initial-draft",

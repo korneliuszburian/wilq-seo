@@ -129,6 +129,18 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_planning_generation_dispatch.py::"
         "test_apply_dispatches_only_after_its_audit_is_persisted",
     ),
+    ("draft-action-boundary", "direct-writers-blocked"): (
+        "scripts/test.sh",
+        "tests/content/test_initial_draft_action_boundary.py::"
+        "test_public_initial_draft_post_blocks_before_snapshot_queue_or_model",
+        "tests/content/test_production_command_action_boundary.py::"
+        "test_public_production_command_blocks_before_private_writer",
+    ),
+    ("initial-draft-action", "direct-post-blocked"): (
+        "scripts/test.sh",
+        "tests/content/test_initial_draft_action_boundary.py::"
+        "test_public_initial_draft_post_blocks_before_snapshot_queue_or_model",
+    ),
     ("research-packet-v2-ui", "explicit-review-local-apply"): (
         "scripts/test.sh",
         "tests/dashboard/test_research_packet_v2_ui_runtime.py::"
@@ -580,6 +592,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("planning-deferred-dispatch", "explicit-post-audit-authority"),
             ("planning-generation-dispatch", "audited-intent-only"),
             ("planning-auto-dispatch", "audit-before-enqueue"),
+            ("draft-action-boundary", "direct-writers-blocked"),
+            ("initial-draft-action", "direct-post-blocked"),
             ("research-packet-v2-ui", "explicit-review-local-apply"),
             ("action-lifecycle-ui", "canonical-step-order"),
             ("content-research-packet", "server-owned-exact-plan-draft"),

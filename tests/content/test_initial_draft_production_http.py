@@ -35,6 +35,9 @@ from tests.content.initial_draft_authority_fakes import (
 from tests.content.initial_draft_authority_fakes import (
     insert_revision as _insert_revision,
 )
+from tests.content.legacy_initial_draft_test_routes import (
+    register_legacy_initial_draft_test_route,
+)
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftBlocker,
     ContentInitialDraftConflictResponse,
@@ -618,12 +621,18 @@ def _initial_draft_asgi_app(
     authority_resolver: initial_draft_router.ContentInitialDraftAuthorityResolver | None = None,
 ) -> FastAPI:
     router = APIRouter()
+    loader = cast(
+        initial_draft_router.ContentInitialDraftSnapshotLoader,
+        snapshot_loader,
+    )
+    register_legacy_initial_draft_test_route(
+        router,
+        snapshot_loader=loader,
+        authority_resolver=authority_resolver,
+    )
     register_content_initial_draft_route(
         router,
-        snapshot_loader=cast(
-            initial_draft_router.ContentInitialDraftSnapshotLoader,
-            snapshot_loader,
-        ),
+        snapshot_loader=loader,
         authority_resolver=authority_resolver,
     )
     for route in router.routes:

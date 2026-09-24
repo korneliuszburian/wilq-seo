@@ -33,6 +33,9 @@ from apps.api.wilq_api.routers.content_research_packet import (
 )
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.initial_draft_authority_fakes import _rebuild_run, exact_public_bdo_run
+from tests.content.legacy_initial_draft_test_routes import (
+    register_legacy_initial_draft_test_route,
+)
 from tests.content.legacy_packet_test_routes import register_legacy_packet_fixture_route
 from tests.content.test_delivery_identity_binding import _command as identity_command
 from wilq.content.planning import planning_generation_queue
@@ -119,6 +122,11 @@ def _public_chain_app(
     )
     register_legacy_packet_fixture_route(router, loader, authority_factory)
     register_content_planning_proposal_routes(
+        router,
+        snapshot_loader=loader,
+        refresh_authority_factory=authority_factory,
+    )
+    register_legacy_initial_draft_test_route(
         router,
         snapshot_loader=loader,
         refresh_authority_factory=authority_factory,

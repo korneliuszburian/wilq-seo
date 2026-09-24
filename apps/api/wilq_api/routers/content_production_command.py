@@ -33,8 +33,10 @@ from wilq.content.quality.semantic_review_store import content_semantic_review_s
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.production_command import (
     ContentProductionCommand,
+    ContentProductionCommandBlocker,
     ContentProductionCommandRequest,
     ContentProductionCommandResponse,
+    ContentProductionInitialCommand,
     ContentProductionRepairCommand,
 )
 from wilq.content.workflow.store.store import content_workflow_store
@@ -170,27 +172,7 @@ def register_content_production_command_route(
             ..., min_length=1, max_length=240, pattern=r"^[a-z][a-z0-9_-]*$"
         ),
     ) -> JSONResponse:
-        command = ContentProductionCommand(
-            journal=content_workflow_store(),
-            initial_executor=lambda work_item, command_request: _initial_executor(
-                snapshot_loader, work_item, command_request
-            ),
-            repair_executor=lambda work_item, command_request: _repair_executor(
-                snapshot_loader, work_item, command_request
-            ),
-            repair_claim_acquire=_acquire_repair_claim,
-            repair_claim_release=_release_repair_claim,
-        )
-        result = await asyncio.to_thread(command.run, work_item_id, request)
-        status_code = {
-            "reused": 200,
-            "idempotent": 200,
-            "generating": 202,
-            "created": 201,
-            "blocked": 409,
-            "failed": 500,
-        }[result.status]
-        return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))
+        return _production_action_required_response(work_item_id, request)
 
     router.add_api_route(
         "/api/content/work-items/{work_item_id}/production-command",
@@ -208,6 +190,60 @@ def register_content_production_command_route(
         route_class_override=_NoEchoProductionCommandRoute,
         tags=["content"],
     )
+
+
+def _production_action_required_response(
+    work_item_id: str,
+    request: ContentProductionInitialCommand | ContentProductionRepairCommand,
+) -> JSONResponse:
+    next_step = (
+        "Przygotuj ActionObject dla dokładnego szkicu i pakietu v2."
+        if request.operation == "initial"
+        else "Przygotuj ActionObject dla dokładnej poprawki bieżącej rewizji."
+    )
+    blocker = ContentProductionCommandBlocker(
+        code="production_action_required",
+        label="Generacja treści wymaga ActionObject",
+        reason="Ten punkt API nie ma zatwierdzonej akcji uruchomienia modelu.",
+        next_step=next_step,
+        owner="WILQ content workflow",
+    )
+    response = ContentProductionCommandResponse(
+        status="blocked",
+        operation=request.operation,
+        work_item_id=work_item_id,
+        blockers=[blocker],
+        safe_next_step=next_step,
+    )
+    return JSONResponse(status_code=409, content=response.model_dump(mode="json"))
+
+
+async def _run_private_production_command(
+    work_item_id: str,
+    request: ContentProductionInitialCommand | ContentProductionRepairCommand,
+    snapshot_loader: Callable[[str], ContentWorkItemWorkflowSnapshotResponse],
+) -> JSONResponse:
+    command = ContentProductionCommand(
+        journal=content_workflow_store(),
+        initial_executor=lambda work_item, command_request: _initial_executor(
+            snapshot_loader, work_item, command_request
+        ),
+        repair_executor=lambda work_item, command_request: _repair_executor(
+            snapshot_loader, work_item, command_request
+        ),
+        repair_claim_acquire=_acquire_repair_claim,
+        repair_claim_release=_release_repair_claim,
+    )
+    result = await asyncio.to_thread(command.run, work_item_id, request)
+    status_code = {
+        "reused": 200,
+        "idempotent": 200,
+        "generating": 202,
+        "created": 201,
+        "blocked": 409,
+        "failed": 500,
+    }[result.status]
+    return JSONResponse(status_code=status_code, content=result.model_dump(mode="json"))
 
 
 __all__ = ["register_content_production_command_route"]
