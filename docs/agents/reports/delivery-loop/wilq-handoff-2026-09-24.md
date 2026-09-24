@@ -1,0 +1,54 @@
+# WILQ — handoff 2026-09-24
+
+Rola: historyczny handoff dla następnej sesji, przy fixed point `d3abf99a00b14845588e934124ac9d1f5a0a8602`. Zastępuje wcześniejszy `/tmp/opencode/wilq-codex-handoff.md` jako punkt startowy. Nie zastępuje aktualnego stanu w Git, `bd` (Dolt), kapsule ani publicznych seamach API; każda informacja o stanie wymaga readbacku. Po przejęciu sesji zastąp ten handoff nowym.
+
+## Cel i decyzje użytkownika
+
+Repo: `/mnt/storage/coding/krn/active/wilq-seo`. Dowozić realny canonical content pipeline Ekologus: każda **kwalifikująca się** strona aktualnej sitemapy ma zakończyć jako approved immutable revision z local dev preview albo dokładny typed blocker z właścicielem i jednym bezpiecznym następnym krokiem. Operat wodnoprawny ma approved revision/dev preview z wcześniejszej ścieżki. Następne BDO, IPPC, pozostałe. Nie kończyć na planie lub pierwszej częściowej implementacji.
+
+Użytkownik wybrał nową politykę `current_acceptance` opartą na aktualnym exact evidence (`wilq-seo-gg8j`); nie promować historycznych decyzji wave0 KEEP. Dla stron editorial wymagających podstawy prawnej rejestrować exact official source dla każdej strony (`wilq-seo-87hv`). Stary tekst WordPress powinien być obserwowany automatycznie, bez ludzkiego zatwierdzania. Człowiek akceptuje/odrzuca **wygenerowaną rewizję** z powodem. Ekran marketera: tekst i konieczne źródła/szczegóły, „Akceptuję” / „Nie akceptuję” + powód, bez technicznych kontrolek lifecycle.
+
+Po funkcjonalnym uproszczeniu dashboardu widok po widoku użytkownik chce globalnego wyodrębnienia metod frontendowych, komponentów, tokenów i query hooks, żeby łatwo zmieniać design; później realny redesign. Backlog UX: `wilq-seo-1m17` OPEN, przy `gg8j` jedynym WIP. Użytkownik chce długoterminowo dobrej architektury bez długu i slopu; koniecznego refactoru nie pomijać.
+
+Granice: brak evidence ID/źródła/świeżości = typed blocker, bez zgadywanej metryki. Każda mutacja tylko przez ActionObject validate→preview→review→confirm→impact/safety→apply→audit. WordPress exact-revision, draft-only. Nie generować z samych GSC queries, starego prawnie niezweryfikowanego WP tekstu, niezatwierdzonych source facts, bez exact approved packet i pełnego review. Osobna zgoda na push, PR, merge, deploy, produkcję, vendor writes, credentials i osłabienie exact revision, lineage, redaction albo ActionObject safety. Nie klikać decyzji Wilku i nie przedstawiać syntetycznego testu jako jego UAT.
+
+## Readback zamkniętego slice'a
+
+- Branch `wip/dirty-integration-20260916`; HEAD `d3abf99a00b14845588e934124ac9d1f5a0a8602` (`feat(content): approve exact v3 research packets locally`), parent `bd496d99746f4a241252b2338fbaa4510277e4f2`.
+- Jedno worktree, cztery lokalne branche: aktywny, `agent/wilq-readiness`, `main`, `backup/main-pre-reconciliation-20260911`. Bez push/PR/merge/deploy.
+- `git status --short`: tylko zmieniony `.beads/issues.jsonl` (lagujący eksport, nie queue ani plik do produktu) oraz untracked plik użytkownika `act_content_material_review_e74a3e493bdf2` (zachować). `.beads/issues.jsonl` może się stage'ować po operacjach `bd`; unstage przed commitem, nie usuwać.
+- `krn state check` clean. Kapsuła `.krn/runs/delivery-loop/wilq-readiness-20260912/state.md` ma aktualny pełny SHA i cel.
+- `bd`: `wilq-seo-gg8j` jest jedynym `in_progress`; 177 `open`, 1 `blocked`, 2 `deferred` z `bd list --limit 0 --json` na 2026-09-24. To złożona kolejka epików/historycznych zadań, nie liczba równorzędnych tasków. `87hv` OPEN z decyzją exact official sources; `1m17` OPEN UX backlog.
+- `scripts/local_stack.sh status`: zarządzane API :8000 i dashboard :5173 ready. Nie uruchamiać własnych Uvicorn/Vite. Python przez `uv run`.
+
+## Lokalna sekwencja produktu
+
+- `6542b852...`: pełny current WP material jako źródło, bez buttonu approval; brak cichego truncation.
+- `c4eb095c...`: autoobserwacja current page material, bez ludzkiego receiptu.
+- `36eed418...`: v3 exact current identity bez KEEP, stabilna wobec rotacji read evidence IDs.
+- `6aa8d11c...`: v3 source fact candidates z approved facts, blokada obcej exact path.
+- `87b7b3e...`: v3 official source-pack preview z kompletnym profilem/service-card lineage; live BDO 11 approved official facts/8 requirements, IPPC 4/4, generation false.
+- `bd496d997...`: v3 read-only exact research-packet preview: official facts/requirements/context/links; `demand_evidence_status=missing`, `search_intent=null` przy starym GSC, bez GSC rows/metrics i bez starego WP claim textu. Live BDO/IPPC preview ready, bez approval.
+- `d3abf99a...`: publiczny v3 packet ActionObject preview, pełny validate/preview/review/confirm/impact/apply i immutable local receipt. Pierwszy approved receipt nie zmienia się przy rotacji read evidence; retry zwraca stored receipt. Semantic drift lub current read failure daje typed blocker. Approved-packet GET sprawdza currentness. OpenAPI 409 i shared browser schema opisują blocker. **Brak live Wilku review/confirm/apply. BDO/IPPC nadal nie mają approved v3 packet ani nowej wygenerowanej rewizji.**
+
+Ostatni proof: `uv run --extra dev pytest -q tests/content/test_research_packet_v3_action.py tests/content/test_research_packet_v2_action.py` = 5 passed. `pnpm --filter @wilq/shared-schemas exec vitest run src/actions.test.ts` = 3 passed; dashboard typecheck, Ruff, mypy, diff check clean. Niezależny Luna reviewer: Standards PASS / Spec PASS po accepted fixes retry, typed blocker i OpenAPI. `npm run changes:check -- --before bd496d99746f4a241252b2338fbaa4510277e4f2 HEAD` = GREEN after observed RED. Bead i kapsuła mają proof. Follow-up review: trwały mutation audit blocked apply ma safe next step i oryginalne action evidence, ale nie code/owner/current evidence IDs typed blockera; poza kontraktem tego slice, ocenić przy readback/audit design.
+
+Nowe publiczne seamy: GET `/api/content/work-items/{id}/research-packet-v3-preview`; POST `/api/content/work-items/{id}/research-packet-v3-action/preview`; GET `/api/content/work-items/{id}/research-packet-v3-action/{action_id}`; GET `/api/content/research-packets-v3/{packet_id}`. Generic `/api/actions/{id}/validate|preview|review|confirm|impact-check|apply` obowiązuje przy approval. Kluczowe pliki: `apps/api/wilq_api/routers/content_research_packet_v3_action.py`, `wilq/content/workflow/research_packet_v3_action.py`, `wilq/content/workflow/research_packet_v3_receipt.py`, `wilq/content/workflow/store/store_research_packet_v3.py`, `tests/content/test_research_packet_v3_action.py`.
+
+## Pierwszy slice następnej sesji
+
+Pod jedynym aktywnym Beadem `gg8j` przygotować prosty marketer-facing widok exact v3 packetu BDO/IPPC. Odczytać obecne `/content-workflow`, `/actions` oraz typed API przed edycją. Pokazać pełny materiał do oceny: proponowany kontekst/plan, approved official facts z exact source URL/freshness, legal requirements, jawny brak GSC demand, ewentualny typed blocker z ownerem i jednym krokiem. Tylko accept/reject + wymagany powód; lifecycle wykonuje frontend za prostym UI, bezpieczeństwo pozostaje w API. Nie nazywać starego WP textu wygenerowanym artykułem. Zrobić focused proof i wizualny readback w lokalnym Chromium (`/usr/bin/chromium`). Dotychczasowe `apiFetch` ma timeout 30 s, live v3 GET/re-read trwał około 30 s; uwzględnić idempotentny readback po wolnym requestcie.
+
+Po gotowym ekranie przygotować publiczne exact BDO/IPPC ActionObjects, a rzeczywisty review packetów źródłowych oddać Wilku jako ostatni krok wymagający jego decyzji. Bez udawania jego approval można robić dalsze code slices. Następnie podłączyć **tylko current approved v3 packet** do planning generation intent/model projection/initial draft. Dziś `generated_proposal_turn.py`, `route_packet_binding.py`, `generation_intent.py` rozpoznają v2/v1, `initial_full_draft.py` stary packet. Prompt/projection ma używać selected official facts, reviewed context/links/requirements; nigdy starych WP claims (`planning_fact_02`) i stale GSC rows/metrics. Rotating current observation IDs nie unieważniają semantycznego approval, zmiana approved facts/requirements tak. Direct planning/draft POSTs wciąż fail-closed ActionObject-required.
+
+Potem generated revision review accept/reject z powodem, immutable approved revision i local dev preview BDO/IPPC oraz dalszych kwalifikujących się URL-i. Wdrożyć nową `current_acceptance` na current exact evidence, re-mint delivery identities, usunąć/gate redundantne KEEP/source-selection prerequisites i legacy direct v1 writers po migracji, zachować historyczne v2 reads. Na końcu eligible sitemap census, krytyczne bugi lub prawdziwe external blockers, branch/worktree reconciliation, broad `scripts/verify.sh` raz, bez publikacji.
+
+„57 URL” to tylko stary subset production wave, **nie** cała sitemap i nie zgoda na noindex/redirect/remove. Historyczne `docs/content-status-214.csv` ma ~214 rows; obserwowany current content catalog 141; public sitemap 790/790, internal 199/199 w jednym wcześniejszym readbacku. Różne zbiory i daty; policzyć aktualną kwalifikowalność przez publiczne seamy. V2 census source-pack 141/141: 128 `material_review_missing_or_stale`, 6 `missing_approved_keep_receipt`, 7 `page_material_url_only`; v3 usuwa fałszywe prerequisites, te liczby nie opisują stanu docelowego.
+
+PPWR: `87hv` ma kandydatów EUR-Lex Regulation (EU) 2025/40 PL i Commission guidance C/2026/3084 PL. Nie są zarejestrowanymi/reviewed WILQ source facts; PPWR pozostaje typed blocker. Brak polityki nonlegal source validity to typed blocker owner WILQ Content Workflow.
+
+Dashboard później: `1m17` obejmuje sześć distinct production marketer screens (`/opportunities` jest redirect alias). Najpierw `/actions` i generated content revision review, potem `/ads-doctor`, `/merchant`, reszta według realnego UI readbacku. Po semantycznym uproszczeniu wszystkich sześciu wyodrębnić globalne metody, component primitives, tokens, query hooks, potem redesign.
+
+## Restart i rytm
+
+Readback: `git status --short`; `git rev-parse HEAD`; `git worktree list --porcelain`; `bd prime`; `bd show wilq-seo-gg8j --json`; `bd show wilq-seo-87hv --json`; `bd show wilq-seo-1m17 --json`; `krn state check`; `scripts/local_stack.sh status`; kapsuła. Beads Dolt = truth, JSONL nie. Najbliższe repo `AGENTS.md` i tylko potrzebne domain/boundary docs. Repo instructions użytkownika zakazują quarantined Superpowers; nie invoke. Jeden bounded slice, jeden writer, niezależny read-only reviewer; delegacja Luna scout/worker/reviewer według wąskiego zadania. Weryfikować model output własnym readbackiem. Po slice diff→focused proof→independent review/disposition→Bead→kapsuła→jeden Conventional Commit→`changes:check --before <parent> HEAD`→readback. Nie ogłaszać całości jako done przed BDO/IPPC approved revisions/dev previews, wszystkimi kwalifikującymi się URL z reviewed content albo typed blocker, broad verification i upoważnionym publication state.
