@@ -24,6 +24,9 @@ function record(pageIdentity = true) {
       source_pack_hash: digest("b"),
       page_url: pageIdentity ? "https://www.ekologus.pl/exact/" : undefined,
       canonical_path: pageIdentity ? "/exact" : undefined,
+      per_url_delivery_identity_action_id: pageIdentity
+        ? "act_per_url_delivery_identity_exact"
+        : undefined,
       identity_digest: digest("c"),
       material_meaning_digest: digest("d"),
       planning_input_digest: digest("e"),
@@ -95,6 +98,14 @@ describe("v3 research packet action contracts", () => {
     expect(ResearchPacketV3ReviewablePreviewRecordSchema.safeParse(historical).success).toBe(false);
     expect(ResearchPacketV3ReviewablePreviewRecordSchema.parse(record()).snapshot.page_url)
       .toBe("https://www.ekologus.pl/exact/");
+  });
+
+  it("preserves a page snapshot but blocks review when its per-URL identity is absent", () => {
+    const historical = record();
+    delete historical.snapshot.per_url_delivery_identity_action_id;
+    expect(ResearchPacketV3PreviewRecordSchema.safeParse(historical).success).toBe(true);
+    expect(ResearchPacketV3ReviewablePreviewRecordSchema.safeParse(historical).success)
+      .toBe(false);
   });
 
   it("accepts raw Unicode paths and keeps percent-encoded paths exact", () => {

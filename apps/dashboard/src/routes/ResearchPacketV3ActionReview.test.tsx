@@ -12,6 +12,7 @@ function actionWithPacket({
   exactPageIdentity = true,
   pageUrl,
   canonicalPath,
+  perUrlIdentityActionId = "act_per_url_delivery_identity_exact",
   demandEvidenceStatus = "missing",
   searchIntent = null,
   actionStatus = "ready_to_apply",
@@ -21,6 +22,7 @@ function actionWithPacket({
   exactPageIdentity?: boolean;
   pageUrl?: string;
   canonicalPath?: string;
+  perUrlIdentityActionId?: string | null;
   demandEvidenceStatus?: "available" | "missing";
   searchIntent?: string | null;
   actionStatus?: "ready_to_apply" | "applied";
@@ -41,6 +43,7 @@ function actionWithPacket({
       source_pack_hash: digest("b"),
       page_url: exactPageIdentity ? (pageUrl ?? "https://www.ekologus.pl/exact/") : undefined,
       canonical_path: exactPageIdentity ? (canonicalPath ?? "/exact") : undefined,
+      per_url_delivery_identity_action_id: perUrlIdentityActionId ?? undefined,
       identity_digest: digest("c"),
       material_meaning_digest: digest("d"),
       planning_input_digest: digest("e"),
@@ -195,6 +198,16 @@ describe("v3 research packet ActionObject review", () => {
       checked_items: ["reviewed_full_packet"],
       blockers: []
     });
+  });
+
+  it("blocks review when a historical packet lacks the current per-URL identity", () => {
+    renderReview(actionWithPacket({ perUrlIdentityActionId: null }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Brakuje zatwierdzonego per-URL identity/
+    );
+    expect(screen.getByRole("button", { name: "Akceptuję" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Nie akceptuję" })).toBeDisabled();
   });
 
   it("records only the rejected review after the same attestation", async () => {

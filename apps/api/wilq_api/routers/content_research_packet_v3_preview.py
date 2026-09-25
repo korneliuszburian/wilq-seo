@@ -20,7 +20,7 @@ from wilq.content.workflow.research_packet_v3_preview import (
 )
 from wilq.content.workflow.source_pack_v3 import SourcePackV3Preview
 
-SourcePackLoader = Callable[[str], SourcePackV3Preview]
+SourcePackLoader = Callable[[str, str | None], SourcePackV3Preview]
 PlanningResultLoader = Callable[[str], ContentPlanningInputBuildResult]
 
 
@@ -30,15 +30,23 @@ def register_content_research_packet_v3_preview_route(
     source_pack_loader: SourcePackLoader | None = None,
     planning_result_loader: PlanningResultLoader | None = None,
 ) -> None:
-    load_pack = source_pack_loader or read_current_source_pack_v3_preview
+    load_pack = source_pack_loader or (
+        lambda work_item_id, action_id: read_current_source_pack_v3_preview(
+            work_item_id,
+            per_url_delivery_identity_action_id=action_id,
+        )
+    )
     load_planning = planning_result_loader or _current_planning_result
 
     @router.get(
         "/api/content/work-items/{work_item_id}/research-packet-v3-preview",
         response_model=ResearchPacketV3Preview,
     )
-    def read_research_packet_v3_preview(work_item_id: str) -> ResearchPacketV3Preview:
-        pack = load_pack(work_item_id)
+    def read_research_packet_v3_preview(
+        work_item_id: str,
+        per_url_delivery_identity_action_id: str | None = None,
+    ) -> ResearchPacketV3Preview:
+        pack = load_pack(work_item_id, per_url_delivery_identity_action_id)
         if pack.status == "blocked":
             return build_research_packet_v3_preview(
                 work_item_id, source_pack=pack, planning_result=ContentPlanningInputBuildResult()
@@ -58,9 +66,15 @@ def _current_planning_result(work_item_id: str) -> ContentPlanningInputBuildResu
     return build_content_planning_input(snapshot, service_card_id=card_id)
 
 
-def read_current_research_packet_v3_preview(work_item_id: str) -> ResearchPacketV3Preview:
+def read_current_research_packet_v3_preview(
+    work_item_id: str,
+    per_url_delivery_identity_action_id: str | None = None,
+) -> ResearchPacketV3Preview:
     try:
-        pack = read_current_source_pack_v3_preview(work_item_id)
+        pack = read_current_source_pack_v3_preview(
+            work_item_id,
+            per_url_delivery_identity_action_id=per_url_delivery_identity_action_id,
+        )
     except (HTTPException, ValueError, RuntimeError):
         from wilq.content.workflow.research_packet_v3_preview import ResearchPacketV3Blocker
 

@@ -110,6 +110,8 @@ export const ResearchPacketV3PreviewReadySchema = z.object({
   // These are optional only for immutable v3 snapshots written before page identity.
   page_url: NonBlankStringSchema.nullable().optional(),
   canonical_path: CanonicalPathSchema.nullable().optional(),
+  // Historical v3 snapshots lack the per-URL identity bound by current reviews.
+  per_url_delivery_identity_action_id: NonBlankStringSchema.optional(),
   // Historical v3 previews predate explicit content-subject binding.
   content_kind: z.enum(["service", "editorial"]).optional(),
   service_card_id: NonBlankStringSchema.nullable().optional(),
@@ -187,10 +189,11 @@ export const ResearchPacketV3PreviewRecordSchema = z.object({
 export type ResearchPacketV3PreviewRecord = z.infer<typeof ResearchPacketV3PreviewRecordSchema>;
 type ResearchPacketV3ReviewableSnapshot = Omit<
   ResearchPacketV3PreviewRecord["snapshot"],
-  "page_url" | "canonical_path"
+  "page_url" | "canonical_path" | "per_url_delivery_identity_action_id"
 > & {
   page_url: string;
   canonical_path: string;
+  per_url_delivery_identity_action_id: string;
 };
 export type ResearchPacketV3ReviewablePreviewRecord = Omit<
   ResearchPacketV3PreviewRecord,
@@ -200,10 +203,16 @@ export type ResearchPacketV3ReviewablePreviewRecord = Omit<
 export function hasReviewableResearchPacketV3PageIdentity(
   record: ResearchPacketV3PreviewRecord
 ): record is ResearchPacketV3ReviewablePreviewRecord {
-  const { page_url: pageUrl, canonical_path: canonicalPath } = record.snapshot;
+  const {
+    page_url: pageUrl,
+    canonical_path: canonicalPath,
+    per_url_delivery_identity_action_id: perUrlIdentityActionId
+  } = record.snapshot;
   if (
     typeof pageUrl !== "string"
     || typeof canonicalPath !== "string"
+    || typeof perUrlIdentityActionId !== "string"
+    || !perUrlIdentityActionId.trim()
     || !isSafeResearchPacketV3PageUrl(pageUrl)
     || !CanonicalPathSchema.safeParse(canonicalPath).success
   ) {

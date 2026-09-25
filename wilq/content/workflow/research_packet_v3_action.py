@@ -9,6 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from wilq.actions.action_chain import revision_bound_action_chain
 from wilq.content.workflow.decisions.production import canonical_json_digest
+from wilq.content.workflow.research_packet_v3_preview import (
+    PacketBlockerOwner,
+    ResearchPacketV3Blocker,
+    ResearchPacketV3Preview,
+)
 from wilq.content.workflow.research_packet_v3_receipt import (
     ResearchPacketV3ApprovalReceipt,
     ResearchPacketV3PreviewRecord,
@@ -47,6 +52,8 @@ def research_packet_v3_action_id(preview_hash: str) -> str:
 def research_packet_v3_action(record: ResearchPacketV3PreviewRecord) -> ActionObject:
     if not record.has_exact_page_identity():
         raise ValueError("research_packet_v3_page_identity_missing")
+    if not record.snapshot.has_current_per_url_identity():
+        raise ValueError("per_url_delivery_identity_required")
     preview = record.snapshot
     return ActionObject(
         id=research_packet_v3_action_id(record.preview_hash),
@@ -96,7 +103,11 @@ def load_research_packet_v3_action(
     if len(preview_hash) != 64 or any(char not in "0123456789abcdef" for char in preview_hash):
         return None
     record = (store or content_workflow_store()).load_research_packet_v3_preview(preview_hash)
-    if record is None or not record.has_exact_page_identity():
+    if (
+        record is None
+        or not record.has_exact_page_identity()
+        or not record.snapshot.has_current_per_url_identity()
+    ):
         return None
     return research_packet_v3_action(record)
 
@@ -133,6 +144,8 @@ def validate_research_packet_v3_action_payload(payload: dict[str, Any]) -> list[
         return ["Exact research packet v3 action preview is invalid."]
     if not record.has_exact_page_identity():
         return ["Exact research packet v3 page identity is missing."]
+    if not record.snapshot.has_current_per_url_identity():
+        return ["Exact per-URL delivery identity is missing."]
     return (
         []
         if payload == research_packet_v3_action(record).payload
@@ -160,6 +173,12 @@ def execute_research_packet_v3_action(
             record.snapshot.verification_evidence_ids,
             "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
         )
+    if not record.snapshot.has_current_per_url_identity():
+        return _blocked(
+            "per_url_delivery_identity_required",
+            record.snapshot.verification_evidence_ids,
+            "Odczytaj i zatwierdź per-URL delivery identity przed review pakietu.",
+        )
     stored = store.load_research_packet_v3_preview(record.preview_hash)
     if (
         stored != record
@@ -168,34 +187,15 @@ def execute_research_packet_v3_action(
     ):
         return _blocked("research_packet_v3_action_changed", tuple(action.evidence_ids),
                         "Przygotuj nową dokładną akcję pakietu v3.")
-    try:
-        from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
-            read_current_research_packet_v3_preview,
-        )
-
-        current = read_current_research_packet_v3_preview(record.work_item_id)
-    except Exception:
-        return _blocked("research_packet_v3_current_read_unavailable",
-                        record.snapshot.verification_evidence_ids,
-                        "Ponów odczyt bieżącego pakietu v3 przed zatwierdzeniem.")
-    if current.status != "ready":
-        blocker = current.blocker
-        if blocker is None:
-            return _blocked("research_packet_v3_current_blocked",
-                            record.snapshot.verification_evidence_ids,
-                            "Ponów odczyt bieżącego pakietu v3.")
-        return _blocked(blocker.code, blocker.evidence_ids,
-                        blocker.safe_next_step, blocker.owner)
-    if not current.has_exact_page_identity():
+    current, blocker = _current_packet_for_action(record)
+    if blocker is not None:
         return _blocked(
-            "research_packet_v3_page_identity_missing",
-            current.verification_evidence_ids,
-            "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
+            blocker.code,
+            blocker.evidence_ids,
+            blocker.safe_next_step,
+            blocker.owner,
         )
-    if current.preview_hash != record.preview_hash:
-        return _blocked("research_packet_v3_current_drift",
-                        current.verification_evidence_ids,
-                        "Treść pakietu zmieniła się. Przygotuj nowy dokładny review.")
+    assert current is not None
     payload_digest = canonical_json_digest(action.payload)
     chain, blockers = revision_bound_action_chain(
         [event for event in audit_events if event.action_id == action.id],
@@ -243,6 +243,72 @@ def execute_research_packet_v3_action(
         "external_write_attempted": False,
         "generation_allowed": False,
     }, []
+
+
+def _current_packet_for_action(
+    record: ResearchPacketV3PreviewRecord,
+) -> tuple[ResearchPacketV3Preview | None, ResearchPacketV3Blocker | None]:
+    try:
+        from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
+            read_current_research_packet_v3_preview,
+        )
+
+        current = read_current_research_packet_v3_preview(
+            record.work_item_id,
+            per_url_delivery_identity_action_id=(
+                record.snapshot.per_url_delivery_identity_action_id
+            ),
+        )
+    except Exception:
+        return None, _current_packet_blocker(
+            "research_packet_v3_current_read_unavailable",
+            record.snapshot.verification_evidence_ids,
+            "Ponów odczyt bieżącego pakietu v3 przed zatwierdzeniem.",
+        )
+    if current.status != "ready":
+        if current.blocker is not None:
+            return None, current.blocker
+        return None, _current_packet_blocker(
+            "research_packet_v3_current_blocked",
+            record.snapshot.verification_evidence_ids,
+            "Ponów odczyt bieżącego pakietu v3.",
+        )
+    if not current.has_exact_page_identity():
+        return None, _current_packet_blocker(
+            "research_packet_v3_page_identity_missing",
+            current.verification_evidence_ids,
+            "Odczytaj ponownie dokładny adres strony i ścieżkę kanoniczną przed review.",
+        )
+    if (
+        current.per_url_delivery_identity_action_id
+        != record.snapshot.per_url_delivery_identity_action_id
+    ):
+        return None, _current_packet_blocker(
+            "per_url_delivery_identity_mismatch",
+            current.verification_evidence_ids,
+            "Odczytaj pakiet dla dokładnego per-URL identity zapisanego w receipt.",
+        )
+    if current.preview_hash != record.preview_hash:
+        return None, _current_packet_blocker(
+            "research_packet_v3_current_drift",
+            current.verification_evidence_ids,
+            "Treść pakietu zmieniła się. Przygotuj nowy dokładny review.",
+        )
+    return current, None
+
+
+def _current_packet_blocker(
+    code: str,
+    evidence_ids: tuple[str, ...],
+    next_step: str,
+    owner: PacketBlockerOwner = "WILQ content workflow",
+) -> ResearchPacketV3Blocker:
+    return ResearchPacketV3Blocker(
+        code=code,
+        owner=owner,
+        evidence_ids=evidence_ids,
+        safe_next_step=next_step,
+    )
 
 
 def _audit_binding(event: AuditEvent) -> tuple[str, str] | None:

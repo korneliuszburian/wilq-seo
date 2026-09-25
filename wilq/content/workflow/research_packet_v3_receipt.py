@@ -44,6 +44,8 @@ class ResearchPacketV3PreviewRecord(BaseModel):
             raise ValueError("Only a ready research packet v3 preview can be recorded.")
         if not accepted.has_exact_page_identity():
             raise ValueError("research_packet_v3_page_identity_missing")
+        if not accepted.has_current_per_url_identity():
+            raise ValueError("per_url_delivery_identity_required")
         return cls(
             preview_hash=accepted.preview_hash,
             work_item_id=accepted.work_item_id,

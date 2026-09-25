@@ -12,10 +12,12 @@ import {
   getContentWorkItemSemanticReview,
   getContentWorkItemMeasurement,
   getContentRegulatorySourceSnapshot,
+  getContentResearchPacketV3Preview,
   postContentRegulatorySourceReview,
   postContentWorkItemLineageCleanup,
   postContentWorkItemInitialDraft,
   prepareContentMaterialReviewAction,
+  prepareContentResearchPacketV3Action,
   prepareContentResearchPacketV2Action,
   previewAction
 } from "./api";
@@ -950,6 +952,58 @@ describe("content workflow API helpers", () => {
       headers: { "Content-Type": "application/json" }
     }));
     await expect(getContentWorkItemInitialDraft("content_work_item_bdo")).rejects.toThrow();
+  });
+
+  it("passes an explicit per-URL identity ID to v3 packet preview and review", async () => {
+    const identityActionId = "act/per-url?exact";
+    const previewBlocker = {
+      contract_version: "research_packet_v3_preview",
+      status: "blocked",
+      work_item_id: "wi_exact",
+      blocker: {
+        code: "per_url_delivery_identity_required",
+        owner: "WILQ content workflow",
+        evidence_ids: [],
+        safe_next_step: "Zatwierdź exact per-URL identity."
+      },
+      generation_allowed: false,
+      packet_write_allowed: false
+    };
+    const actionBlocker = {
+      response_type: "research_packet_v3_action",
+      status: "blocked",
+      work_item_id: "wi_exact",
+      blocker_code: "per_url_delivery_identity_required",
+      blocker_owner: "WILQ content workflow",
+      evidence_ids: [],
+      safe_next_step: "Zatwierdź exact per-URL identity.",
+      external_write_attempted: false,
+      generation_allowed: false
+    };
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = new URL(String(url));
+      expect(requestUrl.searchParams.get("per_url_delivery_identity_action_id"))
+        .toBe(identityActionId);
+      if (requestUrl.pathname.endsWith("research-packet-v3-preview")) {
+        return new Response(JSON.stringify(previewBlocker), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      expect(init?.method).toBe("POST");
+      expect(JSON.parse(String(init?.body))).toEqual({});
+      return new Response(JSON.stringify(actionBlocker), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const preview = await getContentResearchPacketV3Preview("wi_exact", identityActionId);
+    expect(preview.status).toBe("blocked");
+    const action = await prepareContentResearchPacketV3Action("wi_exact", identityActionId);
+    expect(action.status).toBe("blocked");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
 });

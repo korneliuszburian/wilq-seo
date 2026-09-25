@@ -41,7 +41,12 @@ export function ResearchPacketV3ActionReview({ action }: { action: ActionObject 
   const decisionMutation = useMutation({
     mutationFn: async (decision: PacketDecision): Promise<DecisionResult> => {
       if (!exactRecord) {
-        return stopped("pakiet", "Brakuje dokładnego adresu strony albo ścieżki kanonicznej.");
+        return stopped(
+          "pakiet",
+          record && !record.snapshot.per_url_delivery_identity_action_id
+            ? "Brakuje zatwierdzonego per-URL identity dla tej strony. Wróć do workspace i przygotuj pakiet ponownie."
+            : "Brakuje dokładnego adresu strony albo ścieżki kanonicznej."
+        );
       }
       const notes = reason.trim();
       if (!notes || !attested) {
@@ -115,11 +120,14 @@ export function ResearchPacketV3ActionReview({ action }: { action: ActionObject 
   });
 
   if (!exactRecord) {
+    const missingPerUrlIdentity =
+      record?.snapshot.per_url_delivery_identity_action_id == null;
     return (
       <main className="mx-auto max-w-4xl px-4 py-6 lg:px-8">
         <section className="rounded-md border border-risk/30 bg-white p-4" role="alert">
-          Brakuje dokładnego adresu strony lub ścieżki kanonicznej w tym pakiecie. WILQ zachowuje
-          historyczny odczyt, ale blokuje nowy review i lokalny receipt.
+          {missingPerUrlIdentity
+            ? "Brakuje zatwierdzonego per-URL identity dla tej strony. Wróć do workspace i przygotuj pakiet ponownie. WILQ zachowuje historyczny odczyt, ale blokuje nowy review i lokalny receipt."
+            : "Brakuje dokładnego adresu strony lub ścieżki kanonicznej w tym pakiecie. WILQ zachowuje historyczny odczyt, ale blokuje nowy review i lokalny receipt."}
         </section>
         <section className="mt-4 rounded-md border border-line bg-white p-4" aria-label="Decyzja pakietu">
           <div className="flex flex-wrap gap-3">

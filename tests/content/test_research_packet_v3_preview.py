@@ -28,6 +28,7 @@ from wilq.content.workflow.source_fact_candidate_projection import (
     ContentSourceFactAuthorityServiceBinding,
 )
 from wilq.content.workflow.source_pack_v3 import (
+    SourcePackV3Blocker,
     SourcePackV3Fact,
     SourcePackV3PerUrlIdentity,
     SourcePackV3Preview,
@@ -169,9 +170,30 @@ def _client(pack, planning) -> TestClient:
     )
     if route_path.is_file():
         module = import_module("apps.api.wilq_api.routers.content_research_packet_v3_preview")
+
+        def load_pack(
+            _work_item_id: str,
+            per_url_delivery_identity_action_id: str | None = None,
+        ) -> SourcePackV3Preview:
+            per_url_identity = pack["current"].per_url_identity
+            if (
+                per_url_identity is None
+                or per_url_delivery_identity_action_id != per_url_identity.action_id
+            ):
+                return SourcePackV3Preview(
+                    status="blocked",
+                    work_item_id="wi_exact",
+                    blocker=SourcePackV3Blocker(
+                        code="per_url_delivery_identity_required",
+                        owner="WILQ content workflow",
+                        safe_next_step="Podaj dokładne per-URL identity dla strony.",
+                    ),
+                )
+            return pack["current"]
+
         module.register_content_research_packet_v3_preview_route(
             router,
-            source_pack_loader=lambda _work_item_id: pack["current"],
+            source_pack_loader=load_pack,
             planning_result_loader=lambda _work_item_id: planning["current"],
         )
     app = FastAPI()
@@ -179,12 +201,45 @@ def _client(pack, planning) -> TestClient:
     return TestClient(app)
 
 
+def _identity_params(pack) -> dict[str, str]:
+    per_url_identity = pack["current"].per_url_identity
+    assert per_url_identity is not None
+    return {
+        "per_url_delivery_identity_action_id": per_url_identity.action_id,
+    }
+
+
+def test_public_v3_packet_preview_requires_exact_identity_action_id() -> None:
+    pack = {"current": _pack()}
+    planning = {"current": _planning_result()}
+    client = _client(pack, planning)
+    path = "/api/content/work-items/wi_exact/research-packet-v3-preview"
+    params = _identity_params(pack)
+
+    missing_identity = client.get(path)
+    assert missing_identity.status_code == 200, missing_identity.text
+    assert missing_identity.json()["status"] == "blocked"
+    assert missing_identity.json()["blocker"]["code"] == "per_url_delivery_identity_required"
+
+    exact = client.get(path, params=params)
+    assert exact.status_code == 200, exact.text
+    ready = exact.json()
+    assert ready["status"] == "ready"
+    assert ready["per_url_delivery_identity_action_id"] == params[
+        "per_url_delivery_identity_action_id"
+    ]
+    assert ready["source_pack_hash"] == pack["current"].source_pack_hash
+
+
 def test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims() -> None:
     pack = {"current": _pack()}
     planning = {"current": _planning_result()}
     client = _client(pack, planning)
     path = "/api/content/work-items/wi_exact/research-packet-v3-preview"
-    response = client.get(path)
+    params = _identity_params(pack)
+    missing_identity = client.get(path)
+    assert missing_identity.json()["status"] == "blocked"
+    response = client.get(path, params=params)
     assert response.status_code == 200, response.text
     ready = response.json()
     assert ready["status"] == "ready"
@@ -204,13 +259,13 @@ def test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims() 
         "verification_evidence_ids": ("ev_current_rotated", "ev_official_fact"),
         "verification_evidence_digest": "1" * 64,
     })
-    rotated = client.get(path).json()
+    rotated = client.get(path, params=params).json()
     assert rotated["status"] == "ready"
     assert rotated["preview_hash"] == ready["preview_hash"]
     assert rotated["verification_evidence_ids"] != ready["verification_evidence_ids"]
 
     planning["current"].planning_input.query_portfolio.gsc_query_rows = [object()]
-    stale_gsc = client.get(path).json()
+    stale_gsc = client.get(path, params=params).json()
     assert stale_gsc["status"] == "blocked"
     assert stale_gsc["blocker"]["code"] == "stale_gsc_data_in_packet"
 
@@ -220,23 +275,24 @@ def test_public_v3_packet_blocks_other_stale_sources_metrics_and_foreign_require
     planning = {"current": _planning_result()}
     client = _client(pack, planning)
     path = "/api/content/work-items/wi_exact/research-packet-v3-preview"
+    params = _identity_params(pack)
 
     planning["current"].planning_input.final_canonical_url = (
         "https://www.ekologus.pl/other/"
     )
-    wrong_page = client.get(path).json()
+    wrong_page = client.get(path, params=params).json()
     assert wrong_page["status"] == "blocked"
     assert wrong_page["blocker"]["code"] == "planning_page_identity_mismatch"
 
     planning["current"] = _planning_result()
     planning["current"].planning_input.regulatory_coverage.canonical_path = "/other"
-    wrong_coverage_page = client.get(path).json()
+    wrong_coverage_page = client.get(path, params=params).json()
     assert wrong_coverage_page["status"] == "blocked"
     assert wrong_coverage_page["blocker"]["code"] == "planning_page_identity_mismatch"
 
     planning["current"] = _planning_result()
     planning["current"].planning_input.source_assessments[0].status = "stale"
-    stale_wordpress = client.get(path).json()
+    stale_wordpress = client.get(path, params=params).json()
     assert stale_wordpress["status"] == "blocked"
     assert stale_wordpress["blocker"]["code"] == "stale_gsc_data_in_packet"
 
@@ -246,7 +302,7 @@ def test_public_v3_packet_blocks_other_stale_sources_metrics_and_foreign_require
             source_connector="google_search_console", status="available"
         )
     ]
-    stale_metric = client.get(path).json()
+    stale_metric = client.get(path, params=params).json()
     assert stale_metric["status"] == "blocked"
     assert stale_metric["blocker"]["code"] == "stale_gsc_data_in_packet"
 
@@ -254,12 +310,12 @@ def test_public_v3_packet_blocks_other_stale_sources_metrics_and_foreign_require
     planning["current"].planning_input.regulatory_coverage.requirement_coverage[0].evidence_ids = [
         "ev_foreign"
     ]
-    foreign = client.get(path).json()
+    foreign = client.get(path, params=params).json()
     assert foreign["status"] == "blocked"
     assert foreign["blocker"]["code"] == "legal_requirement_evidence_unbound"
 
     planning["current"] = _planning_result()
     pack["current"] = pack["current"].model_copy(update={"source_pack_hash": "0" * 64})
-    invalid_pack = client.get(path).json()
+    invalid_pack = client.get(path, params=params).json()
     assert invalid_pack["status"] == "blocked"
     assert invalid_pack["blocker"]["code"] == "source_pack_invalid"

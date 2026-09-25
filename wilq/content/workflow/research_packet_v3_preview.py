@@ -79,6 +79,7 @@ class ResearchPacketV3Preview(BaseModel):
     canonical_path: str | None = None
     identity_digest: str | None = Field(default=None, pattern=_HEX64)
     material_meaning_digest: str | None = Field(default=None, pattern=_HEX64)
+    per_url_delivery_identity_action_id: str | None = Field(default=None, min_length=1)
     planning_input_digest: str | None = Field(default=None, pattern=_HEX64)
     content_kind: Literal["service", "editorial"] | None = None
     service_card_id: str | None = None
@@ -172,6 +173,10 @@ class ResearchPacketV3Preview(BaseModel):
             and content_normalized_path(self.page_url) == self.canonical_path
         )
 
+    def has_current_per_url_identity(self) -> bool:
+        """Only M2a-bound previews can enter the new v3 ActionObject review."""
+        return self.per_url_delivery_identity_action_id is not None
+
     def semantic_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
             "contract": self.contract_version,
@@ -205,6 +210,10 @@ class ResearchPacketV3Preview(BaseModel):
         if self.content_kind is not None:
             payload["content_kind"] = self.content_kind
             payload["service_card_id"] = self.service_card_id
+        if self.per_url_delivery_identity_action_id is not None:
+            payload["per_url_delivery_identity_action_id"] = (
+                self.per_url_delivery_identity_action_id
+            )
         return payload
 
 
@@ -221,9 +230,15 @@ def build_research_packet_v3_preview(
         if blocker is None:
             return _blocked(
                 work_item_id, "source_pack_blocked", (), "Odczytaj bieżący source pack."
-            )
+        )
+        next_step = (
+            "Zatwierdź per-URL identity dokładnej strony w wybranym workspace, "
+            "a potem ponów pakiet."
+            if blocker.code == "per_url_delivery_identity_required"
+            else blocker.safe_next_step
+        )
         return _blocked(work_item_id, blocker.code, blocker.evidence_ids,
-                        blocker.safe_next_step, blocker.owner)
+                        next_step, blocker.owner)
     try:
         source_pack = SourcePackV3Preview.model_validate_json(
             source_pack.model_dump_json(), strict=True
@@ -381,6 +396,11 @@ def _ready(
         "canonical_path": source_pack.canonical_path,
         "identity_digest": source_pack.identity_digest,
         "material_meaning_digest": source_pack.material_meaning_digest,
+        "per_url_delivery_identity_action_id": (
+            None
+            if source_pack.per_url_identity is None
+            else source_pack.per_url_identity.action_id
+        ),
         "planning_input_digest": planning.planning_input_digest,
         "content_kind": planning.content_kind,
         "service_card_id": planning.confirmed_service_card_id,

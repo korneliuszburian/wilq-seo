@@ -506,6 +506,17 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_research_packet_v3_preview.py::"
         "test_public_v3_packet_is_exact_and_excludes_stale_gsc_and_old_page_claims",
     ),
+    ("research-packet-v3", "exact-per-url-identity"): (
+        "scripts/test.sh",
+        "tests/content/test_research_packet_v3_preview.py::"
+        "test_public_v3_packet_preview_requires_exact_identity_action_id",
+        "tests/content/test_research_packet_v3_action.py::"
+        "test_v3_action_preview_requires_exact_per_url_identity_action_id",
+        "tests/content/test_research_packet_v3_action.py::"
+        "test_v3_action_apply_blocks_if_its_exact_per_url_identity_becomes_stale",
+        "tests/content/test_research_packet_v3_action.py::"
+        "test_v3_legacy_packet_snapshot_stays_readable_but_cannot_start_new_review",
+    ),
     ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"): (
         "scripts/test.sh",
         "tests/content/test_current_page_disposition_v2_action.py",
@@ -677,6 +688,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"),
             ("source-pack-v3", "approved-official-complete-read"),
             ("research-packet-v3", "exact-official-no-stale-demand"),
+            ("research-packet-v3", "exact-per-url-identity"),
             ("current-page-disposition-v2", "exact-lifecycle-revalidates-material-meaning"),
             ("current-page-identity-v2", "receipt-backed-exact-current"),
             ("current-source-fact-candidates-v2", "exact-keep-scoped-selection"),

@@ -400,19 +400,27 @@ export function prepareContentResearchPacketV2Action(
 }
 
 export function getContentResearchPacketV3Preview(
-  workItemId: string
+  workItemId: string,
+  perUrlDeliveryIdentityActionId?: string
 ): Promise<ResearchPacketV3PreviewResponse> {
+  const identityQuery = perUrlDeliveryIdentityActionId
+    ? `?per_url_delivery_identity_action_id=${encodeURIComponent(perUrlDeliveryIdentityActionId)}`
+    : "";
   return apiGet(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-preview`,
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-preview${identityQuery}`,
     ResearchPacketV3PreviewResponseSchema
   );
 }
 
 export function prepareContentResearchPacketV3Action(
-  workItemId: string
+  workItemId: string,
+  perUrlDeliveryIdentityActionId?: string
 ): Promise<ResearchPacketV3ActionResponse> {
+  const identityQuery = perUrlDeliveryIdentityActionId
+    ? `?per_url_delivery_identity_action_id=${encodeURIComponent(perUrlDeliveryIdentityActionId)}`
+    : "";
   return apiPostWithConflict(
-    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-action/preview`,
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-action/preview${identityQuery}`,
     ResearchPacketV3ActionReadySchema,
     ResearchPacketV3ActionBlockedSchema,
     {}

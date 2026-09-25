@@ -29,7 +29,7 @@ from wilq.content.workflow.store.store import ContentWorkflowStore, content_work
 from wilq.schemas import ActionObject
 
 StoreFactory = Callable[[], ContentWorkflowStore]
-PreviewLoader = Callable[[str], ResearchPacketV3Preview]
+PreviewLoader = Callable[[str, str | None], ResearchPacketV3Preview]
 
 
 class ResearchPacketV3ActionReady(BaseModel):
@@ -88,16 +88,24 @@ def register_content_research_packet_v3_action_routes(
     preview_loader: PreviewLoader | None = None,
 ) -> None:
     make_store = store_factory or content_workflow_store
-    load_preview = preview_loader or read_current_research_packet_v3_preview
+    load_preview = preview_loader or (
+        lambda work_item_id, action_id: read_current_research_packet_v3_preview(
+            work_item_id,
+            per_url_delivery_identity_action_id=action_id,
+        )
+    )
 
     @router.post(
         "/api/content/work-items/{work_item_id}/research-packet-v3-action/preview",
         response_model=ResearchPacketV3ActionReady,
         responses={409: {"model": ResearchPacketV3ActionBlocked}},
     )
-    def prepare_action(work_item_id: str) -> ResearchPacketV3ActionReady | JSONResponse:
+    def prepare_action(
+        work_item_id: str,
+        per_url_delivery_identity_action_id: str | None = None,
+    ) -> ResearchPacketV3ActionReady | JSONResponse:
         try:
-            preview = load_preview(work_item_id)
+            preview = load_preview(work_item_id, per_url_delivery_identity_action_id)
             if preview.status == "blocked":
                 blocker = preview.blocker
                 if blocker is None:
@@ -108,6 +116,18 @@ def register_content_research_packet_v3_action_routes(
                     blocker.owner,
                     list(blocker.evidence_ids),
                     blocker.safe_next_step,
+                )
+            if (
+                per_url_delivery_identity_action_id is None
+                or preview.per_url_delivery_identity_action_id
+                != per_url_delivery_identity_action_id
+            ):
+                return _blocked_response(
+                    work_item_id,
+                    "per_url_delivery_identity_mismatch",
+                    "WILQ content workflow",
+                    list(preview.verification_evidence_ids),
+                    "Odczytaj pakiet dla dokładnego bieżącego per-URL identity.",
                 )
             if not preview.has_exact_page_identity():
                 return _blocked_response(
@@ -173,7 +193,10 @@ def _register_research_packet_v3_reads(
         if record is None:
             raise HTTPException(status_code=409, detail="research_packet_v3_preview_missing")
         try:
-            current = load_preview(record.work_item_id)
+            current = load_preview(
+                record.work_item_id,
+                record.snapshot.per_url_delivery_identity_action_id,
+            )
         except (ValueError, RuntimeError, HTTPException):
             current = ResearchPacketV3Preview(
                 status="blocked",
