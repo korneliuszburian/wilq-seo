@@ -251,6 +251,11 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_delivery_identity_authority.py::"
         "test_per_url_identity_preview_retries_are_idempotent",
     ),
+    ("source-pack-v3", "per-url-identity-currentness"): (
+        "scripts/test.sh",
+        "tests/content/test_source_pack_v3.py::"
+        "test_public_v3_pack_requires_exact_per_url_identity",
+    ),
     ("source-fact-source-pack", "exact-reviewed-row-consumption"): (
         "scripts/test.sh",
         "tests/content/test_source_fact_authority.py",
@@ -668,6 +673,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("current-page-identity-v3", "receiptless-exact-cas"),
             ("per-url-decision-authority", "two-wave-currentness"),
             ("per-url-delivery-identity", "semantic-row-currentness"),
+            ("source-pack-v3", "per-url-identity-currentness"),
             ("current-source-fact-candidates-v3", "receiptless-reviewed-selection"),
             ("source-pack-v3", "approved-official-complete-read"),
             ("research-packet-v3", "exact-official-no-stale-demand"),

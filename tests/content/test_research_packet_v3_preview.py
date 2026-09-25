@@ -29,6 +29,7 @@ from wilq.content.workflow.source_fact_candidate_projection import (
 )
 from wilq.content.workflow.source_pack_v3 import (
     SourcePackV3Fact,
+    SourcePackV3PerUrlIdentity,
     SourcePackV3Preview,
     SourcePackV3Requirement,
 )
@@ -53,6 +54,20 @@ def _pack() -> SourcePackV3Preview:
         identity_id="current_page_identity_v3_exact",
         identity_digest="b" * 64,
         material_meaning_digest="c" * 64,
+        per_url_identity=SourcePackV3PerUrlIdentity(
+            action_id="act_per_url_delivery_identity_exact",
+            binding_id="content_per_url_delivery_identity_exact",
+            binding_digest="f" * 64,
+            semantic_row_digest="1" * 64,
+            observation_id="content_per_url_decision_observation_exact",
+            disposition_receipt_id="content_per_url_disposition_receipt_exact",
+            disposition_receipt_digest="2" * 64,
+            evidence_ids=("ev_per_url_identity",),
+            current_work_item_id="wi_exact",
+            page_url="https://www.ekologus.pl/exact/",
+            canonical_path="/exact",
+            material_meaning_digest="c" * 64,
+        ),
         registry_digest="d" * 64,
         regulatory_profile_id="synthetic_profile",
         regulatory_profile_version="synthetic-v1",
