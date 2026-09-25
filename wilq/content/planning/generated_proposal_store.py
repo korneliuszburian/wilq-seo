@@ -15,6 +15,10 @@ from wilq.content.planning.frozen_planning_input import (
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.generated_proposal_jobs_store import (
+    PlanningEnqueueOutcome,
+    _enqueue_subject_pending,
+)
 from wilq.content.planning.generated_proposal_queries import (
     PROPOSAL_INPUT_SELECTS as _PROPOSAL_INPUT_SELECTS,
 )
@@ -63,7 +67,6 @@ from wilq.storage.schema_versions import (
     reject_newer_sqlite_schema,
 )
 
-PlanningEnqueueOutcome = Literal["queued", "existing", "in_flight", "finished"]
 GeneratedProposalSaveOutcome = Literal["created", "idempotent", "replaced"]
 PlanningTerminalSaveOutcome = Literal["saved", "claim_stale", "ignored"]
 
@@ -454,91 +457,6 @@ def _enqueue_pending(
         response=response,
         allow_finished_reset=allow_finished_reset,
     )
-
-
-def _enqueue_subject_pending(
-    store: ContentPlanningProposalStore,
-    *,
-    work_item_id: str,
-    subject: ContentPlanningSubject,
-    planning_input_digest: str,
-    response: ContentPlanningProposalResponse,
-    allow_finished_reset: bool = False,
-) -> PlanningEnqueueOutcome:
-    payload = redact_mapping(response.model_dump(mode="json"))
-    with store.run_transaction() as connection:
-        connection.execute("BEGIN IMMEDIATE")
-        row = connection.execute(
-            """
-                SELECT status, updated_at FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
-                  AND planning_input_digest = ?
-                LIMIT 1
-                """,
-            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
-        ).fetchone()
-        if row is not None and row["status"] == "finished" and not allow_finished_reset:
-            return "finished"
-        if row is not None and row["status"] == "queued" and not _job_is_stale(row["updated_at"]):
-            return "existing"
-        sibling = connection.execute(
-            """
-                SELECT planning_input_digest, updated_at
-                FROM content_planning_generation_jobs
-                WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
-                  AND status = 'queued' AND planning_input_digest != ?
-                ORDER BY updated_at DESC LIMIT 1
-                """,
-            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
-        ).fetchone()
-        if sibling is not None and not _job_is_stale(sibling["updated_at"]):
-            return "in_flight"
-        connection.execute(
-            """
-            UPDATE content_planning_generation_jobs
-            SET status = 'stale'
-            WHERE work_item_id = ? AND content_kind = ? AND subject_key = ?
-              AND planning_input_digest = ?
-              AND status IN ('failed', 'blocked')
-            """,
-            (work_item_id, subject.content_kind, subject.subject_key, planning_input_digest),
-        )
-        if allow_finished_reset:
-            upsert_status_fence = """
-                INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, content_kind, subject_key,
-                  planning_input_digest, status,
-                  payload_json, updated_at
-                ) VALUES (?, ?, ?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, content_kind, subject_key, planning_input_digest)
-                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
-                              updated_at = excluded.updated_at
-                WHERE content_planning_generation_jobs.status IN ('queued', 'stale', 'finished')
-                """
-        else:
-            upsert_status_fence = """
-                INSERT INTO content_planning_generation_jobs (
-                  work_item_id, service_card_id, content_kind, subject_key,
-                  planning_input_digest, status,
-                  payload_json, updated_at
-                ) VALUES (?, ?, ?, ?, ?, 'queued', ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(work_item_id, content_kind, subject_key, planning_input_digest)
-                DO UPDATE SET status = 'queued', payload_json = excluded.payload_json,
-                              updated_at = excluded.updated_at
-                WHERE content_planning_generation_jobs.status IN ('queued', 'stale')
-                """
-        connection.execute(
-            upsert_status_fence,
-            (
-                work_item_id,
-                subject.service_card_id,
-                subject.content_kind,
-                subject.subject_key,
-                planning_input_digest,
-                model_json(payload),
-            ),
-        )
-    return "queued"
 
 
 def _save_terminal_response(

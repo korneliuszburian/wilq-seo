@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Protocol
@@ -24,6 +25,10 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.generated_proposal_jobs_store import (
+    _enqueue_subject_pending,
+    _PlanningGenerationAdmissionBlocked,
+)
 from wilq.content.planning.generated_proposal_store import (
     ContentPlanningProposalStore,
     PlanningEnqueueOutcome,
@@ -43,6 +48,9 @@ from wilq.storage.local_state import LocalStateStore, local_state_store
 ContentPlanningSnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 PlanningClientFactory = Callable[[], StdioCodexAppServerClient]
 PlanningGenerationGuard = Callable[[], ContentPlanningProposalResponse | None]
+PlanningQueueAdmissionGuard = Callable[
+    [sqlite3.Connection], ContentPlanningProposalResponse | None
+]
 
 
 class PlanningGenerationRunner(Protocol):
@@ -234,6 +242,7 @@ def enqueue_planning_generation(
     snapshot_loader: ContentPlanningSnapshotLoader,
     store: ContentPlanningProposalStore,
     generation_guard: PlanningGenerationGuard | None = None,
+    queue_admission_guard: PlanningQueueAdmissionGuard | None = None,
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None,
     generation_runner: PlanningGenerationRunner | None = None,
 ) -> ContentPlanningProposalResponse:
@@ -246,15 +255,20 @@ def enqueue_planning_generation(
         request=request,
         refresh_preparation_binding=refresh_preparation_binding,
     )
-    outcome = store.enqueue_subject_pending(
-        work_item_id=work_item_id,
-        subject=_request_subject(request),
-        planning_input_digest=request.expected_planning_input_digest,
-        response=result,
-        allow_finished_reset=(
-            request.regenerate_stale_mapping or request.regenerate_after_review
-        ),
-    )
+    try:
+        outcome = _enqueue_subject_pending(
+            store,
+            work_item_id=work_item_id,
+            subject=_request_subject(request),
+            planning_input_digest=request.expected_planning_input_digest,
+            response=result,
+            allow_finished_reset=(
+                request.regenerate_stale_mapping or request.regenerate_after_review
+            ),
+            admission_guard=queue_admission_guard,
+        )
+    except _PlanningGenerationAdmissionBlocked as error:
+        return error.response
     if outcome == "existing":
         queued = store.queued_subject_response(
             work_item_id, _request_subject(request), request.expected_planning_input_digest

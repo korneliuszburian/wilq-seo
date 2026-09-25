@@ -39,7 +39,7 @@ PLANNING_GENERATION_INTENT_V3_ACTION_TYPE = "content_planning_generation_intent_
 PLANNING_GENERATION_INTENT_V3_ADAPTER = "content_planning_generation_intent_v3_local_authority"
 _ACTION_PREFIX = "act_content_planning_generation_intent_v3_"
 _HEX64 = r"^[0-9a-f]{64}$"
-_CURRENT_PACKET_LOADER = Callable[[str], ResearchPacketV3Preview]
+_CURRENT_PACKET_LOADER = Callable[[str, str | None], ResearchPacketV3Preview]
 PacketBlockerOwner = Literal["WILQ content workflow", "WILQ WordPress connector", "Wilku"]
 
 
@@ -70,6 +70,9 @@ class ApprovedPacketV3PlanningProjection(_FrozenModel):
     page_url: str = Field(min_length=1, max_length=2048)
     canonical_path: str = Field(min_length=1, max_length=2048)
     identity_digest: str = Field(pattern=_HEX64)
+    per_url_delivery_identity_action_id: str | None = Field(
+        default=None, min_length=1, max_length=240
+    )
     material_meaning_digest: str = Field(pattern=_HEX64)
     source_pack_id: str = Field(min_length=1, max_length=240)
     source_pack_hash: str = Field(pattern=_HEX64)
@@ -117,6 +120,9 @@ class PlanningGenerationIntentV3Snapshot(_FrozenModel):
     page_url: str = Field(min_length=1, max_length=2048)
     canonical_path: str = Field(min_length=1, max_length=2048)
     identity_digest: str = Field(pattern=_HEX64)
+    per_url_delivery_identity_action_id: str | None = Field(
+        default=None, min_length=1, max_length=240
+    )
     material_meaning_digest: str = Field(pattern=_HEX64)
     source_pack_id: str = Field(min_length=1, max_length=240)
     source_pack_hash: str = Field(pattern=_HEX64)
@@ -152,6 +158,9 @@ class PlanningGenerationIntentV3Snapshot(_FrozenModel):
             # exact subject binding and therefore cannot dispatch a new plan.
             projection_payload.pop("content_kind", None)
             projection_payload.pop("service_card_id", None)
+        if self.per_url_delivery_identity_action_id is None:
+            projection_payload.pop("per_url_delivery_identity_action_id", None)
+        if self.content_kind is None or self.per_url_delivery_identity_action_id is None:
             context_digest = planning_generation_intent_v3_context_digest(projection_payload)
         else:
             projection = ApprovedPacketV3PlanningProjection.model_validate(
@@ -219,11 +228,95 @@ def resolve_approved_packet_v3_for_planning(
     work_item_id: str,
     packet_id: str,
     expected_digest: str,
+    expected_identity_action_id: str | None = None,
     current_preview_loader: _CURRENT_PACKET_LOADER | None = None,
 ) -> ApprovedPacketV3PlanningView | ResearchPacketV3Blocker:
     """Require the exact receipt, immutable reviewed record, and current semantic packet."""
 
     load_current = current_preview_loader or _load_current_packet
+    stored = _load_approved_packet_v3_record(
+        store=store,
+        work_item_id=work_item_id,
+        packet_id=packet_id,
+        expected_digest=expected_digest,
+        current_preview_loader=load_current,
+    )
+    if isinstance(stored, ResearchPacketV3Blocker):
+        return stored
+    approved, receipt = stored
+    identity_action_id = approved.per_url_delivery_identity_action_id
+    if identity_action_id is None:
+        return _blocked(
+            "per_url_delivery_identity_required",
+            receipt.verification_evidence_ids,
+            "Odczytaj pakiet v3 z dokładnym bieżącym per-URL identity.",
+        )
+    if (
+        expected_identity_action_id is not None
+        and expected_identity_action_id != identity_action_id
+    ):
+        return _blocked(
+            "per_url_delivery_identity_mismatch",
+            receipt.verification_evidence_ids,
+            "Odczytaj intent ponownie dla tożsamości zapisanej w zatwierdzonym pakiecie.",
+        )
+    try:
+        current = load_current(work_item_id, identity_action_id)
+    except Exception:
+        return _blocked(
+            "research_packet_v3_current_read_unavailable",
+            receipt.verification_evidence_ids,
+            "Ponów dokładny odczyt bieżącego pakietu v3 przed przygotowaniem zamiaru.",
+        )
+    if current.status != "ready":
+        if current.blocker is not None:
+            return current.blocker
+        return _blocked(
+            "research_packet_v3_current_blocked",
+            receipt.verification_evidence_ids,
+            "Ponów odczyt bieżącego pakietu v3.",
+        )
+    if (
+        current.work_item_id != work_item_id
+        or not current.has_exact_page_identity()
+        or current.page_url != approved.page_url
+        or current.canonical_path != approved.canonical_path
+        or current.identity_digest != approved.identity_digest
+    ):
+        return _blocked(
+            "research_packet_v3_identity_mismatch",
+            current.verification_evidence_ids,
+            "Odczytaj tożsamość dokładnej bieżącej strony i zatwierdź nowy pakiet v3.",
+        )
+    if current.per_url_delivery_identity_action_id != identity_action_id:
+        return _blocked(
+            "per_url_delivery_identity_mismatch",
+            current.verification_evidence_ids,
+            "Odczytaj pakiet v3 ponownie dla dokładnego bieżącego per-URL identity.",
+        )
+    if current.preview_hash != expected_digest:
+        return _blocked(
+            "research_packet_v3_current_drift",
+            current.verification_evidence_ids,
+            "Pakiet v3 zmienił się semantycznie. Przygotuj i zatwierdź nowy dokładny pakiet.",
+        )
+    return ApprovedPacketV3PlanningView(
+        packet_id=receipt.packet_id,
+        packet_digest=receipt.packet_digest,
+        work_item_id=work_item_id,
+        receipt=receipt,
+        approved_preview=approved,
+    )
+
+
+def _load_approved_packet_v3_record(
+    *,
+    store: ContentWorkflowStore,
+    work_item_id: str,
+    packet_id: str,
+    expected_digest: str,
+    current_preview_loader: _CURRENT_PACKET_LOADER,
+) -> tuple[ResearchPacketV3Preview, ResearchPacketV3ApprovalReceipt] | ResearchPacketV3Blocker:
     try:
         receipt = store.load_research_packet_v3_approval_receipt(packet_id)
     except (OSError, RuntimeError, ValueError, sqlite3.Error):
@@ -235,7 +328,7 @@ def resolve_approved_packet_v3_for_planning(
     if receipt is None:
         return _blocked(
             "research_packet_v3_approval_missing",
-            _current_evidence_ids(load_current, work_item_id),
+            _current_evidence_ids(current_preview_loader, work_item_id),
             "Zatwierdź dokładny pakiet v3 przez ActionObject przed przygotowaniem zamiaru.",
         )
     if receipt.packet_id != packet_id or receipt.packet_digest != expected_digest:
@@ -271,48 +364,7 @@ def resolve_approved_packet_v3_for_planning(
             receipt.verification_evidence_ids,
             "Odczytaj receipt i pakiet v3 przypisane do dokładnej strony.",
         )
-    try:
-        current = load_current(work_item_id)
-    except Exception:
-        return _blocked(
-            "research_packet_v3_current_read_unavailable",
-            receipt.verification_evidence_ids,
-            "Ponów dokładny odczyt bieżącego pakietu v3 przed przygotowaniem zamiaru.",
-        )
-    if current.status != "ready":
-        blocker = current.blocker
-        if blocker is not None:
-            return blocker
-        return _blocked(
-            "research_packet_v3_current_blocked",
-            receipt.verification_evidence_ids,
-            "Ponów odczyt bieżącego pakietu v3.",
-        )
-    if (
-        current.work_item_id != work_item_id
-        or not current.has_exact_page_identity()
-        or current.page_url != approved.page_url
-        or current.canonical_path != approved.canonical_path
-        or current.identity_digest != approved.identity_digest
-    ):
-        return _blocked(
-            "research_packet_v3_identity_mismatch",
-            current.verification_evidence_ids,
-            "Odczytaj tożsamość dokładnej bieżącej strony i zatwierdź nowy pakiet v3.",
-        )
-    if current.preview_hash != expected_digest:
-        return _blocked(
-            "research_packet_v3_current_drift",
-            current.verification_evidence_ids,
-            "Pakiet v3 zmienił się semantycznie. Przygotuj i zatwierdź nowy dokładny pakiet.",
-        )
-    return ApprovedPacketV3PlanningView(
-        packet_id=receipt.packet_id,
-        packet_digest=receipt.packet_digest,
-        work_item_id=work_item_id,
-        receipt=receipt,
-        approved_preview=approved,
-    )
+    return approved, receipt
 
 
 def project_approved_packet_v3_for_planning(
@@ -327,6 +379,8 @@ def project_approved_packet_v3_for_planning(
         raise ValueError("Approved research packet v3 is missing planning context.")
     if packet.content_kind is None:
         raise ValueError("Approved research packet v3 is missing exact generation subject.")
+    if packet.per_url_delivery_identity_action_id is None:
+        raise ValueError("per_url_delivery_identity_required")
     evidence = set(view.receipt.verification_evidence_ids)
     evidence.update(
         evidence_id for fact in packet.selected_facts for evidence_id in fact.evidence_ids
@@ -349,6 +403,7 @@ def project_approved_packet_v3_for_planning(
         page_url=packet.page_url,
         canonical_path=packet.canonical_path,
         identity_digest=packet.identity_digest or "",
+        per_url_delivery_identity_action_id=packet.per_url_delivery_identity_action_id,
         material_meaning_digest=packet.material_meaning_digest or "",
         source_pack_id=packet.source_pack_id or "",
         source_pack_hash=packet.source_pack_hash or "",
@@ -386,6 +441,8 @@ def planning_generation_intent_v3_action_id(intent_digest: str) -> str:
 def build_planning_generation_intent_v3_proposal(
     projection: ApprovedPacketV3PlanningProjection,
 ) -> PlanningGenerationIntentV3Proposal:
+    if projection.per_url_delivery_identity_action_id is None:
+        raise ValueError("per_url_delivery_identity_required")
     context_digest = planning_generation_intent_v3_context_digest(projection)
     intent_digest = planning_generation_intent_v3_digest(context_digest)
     snapshot = PlanningGenerationIntentV3Snapshot.model_validate(
@@ -438,6 +495,9 @@ def planning_generation_intent_v3_action(
     proposal: PlanningGenerationIntentV3Proposal,
 ) -> ActionObject:
     snapshot = proposal.snapshot
+    snapshot_payload = snapshot.model_dump(mode="json")
+    if snapshot.per_url_delivery_identity_action_id is None:
+        snapshot_payload.pop("per_url_delivery_identity_action_id", None)
     return ActionObject(
         id=proposal.action_id,
         title="Zatwierdź lokalny zamiar planowania z pakietu v3",
@@ -457,7 +517,7 @@ def planning_generation_intent_v3_action(
             "connector": "wordpress_ekologus",
             "mode": "apply",
             "local_authority_only": True,
-            "planning_generation_intent_v3": snapshot.model_dump(mode="json"),
+            "planning_generation_intent_v3": snapshot_payload,
             "payload_preview": [
                 {
                     "id": proposal.action_id,
@@ -551,6 +611,7 @@ def execute_planning_generation_intent_v3_action(
         work_item_id=proposal.snapshot.work_item_id,
         packet_id=proposal.snapshot.packet_id,
         expected_digest=proposal.snapshot.packet_digest,
+        expected_identity_action_id=proposal.snapshot.per_url_delivery_identity_action_id,
         current_preview_loader=current_preview_loader,
     )
     if isinstance(view, ResearchPacketV3Blocker):
@@ -701,6 +762,9 @@ def planning_generation_intent_v3_receipt_digest(
     value: PlanningGenerationIntentV3Receipt | dict[str, object],
 ) -> str:
     payload = value.model_dump(mode="json") if isinstance(value, BaseModel) else dict(value)
+    snapshot = payload.get("snapshot")
+    if isinstance(snapshot, dict) and snapshot.get("per_url_delivery_identity_action_id") is None:
+        snapshot.pop("per_url_delivery_identity_action_id", None)
     payload.pop("receipt_id", None)
     payload.pop("receipt_digest", None)
     return canonical_json_digest(payload)
@@ -755,7 +819,7 @@ def _current_evidence_ids(
     work_item_id: str,
 ) -> tuple[str, ...]:
     try:
-        current = loader(work_item_id)
+        current = loader(work_item_id, None)
     except Exception:
         return ()
     if current.status == "ready":
@@ -763,12 +827,18 @@ def _current_evidence_ids(
     return () if current.blocker is None else current.blocker.evidence_ids
 
 
-def _load_current_packet(work_item_id: str) -> ResearchPacketV3Preview:
+def _load_current_packet(
+    work_item_id: str,
+    per_url_delivery_identity_action_id: str | None,
+) -> ResearchPacketV3Preview:
     from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
         read_current_research_packet_v3_preview,
     )
 
-    return read_current_research_packet_v3_preview(work_item_id)
+    return read_current_research_packet_v3_preview(
+        work_item_id,
+        per_url_delivery_identity_action_id=per_url_delivery_identity_action_id,
+    )
 
 
 __all__ = [

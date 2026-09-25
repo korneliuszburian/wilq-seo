@@ -119,6 +119,29 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "tests/content/test_planning_generation_intent_change_contract.py::"
         "test_public_generation_intent_exposes_typed_blocked_preview_contract",
     ),
+    ("planning-generation-intent-v3", "exact-per-url-identity"): (
+        "scripts/test.sh",
+        "tests/content/test_planning_generation_intent_v3_per_url_identity.py::"
+        "test_public_v3_intent_snapshot_binds_exact_per_url_identity",
+        "tests/content/test_planning_generation_intent_v3_per_url_identity.py::"
+        "test_v3_legacy_intent_snapshot_and_receipt_remain_readable_without_identity_id",
+        "tests/content/test_planning_generation_intent_v3_per_url_identity.py::"
+        "test_public_v3_intent_blocks_if_approved_packet_per_url_identity_changes",
+        "tests/content/test_planning_generation_intent_v3_per_url_identity.py::"
+        "test_v3_intent_apply_rechecks_approved_per_url_identity",
+        "tests/content/test_planning_generation_intent_v3_per_url_identity.py::"
+        "test_v3_dispatch_blocks_superseded_identity_before_queue_or_model",
+        "tests/content/test_planning_generation_intent_v3_dispatch_identity.py::"
+        "test_v3_default_dispatch_readers_receive_exact_identity_action_id",
+        "tests/content/test_planning_generation_intent_v3_dispatch_identity.py::"
+        "test_v3_identity_guard_blocks_queue_insert_and_holds_the_admission_write_lock",
+        "tests/content/test_planning_generation_intent_v3_dispatch_identity.py::"
+        "test_v3_queue_admission_blocks_semantic_drift_after_initial_currentness_check",
+        "tests/content/test_planning_generation_intent_v3_dispatch_identity.py::"
+        "test_v3_queue_admission_blocks_work_item_scope_drift_with_matching_digest",
+        "tests/content/test_planning_generation_intent_v3_dispatch_identity.py::"
+        "test_v3_legacy_intent_without_identity_blocks_before_dispatch_reads",
+    ),
     ("planning-deferred-dispatch", "explicit-post-audit-authority"): (
         "scripts/test.sh",
         "tests/content/test_planning_deferred_dispatch_change_contract.py::"
@@ -662,6 +685,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             ("v2-planning-worker", "guard-before-model-and-save"),
             ("v2-planning-route", "exact-readonly-binding"),
             ("planning-generation-intent", "exact-local-action-preview"),
+            ("planning-generation-intent-v3", "exact-per-url-identity"),
             ("planning-deferred-dispatch", "explicit-post-audit-authority"),
             ("planning-generation-dispatch", "audited-intent-only"),
             ("planning-auto-dispatch", "audit-before-enqueue"),

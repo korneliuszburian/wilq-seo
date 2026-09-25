@@ -22,6 +22,9 @@ from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalRequest,
     ContentPlanningProposalResponse,
 )
+from wilq.content.planning.generated_proposal_jobs_store import (
+    _per_url_identity_matches_current_observation,
+)
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ADAPTER,
@@ -52,10 +55,10 @@ from wilq.storage.local_state import LocalStateStore
 
 SnapshotLoader = Callable[[str], ContentWorkItemWorkflowSnapshotResponse]
 ProjectionLoader = Callable[
-    [str, str, str], ResearchPacketV3ModelProjection | ResearchPacketV3Blocker
+    [str, str, str, str], ResearchPacketV3ModelProjection | ResearchPacketV3Blocker
 ]
-SourcePackLoader = Callable[[str], SourcePackV3Preview]
-PacketPreviewLoader = Callable[[str], ResearchPacketV3Preview]
+SourcePackLoader = Callable[[str, str], SourcePackV3Preview]
+PacketPreviewLoader = Callable[[str, str], ResearchPacketV3Preview]
 SourceFactsLoader = Callable[[], tuple[ContentSourceFact, ...]]
 
 
@@ -93,6 +96,27 @@ class _V3DispatchAuthority:
     receipt: PlanningGenerationIntentV3Receipt
 
 
+def _build_current_projection_loader(
+    *,
+    workflow_store: ContentWorkflowStore,
+    snapshot_loader: SnapshotLoader,
+    source_pack_loader: SourcePackLoader | None,
+    current_packet_loader: PacketPreviewLoader | None,
+    source_facts_loader: SourceFactsLoader | None,
+) -> ProjectionLoader:
+    return lambda work_item_id, packet_id, digest, identity_id: _load_current_projection(
+        work_item_id=work_item_id,
+        packet_id=packet_id,
+        digest=digest,
+        identity_action_id=identity_id,
+        workflow_store=workflow_store,
+        snapshot_loader=snapshot_loader,
+        source_pack_loader=source_pack_loader,
+        current_packet_loader=current_packet_loader,
+        source_facts_loader=source_facts_loader,
+    )
+
+
 def dispatch_applied_planning_intent_v3(
     action_id: str,
     *,
@@ -124,22 +148,26 @@ def dispatch_applied_planning_intent_v3(
         )
     proposal = authority.proposal
     receipt = authority.receipt
-    load_projection = projection_loader or (
-        lambda work_item_id, packet_id, digest: _load_current_projection(
-            work_item_id=work_item_id,
-            packet_id=packet_id,
-            digest=digest,
-            workflow_store=workflow_store,
-            snapshot_loader=snapshot_loader,
-            source_pack_loader=source_pack_loader,
-            current_packet_loader=current_packet_loader,
-            source_facts_loader=source_facts_loader,
+    identity_action_id = proposal.snapshot.per_url_delivery_identity_action_id
+    if identity_action_id is None:
+        return _blocked(
+            action_id,
+            "per_url_delivery_identity_required",
+            proposal.snapshot.evidence_ids,
+            "Przygotuj nowy intent z aktualnego pakietu v3 powiązanego z per-URL identity.",
         )
+    load_projection = projection_loader or _build_current_projection_loader(
+        workflow_store=workflow_store,
+        snapshot_loader=snapshot_loader,
+        source_pack_loader=source_pack_loader,
+        current_packet_loader=current_packet_loader,
+        source_facts_loader=source_facts_loader,
     )
     current = load_projection(
         proposal.snapshot.work_item_id,
         proposal.snapshot.packet_id,
         proposal.snapshot.packet_digest,
+        identity_action_id,
     )
     if isinstance(current, ResearchPacketV3Blocker):
         return _blocked_from(action_id, current)
@@ -152,10 +180,16 @@ def dispatch_applied_planning_intent_v3(
         )
     request = _request_for_projection(current, receipt.confirmed_by)
     observed_blockers: list[ResearchPacketV3Blocker] = []
+    queue_admission_guard = _build_queue_admission_guard(
+        proposal,
+        request,
+        observed_blockers,
+    )
     guard = _build_currentness_guard(
         action_id=action_id,
         proposal=proposal,
         receipt=receipt,
+        identity_action_id=identity_action_id,
         request=request,
         workflow_store=workflow_store,
         audit_store=audit_store,
@@ -164,6 +198,7 @@ def dispatch_applied_planning_intent_v3(
     )
     runner = _build_generation_runner(
         proposal=proposal,
+        identity_action_id=identity_action_id,
         projection_loader=load_projection,
         observed_blockers=observed_blockers,
     )
@@ -175,6 +210,7 @@ def dispatch_applied_planning_intent_v3(
         planning_input=current.planning_input,
         snapshot_loader=snapshot_loader,
         proposal_store=proposal_store,
+        queue_admission_guard=queue_admission_guard,
         generation_guard=guard,
         generation_runner=runner,
         enqueue=enqueue,
@@ -190,7 +226,6 @@ def _load_dispatch_authority(
 ) -> tuple[_V3DispatchAuthority | None, ResearchPacketV3Blocker | None]:
     try:
         proposal = workflow_store.load_planning_generation_intent_v3_proposal(action_id)
-        receipt = workflow_store.load_planning_generation_intent_v3_receipt(action_id)
     except (OSError, RuntimeError, ValueError, sqlite3.Error):
         return None, _blocker(
             "generation_intent_v3_receipt_unavailable",
@@ -202,6 +237,20 @@ def _load_dispatch_authority(
             "generation_intent_v3_proposal_missing",
             (),
             "Przygotuj dokładny intent v3 z aktualnego zatwierdzonego pakietu.",
+        )
+    if proposal.snapshot.per_url_delivery_identity_action_id is None:
+        return None, _blocker(
+            "per_url_delivery_identity_required",
+            proposal.snapshot.evidence_ids,
+            "Przygotuj nowy intent z aktualnego pakietu v3 powiązanego z per-URL identity.",
+        )
+    try:
+        receipt = workflow_store.load_planning_generation_intent_v3_receipt(action_id)
+    except (OSError, RuntimeError, ValueError, sqlite3.Error):
+        return None, _blocker(
+            "generation_intent_v3_receipt_unavailable",
+            proposal.snapshot.evidence_ids,
+            "Odczytaj ponownie exact v3 intent i jego lokalny receipt.",
         )
     if receipt is None:
         return None, _blocker(
@@ -223,6 +272,7 @@ def _build_currentness_guard(
     action_id: str,
     proposal: PlanningGenerationIntentV3Proposal,
     receipt: PlanningGenerationIntentV3Receipt,
+    identity_action_id: str,
     request: ContentPlanningProposalRequest,
     workflow_store: ContentWorkflowStore,
     audit_store: LocalStateStore,
@@ -248,6 +298,7 @@ def _build_currentness_guard(
             proposal.snapshot.work_item_id,
             proposal.snapshot.packet_id,
             proposal.snapshot.packet_digest,
+            identity_action_id,
         )
         if isinstance(fresh, ResearchPacketV3Blocker):
             return blocked(fresh)
@@ -262,9 +313,48 @@ def _build_currentness_guard(
     return guard
 
 
+def _build_queue_admission_guard(
+    proposal: PlanningGenerationIntentV3Proposal,
+    request: ContentPlanningProposalRequest,
+    observed_blockers: list[ResearchPacketV3Blocker],
+) -> Callable[[sqlite3.Connection], ContentPlanningProposalResponse | None]:
+    snapshot = proposal.snapshot
+    identity_action_id = snapshot.per_url_delivery_identity_action_id
+    if identity_action_id is None:
+        raise ValueError("per_url_delivery_identity_required")
+
+    def blocked(code: str, next_step: str) -> ContentPlanningProposalResponse:
+        blocker = _blocker(code, snapshot.evidence_ids, next_step)
+        observed_blockers.append(blocker)
+        return _proposal_blocked(snapshot.work_item_id, request, blocker)
+
+    def guard(connection: sqlite3.Connection) -> ContentPlanningProposalResponse | None:
+        try:
+            current = _per_url_identity_matches_current_observation(
+                connection,
+                action_id=identity_action_id,
+                canonical_path=snapshot.canonical_path,
+                current_work_item_id=snapshot.work_item_id,
+            )
+        except sqlite3.Error:
+            return blocked(
+                "per_url_identity_queue_admission_unavailable",
+                "Odczytaj ponownie bieżącą per-URL tożsamość przed dispatch.",
+            )
+        if not current:
+            return blocked(
+                "per_url_delivery_identity_mismatch",
+                "Odczytaj nowy intent dla exact URL-a i work itemu przed kolejką.",
+            )
+        return None
+
+    return guard
+
+
 def _build_generation_runner(
     *,
     proposal: PlanningGenerationIntentV3Proposal,
+    identity_action_id: str,
     projection_loader: ProjectionLoader,
     observed_blockers: list[ResearchPacketV3Blocker],
 ) -> Callable[..., ContentPlanningProposalResponse]:
@@ -285,6 +375,7 @@ def _build_generation_runner(
             proposal.snapshot.work_item_id,
             proposal.snapshot.packet_id,
             proposal.snapshot.packet_digest,
+            identity_action_id,
         )
         if isinstance(fresh, ResearchPacketV3Blocker):
             observed_blockers.append(fresh)
@@ -324,6 +415,9 @@ def _enqueue_v3_generation(
     planning_input: ContentPlanningInput,
     snapshot_loader: SnapshotLoader,
     proposal_store: ContentPlanningProposalStore,
+    queue_admission_guard: Callable[
+        [sqlite3.Connection], ContentPlanningProposalResponse | None
+    ],
     generation_guard: Callable[[], ContentPlanningProposalResponse | None],
     generation_runner: Callable[..., ContentPlanningProposalResponse],
     enqueue: Callable[..., ContentPlanningProposalResponse] | None,
@@ -338,6 +432,7 @@ def _enqueue_v3_generation(
             request=request,
             snapshot_loader=snapshot_loader,
             store=proposal_store,
+            queue_admission_guard=queue_admission_guard,
             generation_guard=generation_guard,
             generation_runner=generation_runner,
         )
@@ -384,59 +479,36 @@ def _load_current_projection(
     work_item_id: str,
     packet_id: str,
     digest: str,
+    identity_action_id: str,
     workflow_store: ContentWorkflowStore,
     snapshot_loader: SnapshotLoader,
     source_pack_loader: SourcePackLoader | None,
     current_packet_loader: PacketPreviewLoader | None,
     source_facts_loader: SourceFactsLoader | None,
 ) -> ResearchPacketV3ModelProjection | ResearchPacketV3Blocker:
-    try:
-        snapshot = snapshot_loader(work_item_id)
-        if snapshot.preflight.item.id != work_item_id:
-            return _blocker(
-                "research_packet_v3_identity_mismatch",
-                (),
-                "Odczytaj snapshot dla dokładnego work itemu zatwierdzonego pakietu.",
-            )
-        service_card_id = snapshot.service_profile_context.service_card_id
-        planning_result = build_content_planning_input(
-            snapshot, service_card_id=service_card_id
-        )
-        if planning_result.planning_input is None:
-            codes = tuple(blocker.code for blocker in planning_result.blockers)
-            return _blocker(
-                codes[0] if codes else "planning_input_unavailable",
-                tuple(snapshot.preflight.item.evidence_ids),
-                "Odtwórz bieżący typed planning input dla strony.",
-            )
-        load_pack = source_pack_loader or _load_current_source_pack
-        pack = load_pack(work_item_id)
-        load_packet = current_packet_loader or _load_current_packet
-        current_packet = load_packet(work_item_id)
-    except Exception:
-        return _blocker(
-            "research_packet_v3_current_read_unavailable",
-            (),
-            "Ponów dokładny odczyt aktualnego pakietu v3 i strony.",
-        )
-    if current_packet.status != "ready":
-        return current_packet.blocker or _blocker(
-            "research_packet_v3_current_blocked",
-            current_packet.verification_evidence_ids,
-            "Usuń blokadę bieżącego pakietu v3.",
-        )
+    page_inputs = _load_current_page_inputs(
+        work_item_id=work_item_id,
+        identity_action_id=identity_action_id,
+        snapshot_loader=snapshot_loader,
+        source_pack_loader=source_pack_loader,
+        current_packet_loader=current_packet_loader,
+    )
+    if isinstance(page_inputs, ResearchPacketV3Blocker):
+        return page_inputs
+    planning_input, pack, current_packet = page_inputs
     view = resolve_approved_packet_v3_for_planning(
         store=workflow_store,
         work_item_id=work_item_id,
         packet_id=packet_id,
         expected_digest=digest,
-        current_preview_loader=lambda _work_item_id: current_packet,
+        expected_identity_action_id=identity_action_id,
+        current_preview_loader=lambda _work_item_id, _identity_action_id: current_packet,
     )
     if isinstance(view, ResearchPacketV3Blocker):
         return view
     try:
         projection = project_planning_input_for_packet_v3(
-            planning_result.planning_input,
+            planning_input,
             packet=view.approved_preview,
             source_pack=pack,
             source_facts=(source_facts_loader or (lambda: tuple(ekologus_source_facts())))(),
@@ -461,20 +533,119 @@ def _load_current_projection(
         )
 
 
-def _load_current_source_pack(work_item_id: str) -> SourcePackV3Preview:
+def _load_current_page_inputs(
+    *,
+    work_item_id: str,
+    identity_action_id: str,
+    snapshot_loader: SnapshotLoader,
+    source_pack_loader: SourcePackLoader | None,
+    current_packet_loader: PacketPreviewLoader | None,
+) -> (
+    tuple[ContentPlanningInput, SourcePackV3Preview, ResearchPacketV3Preview]
+    | ResearchPacketV3Blocker
+):
+    try:
+        snapshot = snapshot_loader(work_item_id)
+        if snapshot.preflight.item.id != work_item_id:
+            return _blocker(
+                "research_packet_v3_identity_mismatch",
+                (),
+                "Odczytaj snapshot dla dokładnego work itemu zatwierdzonego pakietu.",
+            )
+        service_card_id = snapshot.service_profile_context.service_card_id
+        planning_result = build_content_planning_input(
+            snapshot, service_card_id=service_card_id
+        )
+        if planning_result.planning_input is None:
+            codes = tuple(blocker.code for blocker in planning_result.blockers)
+            return _blocker(
+                codes[0] if codes else "planning_input_unavailable",
+                tuple(snapshot.preflight.item.evidence_ids),
+                "Odtwórz bieżący typed planning input dla strony.",
+            )
+        load_pack = source_pack_loader or _load_current_source_pack
+        pack = load_pack(work_item_id, identity_action_id)
+        load_packet = current_packet_loader or _load_current_packet
+        current_packet = load_packet(work_item_id, identity_action_id)
+    except Exception:
+        return _blocker(
+            "research_packet_v3_current_read_unavailable",
+            (),
+            "Ponów dokładny odczyt aktualnego pakietu v3 i strony.",
+        )
+    if current_packet.status != "ready":
+        if current_packet.blocker is not None:
+            return current_packet.blocker
+        return _blocker(
+            "research_packet_v3_current_blocked",
+            current_packet.verification_evidence_ids,
+            "Usuń blokadę bieżącego pakietu v3.",
+        )
+    if current_packet.per_url_delivery_identity_action_id != identity_action_id:
+        return _blocker(
+            "per_url_delivery_identity_mismatch",
+            current_packet.verification_evidence_ids,
+            "Odczytaj ponownie exact intent z bieżącego per-URL identity.",
+        )
+    if pack.status != "ready":
+        blocker = pack.blocker
+        if blocker is not None:
+            owner: Literal["WILQ content workflow", "WILQ WordPress connector", "Wilku"] = (
+                "WILQ content workflow"
+            )
+            if blocker.owner == "WILQ WordPress connector":
+                owner = "WILQ WordPress connector"
+            elif blocker.owner == "Wilku":
+                owner = "Wilku"
+            return _blocker(
+                blocker.code,
+                blocker.evidence_ids,
+                blocker.safe_next_step,
+                owner=owner,
+            )
+        return _blocker(
+            "source_pack_blocked",
+            pack.verification_evidence_ids,
+            "Odczytaj ponownie source pack dla dokładnego bieżącego per-URL identity.",
+        )
+    if (
+        pack.per_url_identity is None
+        or pack.per_url_identity.action_id != identity_action_id
+    ):
+        return _blocker(
+            "per_url_delivery_identity_mismatch",
+            pack.verification_evidence_ids,
+            "Odczytaj ponownie source pack dla dokładnego bieżącego per-URL identity.",
+        )
+    return planning_result.planning_input, pack, current_packet
+
+
+def _load_current_source_pack(
+    work_item_id: str,
+    per_url_delivery_identity_action_id: str,
+) -> SourcePackV3Preview:
     from apps.api.wilq_api.routers.content_source_pack_v3 import (
         read_current_source_pack_v3_preview,
     )
 
-    return read_current_source_pack_v3_preview(work_item_id)
+    return read_current_source_pack_v3_preview(
+        work_item_id,
+        per_url_delivery_identity_action_id=per_url_delivery_identity_action_id,
+    )
 
 
-def _load_current_packet(work_item_id: str) -> ResearchPacketV3Preview:
+def _load_current_packet(
+    work_item_id: str,
+    per_url_delivery_identity_action_id: str,
+) -> ResearchPacketV3Preview:
     from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
         read_current_research_packet_v3_preview,
     )
 
-    return read_current_research_packet_v3_preview(work_item_id)
+    return read_current_research_packet_v3_preview(
+        work_item_id,
+        per_url_delivery_identity_action_id=per_url_delivery_identity_action_id,
+    )
 
 
 def _request_for_projection(

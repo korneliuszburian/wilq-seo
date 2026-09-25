@@ -22,7 +22,7 @@ from wilq.content.workflow.store.store import ContentWorkflowStore, content_work
 from wilq.schemas import ActionObject
 
 StoreFactory = Callable[[], ContentWorkflowStore]
-PreviewLoader = Callable[[str], ResearchPacketV3Preview]
+PreviewLoader = Callable[[str, str | None], ResearchPacketV3Preview]
 
 
 class PlanningGenerationIntentV3PreviewRequest(BaseModel):
