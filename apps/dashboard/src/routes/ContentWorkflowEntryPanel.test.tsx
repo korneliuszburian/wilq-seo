@@ -864,6 +864,52 @@ describe("ContentWorkflowEntryPanel", () => {
     }));
   });
 
+  it("surfaces a review write conflict with the API safe next step", async () => {
+    const workspace = reviewRequiredCanonicalDocumentWorkspace();
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+    vi.mocked(reviewContentNewPageRevision).mockResolvedValue({
+      status: "conflict",
+      code: "stale_revision",
+      safe_next_step: "Odczytaj ponownie aktualną wersję i zapisz review dla niej."
+    } as never);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("new-page-revision-review")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Zatwierdź tekst" }));
+
+    expect(await screen.findByText(/Review nie został zapisany/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Odczytaj ponownie aktualną wersję i zapisz review dla niej\./)
+    ).toBeInTheDocument();
+  });
+
+  it("treats a blocked review prerequisite as unsaved without refreshing the document", async () => {
+    const workspace = reviewRequiredCanonicalDocumentWorkspace();
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    const document = vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+    vi.mocked(reviewContentNewPageRevision).mockResolvedValue({
+      response_type: "content_new_page_document_review_prerequisite_conflict",
+      contract_version: "content_new_page_document_review_prerequisite_conflict_v1",
+      status: "blocked",
+      code: "missing_planning_foundation",
+      brief_id: "content_new_page_brief_test",
+      safe_next_step: "Uzupełnij podstawę planowania, a potem ponów review."
+    } as never);
+
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+    expect(await screen.findByTestId("new-page-revision-review")).toBeInTheDocument();
+    const callsBefore = document.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Zatwierdź tekst" }));
+
+    expect(
+      await screen.findByText(/Uzupełnij podstawę planowania, a potem ponów review\./)
+    ).toBeInTheDocument();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.mock.calls.length).toBe(callsBefore);
+  });
+
   it("does not offer review of a new page whose full text cannot be rendered", async () => {
     const workspace = reviewRequiredCanonicalDocumentWorkspace();
     (workspace.canonical_revision as { page_assets?: unknown }).page_assets = undefined;

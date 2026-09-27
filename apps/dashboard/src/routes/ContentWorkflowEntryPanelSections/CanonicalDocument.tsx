@@ -8,6 +8,9 @@ import {
   type ContentDraftRevision,
   type ContentNewPageCanonicalDocumentWorkspace
 } from "../../lib/api";
+
+type NewPageReviewResult = Awaited<ReturnType<typeof reviewContentNewPageRevision>>;
+type NewPageReviewConflict = Extract<NewPageReviewResult, { status: "conflict" | "blocked" }>;
 import { ContentFullPagePreview } from "../ContentFullPagePreview";
 import { InfoTile } from "./Shared";
 
@@ -131,8 +134,13 @@ function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: str
       checked_items: decision === "approved" ? ["Tekst sprawdzony względem briefu, wybranej wiedzy i przypisanych źródeł."] : [],
       evidence_ids: decision === "approved" ? evidenceIds : []
     }),
-    onSuccess: onChanged
+    onSuccess: (result) => {
+      if (result.status === "recorded" || result.status === "idempotent") onChanged();
+    }
   });
+  const reviewResult = review.data;
+  const reviewConflict: NewPageReviewConflict | null =
+    reviewResult && isNewPageReviewConflict(reviewResult) ? reviewResult : null;
   const approvalReady = decision !== "approved" || evidenceIds.length > 0;
   return <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4" data-testid="new-page-revision-review">
     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-800">Review dokumentu</p>
@@ -140,8 +148,13 @@ function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: str
     <p className="mt-1 text-sm leading-6 text-slate-700">Jeśli tekst odpowiada briefowi, wybranej wiedzy i źródłom, zatwierdź tę dokładną rewizję {revision.content_digest.slice(0, 12)}…</p>
     {decision === "needs_changes" ? <label className="mt-3 block text-sm font-semibold text-ink">Co poprawić w tekście?<textarea className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></label> : <p className="mt-3 text-sm leading-6 text-slate-700">Nie musisz wpisywać osoby oceniającej ani zaznaczać checklisty — zatwierdzenie zapisze exact rewizję z jej dowodami.</p>}
     <div className="mt-3 flex flex-wrap gap-3"><button type="button" className="rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!approvalReady || (decision !== "approved" && !notes.trim()) || review.isPending} onClick={() => review.mutate()}>{review.isPending ? "Zapisuję review…" : decision === "approved" ? "Zatwierdź tekst" : "Zapisz uwagi"}</button>{decision === "approved" ? <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("needs_changes")}>Tekst wymaga zmian</button> : <button type="button" className="text-sm font-semibold text-action underline" disabled={review.isPending} onClick={() => setDecision("approved")}>Wróć do zatwierdzania</button>}</div>
+    {reviewConflict ? <p className="mt-2 text-sm leading-6 text-wait" role="status">Review nie został zapisany. {reviewConflict.safe_next_step}</p> : null}
     {review.isError ? <p className="mt-2 text-sm leading-6 text-wait">Review nie został zapisany. Odśwież dokument — jego dokładna rewizja mogła się zmienić.</p> : null}
   </section>;
+}
+
+function isNewPageReviewConflict(result: NewPageReviewResult): result is NewPageReviewConflict {
+  return result.status === "conflict" || result.status === "blocked";
 }
 
 function documentStatusLabel(status: ContentNewPageCanonicalDocumentWorkspace["document_status"]) {
