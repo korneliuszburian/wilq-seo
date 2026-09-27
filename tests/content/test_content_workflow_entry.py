@@ -222,3 +222,65 @@ def test_entry_search_returns_public_material_labels_without_target_claims(monke
     ]
     assert "WordPress" not in response.search_results[0].material_label
     assert "target" not in response.search_results[0].material_label.lower()
+
+
+def test_entry_points_a_duplicate_recommendation_at_the_current_search_item(monkeypatch) -> None:
+    candidates = [_candidate(index=1)]
+    monkeypatch.setattr(entry_module, "build_content_diagnostics_cached", lambda: object())
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_work_item_queue_response",
+        lambda _diagnostics: SimpleNamespace(candidates=candidates),
+    )
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_inventory_catalog_cached",
+        lambda: SimpleNamespace(
+            items=[
+                SimpleNamespace(
+                    work_item_id="content_work_item_inventory_current",
+                    title="Operat wodnoprawny",
+                    path="/strona-1/",
+                    url="https://www.ekologus.pl/strona-1/",
+                    material_status="content_and_structure",
+                    content_summary="Aktualny materiał strony.",
+                )
+            ]
+        ),
+    )
+
+    response = entry_module.build_content_workflow_entry(search="operat")
+
+    assert response.search_results[0].work_item_id == "content_work_item_inventory_current"
+    assert response.recommendations[0].work_item_id == "content_work_item_inventory_current"
+
+
+def test_entry_does_not_remap_a_recommendation_to_another_allowed_host(monkeypatch) -> None:
+    candidates = [_candidate(index=1)]
+    candidates[0].source_public_url = "https://sklep.ekologus.pl/strona-1/"
+    monkeypatch.setattr(entry_module, "build_content_diagnostics_cached", lambda: object())
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_work_item_queue_response",
+        lambda _diagnostics: SimpleNamespace(candidates=candidates),
+    )
+    monkeypatch.setattr(
+        entry_module,
+        "build_content_inventory_catalog_cached",
+        lambda: SimpleNamespace(
+            items=[
+                SimpleNamespace(
+                    work_item_id="content_work_item_inventory_other_host",
+                    title="Operat na innym hoście",
+                    path="/strona-1/",
+                    url="https://www.ekologus.pl/strona-1/",
+                    material_status="content_and_structure",
+                    content_summary="Materiał tej samej ścieżki na innym hoście.",
+                )
+            ]
+        ),
+    )
+
+    response = entry_module.build_content_workflow_entry(search="operat")
+
+    assert response.recommendations[0].work_item_id == "content_work_item_1"

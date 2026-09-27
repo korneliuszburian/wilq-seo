@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics_cached
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.workflow.pipeline_steps.queue import (
     ContentWorkItemQueueCandidate,
     build_content_work_item_queue_response,
@@ -78,6 +79,22 @@ def build_content_workflow_entry(*, search: str | None = None) -> ContentWorkflo
 
     queue = build_content_work_item_queue_response(build_content_diagnostics_cached())
     query = (search or "").strip()
+    search_results, current_work_item_by_url = _search_existing_pages(query)
+    # For the searched canonical URL the visible current work item is the
+    # inventory-backed one; a matching queue recommendation must not keep
+    # pointing at an older duplicate record. The key keeps the host so two
+    # allowed hosts with the same path can never cross-remap.
+    recommendations: list[ContentWorkflowEntryRecommendation] = []
+    for candidate in queue.candidates:
+        if not candidate.source_public_url or not candidate.reason.strip():
+            continue
+        recommendation = _recommendation(candidate)
+        current_work_item_id = current_work_item_by_url.get(_search_url_key(recommendation.url))
+        if current_work_item_id and current_work_item_id != recommendation.work_item_id:
+            recommendation = recommendation.model_copy(
+                update={"work_item_id": current_work_item_id}
+            )
+        recommendations.append(recommendation)
     return ContentWorkflowEntryResponse(
         refresh_existing=ContentWorkflowEntryMode(
             kind="refresh_existing",
@@ -91,16 +108,9 @@ def build_content_workflow_entry(*, search: str | None = None) -> ContentWorkflo
             description="Zacznij od briefu nowej strony, bez wymaganego starego adresu.",
             route="new_page",
         ),
-        recommendations=[
-            _recommendation(candidate)
-            for candidate in queue.candidates
-            if (
-                candidate.source_public_url
-                and candidate.reason.strip()
-            )
-        ][:3],
+        recommendations=recommendations[:3],
         search_query=query or None,
-        search_results=_search_existing_pages(query),
+        search_results=search_results,
         browse_inventory_label="Przeglądaj wszystkie strony",
     )
 
@@ -180,9 +190,22 @@ def _facts(candidate: ContentWorkItemQueueCandidate) -> list[ContentWorkflowEntr
     return facts[:3]
 
 
-def _search_existing_pages(query: str) -> list[ContentWorkflowEntrySearchResult]:
+def _search_url_key(url: str) -> str:
+    """Host-aware exact key: same path on another allowed host must not match."""
+
+    parsed = urlparse(url.strip())
+    host = (parsed.hostname or "").casefold()
+    if host.startswith("www."):
+        host = host[4:]
+    path = content_normalized_path(url)
+    return f"{host}{path}"
+
+
+def _search_existing_pages(
+    query: str,
+) -> tuple[list[ContentWorkflowEntrySearchResult], dict[str, str]]:
     if not query:
-        return []
+        return [], {}
     needle = query.casefold()
     catalog = build_content_inventory_catalog_cached()
     matches = [
@@ -192,7 +215,7 @@ def _search_existing_pages(query: str) -> list[ContentWorkflowEntrySearchResult]
             [item.title or "", item.path, item.url, item.content_summary or ""]
         ).casefold()
     ]
-    return [
+    results = [
         ContentWorkflowEntrySearchResult(
             work_item_id=item.work_item_id,
             title=item.title or item.path,
@@ -201,6 +224,8 @@ def _search_existing_pages(query: str) -> list[ContentWorkflowEntrySearchResult]
         )
         for item in matches[:10]
     ]
+    current_work_item_by_url = {_search_url_key(item.url): item.work_item_id for item in matches}
+    return results, current_work_item_by_url
 
 
 def _material_label(status: str) -> str:
