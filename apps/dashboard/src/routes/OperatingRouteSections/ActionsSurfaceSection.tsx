@@ -208,7 +208,23 @@ function NearestSafeActionCard({
     candidate?.apply_contract?.allowed_operation ?? String(action?.payload?.action_type ?? action?.mode ?? "prepare")
   );
   const readinessPending = isLoading && !candidate;
-  const previewLabel = readinessPending ? "sprawdzam gotowość" : "podgląd gotowy";
+  // The card title and link can come from the candidate while the rendered
+  // action falls back to another record; never claim that record's preview for
+  // a candidate that does not match it.
+  const previewBelongsToShownAction = !candidate || candidate.action_id === action?.id;
+  const confirmedPreview = Boolean(
+    action
+    && previewBelongsToShownAction
+    && (
+      (action.preview_cards?.length ?? 0) > 0
+      || (Array.isArray(action.payload?.payload_preview) && action.payload.payload_preview.length > 0)
+    )
+  );
+  const previewLabel = readinessPending
+    ? "sprawdzam gotowość"
+    : confirmedPreview
+      ? "podgląd gotowy"
+      : null;
   const readinessLabel = readinessPending
     ? "zapis zablokowany do czasu sprawdzenia"
     : writeState;
@@ -233,7 +249,9 @@ function NearestSafeActionCard({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <StatusPill label={previewLabel} tone={readinessPending ? "amber" : "green"} />
+          {previewLabel ? (
+            <StatusPill label={previewLabel} tone={readinessPending ? "amber" : "green"} />
+          ) : null}
           <StatusPill label={reviewLabel} tone="amber" />
           <StatusPill
             label={readinessLabel}
@@ -351,7 +369,7 @@ function buildActionRows(actions: ActionObject[]): ActionRow[] {
     .sort((left, right) => actionRank(left) - actionRank(right))
     .map((action) => ({
       id: action.id,
-      title: conciseActionTitle(action.title),
+      title: action.title,
       area: areaFromDomain(action.domain),
       statusLabel: actionStatusLabel(action),
       statusTone: actionStatusTone(action),
@@ -366,14 +384,7 @@ function buildWriteBlockers(
 ) {
   const candidateBlockers = summary?.first_write_candidate?.blockers.map((blocker) => blocker.label) ?? [];
   const reviewGateBlockers = actions.flatMap((action) => action.review_gate?.apply_blocker_labels ?? []);
-  const defaults = [
-    "Brak potwierdzenia operatora",
-    "Brak zatwierdzonego przekazania do WordPress",
-    "Brak potwierdzenia przeglądu wykluczeń w Ads",
-    "Target treści nie przeszedł jeszcze gotowości szkicu",
-    "Brak audytu działania integracji"
-  ];
-  const unique = [...candidateBlockers, ...reviewGateBlockers, ...defaults].filter(Boolean);
+  const unique = [...candidateBlockers, ...reviewGateBlockers].filter(Boolean);
   return Array.from(new Set(unique));
 }
 
@@ -382,14 +393,6 @@ function actionRank(action: ActionObject) {
   if (action.validation_status === "valid") return 10;
   if (action.review_gate?.apply_allowed === false) return 20;
   return 30;
-}
-
-function conciseActionTitle(title: string) {
-  return title
-    .replace("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center", "Merchant review produktów")
-    .replace("Przygotuj kolejkę odświeżenia treści ekologus.pl", "Brief SEO: nowy wpis blogowy")
-    .replace("Sprawdź jakość pomiaru GA4 przed oceną kampanii", "Przegląd ruchu GA4")
-    .replace("Przygotuj kolejkę przeglądu kampanii Ads", "Przegląd wykluczeń w Ads");
 }
 
 function actionStatusLabel(action: ActionObject) {

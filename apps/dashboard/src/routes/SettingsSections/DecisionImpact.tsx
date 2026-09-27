@@ -23,6 +23,14 @@ export function sourceAccessStatus(connector: ConnectorStatus) {
     };
   }
   if (connector.configured) {
+    if (connector.freshness.state !== "fresh") {
+      return {
+        label: "Niepotwierdzone",
+        className: "bg-wait/10 text-wait",
+        description:
+          "Dostęp jest skonfigurowany, ale WILQ nie potwierdził jeszcze udanego odczytu danych."
+      };
+    }
     return {
       label: "Aktywny",
       className: "bg-success/10 text-success",

@@ -2,7 +2,6 @@ import { RefreshCw } from "lucide-react";
 
 import type { ConnectorRefreshRun, ConnectorStatus } from "../../lib/api";
 import {
-  hasStaleSourceData,
   sourceAccessStatus
 } from "./DecisionImpact";
 
@@ -20,7 +19,9 @@ export function SourceAccessCard({
   refreshResult: ConnectorRefreshRun | null;
 }) {
   const status = sourceAccessStatus(connector);
-  const canRefresh = hasStaleSourceData(connector) && connector.refresh_state.refresh_allowed;
+  // The API owns the read gate: a read is offered before the first success and
+  // for unknown freshness, so the card must not require stale data.
+  const canRefresh = connector.refresh_state.refresh_allowed;
   return (
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex items-start justify-between gap-3">

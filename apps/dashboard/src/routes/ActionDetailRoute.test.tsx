@@ -1790,6 +1790,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_mutation_audit")) {
         return Promise.resolve(Response.json(actionWithMutationAuditFixture));
       }
+      if (url.endsWith("/api/actions/act_planning_intent_v3")) {
+        return Promise.resolve(Response.json(planningIntentV3ActionFixture));
+      }
       if (url.endsWith("/api/actions/act_content_new_page")) {
         return Promise.resolve(Response.json(newPageDraftActionFixture));
       }
@@ -1919,6 +1922,31 @@ function actionMutationReadinessFixture(url: string) {
   };
 }
 
+const planningIntentV3ActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_planning_intent_v3",
+  title: "Zatwierdź lokalny zamiar planowania z pakietu v3",
+  domain: "content",
+  connector: "wordpress_ekologus",
+  connector_label: "WordPress ekologus.pl",
+  mode: "apply",
+  mode_label: "zapis lokalnego zamiaru",
+  status: "applied",
+  status_label: "zapisana",
+  payload: {
+    action_type: "content_planning_generation_intent_v3",
+    local_authority_only: true
+  },
+  review_gate: {
+    ...actionFixture.review_gate,
+    status: "ready_to_apply",
+    apply_allowed: false,
+    apply_blockers: [],
+    apply_blocker_labels: [],
+    apply_blocker_summary_label: ""
+  }
+};
+
 describe("Action detail route", () => {
   let testQueryClient: QueryClient;
 
@@ -1953,6 +1981,13 @@ describe("Action detail route", () => {
       />
     );
   }
+
+  it("offers the v3 planning-intent dispatch on an applied intent action", async () => {
+    renderActionDetail("act_planning_intent_v3");
+    expect(
+      await screen.findByRole("button", { name: "Uruchom planowanie z zatwierdzonego zamiaru" })
+    ).toBeInTheDocument();
+  });
 
   it("renders the selected action detail", async () => {
     renderActionDetail();

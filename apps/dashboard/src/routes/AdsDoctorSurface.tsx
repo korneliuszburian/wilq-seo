@@ -14,7 +14,8 @@ import {
   getActions,
   getAdsDiagnosticsSummary,
   getDemandGenDiagnostics,
-  getGa4Diagnostics
+  getGa4Diagnostics,
+  type Ga4DiagnosticsResponse
 } from "../lib/api";
 import { BlockerNotice } from "../components/OperatorPrimitives";
 import { DiagnosticDataReadinessPanel } from "../components/DiagnosticDataReadinessPanel";
@@ -82,9 +83,7 @@ export function AdsDoctorSurface() {
   const blockedDecisionCount = data.decision_queue.filter(
     (decision) => decision.status === "blocked"
   ).length;
-  const measurementBlockers =
-    (ga4Data?.operator_summary.measurement_issue_count ?? 0) +
-    (ga4Data?.decision_blocker_count ?? 0);
+  const measurementTile = measurementBlockerTileState(ga4);
   const blockedClaims = uniqueLabels([
     ...summary.top_blocked_claim_labels,
     ...summary.blocked_claim_labels,
@@ -111,10 +110,10 @@ export function AdsDoctorSurface() {
           icon={<Megaphone aria-hidden="true" size={22} />}
         />
         <CompactStatTile
-          value={measurementBlockers}
+          value={measurementTile.value}
           label="blokady pomiaru"
-          actionLabel={ga4Data?.conversion_readiness_contract.status_label ?? "GA4 do sprawdzenia"}
-          tone={measurementBlockers > 0 ? "red" : "green"}
+          actionLabel={measurementTile.actionLabel}
+          tone={measurementTile.tone}
           icon={<Gauge aria-hidden="true" size={22} />}
         />
         <CompactStatTile
@@ -294,4 +293,33 @@ export function AdsDoctorSurface() {
       />
     </main>
   );
+}
+
+export type MeasurementBlockerTile = {
+  value: number | "—";
+  tone: "green" | "red" | "amber";
+  actionLabel: string;
+};
+
+/** Absence of a GA4 read is not a measurement result: never a green zero. */
+export function measurementBlockerTileState(ga4: {
+  isLoading: boolean;
+  isFetching?: boolean;
+  error: unknown;
+  data: Ga4DiagnosticsResponse | undefined;
+}): MeasurementBlockerTile {
+  const confirmed = !ga4.isLoading && !ga4.isFetching && !ga4.error && Boolean(ga4.data);
+  if (!confirmed || !ga4.data) {
+    return { value: "—", tone: "amber", actionLabel: "GA4 niepotwierdzone" };
+  }
+  const blockers = Math.max(
+    0,
+    (ga4.data.operator_summary.measurement_issue_count ?? 0) +
+      (ga4.data.decision_blocker_count ?? 0)
+  );
+  return {
+    value: blockers,
+    tone: blockers > 0 ? "red" : "green",
+    actionLabel: ga4.data.conversion_readiness_contract.status_label ?? "GA4 do sprawdzenia"
+  };
 }

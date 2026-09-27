@@ -2,6 +2,65 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { measurementBlockerTileState } from "./AdsDoctorSurface";
+
+describe("AdsDoctorSurface measurement blocker tile", () => {
+  it("never shows a green zero when the GA4 read failed", () => {
+    const tile = measurementBlockerTileState({
+      isLoading: false,
+      error: new Error("ga4 failed"),
+      data: undefined
+    });
+    expect(tile.value).not.toBe(0);
+    expect(tile.tone).not.toBe("green");
+    expect(tile.actionLabel).toBe("GA4 niepotwierdzone");
+  });
+
+  it("still reports a confirmed zero from a successful GA4 read", () => {
+    const tile = measurementBlockerTileState({
+      isLoading: false,
+      error: null,
+      data: {
+        operator_summary: { measurement_issue_count: 0 },
+        decision_blocker_count: 0,
+        conversion_readiness_contract: { status_label: "Pomiar potwierdzony" }
+      } as never
+    });
+    expect(tile.value).toBe(0);
+    expect(tile.tone).toBe("green");
+  });
+
+  it("does not show a stale green zero while a GA4 read is in flight", () => {
+    const tile = measurementBlockerTileState({
+      isLoading: false,
+      isFetching: true,
+      error: null,
+      data: {
+        operator_summary: { measurement_issue_count: 0 },
+        decision_blocker_count: 0,
+        conversion_readiness_contract: { status_label: "Pomiar potwierdzony" }
+      } as never
+    });
+    expect(tile.value).not.toBe(0);
+    expect(tile.tone).not.toBe("green");
+  });
+
+  it("does not treat a negative measurement count as a green zero", () => {
+    const tile = measurementBlockerTileState({
+      isLoading: false,
+      isFetching: false,
+      error: null,
+      data: {
+        operator_summary: { measurement_issue_count: -1 },
+        decision_blocker_count: 0,
+        conversion_readiness_contract: { status_label: "Pomiar potwierdzony" }
+      } as never
+    });
+    expect(tile.value).toBe(0);
+    expect(tile.tone).toBe("green");
+  });
+});
+
 describe("AdsDoctorSurface", () => {
   it("ads doctor route renders live metric-backed diagnostics", () => {
     const routeSource = [
@@ -27,7 +86,7 @@ describe("AdsDoctorSurface", () => {
     expect(routeSource).toContain("summary.total_cost_micros");
     expect(routeSource).toContain("summary.campaign_count");
     expect(routeSource).toContain("summary.search_term_count");
-    expect(routeSource).toContain("ga4Data?.conversion_readiness_contract.status_label");
+    expect(routeSource).toContain("conversion_readiness_contract.status_label");
     expect(routeSource).toContain("demandGenData?.summary");
     expect(routeSource).not.toContain("werdykt przepalonego budżetu");
     const traceLineSource = readFileSync("src/components/TraceLine.tsx", "utf8");
