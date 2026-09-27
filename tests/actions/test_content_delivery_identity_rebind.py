@@ -13,8 +13,36 @@ from wilq.content.workflow.delivery_identity_recovery import (
     CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
     build_content_delivery_identity_drift_recovery,
     build_content_delivery_identity_rebind_action,
+    delivery_identity_rebind_action_payload_digest,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
+from wilq.schemas import AuditEvent
+
+
+def _chain(action, *, receipt_digest: str):
+    digest = delivery_identity_rebind_action_payload_digest(action)
+    return [
+        AuditEvent(
+            id=f"evt_{event_type}",
+            action_id=action.id,
+            event_type=event_type,
+            actor="operator_test",
+            summary=event_type,
+            created_at=f"2026-09-27T10:0{index}:00+00:00",
+            details={
+                "delivery_identity_rebind_receipt_digest": receipt_digest,
+                "delivery_identity_rebind_action_payload_digest": digest,
+            },
+        )
+        for index, event_type in enumerate(
+            (
+                "action_preview_generated",
+                "human_review_approved_for_prepare",
+                "action_apply_confirmed",
+                "action_impact_check_completed",
+            )
+        )
+    ]
 
 
 def _drifted_action():
@@ -34,6 +62,29 @@ def test_rebind_adapter_records_supersession_and_mints_the_identity(tmp_path) ->
         workflow_store=store,
         audit_store_factory=lambda: None,
     )
+    assert blockers == ["Exact preview, approved review, confirmation and impact check are required."]
+
+    result, blockers = execute_local_content_mutation_adapter(
+        action,
+        CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
+        workflow_store=store,
+        audit_store_factory=lambda: None,
+    )
+    assert result is None
+
+    chained = action.model_copy(
+        update={
+            "audit_events": _chain(
+                action, receipt_digest=action.payload["supersession"]["receipt_digest"]
+            )
+        }
+    )
+    result, blockers = execute_local_content_mutation_adapter(
+        chained,
+        CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
+        workflow_store=store,
+        audit_store_factory=lambda: None,
+    )
 
     assert blockers == []
     assert result is not None
@@ -46,7 +97,7 @@ def test_rebind_adapter_records_supersession_and_mints_the_identity(tmp_path) ->
     )
 
     again, again_blockers = execute_local_content_mutation_adapter(
-        action,
+        chained,
         CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
         workflow_store=store,
         audit_store_factory=lambda: None,

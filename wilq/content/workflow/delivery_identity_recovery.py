@@ -20,6 +20,7 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    AuditEvent,
     OpportunityDomain,
 )
 from wilq.schemas.core import utc_now
@@ -281,6 +282,10 @@ def build_content_delivery_identity_rebind_command(
     )
 
 
+def delivery_identity_rebind_action_payload_digest(action: ActionObject) -> str:
+    return canonical_json_digest(action.payload)
+
+
 def delivery_identity_rebind_action_id(receipt_digest: str) -> str:
     return f"act_content_delivery_identity_rebind_{receipt_digest[:24]}"
 
@@ -374,13 +379,13 @@ def execute_content_delivery_identity_rebind(
     action: ActionObject,
     *,
     store: Any,
-    audit_events: list[object],
+    audit_events: list[AuditEvent],
     confirmed_by: str | None = None,
     now: datetime | None = None,
 ) -> tuple[dict[str, object] | None, list[str]]:
-    """Apply one local rebind: record the supersession, then mint the identity."""
+    """Apply one local rebind: mint the identity, then record the supersession."""
 
-    del audit_events, confirmed_by, now
+    del now
     payload = action.payload or {}
     if (
         action.status != "ready_to_apply"
@@ -398,10 +403,43 @@ def execute_content_delivery_identity_rebind(
         return None, ["Delivery identity rebind payload is invalid."]
     if action.id != delivery_identity_rebind_action_id(receipt.receipt_digest):
         return None, ["Delivery identity rebind action payload changed before apply."]
+    required = (
+        "action_preview_generated",
+        "human_review_approved_for_prepare",
+        "action_apply_confirmed",
+        "action_impact_check_completed",
+    )
+    events = {
+        event.event_type: event
+        for event in audit_events
+        if getattr(event, "action_id", None) == action.id
+    }
+    if any(event_type not in events for event_type in required):
+        return None, [
+            "Exact preview, approved review, confirmation and impact check are required."
+        ]
+    chain = [events[event_type] for event_type in required]
+    if [event.event_type for event in sorted(chain, key=lambda event: event.created_at)] != list(
+        required
+    ):
+        return None, ["Delivery identity rebind audit chain is out of order."]
+    payload_digest = delivery_identity_rebind_action_payload_digest(action)
+    if any(
+        event.details.get("delivery_identity_rebind_receipt_digest")
+        != receipt.receipt_digest
+        or event.details.get("delivery_identity_rebind_action_payload_digest") != payload_digest
+        for event in chain
+    ):
+        return None, [
+            "Audit chain does not bind the exact delivery identity rebind payload."
+        ]
+    confirmed_by = confirmed_by or chain[2].actor
     identity = store.record_content_delivery_identity(command)
     if identity.status == "conflict":
         return None, ["Delivery identity rebind conflicts with an existing identity."]
     supersession = store.record_content_delivery_identity_supersession(receipt)
+    if supersession.status == "conflict":
+        return None, ["Delivery identity supersession conflicts with an existing receipt."]
     return {
         "supersession_receipt_id": supersession.receipt.receipt_id,
         "supersession_status": supersession.status,
@@ -426,6 +464,7 @@ __all__ = [
     "build_content_delivery_identity_drift_recovery",
     "build_content_delivery_identity_rebind_action",
     "delivery_identity_rebind_action_id",
+    "delivery_identity_rebind_action_payload_digest",
     "build_content_delivery_identity_rebind_command",
     "build_content_delivery_identity_supersession",
 ]
