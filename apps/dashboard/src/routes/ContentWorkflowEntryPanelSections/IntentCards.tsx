@@ -7,6 +7,7 @@ import {
   type ContentWorkflowEntryResponse
 } from "../../lib/api";
 import { ContentRequiredSourceRefresh } from "../ContentRequiredSourceRefresh";
+import { IntakeQueueSection } from "./IntakeQueueSection";
 
 export function ContentWorkflowIntentStart({
   entry,
@@ -64,6 +65,8 @@ export function ContentWorkflowIntentStart({
             />
           </div>
         </section>
+
+        <IntakeQueueSection />
 
         <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_16px_42px_-34px_rgba(15,23,42,0.45)] lg:p-5" aria-labelledby="content-workflow-search-heading">
           <div className="flex flex-wrap items-baseline justify-between gap-2">

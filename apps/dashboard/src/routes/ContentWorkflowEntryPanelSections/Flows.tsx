@@ -42,7 +42,7 @@ export function NewPageTextFoundation({ workspace }: { workspace: ContentNewPage
   return <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-ink">Na czym oprzeć tekst?</h2><p className="mt-2 text-sm leading-6 text-slate-700">Wybierz wiedzę o usłudze. WILQ pokazuje tutaj wyłącznie materiał wcześniej sprawdzony przez zespół, a techniczne kontrole wykona w tle.</p><div className="mt-4 space-y-3">{workspace.service_options.length ? <><label className="block text-sm font-semibold text-ink">Źródło wiedzy<select className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-normal" value={serviceCardId} onChange={(event) => setServiceCardId(event.target.value)}><option value="">Wybierz źródło wiedzy</option>{workspace.service_options.map((option) => <option key={option.service_card_id} value={option.service_card_id}>{option.label}</option>)}</select></label><button type="button" disabled={!serviceCardId || foundation.isPending} className="rounded-xl bg-action px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" onClick={() => { setPrepareTextAfterSource(true); foundation.mutate(); }}>{foundation.isPending ? "Przygotowuję tekst…" : "Przygotuj tekst na tej podstawie"}</button>{foundation.isError ? <p className="text-sm leading-6 text-wait">Nie udało się przygotować tekstu na tej podstawie. Odśwież brief i spróbuj ponownie.</p> : null}</> : <p className="text-sm leading-6 text-wait">Nie ma jeszcze sprawdzonej wiedzy o usłudze, na której można bezpiecznie oprzeć tekst.</p>}</div></section>;
 }
 
-export function ContentWorkflowInventoryBrowse({ inventory, onReturn, onSelectWorkItem }: { inventory: ContentInventoryCatalogResponse | null; onReturn: () => void; onSelectWorkItem: (workItemId: string) => void }) {
+export function ContentWorkflowInventoryBrowse({ inventory, onReturn, onSelectWorkItem, failed = false, onRetry }: { inventory: ContentInventoryCatalogResponse | null; onReturn: () => void; onSelectWorkItem: (workItemId: string) => void; failed?: boolean; onRetry?: () => void }) {
   const [filter, setFilter] = useState("");
   const inventoryCoverageIsIncomplete = inventory !== null && inventory.coverage.status !== "complete";
   const journalReconciliation = inventory?.journal_reconciliation;
@@ -133,7 +133,7 @@ export function ContentWorkflowInventoryBrowse({ inventory, onReturn, onSelectWo
             })}
             {!items.length ? <p className="px-5 py-6 text-sm text-slate-600">Nie znaleziono pasujących stron.</p> : null}
           </div>
-        </section> : <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Wczytuję katalog stron…</section>}
+        </section> : failed ? <section className="mt-4 rounded-2xl border border-wait/30 bg-wait/5 p-5 text-sm leading-6 text-ink" data-testid="content-catalog-failure"><p className="font-semibold">Nie udało się wczytać katalogu stron.</p><p className="mt-1 text-slate-700">Katalog nie został odczytany; nic nie zostało zmienione. Odśwież katalog i spróbuj ponownie.</p>{onRetry ? <button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" onClick={onRetry}>Spróbuj ponownie wczytać katalog</button> : null}</section> : <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Wczytuję katalog stron…</section>}
       </div>
     </main>
   );

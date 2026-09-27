@@ -30,6 +30,10 @@ export function ContentNewPageTextPreparation({
 }) {
   const queryClient = useQueryClient();
   const [requestedInputDigest, setRequestedInputDigest] = useState<string | null>(null);
+  const [blockedPreparation, setBlockedPreparation] = useState<{
+    label: string;
+    nextStep: string;
+  } | null>(null);
   const startedProposalId = useRef<string | null>(null);
   const consumedAutoStart = useRef(false);
   const workspace = useQuery({
@@ -45,9 +49,25 @@ export function ContentNewPageTextPreparation({
         expected_planning_input_digest: digest,
         requested_by: "Wilku"
       }),
-    onMutate: (digest) => setRequestedInputDigest(digest),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] })
+    onMutate: (digest) => {
+      setBlockedPreparation(null);
+      setRequestedInputDigest(digest);
+    },
+    onSuccess: (result) => {
+      const proposalStatus = result.proposal_status;
+      if (
+        proposalStatus
+        && ["blocked", "failed", "stale"].includes(proposalStatus.status)
+      ) {
+        setBlockedPreparation({
+          label: proposalStatus.blockers[0]?.label ?? "Nie udało się przygotować planu tekstu",
+          nextStep: proposalStatus.safe_next_step
+        });
+        startedProposalId.current = null;
+        setRequestedInputDigest(null);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] });
+    }
   });
   const prepareDocument = useMutation({
     mutationFn: ({ proposalId, planningDigest, planningInputDigest }: {
@@ -61,8 +81,22 @@ export function ContentNewPageTextPreparation({
         expected_planning_input_digest: planningInputDigest,
         requested_by: "wilku"
       }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] }),
+    onMutate: () => setBlockedPreparation(null),
+    onSuccess: (result) => {
+      if (
+        result.status === "blocked"
+        || result.status === "failed"
+        || result.status === "conflict"
+      ) {
+        setBlockedPreparation({
+          label: result.blockers[0]?.label ?? "Nie udało się przygotować tekstu",
+          nextStep: result.safe_next_step
+        });
+        startedProposalId.current = null;
+        setRequestedInputDigest(null);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["content-workflow", "new-page-brief", briefId] });
+    },
     onError: () => {
       startedProposalId.current = null;
       setRequestedInputDigest(null);
@@ -75,6 +109,13 @@ export function ContentNewPageTextPreparation({
   const proposalReady = Boolean(
     exactProposal && ["ready", "created", "idempotent"].includes(proposal?.status ?? "")
   );
+  const persistedBlocker = proposal && ["blocked", "failed", "stale"].includes(proposal.status)
+    ? {
+        label: proposal.blockers[0]?.label ?? "Nie udało się przygotować planu tekstu",
+        nextStep: proposal.safe_next_step
+      }
+    : null;
+  const activeBlocker = blockedPreparation ?? persistedBlocker;
 
   useEffect(() => {
     if (
@@ -119,7 +160,7 @@ export function ContentNewPageTextPreparation({
   }
   if (readiness.status === "blocked") {
     const blocker = readiness.blockers[0];
-    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Tekst jest jeszcze zablokowany"}</p><p className="mt-2 text-slate-700">{textPreparationRecovery(blocker?.code)}</p>{readiness.input_summary ? <PlanningEvidenceDetails input={readiness.input_summary} proposal={null} /> : null}</div>;
+    return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">{blocker?.label ?? "Tekst jest jeszcze zablokowany"}</p><p className="mt-2 text-slate-700">{blocker?.next_step || readiness.safe_next_step || textPreparationRecovery(blocker?.code)}</p>{readiness.input_summary ? <PlanningEvidenceDetails input={readiness.input_summary} proposal={null} /> : null}</div>;
   }
 
   const preparingText = generate.isPending || proposal?.status === "generating" || prepareDocument.isPending;
@@ -144,7 +185,7 @@ export function ContentNewPageTextPreparation({
   if (!readiness.planning_input_digest) {
     return <div className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink"><p className="font-semibold">Nie można jeszcze przygotować tekstu</p><p className="mt-1">Brakuje dokładnych danych roboczych. Odśwież brief i spróbuj ponownie.</p></div>;
   }
-  return <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm leading-6 text-ink" data-testid="new-page-planning-ready"><p className="font-semibold">Tekst nowej strony jest gotowy do przygotowania</p><p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p>{readiness.input_summary ? <PlanningEvidenceDetails input={readiness.input_summary} proposal={proposal?.proposal ?? null} /> : null}<button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" onClick={prepareText}>Przygotuj tekst</button>{generate.isError || prepareDocument.isError ? <p className="mt-2 text-wait">Nie udało się przygotować tekstu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
+  return <div className={`mt-4 rounded-xl border p-3 text-sm leading-6 text-ink ${activeBlocker ? "border-wait/30 bg-wait/5" : "border-emerald-200 bg-emerald-50/60"}`} data-testid="new-page-planning-ready"><p className="font-semibold">{activeBlocker ? "Nie można teraz przygotować tekstu" : "Tekst nowej strony jest gotowy do przygotowania"}</p>{activeBlocker ? null : <p className="mt-1">WILQ użyje dokładnego briefu i wybranego kontekstu usługi. Nie przypisuje tej nowej stronie starego URL-a, inventory ani historycznych metryk.</p>}{readiness.input_summary ? <PlanningEvidenceDetails input={readiness.input_summary} proposal={proposal?.proposal ?? null} /> : null}{activeBlocker ? <div className="mt-3 rounded-xl border border-wait/30 bg-white p-3 text-sm leading-6 text-ink" role="status"><p className="font-semibold">{activeBlocker.label}</p><p className="mt-1 text-slate-700">{activeBlocker.nextStep}</p></div> : null}<button type="button" className="mt-3 rounded-xl bg-action px-4 py-2 text-sm font-semibold text-white" onClick={prepareText}>Przygotuj tekst</button>{generate.isError || prepareDocument.isError ? <p className="mt-2 text-wait">Nie udało się przygotować tekstu. Odśwież stan i spróbuj ponownie.</p> : null}</div>;
 }
 
 function exactNewPageProposal(proposal: NewPageProposal | null | undefined): ExactNewPageProposal | null {

@@ -34,12 +34,14 @@ import {
   type ContentInventoryCatalogResponse,
   type ContentTargetMappingPreview,
   type ContentTargetDraftPreview,
+  getContentWorkflowEntry
 } from "../lib/api";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
+    getContentWorkflowEntry: vi.fn(),
     getContentWorkItemInitialDraft: vi.fn(),
     getContentWorkItemPlanningProposal: vi.fn(),
     getContentRegulatorySourceFactProposal: vi.fn(),
@@ -68,6 +70,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
+    vi.mocked(getContentWorkflowEntry).mockResolvedValue(contentWorkflowEntry() as never);
     vi.mocked(getContentOperatorContext).mockResolvedValue({
       display_label: "Wilku (lokalny pilot)",
       request_label: "wilku",
@@ -1118,10 +1121,52 @@ describe("ContentWorkflowSurface", () => {
     expect(within(steps[4]).getByText("Najpierw przygotuj bezpieczne przekazanie tej samej wersji.")).toBeInTheDocument();
   });
 
+  it("shows a completed catalog failure with a retry instead of loading", async () => {
+    vi.mocked(getContentWorkflowEntry).mockResolvedValue(contentWorkflowEntry() as never);
+    vi.mocked(getContentInventoryCatalog).mockRejectedValue(new Error("catalog failed"));
+    vi.mocked(getContentInventoryCatalog).mockRejectedValue(new Error("catalog failed"));
+    const client = createWilqQueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow?view=browse", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(
+      await screen.findByText("Nie udało się wczytać katalogu stron.", undefined, { timeout: 12000 })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Wczytuję katalog stron…")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Spróbuj ponownie wczytać katalog" }));
+    await waitFor(() => expect(getContentInventoryCatalog).toHaveBeenCalledTimes(2));
+  }, 15000);
+
 });
 
 
 
+
+function contentWorkflowEntry() {
+  return {
+    response_type: "content_workflow_entry",
+    refresh_existing: {
+      kind: "refresh_existing",
+      label: "Odśwież istniejącą stronę",
+      description: "Sprawdź obecną treść.",
+      route: "refresh_existing"
+    },
+    new_page: {
+      kind: "new_page",
+      label: "Utwórz nową stronę",
+      description: "Zacznij od briefu nowej strony.",
+      route: "new_page"
+    },
+    recommendations: [],
+    search_query: null,
+    search_results: [],
+    browse_inventory_label: "Przeglądaj cały serwis"
+  };
+}
 
 function contentInventoryCatalog(): ContentInventoryCatalogResponse {
   return {
@@ -1252,7 +1297,7 @@ function contentDocumentWorkspace(
 ): ContentDocumentWorkspace {
   return {
     response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v2",
+    contract_version: "content_document_workspace_v3",
     work_item_id: revision.work_item_id,
     work_kind: "refresh_existing",
     service_label: "BDO i sprawozdawczość środowiskowa",

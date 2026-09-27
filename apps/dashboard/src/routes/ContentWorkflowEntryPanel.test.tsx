@@ -877,20 +877,68 @@ describe("ContentWorkflowEntryPanel", () => {
     expect(screen.queryByRole("button", { name: "Zatwierdź tekst" })).not.toBeInTheDocument();
   });
 
-  it("keeps delivery and deployment controls out of the text-creation view", async () => {
-    const workspace = {
-      ...reviewRequiredCanonicalDocumentWorkspace(),
-      status: "document_approved" as const,
-      document_status: "approved" as const
-    };
+  it("shows delivery readiness for an approved text while keeping delivery actions out", async () => {
     vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
-    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(workspace);
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(approvedCanonicalDocumentWorkspace());
+    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({
+      response_type: "content_new_page_delivery_readiness",
+      contract_version: "content_new_page_delivery_readiness_v1",
+      status: "blocked",
+      work_item_id: "content_work_item_new_page_test",
+      brief_id: "content_new_page_brief_test",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation_test",
+      service_card_id: "service_environment",
+      service_card_digest: "c".repeat(64),
+      revision_id: null,
+      revision_digest: null,
+      allowed_content_types: [],
+      authoring_profile_digest: null,
+      evidence_ids: [],
+      blockers: ["authoring_profile_missing"],
+      safe_next_step: "Uzupełnij profil autorski, aby przekazać tekst na dev."
+    });
     renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
 
     expect(await screen.findByTestId("new-page-document-preview")).toBeInTheDocument();
+    expect(await screen.findByTestId("new-page-delivery-readiness")).toBeInTheDocument();
+    expect(
+      screen.getByText("Uzupełnij profil autorski, aby przekazać tekst na dev.")
+    ).toBeInTheDocument();
+    expect(getContentNewPageDeliveryReadiness).toHaveBeenCalledWith("content_new_page_brief_test");
     expect(screen.queryByText("Przygotowanie akcji dev")).not.toBeInTheDocument();
     expect(screen.queryByText("Potwierdzenie publicznego wdrożenia")).not.toBeInTheDocument();
-    expect(getContentNewPageDeliveryReadiness).not.toHaveBeenCalled();
+    expect(createContentNewPageDeliveryAction).not.toHaveBeenCalled();
+    expect(getContentRevisionPublicDeployment).not.toHaveBeenCalled();
+  });
+
+  it("shows the ready delivery step for an approved text without starting it", async () => {
+    vi.mocked(getContentNewPageBriefWorkspace).mockResolvedValue(savedBriefWorkspace({}, { foundation: foundationFixture() }));
+    vi.mocked(getContentNewPageCanonicalDocument).mockResolvedValue(approvedCanonicalDocumentWorkspace());
+    vi.mocked(getContentNewPageDeliveryReadiness).mockResolvedValue({
+      response_type: "content_new_page_delivery_readiness",
+      contract_version: "content_new_page_delivery_readiness_v1",
+      status: "ready_for_action",
+      work_item_id: "content_work_item_new_page_test",
+      brief_id: "content_new_page_brief_test",
+      brief_digest: "a".repeat(64),
+      foundation_id: "content_new_page_foundation_test",
+      service_card_id: "service_environment",
+      service_card_digest: "c".repeat(64),
+      revision_id: "content_draft_revision_new_page_test",
+      revision_digest: "e".repeat(64),
+      allowed_content_types: ["page"],
+      authoring_profile_digest: "f".repeat(64),
+      evidence_ids: ["ev_new_page_source"],
+      blockers: [],
+      safe_next_step: "Przygotuj jeden szkic dev z tej dokładnej rewizji."
+    });
+    renderEntry({ newPageOpen: true, newPageId: "content_new_page_brief_test" });
+
+    expect(await screen.findByTestId("new-page-delivery-readiness")).toBeInTheDocument();
+    expect(
+      screen.getByText("Przygotuj jeden szkic dev z tej dokładnej rewizji.")
+    ).toBeInTheDocument();
     expect(createContentNewPageDeliveryAction).not.toHaveBeenCalled();
     expect(getContentRevisionPublicDeployment).not.toHaveBeenCalled();
   });
@@ -1011,6 +1059,29 @@ function reviewRequiredCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocu
         lead: "Dowiedz się, jak przygotować dokumentację."
       }
     } as never
+  };
+}
+
+function approvedCanonicalDocumentWorkspace(): ContentNewPageCanonicalDocumentWorkspace {
+  const workspace = reviewRequiredCanonicalDocumentWorkspace();
+  const revision = workspace.canonical_revision!;
+  return {
+    ...workspace,
+    status: "document_approved",
+    document_status: "approved",
+    revision_review: {
+      decision_id: "content_draft_revision_review_new_page_test",
+      decision_number: 1,
+      work_item_id: workspace.work_item_id,
+      revision_id: revision.revision_id,
+      revision_digest: revision.content_digest,
+      reviewed_by: "Wilku",
+      decision: "approved",
+      notes: "Zatwierdzam dokładną rewizję.",
+      checked_items: ["Tekst sprawdzony względem briefu i źródeł."],
+      evidence_ids: ["ev_new_page_source"],
+      created_at: "2026-09-27T00:00:00Z"
+    }
   };
 }
 

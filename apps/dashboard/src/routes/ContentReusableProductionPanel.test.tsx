@@ -72,7 +72,9 @@ describe("ContentReusableProductionPanel", () => {
     expect(retained).toHaveTextContent("Jak zacząć sprawdzanie BDO?");
     expect(retained).toHaveTextContent("Opisz sytuację firmy przed rozmową.");
     expect(retained).toHaveTextContent("Usługi BDO");
-    expect(screen.queryByRole("button", { name: /przygotuj/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Przygotuj przegląd pakietu" }))
+      .toBeInTheDocument();
+    expectNoUnsafeDocumentPreparationButton();
     expect(panel.compareDocumentPosition(screen.getByTestId("content-document-state"))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING
     );
@@ -120,7 +122,9 @@ describe("ContentReusableProductionPanel", () => {
     expect(screen.getByTestId("content-s1-identity-readiness")).toHaveTextContent("Tożsamość S1: niegotowa");
     expect(screen.getByTestId("content-s1-identity-readiness")).toHaveTextContent("S1 nie uruchamia generowania treści.");
     expect(screen.queryByTestId("content-reusable-production-panel")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /przygotuj/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Przygotuj przegląd pakietu" }))
+      .toBeInTheDocument();
+    expectNoUnsafeDocumentPreparationButton();
     expect(postContentWorkItemInitialDraft).not.toHaveBeenCalled();
     expectNoPlanningOrActionCalls();
   });
@@ -177,6 +181,17 @@ function expectNoPlanningOrActionCalls() {
   expect(getContentRevisionTargetMapping).not.toHaveBeenCalled();
   expect(getContentRevisionTargetDraftPreview).not.toHaveBeenCalled();
   expect(postContentRevisionTargetDraftAction).not.toHaveBeenCalled();
+}
+
+function expectNoUnsafeDocumentPreparationButton() {
+  expect(screen.queryByRole("button", { name: "Przygotuj nową wersję" }))
+    .not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Przygotuj świeżą wersję" }))
+    .not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Autoryzuj bieżący refresh" }))
+    .not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Generowanie jest wyłączone" }))
+    .not.toBeInTheDocument();
 }
 
 function reuseSelectedWorkspace(documentStatus: "ready" | "blocked" = "ready") {
@@ -327,7 +342,7 @@ function revisionBinding() {
 function currentWorkspace(reason: string) {
   return {
     response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v2",
+    contract_version: "content_document_workspace_v3",
     work_item_id: currentWorkItemId,
     work_kind: "refresh_existing",
     service_label: "BDO",

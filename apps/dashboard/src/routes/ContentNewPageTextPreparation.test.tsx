@@ -1,17 +1,24 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ContentNewPagePlanningProposalWorkspaceSchema } from "@wilq/shared-schemas";
 
-import { getContentNewPagePlanningProposal } from "../lib/api";
+import {
+  createContentNewPageInitialDraft,
+  getContentNewPagePlanningProposal
+} from "../lib/api";
 import { ContentNewPageTextPreparation } from "./ContentNewPageTextPreparation";
 
 vi.mock("../lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/api")>()),
-  getContentNewPagePlanningProposal: vi.fn()
+  getContentNewPagePlanningProposal: vi.fn(),
+  createContentNewPageInitialDraft: vi.fn()
 }));
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe("ContentNewPageTextPreparation", () => {
   it("shows the exact brief inputs without inventing page-query history", async () => {
@@ -85,5 +92,155 @@ describe("ContentNewPageTextPreparation", () => {
     expect(evidence).not.toHaveTextContent("181 wyświetleń");
     expect(evidence).not.toHaveTextContent("4 kliknięć");
     expect(evidence).not.toHaveTextContent("niewystarczająco dokładne lub świeże");
+  });
+
+  it("shows the blocked safe next step and keeps the button actionable", async () => {
+    const workspace = {
+      response_type: "content_new_page_planning_proposal_workspace",
+      contract_version: "content_new_page_planning_proposal_workspace_v1",
+      brief_id: "brief_1",
+      readiness: {
+        status: "ready",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: "a".repeat(64),
+        input_summary: null
+      },
+      proposal_status: {
+        status: "ready",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: "a".repeat(64),
+        proposal: {
+          proposal_id: "proposal_1",
+          planning_digest: "d".repeat(64),
+          planning_input_digest: "a".repeat(64)
+        },
+        blockers: [],
+        safe_next_step: "Przygotuj tekst.",
+        publish_ready: false
+      }
+    };
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(workspace as never);
+    vi.mocked(createContentNewPageInitialDraft).mockResolvedValue({
+      status: "blocked",
+      work_item_id: "new_page_work_item",
+      proposal_id: "proposal_1",
+      run_id: null,
+      revision: null,
+      reuse_binding: null,
+      runtime: { external_call_attempted: false },
+      blockers: [
+        {
+          code: "research_packet_blocked",
+          label: "Brak bieżącego pakietu",
+          reason: "Pakiet nie jest bieżący.",
+          next_step: "Odczytaj ponownie źródła."
+        }
+      ],
+      safe_next_step: "Odczytaj ponownie źródła i spróbuj ponownie.",
+      publish_ready: false
+    } as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><ContentNewPageTextPreparation briefId="brief_1" /></QueryClientProvider>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Przygotuj tekst" }));
+    expect(await screen.findByText("Brak bieżącego pakietu")).toBeInTheDocument();
+    expect(screen.getByText("Odczytaj ponownie źródła i spróbuj ponownie.")).toBeInTheDocument();
+    await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: "Przygotuj tekst" }));
+    await waitFor(() => expect(createContentNewPageInitialDraft).toHaveBeenCalledTimes(2));
+  });
+
+  it("preserves the API next step for a missing service fact", async () => {
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue({
+      response_type: "content_new_page_planning_proposal_workspace",
+      contract_version: "content_new_page_planning_proposal_workspace_v1",
+      brief_id: "brief_1",
+      readiness: {
+        status: "blocked",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: null,
+        input_summary: null,
+        blockers: [
+          {
+            code: "missing_new_page_service_fact",
+            label: "Brakuje zatwierdzonego faktu usługi",
+            reason: "Kontekst usługi nie ma zatwierdzonego faktu.",
+            next_step: "Uzupełnij albo zatwierdź fakt źródłowy tej usługi przed planowaniem."
+          }
+        ]
+      },
+      proposal_status: null
+    } as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><ContentNewPageTextPreparation briefId="brief_1" /></QueryClientProvider>);
+
+    expect(
+      await screen.findByText("Uzupełnij albo zatwierdź fakt źródłowy tej usługi przed planowaniem.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Odśwież dane do tekstu i spróbuj ponownie.")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the readiness safe next step when no blocker carries one", async () => {
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue({
+      response_type: "content_new_page_planning_proposal_workspace",
+      contract_version: "content_new_page_planning_proposal_workspace_v1",
+      brief_id: "brief_1",
+      readiness: {
+        status: "blocked",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: null,
+        input_summary: null,
+        blockers: [],
+        safe_next_step: "Zatwierdź fakt źródłowy usługi, a potem wróć do przygotowania tekstu."
+      },
+      proposal_status: null
+    } as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><ContentNewPageTextPreparation briefId="brief_1" /></QueryClientProvider>);
+
+    expect(
+      await screen.findByText("Zatwierdź fakt źródłowy usługi, a potem wróć do przygotowania tekstu.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Odśwież dane do tekstu i spróbuj ponownie.")).not.toBeInTheDocument();
+  });
+
+  it("shows a persisted blocked planning result instead of the ready card", async () => {
+    const workspace = {
+      response_type: "content_new_page_planning_proposal_workspace",
+      contract_version: "content_new_page_planning_proposal_workspace_v1",
+      brief_id: "brief_1",
+      readiness: {
+        status: "ready",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: "a".repeat(64),
+        input_summary: null
+      },
+      proposal_status: {
+        status: "blocked",
+        work_item_id: "new_page_work_item",
+        planning_input_digest: "a".repeat(64),
+        proposal: null,
+        blockers: [
+          {
+            code: "planning_blocked",
+            label: "Plan jest zablokowany",
+            reason: "Brak danych wejściowych.",
+            next_step: "Odśwież wejście planu."
+          }
+        ],
+        safe_next_step: "Odśwież wejście planu i spróbuj ponownie.",
+        publish_ready: false
+      }
+    };
+    vi.mocked(getContentNewPagePlanningProposal).mockResolvedValue(workspace as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><ContentNewPageTextPreparation briefId="brief_1" /></QueryClientProvider>);
+
+    expect(await screen.findByText("Plan jest zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Odśwież wejście planu i spróbuj ponownie.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Tekst nowej strony jest gotowy do przygotowania")
+    ).not.toBeInTheDocument();
   });
 });

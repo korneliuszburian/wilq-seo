@@ -231,6 +231,8 @@ function ContentWorkflowRouteState({
         browseInventory={browseInventory}
         newPageOpen={newPageOpen}
         newPageId={newPageId}
+        inventoryFailed={Boolean(inventory.error)}
+        onRetryInventory={() => void inventory.refetch()}
         onBrowseInventory={onBrowseInventory}
         onCloseSecondaryView={onCloseEntrySecondaryView}
         onOpenNewPage={onOpenNewPage}

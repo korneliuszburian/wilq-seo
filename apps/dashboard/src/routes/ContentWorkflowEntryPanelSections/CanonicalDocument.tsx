@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import {
   getContentNewPageCanonicalDocument,
+  getContentNewPageDeliveryReadiness,
   reviewContentNewPageRevision,
   type ContentDraftRevision,
   type ContentNewPageCanonicalDocumentWorkspace
@@ -90,7 +91,30 @@ function NewPageDocumentCommands({ briefId, workspace, onChanged }: { briefId: s
     if (!workspace.canonical_revision.page_assets) return null;
     return <NewPageRevisionReview briefId={briefId} workspace={workspace} onChanged={onChanged} />;
   }
+  if (workspace.document_status === "approved") {
+    return <NewPageDeliveryReadiness briefId={briefId} />;
+  }
   return null;
+}
+
+function NewPageDeliveryReadiness({ briefId }: { briefId: string }) {
+  const readiness = useQuery({
+    queryKey: ["content-workflow", "new-page-brief", briefId, "delivery-readiness"],
+    queryFn: () => getContentNewPageDeliveryReadiness(briefId),
+    staleTime: 15_000
+  });
+  if (readiness.isLoading) return <p className="mt-4 text-sm leading-6 text-slate-600">Sprawdzam gotowość przekazania na dev…</p>;
+  if (readiness.isError || !readiness.data) return <p className="mt-4 rounded-xl border border-wait/30 bg-wait/5 p-3 text-sm leading-6 text-ink">Nie udało się odczytać gotowości przekazania na dev. Zatwierdzona rewizja i brief pozostają bez zmian; odśwież widok i spróbuj ponownie.</p>;
+  const data = readiness.data;
+  const ready = data.status === "ready_for_action";
+  return <section className={`mt-4 rounded-xl border p-4 text-sm leading-6 text-ink ${ready ? "border-emerald-200 bg-emerald-50/60" : "border-wait/30 bg-wait/5"}`} data-testid="new-page-delivery-readiness">
+    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-action">Przekazanie na dev</p>
+    <h4 className="mt-2 text-base font-semibold">{ready ? "Zatwierdzony tekst jest gotowy do jednego kroku na dev" : "Przekazanie na dev jest zablokowane"}</h4>
+    {ready && data.revision_id ? <p className="mt-1">Rewizja {data.revision_id}. Dozwolone typy treści: {data.allowed_content_types.join(", ")}.</p> : null}
+    <p className="mt-2"><span className="font-semibold text-ink">Następny bezpieczny krok:</span> {data.safe_next_step}</p>
+    {data.blockers.length ? <details className="mt-3 rounded-lg border border-wait/30 bg-white px-3 py-2"><summary className="cursor-pointer text-xs font-semibold text-slate-600">Techniczne blokady gotowości</summary><p className="mt-2 text-xs leading-5 text-slate-600">{data.blockers.join(", ")}</p></details> : null}
+    {ready ? null : <p className="mt-3 text-xs leading-5 text-slate-600">To nie jest publikacja ani zapis w WordPressie. WILQ pokazuje tylko gotowość dokładnej zatwierdzonej rewizji do oddzielnego przygotowania szkicu na dev.</p>}
+  </section>;
 }
 
 function NewPageRevisionReview({ briefId, workspace, onChanged }: { briefId: string; workspace: ContentNewPageCanonicalDocumentWorkspace; onChanged: () => void }) {

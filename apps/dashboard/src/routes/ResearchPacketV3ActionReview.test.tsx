@@ -497,4 +497,20 @@ describe("v3 research packet ActionObject review", () => {
     expect(screen.getByRole("button", { name: "Akceptuję" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Nie akceptuję" })).toBeDisabled();
   });
+
+  it("offers the planning generation intent only after the packet receipt is applied", async () => {
+    vi.spyOn(actionApi, "validateAction").mockResolvedValue({ valid: true, status: "valid" } as never);
+    vi.spyOn(actionApi, "previewAction").mockResolvedValue({ status: "preview_ready", blockers: [] } as never);
+    vi.spyOn(actionApi, "reviewAction").mockResolvedValue({ status: "recorded" } as never);
+    vi.spyOn(actionApi, "confirmAction").mockResolvedValue({ confirmed: true, status: "confirmed", blockers: [] } as never);
+    vi.spyOn(actionApi, "impactCheckAction").mockResolvedValue({ status: "checked", blockers: [] } as never);
+    vi.spyOn(actionApi, "applyAction").mockResolvedValue({ applied: true, status: "applied" } as never);
+
+    renderReview();
+    expect(screen.queryByRole("button", { name: "Przygotuj zamiar planowania" })).not.toBeInTheDocument();
+    completeRequiredDecisionInputs();
+    fireEvent.click(screen.getByRole("button", { name: "Akceptuję" }));
+    expect(await screen.findByRole("button", { name: "Przygotuj zamiar planowania" }))
+      .toBeInTheDocument();
+  });
 });

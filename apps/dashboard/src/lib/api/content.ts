@@ -9,6 +9,11 @@ import {
   ContentInitialDraftConflictResponseSchema,
   ContentInitialDraftGenerationResponseSchema,
   ContentInitialDraftRequestSchema,
+  ContentBriefProposalSchema,
+  ContentIntakeAskRequestSchema,
+  ContentIntakeQueueItemSchema,
+  ContentRequestWorkflowStateSchema,
+  ContentResearchReadResponseSchema,
   ContentWorkItemInitialDraftRequestSchema,
   ContentWorkItemInitialDraftResponseSchema,
   ContentInventoryCatalogResponseSchema,
@@ -20,6 +25,9 @@ import {
   ResearchPacketV3ActionReadySchema,
   ResearchPacketV3ActionBlockedSchema,
   ResearchPacketV3PreviewResponseSchema,
+  PlanningGenerationIntentV3ReadySchema,
+  PlanningGenerationIntentV3BlockedSchema,
+  PlanningGenerationIntentV3DispatchOutcomeSchema,
   ContentNewPageBriefInputSchema,
   ContentNewPageBriefWorkspaceSchema,
   ContentNewPageCanonicalDocumentWorkspaceSchema,
@@ -77,6 +85,11 @@ import {
   type ContentInitialDraftConflictResponse,
   type ContentInitialDraftGenerationResponse,
   type ContentInitialDraftRequest,
+  type ContentBriefProposal,
+  type ContentIntakeAskRequest,
+  type ContentIntakeQueueItem,
+  type ContentRequestWorkflowState,
+  type ContentResearchReadResponse,
   type ContentWorkItemInitialDraftRequest,
   type ContentWorkItemInitialDraftResponse,
   type ContentInventoryCatalogResponse,
@@ -85,6 +98,8 @@ import {
   type ResearchPacketV2ActionResponse,
   type ResearchPacketV3ActionResponse,
   type ResearchPacketV3PreviewResponse,
+  type PlanningGenerationIntentV3Response,
+  type PlanningGenerationIntentV3DispatchOutcome,
   type ContentNewPageBriefInput,
   type ContentNewPageBriefWorkspace,
   type ContentNewPageCanonicalDocumentWorkspace,
@@ -255,6 +270,50 @@ export function getContentWorkflowEntry(search?: string): Promise<ContentWorkflo
   return apiGet(`/api/content/workflow-entry${query}`, ContentWorkflowEntryResponseSchema);
 }
 
+export function createContentIntakeRequest(
+  request: ContentIntakeAskRequest
+): Promise<ContentIntakeQueueItem> {
+  return apiPost(
+    "/api/content/intake-requests",
+    ContentIntakeQueueItemSchema,
+    ContentIntakeAskRequestSchema.parse(request)
+  );
+}
+
+export function getContentIntakeRequest(queueId: string): Promise<ContentIntakeQueueItem> {
+  return apiGet(
+    `/api/content/intake-requests/${encodeURIComponent(queueId)}`,
+    ContentIntakeQueueItemSchema
+  );
+}
+
+export function getContentResearchRead(
+  queueId: string
+): Promise<ContentResearchReadResponse> {
+  return apiGet(
+    `/api/content/intake-requests/${encodeURIComponent(queueId)}/research`,
+    ContentResearchReadResponseSchema
+  );
+}
+
+export function getContentRequestWorkflow(
+  queueId: string
+): Promise<ContentRequestWorkflowState> {
+  return apiGet(
+    `/api/content/intake-requests/${encodeURIComponent(queueId)}/workflow`,
+    ContentRequestWorkflowStateSchema
+  );
+}
+
+export function getContentBriefProposal(
+  queueId: string
+): Promise<ContentBriefProposal> {
+  return apiGet(
+    `/api/content/intake-requests/${encodeURIComponent(queueId)}/brief`,
+    ContentBriefProposalSchema
+  );
+}
+
 export function createContentNewPageBrief(
   request: ContentNewPageBriefInput
 ): Promise<ContentNewPageBriefWorkspace> {
@@ -423,6 +482,32 @@ export function prepareContentResearchPacketV3Action(
     `/api/content/work-items/${encodeURIComponent(workItemId)}/research-packet-v3-action/preview${identityQuery}`,
     ResearchPacketV3ActionReadySchema,
     ResearchPacketV3ActionBlockedSchema,
+    {}
+  );
+}
+
+export function preparePlanningGenerationIntentV3Action(
+  workItemId: string,
+  packetId: string,
+  packetDigest: string
+): Promise<PlanningGenerationIntentV3Response> {
+  const path = `/api/content/work-items/${encodeURIComponent(workItemId)}/planning-generation-intent-v3/preview`;
+  return apiPostWithConflict(
+    path,
+    PlanningGenerationIntentV3ReadySchema,
+    PlanningGenerationIntentV3BlockedSchema,
+    { packet_id: packetId, packet_digest: packetDigest }
+  );
+}
+
+export function dispatchPlanningGenerationIntentV3(
+  actionId: string
+): Promise<PlanningGenerationIntentV3DispatchOutcome> {
+  const path = `/api/content/planning-generation-intents-v3/${encodeURIComponent(actionId)}/dispatch`;
+  return apiPostWithConflict(
+    path,
+    PlanningGenerationIntentV3DispatchOutcomeSchema,
+    PlanningGenerationIntentV3DispatchOutcomeSchema,
     {}
   );
 }

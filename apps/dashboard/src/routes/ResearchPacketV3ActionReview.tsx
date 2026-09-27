@@ -16,6 +16,7 @@ import {
   validateAction,
   type ActionObject
 } from "../lib/api";
+import { PlanningGenerationIntentV3Entry } from "./PlanningGenerationIntentV3Entry";
 
 type PacketDecision = "accepted" | "rejected";
 type DecisionResult =
@@ -306,6 +307,13 @@ export function ResearchPacketV3ActionReview({ action }: { action: ActionObject 
           </button>
         </div>
         <DecisionResultPanel result={decisionMutation.data} error={decisionMutation.error} />
+        {decisionMutation.data?.status === "applied" || action.status === "applied" ? (
+          <PlanningGenerationIntentV3Entry
+            workItemId={packet.work_item_id}
+            packetId={exactRecord.snapshot.preview_id}
+            packetDigest={exactRecord.preview_hash}
+          />
+        ) : null}
         {!decisionMutation.data && decisionAlreadyRecorded ? (
           <p className="mt-3 text-sm text-slate-700" role="status">
             {action.review_gate.last_review_outcome === "rejected"

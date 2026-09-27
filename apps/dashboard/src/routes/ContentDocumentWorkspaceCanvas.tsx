@@ -129,7 +129,10 @@ export function ContentDocumentWorkspaceCanvas({
           {workspace.source_snapshot.url ? (
             <>
               <CurrentMaterialReviewEntry workItemId={workspace.work_item_id} />
-              <CurrentResearchPacketEntry workItemId={workspace.work_item_id} />
+              <CurrentResearchPacketEntry
+                workItemId={workspace.work_item_id}
+                perUrlDeliveryIdentityActionId={workspace.per_url_delivery_identity_action_id}
+              />
             </>
           ) : null}
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (

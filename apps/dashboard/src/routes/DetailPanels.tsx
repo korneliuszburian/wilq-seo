@@ -29,6 +29,7 @@ import {
 import { TechnicalDetailsPanel } from "./DetailPanelsSections/TechnicalSection";
 import { CurrentMaterialView } from "./CurrentMaterialView";
 import { useCurrentMaterialText } from "./materialReviewQueries";
+import { PlanningGenerationIntentV3DispatchControl } from "./PlanningGenerationIntentV3DispatchControl";
 import { ResearchPacketV3ActionReview } from "./ResearchPacketV3ActionReview";
 
 const HEX_64 = /^[0-9a-f]{64}$/;
@@ -327,6 +328,9 @@ function ActionDetail({
         mutationReadinessLoading={mutationReadinessLoading}
         mutationReadinessError={mutationReadinessError}
       />
+      {action.payload.action_type === "content_planning_generation_intent_v3" ? (
+        <PlanningGenerationIntentV3DispatchControl action={action} />
+      ) : null}
       <section id="action-review" className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd, review i walidacja" />
         <p className="text-sm leading-6 text-slate-700">
