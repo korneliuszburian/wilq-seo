@@ -39,6 +39,17 @@ APPLICATION_SHA256 = "a" * 64
 SEED_SHA256 = "b" * 64
 EXPECTED_POST_S5_TABLES = frozenset(
     {
+        "content_current_acceptance_attempts",
+        "content_current_acceptance_wave_rows",
+        "content_current_acceptance_waves",
+        "content_intake_requests",
+        "content_per_url_decision_observations",
+        "content_per_url_delivery_identity_bindings",
+        "content_per_url_delivery_identity_proposals",
+        "content_per_url_disposition_proposals",
+        "content_per_url_disposition_receipts",
+        "content_request_workflow_events",
+
         "content_authoring_inventory_receipts",
         "content_material_review_previews",
         "content_material_review_receipts",
@@ -126,6 +137,32 @@ EXPECTED_POST_S5_TABLES = frozenset(
 
 EXPECTED_POST_S5_TRIGGERS = frozenset(
     {
+        "content_current_acceptance_attempts_no_delete",
+        "content_current_acceptance_attempts_transition",
+        "content_current_acceptance_wave_rows_no_delete",
+        "content_current_acceptance_wave_rows_no_update",
+        "content_current_acceptance_waves_no_delete",
+        "content_current_acceptance_waves_no_update",
+        "content_intake_requests_no_delete",
+        "content_intake_requests_no_update",
+        "content_per_url_decision_observations_no_delete",
+        "content_per_url_decision_observations_no_replace",
+        "content_per_url_decision_observations_no_update",
+        "content_per_url_delivery_identity_bindings_no_delete",
+        "content_per_url_delivery_identity_bindings_no_replace",
+        "content_per_url_delivery_identity_bindings_no_update",
+        "content_per_url_delivery_identity_proposals_no_delete",
+        "content_per_url_delivery_identity_proposals_no_replace",
+        "content_per_url_delivery_identity_proposals_no_update",
+        "content_per_url_disposition_proposals_no_delete",
+        "content_per_url_disposition_proposals_no_replace",
+        "content_per_url_disposition_proposals_no_update",
+        "content_per_url_disposition_receipts_no_delete",
+        "content_per_url_disposition_receipts_no_replace",
+        "content_per_url_disposition_receipts_no_update",
+        "content_request_workflow_events_no_delete",
+        "content_request_workflow_events_no_update",
+
         "content_authoring_inventory_receipts_no_delete",
         "content_authoring_inventory_receipts_no_replace",
         "content_authoring_inventory_receipts_no_update",
