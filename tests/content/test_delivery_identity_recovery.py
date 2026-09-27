@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -14,6 +15,9 @@ from tests.content.delivery_identity_fixtures import (
     WORK_ITEM_ID,
     classification_lookup,
     reconciled_binding,
+)
+from wilq.content.workflow.delivery_identity import (
+    build_content_delivery_identity_current_projection,
 )
 from wilq.content.workflow.delivery_identity_recovery import (
     CLASSIFICATION_MISSING_SAFE_NEXT_STEP,
@@ -214,3 +218,22 @@ def test_rebind_action_readiness_markers_follow_the_status() -> None:
     blocked = build_content_delivery_identity_rebind_action(current, recorded_by="wilku")
     assert blocked.payload["apply_allowed"] is False
     assert blocked.payload["api_mutation_ready"] is False
+
+
+def test_superseded_binding_can_never_render_as_usable() -> None:
+    binding = reconciled_binding()
+    lookup = classification_lookup()
+    assert (
+        build_content_delivery_identity_current_projection(
+            binding, lookup, assessed_at=datetime(2026, 9, 27, tzinfo=UTC)
+        ).current_status
+        == "exact_current"
+    )
+
+    superseded = build_content_delivery_identity_current_projection(
+        binding, lookup, assessed_at=datetime(2026, 9, 27, tzinfo=UTC), superseded=True
+    )
+    assert superseded.current_status == "blocked"
+    assert superseded.current_blocker is not None
+    assert superseded.current_blocker.reason == "identity_superseded"
+    assert superseded.current_safe_next_step == superseded.current_blocker.next_step

@@ -159,6 +159,13 @@ class ContentDeliveryIdentityStoreMixin:
     ) -> list[ContentDeliveryIdentityCurrentProjection]:
         with self._connect() as connection:
             latest = load_latest_production_classification_from_connection(connection)
+            superseded_ids = {
+                str(row["superseded_binding_id"])
+                for row in connection.execute(
+                    "SELECT DISTINCT superseded_binding_id "
+                    "FROM content_delivery_identity_supersessions"
+                ).fetchall()
+            }
             rows = connection.execute(
                 "SELECT * FROM content_delivery_identity_bindings "
                 "ORDER BY canonical_path, recorded_at, binding_id"
@@ -166,9 +173,10 @@ class ContentDeliveryIdentityStoreMixin:
             assessed_at = datetime.now(UTC)
             return [
                 build_content_delivery_identity_current_projection(
-                    binding_from_row(row),
-                    _classification_lookup_for_binding(latest, binding_from_row(row)),
+                    binding := binding_from_row(row),
+                    _classification_lookup_for_binding(latest, binding),
                     assessed_at=assessed_at,
+                    superseded=binding.binding_id in superseded_ids,
                 )
                 for row in rows
             ]
@@ -314,10 +322,19 @@ def _current_identity_projection(
     binding: ContentDeliveryIdentityBinding,
 ) -> ContentDeliveryIdentityCurrentProjection:
     latest = load_latest_production_classification_from_connection(connection)
+    superseded = (
+        connection.execute(
+            "SELECT 1 FROM content_delivery_identity_supersessions "
+            "WHERE superseded_binding_id = ? LIMIT 1",
+            (binding.binding_id,),
+        ).fetchone()
+        is not None
+    )
     return build_content_delivery_identity_current_projection(
         binding,
         _classification_lookup_for_binding(latest, binding),
         assessed_at=datetime.now(UTC),
+        superseded=superseded,
     )
 
 

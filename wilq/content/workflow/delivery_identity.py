@@ -37,6 +37,7 @@ ContentDeliveryIdentityReason = Literal[
     "inventory_evidence_not_classified",
     "retained_identity_not_classified",
     "identity_classification_drift",
+    "identity_superseded",
 ]
 ContentDeliveryBlockerCode = Literal[
     "canonical_url_invalid",
@@ -343,9 +344,25 @@ def build_content_delivery_identity_current_projection(
     classification: ContentDeliveryClassificationLookup,
     *,
     assessed_at: datetime,
+    superseded: bool = False,
 ) -> ContentDeliveryIdentityCurrentProjection:
     """Compare an immutable binding with the latest nonhistorical classification."""
 
+    if superseded:
+        superseded_blocker = _blocker(
+            "classification_identity",
+            "identity_superseded",
+            binding.inventory_evidence_ids,
+            "Ta identity została zastąpiona nową exact current identity.",
+        )
+        return ContentDeliveryIdentityCurrentProjection(
+            recorded_binding=binding,
+            recorded_status=binding.status,
+            assessed_at=assessed_at,
+            current_status="blocked",
+            current_blocker=superseded_blocker,
+            current_safe_next_step=superseded_blocker.next_step,
+        )
     blocker: ContentDeliveryIdentityBlocker | None = None
     if binding.status != "exact_current":
         blocker = binding.blocker or _blocker(
