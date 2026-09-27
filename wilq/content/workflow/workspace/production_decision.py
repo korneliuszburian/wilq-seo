@@ -259,6 +259,18 @@ def build_content_production_decision(
     if lookup_basis == "historical_action_owner" and row.decision != "reuse":
         raise ValueError("Historical action-owner lookup is only valid for reusable content.")
 
+    reason_pl = row.rationale_pl
+    safe_next_step_pl = row.next_step_pl
+    if row.decision == "blocked" and row.blocked_historical_protection is not None:
+        reason_pl = (
+            "Historyczna klasyfikacja wskazuje chronioną rewizję; przed dalszą pracą "
+            "trzeba zweryfikować jej dokładną tożsamość i skrót."
+        )
+        safe_next_step_pl = (
+            "Przejrzyj w historycznej klasyfikacji dokładny identyfikator chronionej "
+            "rewizji i jej skrót; nie uzgadniaj rewizji wyłącznie na podstawie URL."
+        )
+
     payload: dict[str, object] = {
         "status": "available",
         "run_id": classification.run_id,
@@ -272,18 +284,9 @@ def build_content_production_decision(
         "public_url": row.public_url,
         "current_work_item_id": row.current_work_item_id,
         "retained_work_item_id": row.retained_work_item_id,
-        "reason_pl": row.rationale_pl,
-        "safe_next_step_pl": row.next_step_pl,
-        "blockers": tuple(
-            ContentProductionDecisionBlocker(
-                code=blocker.code,
-                owner=blocker.owner,
-                next_step_pl=blocker.next_step_pl,
-                sources=blocker.sources,
-                blocks_initial_generation=blocker.blocks_initial_generation,
-            )
-            for blocker in row.blockers
-        ),
+        "reason_pl": reason_pl,
+        "safe_next_step_pl": safe_next_step_pl,
+        "blockers": _decision_blockers(row),
         "primary_evidence_ids": row.primary_evidence_ids,
         "lineage_evidence_ids": row.lineage_evidence_ids,
         "source_connectors": row.source_connectors,
@@ -311,6 +314,39 @@ def build_content_production_decision(
             "reusable_document": _reusable_document(binding, retained_revision_state),
         }
     )
+
+
+def _decision_blockers(
+    row: ContentProductionClassificationRow,
+) -> tuple[ContentProductionDecisionBlocker, ...]:
+    blockers = tuple(
+        ContentProductionDecisionBlocker(
+            code=blocker.code,
+            owner=blocker.owner,
+            next_step_pl=blocker.next_step_pl,
+            sources=blocker.sources,
+            blocks_initial_generation=blocker.blocks_initial_generation,
+        )
+        for blocker in row.blockers
+    )
+    protection = row.blocked_historical_protection
+    if row.decision == "blocked" and protection is not None:
+        return (
+            *blockers,
+            ContentProductionDecisionBlocker(
+                code="protected_revision_reconciliation_required",
+                owner="WILQ content workflow",
+                next_step_pl=(
+                    "Przed dalszą pracą przeprowadź review dokładnej pary "
+                    f"revision_id={protection.historical_revision_id} i "
+                    f"revision_digest={protection.historical_revision_digest}; "
+                    "nie uzgadniaj rewizji wyłącznie na podstawie URL."
+                ),
+                sources=(protection.current_verification_evidence_id,),
+                blocks_initial_generation=True,
+            ),
+        )
+    return blockers
 
 
 def _revision_binding(
