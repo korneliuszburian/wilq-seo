@@ -5,10 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import cast
 
+from wilq.content.workflow.current_acceptance_contracts import CurrentAcceptanceRow
 from wilq.content.workflow.current_preparation_readiness_contracts import (
     ContentCurrentPreparationReadiness,
     ContentCurrentPreparationReadinessBlocked,
     ContentCurrentPreparationReadyForRefreshAuthorization,
+    CurrentPerUrlPreparationReadinessStore,
     CurrentPreparationReadinessStore,
 )
 from wilq.content.workflow.current_preparation_readiness_support import (
@@ -153,6 +155,71 @@ def resolve_current_preparation_readiness(
     )
 
 
+def resolve_current_per_url_preparation_readiness(
+    store: CurrentPerUrlPreparationReadinessStore,
+    work_item_id: str,
+) -> ContentCurrentPreparationReadiness:
+    """Resolve readiness from the newest per-URL current-acceptance wave row.
+
+    The v1 latest-batch classification never authorizes currentness here; its
+    records stay readable for historical refresh authorization.
+    """
+
+    row = _load_current_acceptance_row_for_work_item(store, work_item_id)
+    if row is None:
+        return _blocked(
+            work_item_id,
+            "current_acceptance_row_missing",
+            reason="Brakuje bieżącego wiersza current acceptance dla tego work itemu.",
+            safe_next_step="Uruchom bieżącą kwalifikację current acceptance dla tego URL-a.",
+        )
+    newest = _load_newest_acceptance_row_for_path(store, row.canonical_path) or row
+    if newest.decision not in {"keep", "refresh"}:
+        return _blocked(
+            work_item_id,
+            newest.blocker_code or newest.reason_code or "current_acceptance_blocked",
+            reason="Bieżąca decyzja per-URL nie pozwala na przygotowanie treści.",
+            safe_next_step=newest.safe_next_step,
+        )
+    return _blocked(
+        work_item_id,
+        "approved_keep_receipt_required",
+        reason=(
+            "Strona ma bieżącą decyzję keep/refresh, ale wymaga zatwierdzonego "
+            "lokalnego KEEP receipt przed przygotowaniem treści."
+        ),
+        safe_next_step=newest.safe_next_step,
+    )
+
+
+def _load_current_acceptance_row_for_work_item(
+    store: CurrentPerUrlPreparationReadinessStore,
+    work_item_id: str,
+) -> CurrentAcceptanceRow | None:
+    loader = getattr(store, "load_latest_current_acceptance_row_for_work_item", None)
+    if not callable(loader):
+        return None
+    try:
+        value = loader(work_item_id)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return value if isinstance(value, CurrentAcceptanceRow) else None
+
+
+def _load_newest_acceptance_row_for_path(
+    store: CurrentPerUrlPreparationReadinessStore,
+    canonical_path: str,
+) -> CurrentAcceptanceRow | None:
+    loader = getattr(store, "load_latest_current_acceptance_row_for_path", None)
+    if not callable(loader):
+        return None
+    try:
+        value = loader(canonical_path=canonical_path)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return value if isinstance(value, CurrentAcceptanceRow) else None
+
+
 def _blocked(
     work_item_id: str,
     code: str,
@@ -177,5 +244,6 @@ __all__ = [
     "ContentCurrentPreparationReadinessBlocked",
     "ContentCurrentPreparationReadyForRefreshAuthorization",
     "CurrentPreparationReadinessStore",
+    "resolve_current_per_url_preparation_readiness",
     "resolve_current_preparation_readiness",
 ]

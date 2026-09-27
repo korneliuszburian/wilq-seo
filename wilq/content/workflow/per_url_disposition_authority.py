@@ -402,6 +402,30 @@ def per_url_disposition_blockers(
         return (
             _blocker(freshness[0], observation.policy_facts.freshness_evidence_ids, freshness[1]),
         )
+    acceptance_loader = getattr(store, "load_latest_current_acceptance_row_for_path", None)
+    if callable(acceptance_loader):
+        acceptance = acceptance_loader(
+            canonical_path=observation.policy_facts.canonical_path,
+        )
+        if acceptance is not None and acceptance.decision not in {"keep", "refresh"}:
+            return (
+                _blocker(
+                    "current_acceptance_blocked",
+                    acceptance.evidence_ids,
+                    acceptance.safe_next_step,
+                ),
+            )
+        if acceptance is not None and (
+            acceptance.observation_id != observation.observation_id
+            or acceptance.semantic_row_digest != observation.semantic_row_digest
+        ):
+            return (
+                _blocker(
+                    "current_acceptance_observation_superseded",
+                    acceptance.evidence_ids,
+                    "Uruchom nową kwalifikację i użyj dokładnej obserwacji z bieżącego wave.",
+                ),
+            )
     observations = store.list_content_per_url_decision_observations_for_scope(
         canonical_path=observation.policy_facts.canonical_path,
         current_work_item_id=observation.policy_facts.current_work_item_id,

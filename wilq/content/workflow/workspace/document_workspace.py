@@ -157,9 +157,12 @@ class ContentDocumentWorkspace(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     response_type: Literal["content_document_workspace"] = "content_document_workspace"
-    contract_version: Literal["content_document_workspace_v2"] = "content_document_workspace_v2"
+    contract_version: Literal["content_document_workspace_v3"] = "content_document_workspace_v3"
     work_item_id: str
     work_kind: Literal["refresh_existing"]
+    per_url_delivery_identity_action_id: str | None = Field(
+        default=None, min_length=1, max_length=240
+    )
     service_label: str | None = None
     source_snapshot: ContentDocumentWorkspaceSourceSnapshot
     canonical_document: ContentDocumentWorkspaceDocument

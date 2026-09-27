@@ -46,6 +46,10 @@ from wilq.content.workflow.store.store_authoring_inventory_receipt import (
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
 )
+from wilq.content.workflow.store.store_current_acceptance import (
+    CurrentAcceptanceStoreMixin,
+    ensure_current_acceptance_schema,
+)
 from wilq.content.workflow.store.store_current_disposition_authority import (
     ContentCurrentDispositionAuthorityStoreMixin,
 )
@@ -67,6 +71,10 @@ from wilq.content.workflow.store.store_evidence_acquisition import (
 )
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
+)
+from wilq.content.workflow.store.store_intake import (
+    ContentIntakeStoreMixin,
+    ensure_content_intake_schema,
 )
 from wilq.content.workflow.store.store_landing_hub import (
     ContentLandingHubAuthorizationStoreMixin,
@@ -135,6 +143,10 @@ from wilq.content.workflow.store.store_queries import (
 )
 from wilq.content.workflow.store.store_refresh_preparation import (
     RefreshPreparationAuthorizationStoreMixin,
+)
+from wilq.content.workflow.store.store_request_workflow import (
+    ContentRequestWorkflowStoreMixin,
+    ensure_content_request_workflow_schema,
 )
 from wilq.content.workflow.store.store_research_packet import (
     ContentResearchPacketStoreMixin,
@@ -677,6 +689,9 @@ class ContentWorkflowStore(
     ContentCurrentDispositionAuthorityStoreMixin,
     CurrentPageDispositionV2StoreMixin,
     ContentPerUrlDecisionAuthorityStoreMixin,
+    CurrentAcceptanceStoreMixin,
+    ContentIntakeStoreMixin,
+    ContentRequestWorkflowStoreMixin,
     PerUrlDispositionAuthorityStoreMixin,
     PerUrlDeliveryIdentityAuthorityStoreMixin,
     ContentCurrentVerificationStoreMixin,
@@ -722,6 +737,9 @@ class ContentWorkflowStore(
         ensure_planning_generation_intent_schema(connection)
         ensure_planning_generation_intent_v3_schema(connection)
         ensure_per_url_decision_authority_schema(connection)
+        ensure_current_acceptance_schema(connection)
+        ensure_content_intake_schema(connection)
+        ensure_content_request_workflow_schema(connection)
         ensure_per_url_disposition_authority_schema(connection)
         ensure_per_url_delivery_identity_authority_schema(connection)
         ensure_content_workflow_schema(connection)

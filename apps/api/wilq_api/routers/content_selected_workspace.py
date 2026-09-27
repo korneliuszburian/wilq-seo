@@ -6,7 +6,7 @@ from apps.api.wilq_api.routers.content_selected_snapshot import (
     selected_workspace_snapshot_for_work_item_or_404,
 )
 from wilq.content.workflow.current_preparation_readiness import (
-    resolve_current_preparation_readiness,
+    resolve_current_per_url_preparation_readiness,
 )
 from wilq.content.workflow.pipeline_steps.operator_steps import ContentWorkflowOperatorJourney
 from wilq.content.workflow.store.store import content_workflow_store
@@ -19,6 +19,7 @@ from wilq.content.workflow.workspace.selected_workspace import (
     ContentSelectedWorkspace,
     build_content_selected_workspace_with_context,
     selected_workspace_identity_binding_id,
+    selected_workspace_per_url_identity_action_id,
 )
 
 
@@ -53,7 +54,7 @@ def register_content_selected_workspace_route(router: APIRouter) -> None:
             if identity_binding_id is None or not callable(identity_loader)
             else identity_loader(identity_binding_id)
         )
-        current_preparation_readiness = resolve_current_preparation_readiness(
+        current_preparation_readiness = resolve_current_per_url_preparation_readiness(
             store,
             current_work_item_id,
         )
@@ -62,7 +63,7 @@ def register_content_selected_workspace_route(router: APIRouter) -> None:
             store=store,
             revision_state=current_revision_state,
         )
-        return build_content_selected_workspace_with_context(
+        selected = build_content_selected_workspace_with_context(
             current_work_item_id,
             operator_journey=ContentWorkflowOperatorJourney(
                 current_step_id=snapshot.current_step_id,
@@ -76,6 +77,19 @@ def register_content_selected_workspace_route(router: APIRouter) -> None:
             revision_state=current_revision_state,
             item=snapshot.preflight.item,
         )
+        if selected.workspace is None:
+            return selected
+        identity_action_id = selected_workspace_per_url_identity_action_id(
+            store,
+            work_item_id=current_work_item_id,
+            public_url=selected.workspace.source_snapshot.url,
+        )
+        if identity_action_id is None:
+            return selected
+        workspace = selected.workspace.model_copy(
+            update={"per_url_delivery_identity_action_id": identity_action_id}
+        )
+        return selected.model_copy(update={"workspace": workspace})
 
     router.add_api_route(
         "/api/content/work-items/{work_item_id}/selected-workspace",

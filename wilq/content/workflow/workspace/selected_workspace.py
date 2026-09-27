@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from wilq.content.canonical.urls import content_normalized_path
 from wilq.content.workflow.contracts.models import ContentWorkItem
 from wilq.content.workflow.current_preparation_readiness import (
     ContentCurrentPreparationReadiness,
@@ -14,6 +15,10 @@ from wilq.content.workflow.delivery_identity import (
     content_delivery_identity_logical_id,
 )
 from wilq.content.workflow.documents.revisions import ContentDraftRevisionState
+from wilq.content.workflow.per_url_delivery_identity_authority import (
+    PerUrlDeliveryIdentityBinding,
+    read_per_url_delivery_identity_authority,
+)
 from wilq.content.workflow.pipeline_steps.operator_steps import ContentWorkflowOperatorJourney
 from wilq.content.workflow.workspace.document_workspace import (
     ContentDocumentWorkspace,
@@ -341,6 +346,48 @@ def selected_workspace_identity_binding_id(
         }
     )
     return f"content_delivery_identity_{logical_id[:24]}"
+
+
+def selected_workspace_per_url_identity_action_id(
+    store: Any,
+    *,
+    work_item_id: str,
+    public_url: str | None,
+) -> str | None:
+    """Expose one exact current per-URL identity for the selected workspace."""
+
+    if public_url is None:
+        return None
+    canonical_path = content_normalized_path(public_url)
+    list_bindings = getattr(store, "list_per_url_delivery_identity_bindings", None)
+    if canonical_path is None or not callable(list_bindings):
+        return None
+
+    current_action_ids: list[str] = []
+    bindings: list[PerUrlDeliveryIdentityBinding] = list_bindings(
+        current_work_item_id=work_item_id
+    )
+    for binding in bindings:
+        snapshot = binding.snapshot
+        if (
+            snapshot.current_work_item_id != work_item_id
+            or snapshot.canonical_path != canonical_path
+            or snapshot.public_url != public_url
+        ):
+            continue
+        projection = read_per_url_delivery_identity_authority(
+            store,
+            action_id=binding.action_id,
+        )
+        projected_binding = projection.binding
+        if (
+            projection.status == "current"
+            and projected_binding is not None
+            and projected_binding.action_id == binding.action_id
+            and projected_binding.snapshot == snapshot
+        ):
+            current_action_ids.append(binding.action_id)
+    return current_action_ids[0] if len(current_action_ids) == 1 else None
 
 
 def _identity_readiness(

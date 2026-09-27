@@ -4,8 +4,14 @@ from collections.abc import Callable
 
 from fastapi import APIRouter
 
+from apps.api.wilq_api.routers.content_brief_proposal import (
+    register_content_brief_proposal_routes,
+)
 from apps.api.wilq_api.routers.content_codex_proposal import (
     register_content_revision_repair_route,
+)
+from apps.api.wilq_api.routers.content_current_acceptance import (
+    register_content_current_acceptance_routes,
 )
 from apps.api.wilq_api.routers.content_current_disposition_authority import (
     register_content_current_disposition_authority_routes,
@@ -42,6 +48,9 @@ from apps.api.wilq_api.routers.content_independent_review import (
 )
 from apps.api.wilq_api.routers.content_initial_draft import (
     register_content_initial_draft_route,
+)
+from apps.api.wilq_api.routers.content_intake import (
+    register_content_intake_routes,
 )
 from apps.api.wilq_api.routers.content_landing_hub_authorization import (
     register_content_landing_hub_authorization_routes,
@@ -91,6 +100,9 @@ from apps.api.wilq_api.routers.content_refresh_preparation import (
 from apps.api.wilq_api.routers.content_regulatory_source_reviews import (
     register_content_regulatory_source_review_routes,
 )
+from apps.api.wilq_api.routers.content_request_workflow import (
+    register_content_request_workflow_routes,
+)
 from apps.api.wilq_api.routers.content_research_packet import (
     register_content_research_packet_routes,
 )
@@ -105,6 +117,9 @@ from apps.api.wilq_api.routers.content_research_packet_v3_action import (
 )
 from apps.api.wilq_api.routers.content_research_packet_v3_preview import (
     register_content_research_packet_v3_preview_route,
+)
+from apps.api.wilq_api.routers.content_research_read import (
+    register_content_research_read_routes,
 )
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
@@ -177,6 +192,11 @@ def register_content_model_routes(
     register_content_evidence_acquisition_routes(router)
     register_content_current_verification_routes(router)
     register_content_current_inventory_reconciliation_route(router)
+    register_content_current_acceptance_routes(router)
+    register_content_intake_routes(router)
+    register_content_research_read_routes(router)
+    register_content_request_workflow_routes(router)
+    register_content_brief_proposal_routes(router)
     register_content_current_disposition_authority_routes(router)
     register_content_per_url_disposition_authority_routes(router)
     register_content_per_url_delivery_identity_authority_routes(router)

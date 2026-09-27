@@ -138,15 +138,103 @@ def test_public_get_reuses_exact_bdo_binding_without_changing_current_identity(
     ]
 
 
+def test_selected_workspace_hands_off_only_current_identity_for_exact_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = WAVE0_PRODUCTION_ACCEPTANCE_POLICY
+    page = policy.protected_binding
+    retained_work_item_id = page.retained_work_item_id
+    assert retained_work_item_id is not None
+    revisions = _exact_revision_fixture(
+        policy,
+        page,
+        retained_work_item_id=retained_work_item_id,
+    )
+    public_url = f"{policy.public_origin}{page.canonical_path}/"
+    identity_action_id = "act_per_url_delivery_identity_exact"
+    identity = SimpleNamespace(
+        action_id=identity_action_id,
+        snapshot=SimpleNamespace(
+            current_work_item_id=page.current_work_item_id,
+            canonical_path=page.canonical_path,
+            public_url=public_url,
+        ),
+    )
+    monkeypatch.setattr(
+        selected_workspace_module,
+        "read_per_url_delivery_identity_authority",
+        lambda _store, *, action_id: SimpleNamespace(status="current", binding=identity),
+        raising=False,
+    )
+
+    current = _request_exact_bdo_workspace(
+        monkeypatch,
+        binding=page,
+        retained_work_item_id=retained_work_item_id,
+        revisions=revisions,
+        per_url_identity_bindings=(identity,),
+        identity_public_url=public_url,
+    )
+
+    assert current.response.status_code == 200, current.response.text
+    assert current.response.json()["workspace"].get(
+        "per_url_delivery_identity_action_id"
+    ) == (
+        identity_action_id
+    )
+
+    monkeypatch.setattr(
+        selected_workspace_module,
+        "read_per_url_delivery_identity_authority",
+        lambda _store, *, action_id: SimpleNamespace(status="blocked", binding=identity),
+        raising=False,
+    )
+    stale = _request_exact_bdo_workspace(
+        monkeypatch,
+        binding=page,
+        retained_work_item_id=retained_work_item_id,
+        revisions=revisions,
+        per_url_identity_bindings=(identity,),
+        identity_public_url=public_url,
+    )
+    assert stale.response.status_code == 200, stale.response.text
+    assert stale.response.json()["workspace"].get(
+        "per_url_delivery_identity_action_id"
+    ) is None
+
+    wrong_page = SimpleNamespace(
+        action_id=identity_action_id,
+        snapshot=SimpleNamespace(
+            current_work_item_id=page.current_work_item_id,
+            canonical_path="/different-page",
+            public_url=f"{policy.public_origin}/different-page/",
+        ),
+    )
+    wrong = _request_exact_bdo_workspace(
+        monkeypatch,
+        binding=page,
+        retained_work_item_id=retained_work_item_id,
+        revisions=revisions,
+        per_url_identity_bindings=(wrong_page,),
+        identity_public_url=public_url,
+    )
+    assert wrong.response.status_code == 200, wrong.response.text
+    assert wrong.response.json()["workspace"].get(
+        "per_url_delivery_identity_action_id"
+    ) is None
+
+
 class _RouteStore:
     def __init__(
         self,
         *,
         projection: ContentProductionClassificationProjection,
         states: dict[str, ContentDraftRevisionState],
+        per_url_identity_bindings: tuple[object, ...] = (),
     ) -> None:
         self.projection = projection
         self.states = states
+        self.per_url_identity_bindings = per_url_identity_bindings
         self.classification_calls: list[str] = []
         self.revision_calls: list[str] = []
 
@@ -163,6 +251,18 @@ class _RouteStore:
 
     def load_content_delivery_identity_record(self, binding_id: str):
         return None
+
+    def list_per_url_delivery_identity_bindings(
+        self,
+        *,
+        current_work_item_id: str | None = None,
+    ) -> list[object]:
+        return [
+            binding
+            for binding in self.per_url_identity_bindings
+            if current_work_item_id is None
+            or binding.snapshot.current_work_item_id == current_work_item_id
+        ]
 
 
 def _exact_revision_fixture(
@@ -222,6 +322,8 @@ def _request_exact_bdo_workspace(
     binding: ContentProductionProtectedBindingPolicy,
     retained_work_item_id: str,
     revisions: _RevisionFixture,
+    per_url_identity_bindings: tuple[object, ...] = (),
+    identity_public_url: str | None = None,
 ) -> _RequestFixture:
     store = _RouteStore(
         projection=_exact_bdo_projection(),
@@ -229,6 +331,7 @@ def _request_exact_bdo_workspace(
             binding.current_work_item_id: revisions.current_state,
             retained_work_item_id: revisions.retained_state,
         },
+        per_url_identity_bindings=per_url_identity_bindings,
     )
     factory_calls: list[object] = []
     snapshot_calls: list[tuple[str, object, ContentDraftRevisionState]] = []
@@ -262,7 +365,15 @@ def _request_exact_bdo_workspace(
     ) -> ContentDocumentWorkspace:
         assert work_item_id == binding.current_work_item_id
         assert revision_state is revisions.current_state
-        return revisions.current_workspace
+        if identity_public_url is None:
+            return revisions.current_workspace
+        return revisions.current_workspace.model_copy(
+            update={
+                "source_snapshot": revisions.current_workspace.source_snapshot.model_copy(
+                    update={"url": identity_public_url}
+                )
+            }
+        )
 
     monkeypatch.setattr(selected_workspace_router, "content_workflow_store", store_factory)
     monkeypatch.setattr(

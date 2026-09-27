@@ -6,6 +6,7 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.workflow.current_acceptance_contracts import CurrentAcceptanceRow
 from wilq.content.workflow.decisions.production import ContentProductionClassificationRun
 from wilq.content.workflow.delivery_identity import ContentDeliveryIdentityBinding
 from wilq.content.workflow.source_pack_binding import ContentSourcePackBinding
@@ -23,6 +24,16 @@ class CurrentPreparationReadinessStore(Protocol):
     def list_content_source_pack_bindings(
         self, *, current_work_item_id: str | None = None
     ) -> list[ContentSourcePackBinding]: ...
+
+
+class CurrentPerUrlPreparationReadinessStore(Protocol):
+    def load_latest_current_acceptance_row_for_work_item(
+        self, current_work_item_id: str
+    ) -> CurrentAcceptanceRow | None: ...
+
+    def load_latest_current_acceptance_row_for_path(
+        self, *, canonical_path: str
+    ) -> CurrentAcceptanceRow | None: ...
 
 
 class _FrozenModel(BaseModel):
@@ -79,5 +90,6 @@ __all__ = [
     "ContentCurrentPreparationReadinessBlocker",
     "ContentCurrentPreparationReady",
     "ContentCurrentPreparationReadyForRefreshAuthorization",
+    "CurrentPerUrlPreparationReadinessStore",
     "CurrentPreparationReadinessStore",
 ]
