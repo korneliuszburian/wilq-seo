@@ -51,3 +51,36 @@ def test_public_initial_draft_post_blocks_before_snapshot_queue_or_model(monkeyp
     assert entered_writer is False
     assert reuse.status_code == 409
     assert reuse.json()["blockers"][0]["code"] == "initial_draft_action_required"
+
+
+def test_generation_blockers_point_at_the_v3_packet_actionobject() -> None:
+    draft = TestClient(app).post(
+        "/api/content/work-items/wi_exact/initial-draft",
+        json={
+            "expected_proposal_id": "proposal_exact",
+            "expected_planning_digest": "a" * 64,
+            "expected_planning_input_digest": "b" * 64,
+            "research_packet_id": "content_research_packet_v3_" + "c" * 24,
+            "research_packet_digest": "c" * 64,
+            "requested_by": "synthetic-operator",
+        },
+    )
+    draft_next_step = draft.json()["safe_next_step"]
+    assert "v3" in draft_next_step
+    assert "v2" not in draft_next_step
+
+    production = TestClient(app).post(
+        "/api/content/work-items/wi_exact/production-command",
+        json={
+            "operation": "initial",
+            "expected_proposal_id": "proposal_exact",
+            "expected_planning_digest": "a" * 64,
+            "expected_planning_input_digest": "b" * 64,
+            "research_packet_id": "content_research_packet_v3_" + "c" * 24,
+            "research_packet_digest": "c" * 64,
+            "requested_by": "synthetic-operator",
+        },
+    )
+    production_next_step = production.json()["safe_next_step"]
+    assert "v3" in production_next_step
+    assert "v2" not in production_next_step

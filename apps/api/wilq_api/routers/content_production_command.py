@@ -197,7 +197,7 @@ def _production_action_required_response(
     request: ContentProductionInitialCommand | ContentProductionRepairCommand,
 ) -> JSONResponse:
     next_step = (
-        "Przygotuj ActionObject dla dokładnego szkicu i pakietu v2."
+        "Przygotuj ActionObject dla dokładnego szkicu i pakietu v3."
         if request.operation == "initial"
         else "Przygotuj ActionObject dla dokładnej poprawki bieżącej rewizji."
     )

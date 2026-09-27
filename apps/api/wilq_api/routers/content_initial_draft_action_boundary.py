@@ -18,7 +18,7 @@ def initial_draft_action_required_response(
     work_item_id: str,
     request: ContentWorkItemInitialDraftRequest,
 ) -> JSONResponse:
-    next_step = "Przygotuj ActionObject dla pełnego szkicu z dokładnym planem i pakietem v2."
+    next_step = "Przygotuj ActionObject dla pełnego szkicu z dokładnym planem i pakietem v3."
     blocker = ContentInitialDraftBlocker(
         code="initial_draft_action_required",
         label="Pełny szkic wymaga ActionObject",

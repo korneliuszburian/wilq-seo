@@ -13,6 +13,7 @@ from wilq.content.drafts import initial_draft_queue
 from wilq.content.drafts.initial_draft_authority import (
     InitialDraftAuthorityBlocked,
     InitialDraftAuthorityConflict,
+    InitialDraftAuthorityUnclassified,
     StatusRead,
 )
 from wilq.content.drafts.initial_full_draft_contracts import (
@@ -1027,3 +1028,155 @@ def test_initial_draft_status_preserves_persisted_readability_blocker_identity(
 
     assert body["blockers"][0]["code"] == blocker_code
     assert body["blockers"][0]["source_codes"] == [source_code]
+
+
+def test_status_returns_a_typed_blocker_for_an_inexact_planning_proposal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    context_run = SimpleNamespace(
+        hook="content_initial_full_draft",
+        used_endpoints=[endpoint],
+        started_at=datetime(2026, 9, 27, tzinfo=UTC),
+        status="started",
+        id="context-run",
+        error=None,
+        proposal_id="old-proposal",
+        planning_input_digest="0" * 64,
+        initial_draft_context_digest="context-digest",
+    )
+    inexact_proposal = SimpleNamespace(
+        proposal_id=None,
+        planning_digest=None,
+        planning_input_digest=None,
+        generation_status="draft",
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [context_run]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return None
+
+    class WorkflowStore:
+        def load_planning_decisions(self, _work_item_id: str):
+            return []
+
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(proposal=inexact_proposal),
+        revision_workspace=SimpleNamespace(latest_revision=None),
+        preflight=SimpleNamespace(item=None),
+        draft_package=None,
+    )
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: snapshot,
+        authority_resolver=lambda *_args: InitialDraftAuthorityUnclassified(
+            requested_work_item_id="content_work_item_bdo"
+        ),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["blockers"][0]["code"] == "planning_not_ready"
+
+
+def test_status_does_not_reuse_a_stale_context_run_for_an_inexact_current_proposal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = FastAPI()
+    endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    started_run = CodexRun(
+        id="stale-context-run",
+        hook="content_initial_full_draft",
+        status="started",
+        started_at=datetime(2026, 9, 27, tzinfo=UTC),
+        used_endpoints=[endpoint],
+        proposal_id="approved-plan-proposal",
+        planning_digest="2" * 64,
+        planning_input_digest="1" * 64,
+        initial_draft_context_digest="c" * 64,
+        initial_draft_base_revision_id=None,
+    )
+    exact_store_proposal = SimpleNamespace(
+        proposal_id="approved-plan-proposal",
+        planning_digest="2" * 64,
+        planning_input_digest="1" * 64,
+        generation_status="codex_generated",
+    )
+    inexact_current_proposal = SimpleNamespace(
+        proposal_id=None,
+        planning_digest=None,
+        planning_input_digest=None,
+        generation_status="draft",
+    )
+
+    class LocalState:
+        def list_codex_runs(self):
+            return [started_run]
+
+    class ProposalStore:
+        def latest(self, _work_item_id: str):
+            return exact_store_proposal
+
+    class WorkflowStore:
+        def load_planning_decisions(self, _work_item_id: str):
+            return []
+
+        def load_draft_revision_state(self, _work_item_id: str):
+            return SimpleNamespace(latest_revision=None)
+
+    snapshot = SimpleNamespace(
+        planning_workspace=SimpleNamespace(proposal=inexact_current_proposal),
+        revision_workspace=SimpleNamespace(latest_revision=None),
+        preflight=SimpleNamespace(item=None),
+        draft_package=None,
+    )
+
+    monkeypatch.setattr(content_initial_draft, "local_state_store", lambda: LocalState())
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_planning_proposal_store",
+        lambda: ProposalStore(),
+    )
+    monkeypatch.setattr(
+        content_initial_draft,
+        "content_workflow_store",
+        lambda: WorkflowStore(),
+    )
+    content_initial_draft.register_content_initial_draft_route(
+        app,
+        snapshot_loader=lambda _work_item_id: snapshot,
+        authority_resolver=lambda *_args: InitialDraftAuthorityUnclassified(
+            requested_work_item_id="content_work_item_bdo"
+        ),
+    )
+
+    response = TestClient(app).get(endpoint)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] != "generating"
+    assert body["status"] == "blocked"
+    assert body["blockers"][0]["code"] == "draft_not_started"

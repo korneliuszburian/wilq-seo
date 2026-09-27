@@ -566,6 +566,16 @@ def _current_initial_draft_context(
     if planning is None:
         return None, ""
     current = planning.proposal
+    if (
+        current is None
+        or getattr(current, "proposal_id", None) is None
+        or getattr(current, "planning_input_digest", None) is None
+    ):
+        # An inexact planning proposal has no exact draft context to bind. The
+        # read path must stay a typed status read instead of raising, and the
+        # empty sentinel keeps context-bound runs filtered like the absent
+        # planning workspace above.
+        return None, ""
     return current, initial_draft_queue.snapshot_initial_draft_context_digest(snapshot, current)
 
 
