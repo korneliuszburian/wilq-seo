@@ -366,7 +366,7 @@ def test_new_page_run_record_uses_project_model_policy_for_prompt_audit(
     assert result.status == "created"
     assert result.run_id is not None
     run = next(run for run in case.run_store.list_codex_runs() if run.id == result.run_id)
-    assert run.model == "gpt-5.6-terra"
+    assert run.model == "gpt-6-luna"
     assert run.model_reasoning_effort == "max"
     assert run.prompt_digest == sha256(client.requests[0].instruction.encode()).hexdigest()
     assert run.prompt_template_id is not None

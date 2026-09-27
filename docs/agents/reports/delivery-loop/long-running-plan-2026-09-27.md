@@ -52,8 +52,10 @@ explicit markers and a hard iteration cap.
   loop never stacks uncommitted slices).
 
 Per-iteration contract for the agent (encoded in the step prompt): one Bead,
-claim -> focused falsifier RED->GREEN -> gates -> DeepSeek review -> one commit ->
-push -> close Bead -> capsule update -> print exactly one stop marker.
+claim -> focused falsifier RED->GREEN -> gates -> owner review of local proof
+(and, if useful, a fresh read-only Codex advisory pass) -> one commit -> push ->
+close Bead -> capsule update -> print exactly one stop marker. The previous
+DeepSeek step is historical, not an executable instruction.
 
 ## 4. Standards the loop enforces
 
@@ -64,9 +66,12 @@ push -> close Bead -> capsule update -> print exactly one stop marker.
 3. **Verification before claim.** Focused falsifier RED->GREEN (mutation proof
    for test-only slices), typed gates for the changed boundary, pre-existing
    reds recorded and never masked.
-4. **Independent review per slice** via the installed `second-opinion` skill
-   (opencode transport, `deepseek-v4.1-flash`, max), checker exit 0, findings
-   verified locally and dispositioned in `.krn`.
+4. **Review per slice** by the delivery owner: inspect the fixed diff, rerun
+   focused proof and disposition each finding in `.krn` and the Bead. Only Codex
+   models may be invoked; for an additional advisory pass use a fresh, read-only
+   Codex context over one bounded artifact. A Codex-family pass after a Codex
+   implementation is not an independent-family review or approval. Historical
+   DeepSeek results remain records, not gates for the current Codex-only goal.
 5. **Fixed point before stop.** Every stop (marker, error, budget) leaves HEAD
    pushed, tree green, next step in the Bead and capsule.
 6. **Authority boundaries.** No vendor write, no product deploy/publication, no
