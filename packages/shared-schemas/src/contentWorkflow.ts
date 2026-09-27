@@ -712,9 +712,10 @@ export const ContentRegulatoryReviewCandidateSchema = z.object({
 
 export const ContentDocumentWorkspaceSchema = z.object({
   response_type: z.literal("content_document_workspace").default("content_document_workspace"),
-  contract_version: z.literal("content_document_workspace_v2").default("content_document_workspace_v2"),
+  contract_version: z.literal("content_document_workspace_v3").default("content_document_workspace_v3"),
   work_item_id: z.string(),
   work_kind: z.literal("refresh_existing"),
+  per_url_delivery_identity_action_id: z.string().min(1).max(240).nullable().optional(),
   service_label: z.string().nullable().optional(),
   source_snapshot: ContentDocumentWorkspaceSourceSnapshotSchema,
   canonical_document: ContentDocumentWorkspaceDocumentSchema,

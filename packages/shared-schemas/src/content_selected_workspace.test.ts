@@ -38,7 +38,7 @@ describe("ContentSelectedWorkspaceSchema", () => {
   };
   const workspace = {
     response_type: "content_document_workspace",
-    contract_version: "content_document_workspace_v2",
+    contract_version: "content_document_workspace_v3",
     work_item_id: "content_work_item_bdo",
     work_kind: "refresh_existing",
     service_label: "BDO",
@@ -257,6 +257,32 @@ describe("ContentSelectedWorkspaceSchema", () => {
     expect(parsed.production_decision.reusable_document.review.revision_digest).toBe(
       retainedRevision.content_digest
     );
+  });
+
+  it("preserves an exact current per-URL identity for the V3 review caller", () => {
+    const identityActionId = "act_per_url_delivery_identity_exact";
+    const parsed = ContentSelectedWorkspaceSchema.parse({
+      status: "ready",
+      work_item_id: "content_work_item_bdo",
+      requested_work_item_id: "content_work_item_bdo",
+      production_decision: { status: "missing" },
+      identity_readiness: {
+        status: "not_applicable",
+        binding_id: null,
+        reason_pl: "Brak klasyfikacji S1.",
+        safe_next_step_pl: "Odczytaj aktualne identity.",
+        generation_allowed: false
+      },
+      operator_journey: operatorJourney,
+      workspace: {
+        ...workspace,
+        per_url_delivery_identity_action_id: identityActionId
+      },
+      reason: "Odczytano workspace.",
+      safe_next_step: "Przygotuj przegląd."
+    });
+
+    expect(parsed.workspace?.per_url_delivery_identity_action_id).toBe(identityActionId);
   });
 
   it("leads with the reusable-document blocker when retained state drifts", () => {
