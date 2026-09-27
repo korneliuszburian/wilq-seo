@@ -169,6 +169,13 @@ class ContentDeliveryIdentityStoreMixin:
                 for row in rows
             ]
 
+    def load_content_delivery_classification_lookup(
+        self, binding: ContentDeliveryIdentityBinding
+    ) -> ContentDeliveryClassificationLookup:
+        with self._connect() as connection:
+            latest = load_latest_production_classification_from_connection(connection)
+        return _classification_lookup_for_binding(latest, binding)
+
     def load_content_delivery_identity_record(
         self, binding_id: str
     ) -> ContentDeliveryIdentityRecordResult | None:
