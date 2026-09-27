@@ -2861,3 +2861,72 @@ def test_old_preview_is_absent_and_start_command_rejects_caller_evidence() -> No
                 "evidence_ids": ["forged"],
             }
         )
+
+
+def test_research_rejects_a_researcher_that_attempted_an_external_call(
+    tmp_path: Path,
+) -> None:
+    workflow_store = ContentWorkflowStore(tmp_path / "workflow.sqlite3")
+    item = authoring_item()
+    catalog = authoring_catalog(item)
+    receipt = authoring_receipt(item)
+    workflow_store.record_content_authoring_inventory_receipt(receipt)
+    read_time = datetime(2026, 9, 13, 12, 0, tzinfo=UTC)
+    adapter = WordPressCurrentPageSnapshotAdapter(
+        material_reader=lambda url: SimpleNamespace(
+            url=url,
+            content_text="Aktualny materiał z receipt subject.",
+            extraction_region="wordpress_rest.content",
+        ),
+        clock=lambda: read_time,
+    )
+    acquisition = EvidenceAcquisitionCoordinator(
+        identity_loader=lambda _identity_id: pytest.fail("observation subject must not load S1"),
+        classification_loader=lambda _work_item_id: pytest.fail(
+            "observation subject must not load classification"
+        ),
+        store=workflow_store,
+        current_page_snapshot_reader=adapter.read,
+        catalog_loader=lambda: catalog,
+        clock=lambda: read_time,
+    )
+    run = acquisition.start(
+        EvidenceAcquisitionStartCommand(
+            subject={
+                "subject_kind": "authoring_inventory_receipt",
+                "authoring_inventory_receipt_id": receipt.receipt_id,
+            },
+            research_question="Sprawdź aktualny materiał strony.",
+        )
+    )
+    assert run.status == "ready_for_researcher", run.blockers
+
+    class _ExternalCallResearcher:
+        def run_structured_turn(self, request: object) -> CodexAppServerTurnResult:
+            context = json.loads(request.application_context)  # type: ignore[attr-defined]
+            return CodexAppServerTurnResult(
+                status="completed",
+                output_text=json.dumps(
+                    {
+                        "proposed_claim": "Strona opisuje zakres usługi.",
+                        "scope": "service",
+                        "observation_ids": [context["allowed_observation_ids"][0]],
+                        "contradictions": [],
+                        "unknowns": [],
+                    }
+                ),
+                turn_id="turn_external_call",
+                external_call_attempted=True,
+            )
+
+    proposal = EvidenceResearchCoordinator(
+        acquisition_reader=acquisition.read,
+        proposal_store=workflow_store,
+        researcher=_ExternalCallResearcher(),
+        clock=lambda: read_time,
+    ).start(run.run_id)
+
+    assert proposal.status == "blocked"
+    assert proposal.blockers[0].code == "researcher_external_call_blocked"
+    assert proposal.recorded_proposal.proposed_claim is None
+    assert proposal.recorded_proposal.observation_id is None
