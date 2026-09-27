@@ -1,31 +1,79 @@
-# Ekologus: evidence-bound produkcja treści i SEO
+# WILQ: uniwersalna kolejka treści i evidence-bound dostawa
 
-> Rola: `current state` i długotrwały ExecPlan jednego celu. Beads jest kolejką
-> wykonawczą, a `docs/content-status-214.csv` jedynym kanonicznym dziennikiem per
-> URL. Ten dokument nie duplikuje tych rekordów.
+> Rola: `current state` i długoterminowy plan jednego wyniku. Beads pozostaje
+> kolejką wykonawczą i właścicielem WIP; bieżący stan pracy zapisuje kapsuła
+> delivery-loop. CSV `docs/content-status-214.csv` opisuje historyczną kohortę,
+> nie pełny, aktualny spis sitemap.
 
 ## Outcome
 
-Doprowadzić całą sitemapę `ekologus.dev.proudsite.pl` do audytowalnego stanu:
+Każda uprawniona osoba z Ekologus może opisać potrzebę treści zwykłym językiem.
+WILQ tworzy z niej wznowialną kolejkę, zbiera dostępne dowody, składa
+propozycję briefu, wskazuje niewiadome i prosi człowieka o decyzję tylko tam,
+gdzie jest ona rzeczywiście potrzebna. Kolejka prowadzi do dokładnej,
+reviewed rewizji i create-only draftu dev albo do prawdziwego typed blockera.
 
-- wszystkie 214 URL-i mają zweryfikowaną decyzję `keep/noindex/redirect/remove`;
-- każdy z 57 URL-i `keep` ma exact lineage od inventory i źródeł do bieżącej
-  immutable revision, review, target mappingu i readbacku draftu dev albo
-  prawdziwy zewnętrzny typed blocker;
-- priorytet produkcji wynika z page-bound danych WILQ API, ale brak metryki nie
-  jest zerem ani powodem odrzucenia strony;
-- nie powstaje AI slop: tekst odpowiada intencji, wnosi własną wartość, nie
-  powiela korpusu, nie nadclaimuje i przechodzi deterministic oraz niezależne
-  review;
-- pipeline, prompty, klasyfikacje, mapowanie ACF/`the_content` i QA pozostają
-  reużywalne po refaktorze;
-- wykonanie kończy się wyłącznie create-only draftem dev. Public publish,
-  update i delete pozostają niedozwolone.
+Wynik jest kompletny, gdy:
+
+- intake działa dla dowolnego uprawnionego operatora, bez hardcodowania Agaty i
+  bez wymogu gotowego, sześciopolowego briefu;
+- każde zadanie ma trwały identyfikator, idempotentne przyjęcie, krok, stan
+  bramek, właściciela następnego kroku, pochodzenie pól i jeden bezpieczny krok;
+- każda rekomendacja i proponowany claim mają exact source/evidence lineage,
+  zakres autorytetu i freshness; brak lub nieświeżość danych jest blockerem;
+- research źródeł oficjalnych, konkurencji, korpusu i popytu korzysta z
+  jawnych kontraktów; nie udaje kompletności, gdy dowody lub uprawnienia nie są
+  dostępne;
+- brief rozdziela dane użytkownika, dowody, wnioski i niewiadome; każda
+  materialna decyzja człowieka wstrzymuje i wznawia właściwy etap;
+- jakość jest sprawdzana przez lineage faktów/claimów, dopasowanie do intentu,
+  odbiorcy i zweryfikowanego profilu Ekologus, wartość dodaną względem korpusu,
+  overlap i niezależny review; AI detector ani magic score nie są dowodem;
+- istniejące i nowe strony przechodzą przez API-owned workflow, exact revision,
+  review, target proof i create-only draft dev albo typed blocker;
+- pełny, bieżący inventory sitemap jest uzgodniony przez publiczne źródła WILQ;
+  każdy URL ma typed disposition, a każda kwalifikująca się strona — pracę,
+  decyzję lub typed blocker;
+- nie wykonuje się automatycznej publikacji, update, delete ani masowej
+  generacji; write-capable działania zachowują ActionObject i osobne approval.
+
+## Jak utrzymywać ten plan
+
+Goal określa wynik i kryterium jego ukończenia. Ten plik określa kolejność,
+zależności i falsyfikatory. Beads przechowuje zadania i pojedynczy aktywny WIP,
+a kapsuła delivery-loop — wyłącznie bieżący stan, ownera, blocker i następną
+czynność. Nie twórz równoległej listy statusów ani drugiego aktywnego Beada.
+Każdy etap poniżej ma własny obserwowalny wynik; claim pozostaje w jednym
+Beadzie na raz.
+
+## Źródłowe decyzje projektowe
+
+- Z materiałów OpenAI przyjmujemy rozdział: Goal opisuje outcome, a plan
+  rozpisuje milestones z acceptance i walidacją. Nie dodajemy kolejnego pliku
+  statusowego; Bead i kapsuła zachowują swoje role.
+- Z workflow praktyk przyjmujemy named stages, uprawnienia/ownerów zadań,
+  typowany stan, pause/resume i bounded retries. LangGraph ani Temporal nie
+  są zależnościami WILQ; wybór frameworka nie rozwiązuje braku typed API,
+  dowodów ani ActionObject authority.
+- Z Google Search Central przyjmujemy ocenę pod kątem odbiorcy, użyteczności,
+  wiarygodności i własnej wartości. AI może wspierać research/strukturę, ale
+  nie zastępuje weryfikacji faktów ani nie usprawiedliwia masowego low-value
+  contentu.
+
+Źródła: [OpenAI — Using Goals in Codex](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex),
+[OpenAI — Run long-horizon tasks with Codex](https://developers.openai.com/blog/run-long-horizon-tasks-with-codex),
+[Google — Helpful, reliable, people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content),
+[Google — Generative AI content guidance](https://developers.google.com/search/docs/fundamentals/using-gen-ai-content),
+[Contentful — Create a workflow](https://www.contentful.com/help/ai-automations/workflows/creating-a-workflow/),
+[Contentful — Tasks](https://www.contentful.com/help/content-and-entries/tasks/),
+[LangGraph — Thinking in LangGraph](https://docs.langchain.com/oss/javascript/langgraph/thinking-in-langgraph),
+[Temporal — Child Workflows](https://docs.temporal.io/child-workflows).
 
 ## Authority i źródła prawdy
 
-1. `docs/content-status-214.csv` — 214-row journal i finalna projekcja stanu.
-2. WILQ SQLite/API — evidence, immutable revisions, review, ActionObject, audit.
+1. `docs/content-status-214.csv` — historyczny journal kohorty 214 URL-i.
+2. WILQ SQLite/API — bieżące evidence, work items, revisions, review,
+   ActionObject i audit.
 3. Sitemap/public/dev readback — tożsamość URL, canonical i exact target proof.
 4. Beads — jedyna kolejka, zależności, WIP, proof i handoff.
 5. Ten plan — kolejność, bramy i kryterium zakończenia, nie rejestr URL-i.
@@ -34,7 +82,70 @@ Nie wracamy do historycznego JSON journalu ani snapshotu eligibility jako
 bieżącej prawdy. Nie regenerujemy dobrej rewizji: `approved` jest reużywane,
 a `needs_changes` może utworzyć wyłącznie exact immutable child revision.
 
-## Baseline 2026-09-11
+## Zweryfikowane seamy do ponownego użycia
+
+Readback kodu, OpenAPI i WILQ API z 2026-09-25. Nowy intake ma łączyć poniższe
+kontrakty; nie zastępuje ich drugim research engine, job schedulerem ani
+planerem.
+
+| Istniejący seam | Co już robi | Granica względem ask-only kolejki |
+| --- | --- | --- |
+| `GET /api/content/diagnostics`, `GET /api/content/workflow-entry` | Read-side decision queue, freshness/blockers, wybór existing page albo new page. | Nie przyjmuje i nie utrwala natural-language ask. |
+| `GET /api/content/new-page-topics` | Read-only seeds wymagające dokładnych GSC/Ahrefs i braku istniejącej strony. | Nie tworzy briefu ani research runu; obecnie blocked przez niepełny/stale input. |
+| `POST /api/content/new-page-briefs` | Trwały brief nowej strony z tytułem, celem, usługą, odbiorcą, search intent i miejscem w serwisie. | Wymaga sześciu pól ręcznie; zapis nie oznacza draftu ani WordPress write. |
+| `.../planning-foundation`, `.../planning-proposal` | Sprawdza foundation/overlap i kolejkuje exact-digest proposal; zapisuje claim w SQLite, uruchamia go przez ograniczony in-process `ThreadPoolExecutor` i rewaliduje input przed Codex. | Działa dopiero po ręcznie zapisanym briefie/foundation; nie jest uniwersalnym request/gate runnerem. |
+| `/api/content/evidence-acquisition*` | Idempotentny, append-only acquisition oparty o exact identity albo authoring-inventory receipt; wykonuje sanitized exact-page read albo odczyt zarejestrowanego official-primary candidate. | Nie przyjmuje ask bez ustalonego subjectu i nie odkrywa swobodnie konkurentów/źródeł. Kandydat official jest server-owned i musi pasować do exact pathu. |
+| `/api/content/evidence-acquisition/{run_id}/research` | Jawnie wywołuje structured Codex app-server proposal z jednego sanitized observation; zapisuje unknowns/contradictions, blokuje niebezpieczny output, wymaga human review. | Nie wykonuje multi-source web search; inne `source_intent` bez implementacji adaptera kończą typed blockerem. Promotion/review pozostają osobnymi kontraktami. |
+| Regulatory source candidates/reviews, knowledge cards, Service Profile | Obsługują znane source candidates, snapshot/review/promotion i zatwierdzone fakty/profil. | Istnienie endpointu nie oznacza discovery ani zaakceptowania konkretnego źródła. PPWR pozostaje osobnym źródłowym blockerem. |
+| Research packet v2/v3, per-URL identity, ActionObject, exact revision/review/draft seams | Wiążą zatwierdzone fakty, exact identity, packet digest, review i dev delivery. | To downstream authority, nie natural-language intake. Q6 ma je konsumować, nie odtwarzać. |
+| `CurrentResearchPacketEntry` + `ResearchPacketV3ActionReview` | Istniejący document canvas może przygotować exact ActionObject v3 i poprowadzić review/confirm/apply. | Entry caller przekazuje tylko `work_item_id`; brak per-URL identity action ID powoduje typed blocker. To M3d caller gap, nie brak V3 preview/action API. |
+| `/planning-generation-intent-v3` preview/dispatch | Existing ActionObject binds approved v3 packet to the exact per-URL identity through dispatch; stale/mismatched IDs block before model queue. | Backend and focused tests exist, but no dashboard/skill caller was found. M3c/M3d/Q5 must wire callers, not recreate generation intent or dispatch. |
+| `wilq-content-operator` + `POST /api/content/work-items/{id}/planning-proposals` | GET zachowuje bezpieczny planning status/readback. | Skill nadal instruuje POST, ale route jawnie zwraca `409 research_packet_action_required`; ta existing-page ścieżka nie jest generatorem. Przepnij skill po typed identity handoff; nie odblokowuj tego endpointu bokiem. |
+| Caller identity | Local pilot exposes fixed `local_operator` / `local_unverified` audit identity. | Nie dowodzi tożsamości konkretnej osoby. Nie wyprowadzaj actor, approval ani ownership z tekstu prośby; zapisuj tylko trusted API actor. Jeżeli assignment/resume musi rozróżniać pracowników, potrzebna jest jawna identity decyzja. |
+| `POST /api/workflows/{id}/runs`, `/api/workflow-runs` | Trwale zapisują generyczny `WorkflowRun` ze statusem `queued`; nie uruchamiają jego kroków. | Nie są działającym workerem ani marketer-actionable content queue. Bieżące readbacki to trzy nieaktywne dla marketera `daily_command` runs. |
+| APScheduler `wilq/jobs` | Dwa jawne connector jobs: status probe i manual vendor-read refresh. | To nie jest dispatcher kolejki treści; w readbacku `autostart=false`, `running=false`. |
+
+Wąski wniosek implementacyjny: brakującym elementem jest request-owned intake i
+orkiestracja między istniejącymi seamami. Zanim dodasz nowy reader, worker albo
+provider, najpierw sprawdź, czy istniejący seam można zawołać z tego requestu
+z wymaganą lineage i świeżością. Nowy source-discovery capability wymaga osobnej
+decyzji dopiero dla wykazanej luki, głównie general web/competitor discovery.
+
+## Live scope readback 2026-09-25
+
+WILQ API odczytano read-only; poniższe liczby opisują różne zbiory i nie wolno
+ich sumować ani podmieniać jednego drugim:
+
+- public sitemap: 790/790; wewnętrzny WordPress catalog: 199/199;
+- content inventory catalog: 141 pozycji, 134 ready i 7 blocked;
+- historyczny journal: 214 rows; 127 mają bieżący catalog match, 87 nie mają
+  inventory bindingu; journal readiness jest `incomplete`, bieżąca evidence
+  readiness blokuje wszystkie 214 i `generation_allowed=false`;
+- latest stored production classification nadal ma 57 `blocked`, 0 `reuse`,
+  0 `refresh`, 0 generation allowed;
+- per-URL identity, source-pack v3 i intent/dispatch kontrakty istnieją, ale
+  live per-URL observation producer i pełny M4 current-acceptance census
+  pozostają otwarte; synthetic tests nie są dowodem live readiness/UAT;
+- diagnostics wymaga refreshu GSC/Ahrefs/GA4; GSC quality jest `partial`,
+  więc nie ma podstaw do aktualnego demand/competitor briefu;
+- managed API/dashboard są ready, Codex app-server/login ready; SQLite schema
+  14, DuckDB schema 2 bez skonfigurowanej ścieżki metric store; 9/12 connectors
+  skonfigurowanych, 2 brakuje credentials, 1 disabled;
+- endpoint official-guidance zwraca jeden niezwiązany ISO 37301 candidate;
+  regulatory reviews nie zawierają PPWR candidate ID. Bead `87hv` ma wskazane
+  EUR-Lex candidates, ale wymagają rejestracji i review przed użyciem.
+
+Te readbacki potwierdzają, że `214`, `141`, `199` i `790` nie są zamiennymi
+countami. Końcowy census musi opierać się na aktualnym wersjonowanym publicznym
+inventory i typed eligibility, nie na journalu ani liczbie wyników katalogu.
+
+## Historyczna kohorta 2026-09-11 — nie jest aktualnym zakresem sitemap
+
+Poniższe liczby opisują ówczesny snapshot kohorty 214 URL-i. Nie dowodzą
+kompletności obecnej sitemap i nie są kryterium końcowego pokrycia. Aktualny
+inventory i eligibility wymagają świeżego readbacku WILQ API; bieżące
+rozpoznanie wskazuje około 790 URL-i, ale ich pełna kwalifikacja pozostaje
+otwarta.
 
 - 214 URL-i: `57 keep / 87 noindex / 46 redirect / 24 remove`.
 - `keep`: 18 bieżących approved revisions, 17 semantic zero-findings, 1 semantic
@@ -63,37 +174,22 @@ a `needs_changes` może utworzyć wyłącznie exact immutable child revision.
   bo REACH ma dodatkowo `blocked_review_and_target_unavailable`. Ten status
   oznacza brak exact bieżącego odczytu targetu, nie dowiedziony brak obiektu.
 
-## Priorytet metryczny
+## Priorytet i dane bieżące
 
-Pierwsza dziesiątka keep z bieżącego diagnostics queue i evidence
-`ev_refresh_refresh_google_search_console_5bb0e4041e05`:
-
-| # | URL | Wyświetlenia / kliknięcia / zapytania | Następny exact seam |
-|---:|---|---:|---|
-| 1 | `/bdo-co-musi-wiedziec-przedsiebiorca` | 285 / 1 / 19 | audit legal freshness/readback; bez ponownego pisania |
-| 2 | `/oferta/doradztwo-i-outsourcing-ekologiczny` | 64 / 0 / 33 | confirm target mapping |
-| 3 | `/` | 47 / 1 / 23 | confirm target mapping |
-| 4 | `/europejski-zielony-lad-co-to-takiego` | 46 / 0 / 15 | restore exact target read, retry target discovery |
-| 5 | `/oferta/szkolenia` | 42 / 0 / 19 | confirm target mapping |
-| 6 | `/ocena-wplywu-projektow-na-srodowisko` | 29 / 0 / 16 | confirm target mapping |
-| 7 | `/czym-jest-goz-i-jakie-sa-jego-zalozenia` | 24 / 0 / 10 | evidence-bound revision |
-| 8 | `/czym-sa-historyczne-zanieczyszczenia-i-jakie-obowiazki-ma-wlasciciel-gruntu` | 20 / 0 / 9 | evidence-bound revision |
-| 9 | `/dokumentacja-srodowiskowa-w-procesie-inwestycyjnym` | 20 / 0 / 6 | confirm target mapping |
-| 10 | `/badania-obecnosci-radonu` | 12 / 1 / 5 | fetch full public source and resolve service binding |
-
-Kolejność wykonawcza = potencjał metryczny × gotowość. Najszybsze
-existing-revision deliveries to #1, #2, #3, #5 i #9; pierwszy nowy content
-slice wymaga najpierw `prepare_evidence_bound_revision` (#7 albo #8). BDO nie
-może być generowane ponownie, a Green Deal nadal nie ma kompletnego inventory
-do bezpiecznego odświeżenia ani exact bieżącego odczytu targetu.
+Nie utrwalaj tu rankingu stron ani live metryk. Readback WILQ z 2026-09-25
+wykazał stale GSC, GA4 i Ahrefs oraz stale/partial diagnostics. Do czasu
+świeżego, page-bound odczytu nie ma podstaw do priorytetu popytowego ani
+konkurencyjnego. Następny operator odczytuje dowody przez WILQ API i zapisuje
+ich identyfikatory w rekordzie pracy.
 
 ## Standard jakości i research
 
-Każdy URL `keep` dostaje wersjonowany research packet: exact intent i query
-cluster, canonical owner, content kind, odbiorca/problem/trigger, approved facts,
-blocked claims, freshness, legal/source requirements, CTA destination, internal
-links i source/evidence IDs. Wymagania pochodzą z aktualnych, bezpośrednich
-źródeł: Google Search Central i Search Quality Rater Guidelines, źródeł
+Każdy work item wymagający treści dostaje wersjonowany research packet: exact
+intent i query cluster, canonical owner, content kind, odbiorca/problem/trigger,
+zweryfikowany profil Ekologus, approved facts, blocked claims, freshness,
+legal/source requirements, CTA destination, internal links i source/evidence
+IDs. Wymagania pochodzą z aktualnych, bezpośrednich źródeł: Google Search
+Central i Search Quality Rater Guidelines, źródeł
 urzędowych dla prawa, badań naukowych tam, gdzie rzeczywiście wspierają
 mechanizm, oraz jawnie ograniczonych praktyk UX/content. Każde źródło ma URL,
 datę odczytu, zakres autorytetu, freshness i decyzję `adopt/reject/lab-test/defer`.
@@ -107,7 +203,7 @@ Kolejność bram:
 1. schema, lineage, blocked-claim i regulatory deterministic checks;
 2. readability, struktura, answer directness, repetition, CTA i link safety;
 3. corpus-wide duplicate/intent/canonical/link graph na wersjonowanym snapshotcie
-   przed revision i ponownie przed readbackiem kohorty;
+   przed revision i ponownie przed readbackiem dostawy;
 4. niezależny content/UX judge;
 5. niezależny SEO/intent/cannibalization/metadata judge;
 6. niezależny factual/regulatory/source-fidelity judge;
@@ -130,147 +226,191 @@ niezależny proof, syntetyczny PASS i claim o rankingu/konwersji bez pomiaru.
 
 ## Plan dostawy
 
-Każdy punkt niżej jest osobnym Beadem, jednym observable resultem, jednym
-writerem w osobnym worktree, focused falsifierem, fixed-point Spec+Standards
-review i jednym cohesive commitem. WIP pozostaje dokładnie 1.
+Kolejność to niezależne pionowe slice'y. Q2 wymaga osobnej decyzji źródłowej
+przed wyborem providera; ten blocker nie zatrzymuje Q1. Jeden Bead na raz
+pozostaje `in_progress`. Publikacja dodatkowych Beadów nie jest częścią tego
+planu, dopóki owner jawnie jej nie zleci.
 
-### S0 — utrwalenie planu i projekcji
+## Dokończenie aktywnej migracji per-URL
 
-Zastąpić stare odwołania w `PLANS.md` i `docs/CONTEXT.md` do JSON/closed Bead
-kanonicznym CSV, opublikować graf zależności i zachować snapshot eligibility
-wyłącznie jako `historical/reference`. Scalić validator z merged `main`, dodać
-schema-version guard, zablokować staremu niekompatybilnemu exporterowi zapis do
-journalu i podpiąć focused check do CI. Falsifier: 214-row validator przeciw
-authoritative DB + destructive-export regression + `git diff --check`.
+Aktywny `gg8j` jest ścieżką rozwoju authority, nie natural-language intake.
+Jego status i proof pozostają w Beadzie. Zatwierdzona sekwencja to E1 semantic
+per-URL authority → M1 disposition → M2 identity/source-pack → M3a research
+packet → M3b generation-intent/dispatch → M3c caller census/V3 boundary
+→ M3d selected-workspace identity → M4 current acceptance dla
+kwalifikujących się URL-i → C1 usunięcie batch-currentness gates po census
+callerów. E1/M1/M2/M3a/M3b mają już readback w tym Beadzie; następny slice to
+M3c. M3c i M3d muszą zachować exact per-URL authority oraz typowany blocker
+dla brakującego keep/identity/pack. M4 musi zbudować prawdziwą
+`current_acceptance` z aktualnych page-specific facts i wydać `keep`, `refresh`
+lub typed blocker; all-blocked bootstrap nie zamyka tego wymagania. C1 zachowuje
+v1 historical readback i czeka na caller census.
 
-### S1 — exact identity reconciliation
+### M3c — caller census i zachowanie istniejących granic
 
-Dodać append-only `ContentDeliveryRecord` z `final_disposition`, `content_state`,
-`delivery_status`, `robot_ready`, gate evidence i typed blocker enum. W nim
-`ContentDeliveryIdentityBinding`: canonical path/public URL,
-current work item, opcjonalny retained owner, classification run/digest,
-inventory evidence, source-row digest, binding digest, actor/time i status
-`exact_current | reconciled_retained | blocked`. Blocker mapuje seam, reason,
-evidence i next safe step. Path-only/fuzzy join fail-close.
+Caller census nie znalazł produkcyjnego dashboardu ani skill callsite dla GET
+`/refresh-preparation`; endpoint pozostaje istniejącym batch read contract, a
+jego v1 authorization POST nie jest wejściem do V3. Dlatego M3c nie dodaje
+query aliasu ani nowej ścieżki readiness. Zachowaj legacy `/refresh-preparation`
+bez zmian do C1 caller census.
 
-### S2 — source-pack binding i research registry
+Istniejący per-URL chain już działa przez osobne publiczne seamy:
+KEEP disposition → applied per-URL identity → source-pack v3 → research-packet
+v3 preview/ActionObject → planning-generation-intent-v3 ActionObject/dispatch.
+Każdy dalszy caller musi przekazać exact bieżące identity; V3 seamy ponownie
+sprawdzają page, source, identity i digest. Dla service wymagana jest exact
+`approved_current` `service_card_id`; editorial używa exact inventory/receipt.
+Nie dobieraj usługi z tytułu.
 
-Dodać append-only `ContentSourcePackBinding`: pack identity/hash, current work
-item, whitelisted source facts/evidence i fresh context digest. Odświeżyć
-registry z source-to-decision, niezależnie zreaudytować masową pulę faktów i
-stworzyć per-URL packet bez kopiowania raw/private materiałów do promptów.
+Właściwy caller gap jest w M3d: `CurrentResearchPacketEntry` dostaje tylko
+`work_item_id`, mimo że istniejący V3 ActionObject wymaga exact applied
+per-URL identity. M3d przekazuje identity z selected workspace do istniejącego
+V3 action call. Skill pozostaje typed 409 aż do tego handoffu i późniejszego
+Q5 routing; nie odblokowuj legacy `/planning-proposals` bokiem.
 
-### S3 — trzy content kinds
+**Falsifier M3c:** caller census pokazuje brak aktywnego callsite dla batch
+`/refresh-preparation`; istniejące testy V3 potwierdzają, że missing/stale/
+wrong-page identity blokuje przed ActionObject/model queue, a dokładne identity
+dochodzi do review i dispatch. Brak nowego endpointu, writer-a ani batch aliasu.
 
-Zachować istniejące service/editorial contracts i dodać jawny typed
-`landing_or_hub` receipt/authorization. Landing nie udaje artykułu ani service
-card. Każdy kind ma własne wymagane fakty, CTA i duplicate/intent gates.
+Q1 nie jest drugim aktywnym WIP: wdrażaj ją jako osobny etap dopiero po
+domknięciu albo jawnej zmianie kolejności jedynego aktywnego Beada. Nie
+przepisuj scope'u `gg8j` na intake i nie odtwarzaj jego ukończonych E1/M1/M2/M3a/M3b.
 
-### S4 — jedna reużywalna production command
+### Q1 — przyjęcie prośby bez gotowego briefu
 
-Spinać istniejące seamy `prepare → authorize → plan → immutable revision` dla
-jednego current work itemu. Command jest idempotentny, sprawdza journal przed
-generacją i wiąże revision z identity/source packet/context digests. Nie tworzy
-drugiego planera ani batchowego autopublish.
+API przyjmuje zwykłą prośbę dowolnego uprawnionego operatora, zapisuje ją
+idempotentnie i zwraca trwały queue ID, status, pochodzenie pól
+(`user_input/evidence/inference/unknown`), typed blockers i jeden
+`safe_next_step`. Requester nie musi wypełniać istniejącego sześciopolowego
+formularza. Ten slice nie uruchamia researchu, planning proposal, generacji,
+ActionObject ani vendor write.
 
-Osobny append-only generation order/attempt falsifier uruchamia command dwa razy
-dla approved/readback row i potwierdza brak nowej próby, model call i revision.
+Wymóg „dowolny operator” oznacza brak hardcodowania osoby, nie fikcyjne
+uwierzytelnienie: obecny local pilot raportuje stałego, niezweryfikowanego
+actor. Nie przyjmuj nazwisk ani uprawnień z samego promptu. Użyj tylko
+zweryfikowanego request context; jeśli kolejka ma przypisywać zadania
+konkretnym pracownikom, aktor/assignment contract jest osobną bramą.
 
-### S5 — exact review convergence
+**Falsifier:** ten sam request/key zwraca to samo ID; inny request z tym samym
+key daje conflict; prośba „artykuł o PPWR” zostaje przyjęta i pokazuje brak
+fresh demand oraz niezatwierdzone PPWR facts, bez briefu wypełnionego z
+domysłów i bez planu/draftu/zapisu.
 
-Review należy do `revision_id + digest`. Deterministic checks uruchamiają się
-przed trzema niezależnymi judge'ami i WILQ semantic review. Wszystkie findings
-muszą mieć dyspozycję; accepted critical finding wymusza exact child revision.
-Naprawić REACH work-item availability bez syntetycznego semantic PASS.
+### Q2 — typowany odczyt researchu
 
-Realizacja dzieli się na trzy atomowe Beady: deterministic gate; typed
-`ContentIndependentReviewRun` z rolą/model/version/evidence i persisted finding
-disposition (`accept_and_fix | reject_with_evidence | deferred | human_decision`,
-każda z exact evidence); osobny REACH recovery. Jeden run nie może udawać
-trzech ról.
+Najpierw użyj już istniejących exact-page/official-primary evidence acquisition,
+research proposal, regulatory/public source review, approved Service Profile i
+research-packet seams. M3c/M3d muszą przekazać do nich current exact identity;
+Q2 nie może skopiować ich transportu, digestów, promotion action ani Codex
+app-server runtime. Output dla operatora jest po polsku, zachowuje polskie i
+angielskie źródła wraz z linkiem, językiem, datą, zakresem i autorytetem.
 
-### S6 — exact target discovery i mapping
+Zweryfikowana luka: obecny source acquisition wymaga identity binding albo
+authoring receipt, a official primary wymaga server-owned candidate przypiętego
+do exact pathu. Nie znalazłem ask-scoped kontraktu, który zbierałby źródła
+konkurencji i official discovery dla nowego tematu. Ahrefs gap analysis jest
+osobnym read workflow, nie jest obecnie łączony z nowym-page ask i jego dane
+są stale/unverified. `credible_external` i podobne acquisition intents nie mają
+research adaptera w tym slice'u. Przed dodaniem nowego readera trzeba
+zidentyfikować istniejący bezpieczny provider lub podjąć source-to-decision dla
+jednej konkretnej luki. Nie podstawiaj tekstu modelu jako dowodu i nie dodawaj
+równoległej ścieżki modelowej.
 
-Obsłużyć observed native `the_content` również dla `page`, wyłącznie po direct
-REST read. ACF wymaga kompletnego component→field/writable-leaf profile,
-pełnego klonu i jawnego confirmation receipt; podobny slug/layout nie wystarcza.
-Credential absence, ambiguous target i schema mismatch pozostają typed blocker.
+**Falsifier:** każdy zaakceptowany fakt ma source/evidence ID, URL, odczytany
+zakres, datę i freshness; niezweryfikowany kandydat pozostaje zablokowany;
+stale GSC/Ahrefs nie tworzą popytowego ani konkurencyjnego claimu; stary
+research packet/action nie jest tworzony ponownie, gdy exact digest jest
+bieżący.
 
-Realizacja dzieli się na page `the_content` + typed discovery failures oraz
-osobny full-clone ACF mapping. Siedem legacy readbacków bez mappingu wraca do
-reconciliation i nie liczy się jako exact completion.
+### Q3 — resumowalne kroki i human gates
 
-### S7 — create-only ActionObject i exact readback
+Request-owned runner zapisuje current step, gate status, ownera,
+retry/idempotency i append-only lineage. Deleguje exact reads i planning do
+istniejących domain stores/endpoints; nie traktuje `WorkflowRun` ani
+APScheduler connector jobs jako workerów treści. Może automatycznie przejść
+przez jednoznaczne read-only bramki, ale zatrzymuje się dla niejasnej strony,
+service, audience, CTA, claimu lub źródła. Odpowiedź człowieka wznawia
+wyłącznie bramki zależne od tej odpowiedzi.
 
-Dodać `content_dev_draft_create` do globalnego WordPress readbacku, utrwalić
-redacted expected body/ACF/meta/CTA digests i porównać je z authoritative GET.
-Stale confirmation, partial ACF i existing-post update fail-close. Zero
-public publish/update/delete.
+**Falsifier:** przerwane zadanie wznawia się z tym samym ID/evidence; bounded
+retry nie duplikuje efektów; zmiana źródła lub świeżości unieważnia zależne
+bramki; brak decyzji pozostaje jawny.
 
-Realizacja dzieli się na persisted expected/observed digest receipt oraz branch
-globalnego readbacku dla `content_dev_draft_create`.
+### Q4 — propozycja briefu i routing do obecnych API
 
-### S8 — trzy representative vertical proofs
+Składaj reviewable brief z requestu, zweryfikowanych dowodów i jawnie
+oznaczonych inferencji. Oznacz unknown zamiast wymyślać brakujące dane. Dopiero
+po gotowości briefu nowa strona może użyć istniejącego
+`planning-proposal`; istniejąca strona trafia do exact-page workflow.
 
-Przeprowadzić po jednym URL-u przez całość:
+**Falsifier:** każdy brief field ma provenance; unsupported claim pozostaje
+blocked; routing wybiera jedną właściwą gałąź albo zwraca typed ambiguity.
 
-1. editorial + `the_content` — kandydat metryczny z nową revision;
-2. service + ACF — current-approved bez ponownej generacji;
-3. landing/hub — nowy typed kind.
+### Q5 — marketer surface i operator routing
 
-Każdy kończy się exact dev draft readback lub prawdziwym external blockerem.
-Dopiero trzy zielone ścieżki odblokowują kolejne kohorty.
+Po istnieniu typed API pól podepnij tworzenie, status i wznowienie kolejki do
+obecnego `/content-workflow`/document canvas oraz właściwych operator skills.
+Najpierw zamknij M3d exact identity handoff dla istniejącego
+`CurrentResearchPacketEntry`; potem przepnij skill z obecnego blocked
+`/planning-proposals` POST przez v3 packet review oraz
+`planning-generation-intent-v3` ActionObject/dispatch. Żaden caller nie
+powinien utrzymywać własnej identity/currentness logiki. Zachowaj jedną
+API-owned podróż; nie dodawaj osobnego dashboard planera ani logiki domenowej
+w React.
 
-### S9 — produkcja kohort 57 keep
+**Falsifier:** caller odczytuje ten sam queue ID i status z API; istniejący
+manualny flow nadal przechodzi; user widzi decision, evidence, blocker i next
+safe step bez czytania raw payload.
 
-Kohorty są dynamiczną projekcją WILQ, nie ręczną listą w planie:
+### Q6 — dokładna rewizja, review i szkic dev
 
-1. existing approved → mapping/readback;
-2. page-bound GSC + source-ready → research/revision/review/delivery;
-3. brak page metrics, lecz source-ready → najlepsze standardy i uczciwy brak
-   priorytetu metrycznego;
-4. source/service/work-item repairs;
-5. external blockers.
+Przekaż gotowy brief do istniejącego per-URL identity/v3 generation/review
+seam. Utrzymaj exact revision, ActionObject, human confirmation, audyt i
+create-only dev draft/readback. `the_content` wymaga exact observed target;
+ACF wymaga pełnego clone/profile i jawnego potwierdzenia mapowania. Przed
+szerszą kohortą przeprowadź ścieżkę editorial, service i landing/hub. Nie
+rozszerzaj tego slice'a na publikację ani mass generation.
 
-Po każdym URL-u materializer aktualizuje dokładnie jeden wiersz journalu.
-Retry używa persisted order/attempt i nigdy nie regeneruje ukończonego etapu.
+**Falsifier:** zmiana identity/source/claim/review blokuje dispatch do czasu
+ponownej walidacji; exact draft digest zgadza się z readbackiem; żadna
+publiczna write nie następuje.
 
-### S10 — global SEO/content QA i polityki non-keep
+### Q7 — obecny inventory i wszystkie kwalifikujące się URL-e
 
-Zbudować wersjonowany corpus-wide canonical/intent/duplicate/FAQ collision
-graph, orphan i
-internal-link audit, title/meta uniqueness i claim checks, właściwość structured
-data, content-level accessibility/heading/link-purpose/mobile checks oraz CTA
-destination validation. Zweryfikować 87 noindex, 46 redirect i 24 remove jako
-decyzje/paczki dev; bez produkcyjnego delete/redirect apply.
+Pobierz aktualny, wersjonowany sitemap/work-item inventory przez publiczny
+WILQ seam. Każdy URL dostaje typed disposition; każda kwalifikująca się strona
+wchodzi do bieżącej kolejki jako work item z decyzją lub blockerem. To jest
+outcome M4 w aktywnej migracji `gg8j`, a nie drugi census ticket. Uzgodnij
+eligibility/current_acceptance z per-URL authority, nie z historycznym
+214-row snapshotem.
 
-Preflight graph działa przed revision i jest odświeżany po każdej kohorcie.
-Finding zmieniający intent/canonical/link lub visible claim unieważnia downstream
-review/mapping tej revision. W bieżącym journalu `next_action` dla non-keep ma
-wartość `execute_*_policy`; jest to kolejka przygotowania polityki w dev, nie
-autoryzacja produkcyjnego delete/redirect/noindex. Przed jakąkolwiek zmianą
-zewnętrzną wymagane są osobne review, ActionObject i authority.
+**Falsifier:** eligible, typed-excluded i blocked dokładnie pokrywają odczytany
+inventory; stary lub fuzzy binding nie może dać pozytywnej decyzji. Ten outcome
+zależy od current per-URL observation producer oraz M3d selected-workspace
+identity handoff w tym samym Beadzie.
 
-### S11 — runtime-owned journal i robot-ready gate
+## Bieżące zależności Q1–Q7
 
-Jedna read-only `ContentDeliveryStatusProjection` materializuje CSV z runtime.
-Validator porównuje revision, reviews, semantic disposition, target confirmation,
-ActionObject audit/readback, metadata, CTA/link graph i global QA. `robot_ready`
-może przejść na true wyłącznie po wszystkich gate'ach, nigdy ręcznie.
+```text
+active gg8j: M3c → M3d → Q7/M4 → C1
+                                   │
+                              Bead closes
+                                   ↓
+Q1 intake → Q2 evidence/research → Q3 gates → Q4 brief/routing
+                                             ↓
+                                Q5 marketer surface → Q6 exact delivery
+```
 
-Każdy wiersz ma `updated_at`, `last_verified_at`, source freshness i page-bound
-metric evidence/dimension digest albo jawne `metric_unavailable`. Stary exporter
-nie jest writerem journalu. Projekcja i robot gate są osobnymi atomowymi Beadami.
+Kolejność Q1 po zamknięciu `gg8j` wynika z repo WIP=1, nie z technicznej
+zależności. Q1 nie czeka na wybór providera wymaganego przez Q2. Q2–Q4 są
+konieczne, zanim kolejka obieca evidence-backed brief. Q5 zależy od typed API
+contractów Q1–Q4. Q6 zależy od briefu, source gates i istniejącego exact
+identity/ActionObject path. Q7 jest M4 w `gg8j`: wymaga świeżego inventory,
+per-URL observation i current-acceptance seam; nie twórz osobnego Beada ani
+drugiej implementacji census dla tego samego acceptance.
 
-### S12 — final proof i delivery
-
-Uruchomić focused falsifiers, raz pełne `scripts/verify.sh`, pełne CI, niezależny
-fixed-diff Spec+Standards review i DeepSeek advisory review z dyspozycją.
-Scalić wymagane PR-y, zamknąć Bead dopiero po weryfikacji merged main oraz
-uruchomić managed API/dashboard na merged SHA. Dev pozostaje miejscem UAT;
-produkcja i claim skuteczności pozostają poza zakresem.
-
-## Zależności
+## Historyczne zależności planu S0–S12
 
 ```text
 S0 → S1 → S2 → S3 → corpus preflight → S4 → S5 → S6 → S7 → S8 → S9
@@ -286,27 +426,33 @@ nie może pisać stanu. Writer pozostaje jeden. External credential/source block
 zatrzymuje tylko swój URL; kolejny URL może ruszyć dopiero po zapisaniu blokera
 i zakończeniu bieżącego Beada zgodnie z WIP=1.
 
-## Proof i definicja zakończenia
+## Aktualny proof i definicja zakończenia
 
-Cel jest kompletny wyłącznie, gdy:
+Cały wynik jest kompletny wyłącznie, gdy:
 
-1. validator potwierdza exact 214 rows i `57/87/46/24` z canonical CSV, a wariant
-   `--state-db` dodatkowo sprawdza typed lineage against authoritative SQLite;
-2. 57/57 keep ma exact mapped dev draft readback albo prawdziwy external typed
-   blocker; legacy readback bez mapping receipt nie spełnia tego punktu;
-3. żadna dobra current revision nie została bez potrzeby wygenerowana ponownie;
-4. wszystkie revisions mają source/claim lineage, wszystkie critical findings
-   są rozwiązane, a legal claims mają aktualny official-source review;
-5. target mapping, pełny ACF/`the_content`, meta, CTA i linki przechodzą exact
-   readback; żaden partial clone nie jest uznany za sukces;
-6. global duplicate/intent/canonical/link/structured-data/accessibility QA jest
-   zielone lub ma per-URL typed blocker;
-7. privacy/consent gate nie ujawnia PII i blokuje nieuprawnione dane osobowe;
-8. nie wykonano public publish/update/delete i nie ujawniono credentials;
-9. pełne CI jest zielone na merged main, wszystkie wymagane PR-y są scalone,
-   Bead zamknięty, a managed API/dashboard są ready na tym SHA.
+1. Uprawniona osoba może utworzyć ask-only kolejkę bez briefu; create/readback
+   jest idempotentny i każdy stan ma ownera, provenance, blocker oraz jeden
+   safe next step.
+2. Każdy użyty fakt ma exact source/evidence lineage, freshness i autorytet;
+   nierozstrzygnięte albo stale dowody pozostają typed blockerami.
+3. Queue runner bezpiecznie wznawia się po pause/retry, nie duplikuje efektów,
+   a każda decyzja człowieka wiąże się z exact request/gate.
+4. Brief ma provenance przy każdym polu, a overlap, audience, intent, claims i
+   konkurencyjne twierdzenia nie są wnioskowane z niewłaściwego poziomu danych.
+5. Nowe i istniejące strony trafiają do swoich API-owned ścieżek; dashboard i
+   skills używają tych samych typed contracts.
+6. Każda dostarczona treść ma exact identity, approved sources, rozwiązane
+   critical findings, review, human authorization i exact dev draft readback
+   albo prawdziwy typed external blocker.
+7. Każdy URL w aktualnym, wersjonowanym inventory ma typed disposition; każda
+   kwalifikująca się strona ma decyzję lub typed blocker. Żaden historical
+   count ani fuzzy join nie daje zakończenia.
+8. Privacy/consent gate chroni dane; nie wykonano public publish/update/delete,
+   nie ujawniono credentials i nie przypisano metrykom niepotwierdzonej wartości.
+9. Wymagane focused falsifiers, fixed-point review i CI są zielone na
+   zatwierdzonym merged SHA; managed API/dashboard odczytują ten sam stan.
 
-Brak źródła, credentials/consent, exact targetu lub nieweryfikowalny claim może
-być terminalnym external blockerem. Brak seamu, bindingu, klasyfikacji, promptu,
+Brak świeżego źródła, credentials/consent lub exact targetu może pozostać
+terminalnym blockerem konkretnego zadania. Brak seamu, bindingu, klasyfikacji,
 review harnessu, mapowania albo walidatora jest pracą do naprawienia, nie
-usprawiedliwieniem zakończenia.
+zewnętrznym blockerem.

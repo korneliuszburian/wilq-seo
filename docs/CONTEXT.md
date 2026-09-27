@@ -1,12 +1,13 @@
 # WILQ — kanoniczny kontekst produktu i runtime
 
-Stan na: 2026-09-10.
+Stan na: 2026-09-25.
 
 Ten plik jest słownikiem domeny i historycznym recovery contextem, a nie
-bieżącym rejestrem stanu. Aktualny plan, counts, evidence i blokady są w
-`PLANS.md`, aktywnym Beadzie, WILQ API oraz `docs/content-status-214.csv`;
-nie dopisuj ich tutaj. Nie jest to changelog. Historia pozostaje w git,
-zamkniętych Beads i archiwach progress.
+bieżącym rejestrem stanu. Aktualny plan jest w `PLANS.md`; aktywny Bead i
+kapsuła delivery-loop wyznaczają pracę, a typed rekordy WILQ API są bieżącym
+autorytetem produktu. `docs/content-status-214.csv` jest historyczną kohortą,
+nie pełnym inventory sitemap. Nie dopisuj tu live metrics ani blockers. Historia
+pozostaje w git, zamkniętych Beads i archiwach progress.
 
 ## Recovery
 
@@ -23,15 +24,19 @@ Czytaj w tej kolejności:
 
 ## Bieżący autorytet produkcji treści
 
-`docs/content-status-214.csv` jest jedynym bieżącym dziennikiem per URL dla
-całej, znormalizowanej sitemap Ekologus dev. Zawiera dokładnie 214 rekordów i
-jest projekcją stanu weryfikowaną przez
-`scripts/verify_content_status_214.py`. Typed rekordy WILQ SQLite/API pozostają
-autorytetem dla evidence, immutable revisions, review, ActionObjectów, audytu i
-readbacku; CSV nie zastępuje tych rekordów.
+Typed rekordy WILQ SQLite/API są autorytetem dla zapisanych work-itemów,
+evidence, immutable revisions, review, ActionObjectów, audytu i readbacku.
+Pełny aktualny inventory sitemap i jego eligibility pozostają do ponownego
+ustalenia przez wersjonowany publiczny seam WILQ; nie wyprowadzać ich z
+lokalnego CSV ani nie zakładać, że brakujący producer już istnieje.
 
-Poniższe snapshoty są wyłącznie `historical/reference` i nie mogą sterować
-bieżącą kolejką ani nadpisywać CSV:
+`docs/content-status-214.csv` zawiera 214 rekordów historycznej kohorty i
+`scripts/verify_content_status_214.py` sprawdza ten artefakt. CSV nie jest
+projekcją całej obecnej sitemap i jego walidacja nie dowodzi kompletności
+inventory ani bieżącej gotowości URL-i.
+
+Poniższe stare snapshoty są wyłącznie `historical/reference` i nie mogą
+sterować bieżącą kolejką ani nadpisywać typed stanu WILQ API:
 
 - `docs/content-acf-inventory-20260828.json`;
 - `docs/content-canonical-ledger-20260828.jsonl`;
@@ -43,8 +48,8 @@ bieżącą kolejką ani nadpisywać CSV:
 - `docs/content-sitemap-inventory-20260828.json`.
 
 Ich kod może pozostać potrzebny do odczytu historii lub regresji, ale nie jest
-writerem kanonicznego journalu. Bieżący plan, kolejność bram i graf dostawy są
-w `PLANS.md`; stan wykonania i WIP należą wyłącznie do Beads.
+writerem bieżącego stanu produktu. Bieżący plan i kolejność bram są w
+`PLANS.md`; stan wykonania i WIP należą do Beads oraz kapsuły delivery-loop.
 
 ## Czym jest WILQ / Better BDOS
 
