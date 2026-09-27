@@ -18,6 +18,9 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
     DELIVERY_IDENTITY_AUTHORITY_PREVIEW_CONTRACT,
 )
+from wilq.content.workflow.delivery_identity_recovery import (
+    CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE,
+)
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.per_url_delivery_identity_authority import (
     PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
@@ -67,6 +70,18 @@ _LOCAL_CONTRACTS = {
         ),
         "Apply zapisuje lokalny zamiar bez modelu; po trwałym audycie wolno raz zlecić "
         "plan dla dokładnego zatwierdzonego pakietu v2. Vendor pozostaje zablokowany.",
+    ),
+    CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE: _LocalContractSpec(
+        "record_one_delivery_identity_supersession",
+        "wilq_content_delivery_identity_supersession_v1|content_delivery_identity_binding|local_receipt_only",
+        (
+            "vendor_write",
+            "wordpress_publish",
+            "wordpress_draft",
+            "content_generation",
+        ),
+        "Apply zapisuje wyłącznie lokalny receipt supersession i mintuje nową exact identity; "
+        "bez zapisu u vendora.",
     ),
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: _LocalContractSpec(
         "record_one_v3_planning_generation_intent",

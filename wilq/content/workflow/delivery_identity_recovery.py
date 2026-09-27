@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -27,6 +27,9 @@ from wilq.schemas.core import utc_now
 _HEX64 = r"^[0-9a-f]{64}$"
 CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE = "content_delivery_identity_rebind"
 REBIND_BLOCKER_CODE = "delivery_identity_rebind_requires_drift"
+CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER = (
+    "content_delivery_identity_rebind_local_authority"
+)
 CURRENT_SAFE_NEXT_STEP = "Exact current identity jest dostępna dla następnego kroku."
 DRIFT_SAFE_NEXT_STEP = (
     "Zarejestruj nową exact current identity dla tego bieżącego wiersza klasyfikacji."
@@ -357,6 +360,48 @@ def build_content_delivery_identity_rebind_action(
     )
 
 
+def execute_content_delivery_identity_rebind(
+    action: ActionObject,
+    *,
+    store: Any,
+    audit_events: list[object],
+    confirmed_by: str | None = None,
+    now: datetime | None = None,
+) -> tuple[dict[str, object] | None, list[str]]:
+    """Apply one local rebind: record the supersession, then mint the identity."""
+
+    del audit_events, confirmed_by, now
+    payload = action.payload or {}
+    if (
+        action.status != "ready_to_apply"
+        or action.connector != "wordpress_ekologus"
+        or payload.get("action_type") != CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE
+        or payload.get("local_authority_only") is not True
+    ):
+        return None, ["Delivery identity rebind action is not a ready local authority action."]
+    try:
+        receipt = ContentDeliveryIdentitySupersession.model_validate(
+            payload["supersession"]
+        )
+        command = ContentDeliveryIdentityCommand.model_validate(payload["rebind_command"])
+    except (KeyError, TypeError, ValueError):
+        return None, ["Delivery identity rebind payload is invalid."]
+    if action.id != delivery_identity_rebind_action_id(receipt.receipt_digest):
+        return None, ["Delivery identity rebind action payload changed before apply."]
+    identity = store.record_content_delivery_identity(command)
+    if identity.status == "conflict":
+        return None, ["Delivery identity rebind conflicts with an existing identity."]
+    supersession = store.record_content_delivery_identity_supersession(receipt)
+    return {
+        "supersession_receipt_id": supersession.receipt.receipt_id,
+        "supersession_status": supersession.status,
+        "rebound_binding_id": identity.binding.binding_id,
+        "rebound_binding_status": identity.status,
+        "rebound_binding_current_status": identity.current.current_status,
+        "external_write_attempted": False,
+    }, []
+
+
 __all__ = [
     "CLASSIFICATION_MISSING_SAFE_NEXT_STEP",
     "CURRENT_SAFE_NEXT_STEP",
@@ -365,6 +410,8 @@ __all__ = [
     "ContentDeliveryIdentitySupersession",
     "ContentDeliveryIdentitySupersessionRecordResult",
     "CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE",
+    "CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER",
+    "execute_content_delivery_identity_rebind",
     "REBIND_BLOCKER_CODE",
     "build_content_delivery_identity_drift_recovery",
     "build_content_delivery_identity_rebind_action",

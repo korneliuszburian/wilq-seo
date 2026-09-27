@@ -22,6 +22,10 @@ from wilq.content.workflow.delivery_identity_authority import (
     DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
     execute_delivery_identity_authority,
 )
+from wilq.content.workflow.delivery_identity_recovery import (
+    CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
+    execute_content_delivery_identity_rebind,
+)
 from wilq.content.workflow.material_review_action_v2 import (
     MATERIAL_REVIEW_ACTION_V2_ADAPTER,
     execute_current_material_review_action_v2,
@@ -69,6 +73,7 @@ _LOCAL_ADAPTERS = frozenset(
         DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
         PLANNING_GENERATION_INTENT_ADAPTER,
         PLANNING_GENERATION_INTENT_V3_ADAPTER,
+        CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
     }
 )
 
@@ -108,6 +113,13 @@ def execute_local_content_mutation_adapter(
             audit_events=action.audit_events,
             confirmed_by=_confirmation_actor(action),
             current_snapshot_loader=content_snapshot_loader,
+        )
+    if adapter == CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER:
+        return execute_content_delivery_identity_rebind(
+            action,
+            store=workflow_store,
+            audit_events=action.audit_events,
+            confirmed_by=_confirmation_actor(action),
         )
     if adapter == PLANNING_GENERATION_INTENT_V3_ADAPTER:
         return execute_planning_generation_intent_v3_action(
