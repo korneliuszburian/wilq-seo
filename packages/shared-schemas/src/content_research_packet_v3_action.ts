@@ -9,10 +9,35 @@ const SAFE_PUBLIC_HOSTS = new Set([
   "ekologus.pl",
   "sklep.ekologus.pl"
 ]);
-const UNSAFE_URL_CHARACTER = /[\x00-\x20\x7f<>"'`()\[\]{}|\\^]/;
+const UNSAFE_URL_PUNCTUATION = new Set([
+  "<",
+  ">",
+  String.fromCharCode(0x22),
+  String.fromCharCode(0x27),
+  "(",
+  ")",
+  "`",
+  "[",
+  "]",
+  "{",
+  "}",
+  "|",
+  String.fromCharCode(0x5c),
+  "^"
+]);
+const containsAsciiControlOrSpace = (value: string): boolean => (
+  Array.from(value).some((character) => {
+    const characterCode = character.charCodeAt(0);
+    return characterCode <= 0x20 || characterCode === 0x7f;
+  })
+);
+const hasUnsafeUrlCharacter = (value: string): boolean => (
+  containsAsciiControlOrSpace(value)
+  || Array.from(value).some((character) => UNSAFE_URL_PUNCTUATION.has(character))
+);
 
 export function isSafeResearchPacketV3PageUrl(value: string): boolean {
-  if (!value || value !== value.trim() || UNSAFE_URL_CHARACTER.test(value)) return false;
+  if (!value || value !== value.trim() || hasUnsafeUrlCharacter(value)) return false;
   const match = /^https:\/\/([^/]+)(\/[\s\S]*)$/i.exec(value);
   const authority = match?.[1];
   if (!authority) return false;
@@ -34,7 +59,7 @@ export function isSafeResearchPacketV3PageUrl(value: string): boolean {
 }
 
 export function isSafeResearchPacketV3OfficialSourceUrl(value: string): boolean {
-  if (!value || value !== value.trim() || UNSAFE_URL_CHARACTER.test(value)) return false;
+  if (!value || value !== value.trim() || hasUnsafeUrlCharacter(value)) return false;
   try {
     const url = new URL(value);
     return (
@@ -52,7 +77,9 @@ const CanonicalPathSchema = NonBlankStringSchema.refine(
   (value) => (
     value === value.trim()
     && value.startsWith("/")
-    && !/[\x00-\x20\x7f?#]/.test(value)
+    && !containsAsciiControlOrSpace(value)
+    && !value.includes("?")
+    && !value.includes("#")
   ),
   "Canonical path must be an exact path."
 );

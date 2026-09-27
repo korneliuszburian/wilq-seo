@@ -2,12 +2,43 @@ import { describe, expect, it } from "vitest";
 
 import {
   ResearchPacketV3ActionResponseSchema,
+  ResearchPacketV3PreviewReadySchema,
   ResearchPacketV3PreviewRecordSchema,
   ResearchPacketV3PreviewResponseSchema,
-  ResearchPacketV3ReviewablePreviewRecordSchema
+  ResearchPacketV3ReviewablePreviewRecordSchema,
+  isSafeResearchPacketV3OfficialSourceUrl,
+  isSafeResearchPacketV3PageUrl
 } from "./content_research_packet_v3_action";
 
 const digest = (character: string) => character.repeat(64);
+const c0ThroughSpaceCharacters = Array.from(
+  { length: 0x21 },
+  (_unusedValue, characterCode) => String.fromCharCode(characterCode)
+);
+const unsafeUrlCharacters = [
+  ...c0ThroughSpaceCharacters,
+  String.fromCharCode(0x7f),
+  "<",
+  ">",
+  "\"",
+  "'",
+  "(",
+  ")",
+  "`",
+  "[",
+  "]",
+  "{",
+  "}",
+  "|",
+  "\\",
+  "^"
+];
+const unsafeCanonicalPathCharacters = [
+  ...c0ThroughSpaceCharacters,
+  String.fromCharCode(0x7f),
+  "?",
+  "#"
+];
 
 function record(pageIdentity = true) {
   return {
@@ -121,6 +152,25 @@ describe("v3 research packet action contracts", () => {
     expect(ResearchPacketV3ReviewablePreviewRecordSchema.safeParse(
       recordWithPageIdentity("https://www.ekologus.pl/zażółć/", "/%C5%BC")
     ).success).toBe(false);
+  });
+
+  it("rejects C0-through-space, DEL, and unsafe punctuation in URLs", () => {
+    for (const character of unsafeUrlCharacters) {
+      expect(
+        isSafeResearchPacketV3PageUrl(`https://www.ekologus.pl/exact${character}path`)
+      ).toBe(false);
+      expect(
+        isSafeResearchPacketV3OfficialSourceUrl(`https://example.org/exact${character}path`)
+      ).toBe(false);
+    }
+  });
+
+  it("rejects control, DEL, query, and fragment characters in canonical paths", () => {
+    for (const character of unsafeCanonicalPathCharacters) {
+      const preview = record().snapshot;
+      preview.canonical_path = `/exact${character}path`;
+      expect(ResearchPacketV3PreviewReadySchema.safeParse(preview).success).toBe(false);
+    }
   });
 
   it("distinguishes a v3 ActionObject preview from its typed blocker", () => {

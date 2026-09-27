@@ -15,6 +15,7 @@ from wilq.codex.app_server import (
     CodexAppServerStructuredTurnRequest,
     CodexAppServerTurnResult,
 )
+from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.drafts.draft_alteration import assure_readability_and_repair
 from wilq.content.drafts.draft_plan_preparation import PreparedDraftPlan, prepare_draft_plan
 from wilq.content.drafts.initial_draft_validation import (
@@ -25,7 +26,6 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftModelOutput,
     ContentInitialDraftSectionOutput,
 )
-from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.input_sources import ContentPlanningSourceFact
