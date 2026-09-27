@@ -83,9 +83,9 @@ push -> close Bead -> capsule update -> print exactly one stop marker.
 
 | Order | Bead | Slice plan |
 | --- | --- | --- |
-| 1 | `wilq-seo-blyi` S1 | Fixture first: add `tests/content/delivery_identity_fixtures.py` building a schema-valid reconciled `ContentDeliveryIdentityBinding` + classification lookup (mirror `store_delivery_identity._classification_lookup_for_binding`). Then re-apply `wilq/content/workflow/delivery_identity_recovery.py` (status `current`/`drift`/`classification_missing`, exact current row identity, typed `safe_next_step`), the store lookup method, and `GET /api/content/delivery-identities/{binding_id}/drift-recovery`; falsifier drift/current/missing + mutation proof |
-| 2 | `wilq-seo-blyi` S2 | Supersede/re-mint through the existing ActionObject lifecycle: record the supersession, mint the rebound identity from the current row, append-only + idempotent, no vendor write |
-| 3 | `wilq-seo-blyi` S3 | Projection guard so a drifted identity can never render as usable anywhere (records, projections, operator surfaces) |
+| 1 | `wilq-seo-blyi` S1 — DONE (f8b36e802) | Fixture first: add `tests/content/delivery_identity_fixtures.py` building a schema-valid reconciled `ContentDeliveryIdentityBinding` + classification lookup (mirror `store_delivery_identity._classification_lookup_for_binding`). Then re-apply `wilq/content/workflow/delivery_identity_recovery.py` (status `current`/`drift`/`classification_missing`, exact current row identity, typed `safe_next_step`), the store lookup method, and `GET /api/content/delivery-identities/{binding_id}/drift-recovery`; falsifier drift/current/missing + mutation proof |
+| 2 | `wilq-seo-blyi` S2 — S2a receipt (8b8bb0854), S2b store (f4daac638) and producer (77208fdd5) DONE; ActionObject wiring open | Supersede/re-mint through the existing ActionObject lifecycle: record the supersession, mint the rebound identity from the current row, append-only + idempotent, no vendor write |
+| 3 | `wilq-seo-blyi` S3 (open) | Projection guard so a drifted identity can never render as usable anywhere (records, projections, operator surfaces) |
 | 4 | `wilq-seo-82dx` | Exact BDO authority chain for the latest classification: delivery identity -> source-fact review/promotion -> source-pack binding, no foreign/global fallback; stop at typed blockers where evidence is missing |
 | 5 | `wilq-seo-0mpo` | Durable typed review receipt for public Service Profile cards (append-only, idempotent, conflict, stale-on-drift), flips only the API-owned lifecycle projection to `approved_current` |
 | 6 | `wilq-seo-s7po` | Testable current-page and official-primary researcher adapter (deterministic fake + typed blockers, no live vendor write) |
@@ -108,6 +108,10 @@ WILQ_LOOP=1 WILQ_LOOP_MAX_ITERS=3 \
 
 Stop markers: `LOOP: DONE` (queue exhausted), `LOOP: BLOCKED` (owner decision or
 external blocker), `LOOP: BUDGET` (context/budget limit reached).
+
+## 6b. Loop history
+
+- 2026-09-27: plan + driver published (9873b10ef); blyi S1/S2a/S2b-store/S2b-producer pushed; branch fast-forward merged into `main` and pushed (`origin/main == origin/wip`); protected PNG relocated to `.krn/runs/proofs/`; sqlite schema inventory red fixed (65bd29cea).
 
 ## 7. Open owner decisions
 
