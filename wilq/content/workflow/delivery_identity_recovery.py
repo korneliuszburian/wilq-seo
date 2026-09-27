@@ -203,12 +203,22 @@ def build_content_delivery_identity_supersession(
     )
 
 
+class ContentDeliveryIdentitySupersessionRecordResult(BaseModel):
+    """Append-only store outcome for one supersession receipt."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    status: Literal["created", "idempotent", "conflict"]
+    receipt: ContentDeliveryIdentitySupersession
+
+
 __all__ = [
     "CLASSIFICATION_MISSING_SAFE_NEXT_STEP",
     "CURRENT_SAFE_NEXT_STEP",
     "DRIFT_SAFE_NEXT_STEP",
     "ContentDeliveryIdentityDriftRecovery",
     "ContentDeliveryIdentitySupersession",
+    "ContentDeliveryIdentitySupersessionRecordResult",
     "build_content_delivery_identity_drift_recovery",
     "build_content_delivery_identity_supersession",
 ]

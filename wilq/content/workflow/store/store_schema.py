@@ -524,6 +524,43 @@ _CONTENT_WORKFLOW_SCHEMA = (
     END
     """,
     """
+    CREATE TABLE IF NOT EXISTS content_delivery_identity_supersessions (
+      receipt_id TEXT PRIMARY KEY,
+      receipt_digest TEXT NOT NULL UNIQUE,
+      superseded_binding_id TEXT NOT NULL,
+      rebound_work_item_id TEXT NOT NULL,
+      recorded_by TEXT NOT NULL,
+      recorded_at TEXT NOT NULL,
+      payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_supersessions_no_update
+    BEFORE UPDATE ON content_delivery_identity_supersessions
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity supersessions are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_supersessions_no_delete
+    BEFORE DELETE ON content_delivery_identity_supersessions
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity supersessions are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS content_delivery_identity_supersessions_no_replace
+    BEFORE INSERT ON content_delivery_identity_supersessions
+    WHEN EXISTS (
+      SELECT 1 FROM content_delivery_identity_supersessions
+      WHERE receipt_id = NEW.receipt_id
+         OR receipt_digest = NEW.receipt_digest
+    )
+    BEGIN
+      SELECT RAISE(ABORT, 'content delivery identity supersessions are append-only');
+    END
+    """,
+    """
     CREATE TABLE IF NOT EXISTS content_source_fact_authority_proposals (
       action_id TEXT PRIMARY KEY,
       proposal_digest TEXT NOT NULL UNIQUE,

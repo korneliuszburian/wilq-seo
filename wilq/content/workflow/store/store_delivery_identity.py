@@ -21,6 +21,10 @@ from wilq.content.workflow.delivery_identity import (
     build_content_delivery_record,
     reconcile_content_delivery_identity,
 )
+from wilq.content.workflow.delivery_identity_recovery import (
+    ContentDeliveryIdentitySupersession,
+    ContentDeliveryIdentitySupersessionRecordResult,
+)
 from wilq.content.workflow.store.store_production_classification import (
     HISTORICAL_PRODUCTION_POLICY_IDS,
     _classification_from_row,
@@ -169,6 +173,73 @@ class ContentDeliveryIdentityStoreMixin:
                 for row in rows
             ]
 
+    def record_content_delivery_identity_supersession(
+        self,
+        receipt: ContentDeliveryIdentitySupersession,
+    ) -> ContentDeliveryIdentitySupersessionRecordResult:
+        """Append one supersession receipt with idempotent/conflict semantics."""
+
+        accepted = ContentDeliveryIdentitySupersession.model_validate_json(
+            receipt.model_dump_json(), strict=True
+        )
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing_row = connection.execute(
+                "SELECT * FROM content_delivery_identity_supersessions WHERE receipt_id = ?",
+                (accepted.receipt_id,),
+            ).fetchone()
+            if existing_row is not None:
+                existing = _supersession_from_row(existing_row)
+                return ContentDeliveryIdentitySupersessionRecordResult(
+                    status=(
+                        "idempotent"
+                        if existing.receipt_digest == accepted.receipt_digest
+                        else "conflict"
+                    ),
+                    receipt=existing,
+                )
+            digest_row = connection.execute(
+                "SELECT * FROM content_delivery_identity_supersessions WHERE receipt_digest = ?",
+                (accepted.receipt_digest,),
+            ).fetchone()
+            if digest_row is not None:
+                return ContentDeliveryIdentitySupersessionRecordResult(
+                    status="conflict",
+                    receipt=_supersession_from_row(digest_row),
+                )
+            connection.execute(
+                """
+                INSERT INTO content_delivery_identity_supersessions (
+                  receipt_id, receipt_digest, superseded_binding_id, rebound_work_item_id,
+                  recorded_by, recorded_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    accepted.receipt_id,
+                    accepted.receipt_digest,
+                    accepted.superseded_binding_id,
+                    accepted.rebound_work_item_id,
+                    accepted.recorded_by,
+                    accepted.recorded_at.isoformat(),
+                    accepted.model_dump_json(),
+                ),
+            )
+            return ContentDeliveryIdentitySupersessionRecordResult(
+                status="created", receipt=accepted
+            )
+
+    def load_content_delivery_identity_supersession(
+        self, receipt_id: str
+    ) -> ContentDeliveryIdentitySupersession | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM content_delivery_identity_supersessions WHERE receipt_id = ?",
+                (receipt_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return _supersession_from_row(row)
+
     def load_content_delivery_classification_lookup(
         self, binding: ContentDeliveryIdentityBinding
     ) -> ContentDeliveryClassificationLookup:
@@ -227,6 +298,14 @@ def _load_exact_classification_projection(
     return ContentDeliveryClassificationLookup(
         row_status="exact",
         run=project_content_production_classification(run, matches[0]),
+    )
+
+
+def _supersession_from_row(
+    row: sqlite3.Row,
+) -> ContentDeliveryIdentitySupersession:
+    return ContentDeliveryIdentitySupersession.model_validate_json(
+        cast(str, row["payload_json"]), strict=True
     )
 
 
