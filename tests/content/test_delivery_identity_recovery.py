@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -19,6 +20,7 @@ from wilq.content.workflow.delivery_identity_recovery import (
     CURRENT_SAFE_NEXT_STEP,
     DRIFT_SAFE_NEXT_STEP,
     build_content_delivery_identity_drift_recovery,
+    build_content_delivery_identity_supersession,
 )
 
 
@@ -99,3 +101,29 @@ def test_stale_freshness_cannot_report_a_binding_as_current() -> None:
     assert recovery.status == "drift"
     assert recovery.current_work_item_id == WORK_ITEM_ID
     assert recovery.safe_next_step == DRIFT_SAFE_NEXT_STEP
+
+
+def test_supersession_requires_a_drifted_identity() -> None:
+    recovery = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(), classification_lookup(row_digest="f" * 64)
+    )
+    receipt = build_content_delivery_identity_supersession(
+        recovery, recorded_by="wilku"
+    )
+
+    assert receipt.superseded_binding_id == recovery.binding_id
+    assert receipt.superseded_binding_digest == recovery.superseded_binding_digest
+    assert receipt.rebound_work_item_id == WORK_ITEM_ID
+    assert receipt.rebound_classification_source_row_digest == "f" * 64
+    assert receipt.receipt_id.startswith("content_delivery_identity_supersession_")
+
+    for blocked in (
+        build_content_delivery_identity_drift_recovery(
+            reconciled_binding(), classification_lookup()
+        ),
+        build_content_delivery_identity_drift_recovery(
+            reconciled_binding(), classification_lookup(row_status="missing")
+        ),
+    ):
+        with pytest.raises(ValueError, match="Only a drifted delivery identity"):
+            build_content_delivery_identity_supersession(blocked, recorded_by="wilku")
