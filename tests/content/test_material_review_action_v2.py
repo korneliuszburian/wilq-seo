@@ -358,3 +358,39 @@ def test_public_material_review_action_preview_returns_typed_missing_work_item(
     assert body["external_write_attempted"] is False
     assert body["generation_allowed"] is False
     assert runtime.store.latest_content_material_review("content_work_item_missing") is None
+
+
+def test_approved_material_receipt_clears_the_review_required_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from apps.api.wilq_api.routers import content_workflow as content_workflow_router
+
+    monkeypatch.setattr(content_workflow_router, "content_workflow_store", lambda: object())
+    monkeypatch.setattr(
+        content_workflow_router,
+        "read_content_material_review",
+        lambda **_: SimpleNamespace(status="approved_current"),
+    )
+    assert (
+        content_workflow_router._semantic_material_confidence(
+            work_item_id="wi_exact",
+            original_confidence="review_required",
+        )
+        is None
+    )
+
+    seen: list[dict[str, object]] = []
+
+    def _reader(**kwargs: object) -> SimpleNamespace:
+        seen.append(kwargs)
+        return SimpleNamespace(status="superseded")
+
+    monkeypatch.setattr(content_workflow_router, "read_content_material_review", _reader)
+    assert (
+        content_workflow_router._semantic_material_confidence(
+            work_item_id="wi_exact",
+            original_confidence="review_required",
+        )
+        == "review_required"
+    )
+    assert seen and seen[0]["work_item_id"] == "wi_exact"
