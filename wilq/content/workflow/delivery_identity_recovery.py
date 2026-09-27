@@ -317,6 +317,8 @@ def build_content_delivery_identity_rebind_action(
             recommended_reason=recovery.safe_next_step,
             payload={
                 **common,
+                "apply_allowed": False,
+                "api_mutation_ready": False,
                 "blocker_code": REBIND_BLOCKER_CODE,
                 "safe_next_step": recovery.safe_next_step,
             },
@@ -346,12 +348,20 @@ def build_content_delivery_identity_rebind_action(
         payload={
             **common,
             "mode": "apply",
+            "apply_allowed": True,
+            "api_mutation_ready": True,
+            "destructive": False,
+            "preview_contract": "content_delivery_identity_rebind_v1",
             "supersession": receipt.model_dump(mode="json"),
             "rebind_command": command.model_dump(mode="json"),
             "payload_preview": [
                 {
                     "id": receipt.receipt_id,
                     "operation_type": "record_one_delivery_identity_supersession",
+                    "preview_contract": "content_delivery_identity_rebind_v1",
+                    "apply_allowed": True,
+                    "api_mutation_ready": True,
+                    "destructive": False,
                     "superseded_binding_id": receipt.superseded_binding_id,
                     "rebound_work_item_id": receipt.rebound_work_item_id,
                 }

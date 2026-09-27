@@ -144,6 +144,7 @@ def action_impact_check_blockers(
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_delivery_identity_rebind_action(action)
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)
@@ -211,6 +212,7 @@ def action_apply_preflight_blockers(
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_delivery_identity_rebind_action(action)
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)
@@ -350,6 +352,16 @@ def _is_local_delivery_identity_authority_action(action: ActionObject) -> bool:
     )
 
 
+def _is_local_delivery_identity_rebind_action(action: ActionObject) -> bool:
+    from wilq.content.workflow.delivery_identity_recovery import (
+        CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE,
+    )
+
+    return action.payload.get("action_type") == (
+        CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE
+    )
+
+
 def _is_local_research_fact_promotion_action(action: ActionObject) -> bool:
     return (
         action.payload.get("action_type") == CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE
@@ -383,6 +395,7 @@ def _requires_approved_action_review(action: ActionObject) -> bool:
         or _is_local_research_packet_v2_action(action)
         or _is_local_research_packet_v3_action(action)
         or _is_local_delivery_identity_authority_action(action)
+        or _is_local_delivery_identity_rebind_action(action)
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)

@@ -193,3 +193,24 @@ def test_rebind_action_is_blocked_for_a_non_drifted_identity() -> None:
     assert action.payload["blocker_code"] == REBIND_BLOCKER_CODE
     assert action.payload["safe_next_step"] == recovery.safe_next_step
     assert "supersession" not in action.payload
+
+
+def test_rebind_action_readiness_markers_follow_the_status() -> None:
+    drifted = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(), classification_lookup(row_digest="f" * 64)
+    )
+    ready = build_content_delivery_identity_rebind_action(drifted, recorded_by="wilku")
+    assert ready.payload["apply_allowed"] is True
+    assert ready.payload["api_mutation_ready"] is True
+    assert ready.payload["preview_contract"] == "content_delivery_identity_rebind_v1"
+    assert all(
+        item["apply_allowed"] is True and item["api_mutation_ready"] is True
+        for item in ready.payload["payload_preview"]
+    )
+
+    current = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(), classification_lookup()
+    )
+    blocked = build_content_delivery_identity_rebind_action(current, recorded_by="wilku")
+    assert blocked.payload["apply_allowed"] is False
+    assert blocked.payload["api_mutation_ready"] is False
