@@ -11,10 +11,12 @@ description: "Prowadzi marketera przez jedną kanoniczną ścieżkę WILQ: wybó
 Prowadź **jedną pracę nad treścią naraz**. Marketer ma dostać prostą drogę:
 
 ```text
-wybór strony albo brief
-  → przygotuj tekst
-  → sprawdź tekst
-  → opcjonalny szkic na dev
+prośba marketera
+  → kolejka WILQ: decyzja, dowody, blocker, następny krok
+  → wybór istniejącej strony albo brief nowej
+    → przygotuj tekst
+    → sprawdź tekst
+    → opcjonalny szkic na dev
 ```
 
 WILQ API przechowuje exact identyfikatory, digesty, dowody i audyt. Nie
@@ -26,6 +28,34 @@ ramach najpierw utworzyć exact plan, odczytać jego końcowy stan i dopiero pot
 uruchomić exact draft. Plan pozostaje serwerowym bezpiecznikiem i źródłem
 lineage, ale nie jest osobnym ekranem akceptacji ani zadaniem dla marketera.
 
+## Naturalna prośba (zanim wybierzesz stronę)
+
+Gdy marketer opisuje cel słowami, bez gotowego adresu, usługi albo tematu, nie
+zgaduj wyboru. Przyjmij jedną prośbę i odczytaj jej kolejkę:
+
+1. Wyślij ją raz jako `POST /api/content/intake-requests` z nowym `request_id`
+   i dosłownym `ask`; nie dopisuj wymagań ani metryk.
+2. Odczytaj ten sam stan przez `GET /api/content/intake-requests/{queue_id}` i
+   pokaż dokładny queue ID, status, dowody, blocker i jeden następny bezpieczny
+   krok.
+3. Z tej samej kolejki odczytaj `GET /api/content/intake-requests/{queue_id}/research`,
+   `GET /api/content/intake-requests/{queue_id}/workflow` i
+   `GET /api/content/intake-requests/{queue_id}/brief`; pokaż decyzję z briefu,
+   dowody, blocker i następny krok bez surowego payloadu. Zmiana prośby wymaga
+   nowego queue ID.
+4. Gdy `GET .../brief` zwraca `route`, wybierz z niego gałąź, nie ze statusu
+   kolejki. Gdy `route` to `existing_page` i brief jest gotowy, przejdź do
+   „Istniejąca strona”; gdy `route` to `new_page`, przejdź do „Nowa strona”
+   dopiero po rozstrzygnięciu źródła discovery, bo taki brief pozostaje
+   zablokowany jako `new_topic_discovery_source_unavailable`; gdy `route` to
+   `ambiguous`, pokaż typed blocker. Status kolejki (`queued`/`blocked`) nie
+   wybiera gałęzi, a brak dopasowania w katalogu jest zablokowany jako
+   `intake_target_missing`, przy zbyt ogólnej prośbie jako
+   `intake_ask_too_generic`.
+
+Queue ID, status i decyzje pochodzą wyłącznie z API; nie prowadź własnego stanu
+kolejki ani osobnego dashboardowego planera.
+
 ## Istniejąca strona
 
 1. Odczytaj `GET /api/health`, potem `GET /api/content/workflow-entry`.
@@ -33,27 +63,45 @@ lineage, ale nie jest osobnym ekranem akceptacji ani zadaniem dla marketera.
    kolejki, snapshotu ani katalogu WordPressa.
 
 2. Odczytaj `GET /api/content/work-items/{work_item_id}/selected-workspace`
-   oraz `GET /api/content/work-items/{work_item_id}/planning-proposals`.
+   oraz, wyłącznie jako odczyt stanu planu,
+   `GET /api/content/work-items/{work_item_id}/planning-proposals`.
    Pokaż publiczne źródło, stan dokumentu, faktycznie zapisane lineage i jedno
    `next_action`. „Zmiany w treści” oznaczają wyłącznie obserwowane nagłówki i
    fragmenty; nie są visual diffem ani oceną semantycznej równoważności.
 
-3. Po jasnym „przygotuj tekst” użyj exact `service_card_id` oraz
-   `expected_planning_input_digest` z odczytu, aby utworzyć lub odczytać plan
-   przez `POST /api/content/work-items/{work_item_id}/planning-proposals`.
-   Odczytuj wyłącznie ten sam status, aż przestanie być `generating`, a potem
-   uruchom `POST .../initial-draft` z jego exact proposal ID i digestami.
-   Pokaż intencję, strukturę i źródła razem z powstałym tekstem, nie jako
-   osobną decyzję. Gdy plan jest zablokowany, pokaż jego realny blocker i nie
-   uruchamiaj draftu.
+3. Po jasnym „przygotuj tekst” przygotuj najpierw exact pakiet badawczy v3:
+   `POST /api/content/work-items/{work_item_id}/research-packet-v3-action/preview`
+   z `per_url_delivery_identity_action_id` z odczytu, jeśli jest dostępny.
+   Gdy podgląd jest gotowy, otwórz jego ActionObject (`/actions/{action_id}`) i
+   przeprowadź review dokładnego pakietu; apply zapisuje wyłącznie lokalny
+   receipt zatwierdzonego pakietu v3 i nie uruchamia modelu ani WordPressa.
+   Gdy podgląd jest zablokowany, pokaż `safe_next_step`, ownera i dowody.
 
-4. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
+4. Po zatwierdzonym pakiecie v3 przygotuj lokalny zamiar planowania:
+   `POST /api/content/work-items/{work_item_id}/planning-generation-intent-v3/preview`
+   z exact `packet_id` (`content_research_packet_v3_{packet_digest[:24]}`) i
+   `packet_digest` z zatwierdzonego pakietu. Otwórz ActionObject zamiaru,
+   przeprowadź jego review, a po apply użyj
+   `POST /api/content/planning-generation-intents-v3/{action_id}/dispatch`.
+   Dispatch ponownie weryfikuje exact pakiet, per-URL identity i currentness
+   przed kolejką modelu; zmiana któregokolwiek z nich blokuje dispatch i
+   wymaga nowego exact pakietu. Nie używaj `POST .../planning-proposals`; ten
+   punkt nie ma autoryzowanej ścieżki zapisu planu.
+
+5. Odczytaj ten sam status planu, aż przestanie być `generating`. Pełny szkic
+   wymaga ActionObjectu: `POST .../initial-draft` jest fail-closed i zwraca
+   typed blocker `initial_draft_action_required`. Pokaż ten blocker, ownera i
+   `safe_next_step` zamiast obiecywać powstanie tekstu; nie uruchamiaj zapisu
+   poza zatwierdzoną ścieżką ActionObject. Gdy plan jest zablokowany, pokaż
+   jego realny blocker i nie uruchamiaj draftu.
+
+6. Pełny tekst jest immutable rewizją. Pokaż go przed dalszym krokiem. Po
    jawnym „zatwierdź tekst” zapisz `POST .../draft-revisions/{revision_id}/review`
    z exact `expected_revision_digest` i identyfikatorami dowodów rewizji. „Tekst wymaga
    zmian” wymaga krótkiej notatki; poprawka powstaje wyłącznie przez exact
    child revision, nigdy przez edycję istniejącej rewizji.
 
-5. Dopiero approved exact revision może wejść w delivery: read-only
+7. Dopiero approved exact revision może wejść w delivery: read-only
    `target-discovery` i `target-mapping`, osobne potwierdzenie mappingu,
    utworzenie ActionObjectu i lifecycle `/api/actions`. ActionObject nie jest
    WordPressem. `apply` wymaga osobnego polecenia człowieka i może utworzyć

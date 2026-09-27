@@ -80,6 +80,41 @@ def test_content_operator_skill_uses_one_prepare_text_action() -> None:
     assert "GET /api/content/new-page-topics" in skill
 
 
+def test_content_operator_skill_routes_through_v3_packet_and_intent() -> None:
+    skill = CONTENT_OPERATOR_SKILL_PATH.read_text(encoding="utf-8")
+
+    assert "POST /api/content/work-items/{work_item_id}/planning-proposals" not in skill
+    assert (
+        "POST /api/content/work-items/{work_item_id}/research-packet-v3-action/preview" in skill
+    )
+    assert (
+        "POST /api/content/work-items/{work_item_id}/planning-generation-intent-v3/preview"
+        in skill
+    )
+    assert (
+        "POST /api/content/planning-generation-intents-v3/{action_id}/dispatch" in skill
+    )
+    assert "per_url_delivery_identity_action_id" in skill
+    assert "GET /api/content/work-items/{work_item_id}/planning-proposals" in skill
+    assert "POST .../initial-draft" in skill
+    assert "initial_draft_action_required" in skill
+
+
+def test_content_operator_skill_routes_a_bare_ask_through_the_intake_queue() -> None:
+    skill = CONTENT_OPERATOR_SKILL_PATH.read_text(encoding="utf-8")
+
+    assert "POST /api/content/intake-requests" in skill
+    assert "GET /api/content/intake-requests/{queue_id}" in skill
+    assert "GET /api/content/intake-requests/{queue_id}/research" in skill
+    assert "GET /api/content/intake-requests/{queue_id}/workflow" in skill
+    assert "GET /api/content/intake-requests/{queue_id}/brief" in skill
+    assert "queue ID" in skill
+    assert "intake_target_missing" in skill
+    assert "intake_ask_too_generic" in skill
+    assert "new_topic_discovery_source_unavailable" in skill
+    assert "Status kolejki" in skill
+
+
 def test_content_operator_smoke_allows_an_empty_entry_only_when_requested() -> None:
     smoke = load_smoke_script()
     empty_entry = {"response_type": "content_workflow_entry", "recommendations": []}
