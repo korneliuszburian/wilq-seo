@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -351,3 +352,47 @@ def test_packet_read_projection_reports_latest_source_pack_separately_from_bound
     assert projection.current_source_pack_binding_id == latest.binding_id
     assert projection.current_source_pack_binding_digest == latest.binding_digest
     assert prepared.packet.source_pack_binding_id != projection.current_source_pack_binding_id
+
+
+def test_packet_revalidation_blocks_when_authority_is_superseded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    case = build_packet_preparation_case(tmp_path)
+    prepared = prepare_content_research_packet(
+        store=case.store, snapshot=case.snapshot, planning_input=case.planning_input
+    )
+    assert prepared.packet is not None
+    # Isolate the authority comparison: the rebuilt planning input is the exact one
+    # the packet packed, so the only drift is the superseded authority receipt.
+    import wilq.content.workflow.research_packet_current as research_packet_current
+
+    monkeypatch.setattr(
+        research_packet_current,
+        "build_content_planning_input",
+        lambda *_args, **_kwargs: SimpleNamespace(planning_input=case.planning_input),
+    )
+    control = revalidate_content_research_packet(
+        store=case.store,
+        packet=prepared.packet,
+        snapshot_loader=lambda _work_item_id: case.snapshot,
+    )
+    assert control.status == "current", control.blocker
+    assert control.blocker is None
+
+    # Authority attempt=1 for the same identity and fact set supersedes the receipt
+    # the packet packed; the source pack itself is unchanged.
+    case.store.authority = SimpleNamespace(
+        receipt_id="content_source_fact_authority_superseded",
+        receipt_digest="e" * 64,
+    )
+
+    projection = revalidate_content_research_packet(
+        store=case.store,
+        packet=prepared.packet,
+        snapshot_loader=lambda _work_item_id: case.snapshot,
+    )
+
+    assert projection.status == "blocked"
+    assert projection.blocker is not None
+    assert projection.blocker.reason == "source_pack_binding_blocked"
+    assert prepared.packet.source_pack_binding_id == case.source_pack.binding_id
