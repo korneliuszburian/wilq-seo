@@ -15,9 +15,18 @@ from wilq.content.workflow.delivery_identity import (
     build_content_delivery_identity_current_projection,
     inventory_evidence_digest,
 )
+from wilq.schemas import (
+    ActionMode,
+    ActionObject,
+    ActionRisk,
+    ActionStatus,
+    OpportunityDomain,
+)
 from wilq.schemas.core import utc_now
 
 _HEX64 = r"^[0-9a-f]{64}$"
+CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE = "content_delivery_identity_rebind"
+REBIND_BLOCKER_CODE = "delivery_identity_rebind_requires_drift"
 CURRENT_SAFE_NEXT_STEP = "Exact current identity jest dostępna dla następnego kroku."
 DRIFT_SAFE_NEXT_STEP = (
     "Zarejestruj nową exact current identity dla tego bieżącego wiersza klasyfikacji."
@@ -40,6 +49,7 @@ class ContentDeliveryIdentityDriftRecovery(BaseModel):
     )
     binding_id: str = Field(min_length=1, max_length=240)
     status: Literal["current", "drift", "classification_missing"]
+    binding_inventory_evidence_ids: tuple[str, ...] = ()
     binding_classification_run_id: str | None = Field(default=None, max_length=240)
     binding_classification_run_digest: str | None = Field(default=None, pattern=_HEX64)
     binding_classification_source_row_digest: str | None = Field(default=None, pattern=_HEX64)
@@ -88,6 +98,7 @@ def build_content_delivery_identity_drift_recovery(
         return ContentDeliveryIdentityDriftRecovery(
             binding_id=binding.binding_id,
             status="current",
+            binding_inventory_evidence_ids=binding.inventory_evidence_ids,
             binding_classification_run_id=binding.classification_run_id,
             binding_classification_run_digest=binding.classification_run_digest,
             binding_classification_source_row_digest=binding.classification_source_row_digest,
@@ -99,6 +110,7 @@ def build_content_delivery_identity_drift_recovery(
         return ContentDeliveryIdentityDriftRecovery(
             binding_id=binding.binding_id,
             status="classification_missing",
+            binding_inventory_evidence_ids=binding.inventory_evidence_ids,
             binding_classification_run_id=binding.classification_run_id,
             binding_classification_run_digest=binding.classification_run_digest,
             binding_classification_source_row_digest=binding.classification_source_row_digest,
@@ -107,6 +119,7 @@ def build_content_delivery_identity_drift_recovery(
     return ContentDeliveryIdentityDriftRecovery(
         binding_id=binding.binding_id,
         status="drift",
+        binding_inventory_evidence_ids=binding.inventory_evidence_ids,
         binding_classification_run_id=binding.classification_run_id,
         binding_classification_run_digest=binding.classification_run_digest,
         binding_classification_source_row_digest=binding.classification_source_row_digest,
@@ -265,6 +278,85 @@ def build_content_delivery_identity_rebind_command(
     )
 
 
+def delivery_identity_rebind_action_id(receipt_digest: str) -> str:
+    return f"act_content_delivery_identity_rebind_{receipt_digest[:24]}"
+
+
+def build_content_delivery_identity_rebind_action(
+    recovery: ContentDeliveryIdentityDriftRecovery,
+    *,
+    recorded_by: str,
+    recorded_at: datetime | None = None,
+) -> ActionObject:
+    """Local-authority ActionObject for one rebind; blocked when not drifted."""
+
+    common = {
+        "action_type": CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE,
+        "connector": "wordpress_ekologus",
+        "local_authority_only": True,
+        "delivery_identity_status": recovery.status,
+    }
+    if recovery.status != "drift":
+        return ActionObject(
+            id=f"act_content_delivery_identity_rebind_blocked_{recovery.binding_id[:24]}",
+            title="Zarejestruj nową exact current identity",
+            domain=OpportunityDomain.content,
+            connector="wordpress_ekologus",
+            mode=ActionMode.apply,
+            risk=ActionRisk.low,
+            status=ActionStatus.blocked,
+            evidence_ids=list(recovery.binding_inventory_evidence_ids),
+            validation_status="not_validated",
+            created_by=recorded_by,
+            human_diagnosis=(
+                "Tylko drifted identity może zostać zastąpiona; ten binding nie jest drifted."
+            ),
+            recommended_reason=recovery.safe_next_step,
+            payload={
+                **common,
+                "blocker_code": REBIND_BLOCKER_CODE,
+                "safe_next_step": recovery.safe_next_step,
+            },
+        )
+    receipt = build_content_delivery_identity_supersession(
+        recovery, recorded_by=recorded_by, recorded_at=recorded_at
+    )
+    command = build_content_delivery_identity_rebind_command(
+        recovery, recorded_by=recorded_by, recorded_at=recorded_at
+    )
+    return ActionObject(
+        id=delivery_identity_rebind_action_id(receipt.receipt_digest),
+        title="Zastąp drifted delivery identity nową exact current identity",
+        domain=OpportunityDomain.content,
+        connector="wordpress_ekologus",
+        mode=ActionMode.apply,
+        risk=ActionRisk.low,
+        status=ActionStatus.ready_to_apply,
+        evidence_ids=list(recovery.current_inventory_evidence_ids),
+        validation_status="not_validated",
+        created_by=recorded_by,
+        human_diagnosis=(
+            "Apply zapisuje lokalny receipt supersession i mintuje nową identity z bieżącego "
+            "wiersza klasyfikacji; bez zapisu u vendora."
+        ),
+        recommended_reason=recovery.safe_next_step,
+        payload={
+            **common,
+            "mode": "apply",
+            "supersession": receipt.model_dump(mode="json"),
+            "rebind_command": command.model_dump(mode="json"),
+            "payload_preview": [
+                {
+                    "id": receipt.receipt_id,
+                    "operation_type": "record_one_delivery_identity_supersession",
+                    "superseded_binding_id": receipt.superseded_binding_id,
+                    "rebound_work_item_id": receipt.rebound_work_item_id,
+                }
+            ],
+        },
+    )
+
+
 __all__ = [
     "CLASSIFICATION_MISSING_SAFE_NEXT_STEP",
     "CURRENT_SAFE_NEXT_STEP",
@@ -272,7 +364,11 @@ __all__ = [
     "ContentDeliveryIdentityDriftRecovery",
     "ContentDeliveryIdentitySupersession",
     "ContentDeliveryIdentitySupersessionRecordResult",
+    "CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE",
+    "REBIND_BLOCKER_CODE",
     "build_content_delivery_identity_drift_recovery",
+    "build_content_delivery_identity_rebind_action",
+    "delivery_identity_rebind_action_id",
     "build_content_delivery_identity_rebind_command",
     "build_content_delivery_identity_supersession",
 ]

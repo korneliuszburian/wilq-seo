@@ -17,11 +17,15 @@ from tests.content.delivery_identity_fixtures import (
 )
 from wilq.content.workflow.delivery_identity_recovery import (
     CLASSIFICATION_MISSING_SAFE_NEXT_STEP,
+    CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE,
     CURRENT_SAFE_NEXT_STEP,
     DRIFT_SAFE_NEXT_STEP,
+    REBIND_BLOCKER_CODE,
     build_content_delivery_identity_drift_recovery,
+    build_content_delivery_identity_rebind_action,
     build_content_delivery_identity_rebind_command,
     build_content_delivery_identity_supersession,
+    delivery_identity_rebind_action_id,
 )
 
 
@@ -161,3 +165,31 @@ def test_rebind_command_matches_the_recovered_row() -> None:
     ):
         with pytest.raises(ValueError, match="Only a drifted delivery identity"):
             build_content_delivery_identity_rebind_command(blocked, recorded_by="wilku")
+
+
+def test_rebind_action_is_ready_with_receipt_and_command_payload() -> None:
+    recovery = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(), classification_lookup(row_digest="f" * 64)
+    )
+    action = build_content_delivery_identity_rebind_action(recovery, recorded_by="wilku")
+
+    assert action.status == "ready_to_apply"
+    assert action.id == delivery_identity_rebind_action_id(
+        action.payload["supersession"]["receipt_digest"]
+    )
+    assert action.payload["action_type"] == CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE
+    assert action.payload["local_authority_only"] is True
+    assert action.payload["rebind_command"]["classification_source_row_digest"] == "f" * 64
+    assert action.evidence_ids == ["ev_current"]
+
+
+def test_rebind_action_is_blocked_for_a_non_drifted_identity() -> None:
+    recovery = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(), classification_lookup()
+    )
+    action = build_content_delivery_identity_rebind_action(recovery, recorded_by="wilku")
+
+    assert action.status == "blocked"
+    assert action.payload["blocker_code"] == REBIND_BLOCKER_CODE
+    assert action.payload["safe_next_step"] == recovery.safe_next_step
+    assert "supersession" not in action.payload
