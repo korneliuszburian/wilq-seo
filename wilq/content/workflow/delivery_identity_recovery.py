@@ -11,7 +11,9 @@ from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.delivery_identity import (
     ContentDeliveryClassificationLookup,
     ContentDeliveryIdentityBinding,
+    ContentDeliveryIdentityCommand,
     build_content_delivery_identity_current_projection,
+    inventory_evidence_digest,
 )
 from wilq.schemas.core import utc_now
 
@@ -46,6 +48,11 @@ class ContentDeliveryIdentityDriftRecovery(BaseModel):
     current_classification_run_id: str | None = Field(default=None, max_length=240)
     current_classification_run_digest: str | None = Field(default=None, pattern=_HEX64)
     current_classification_source_row_digest: str | None = Field(
+        default=None, pattern=_HEX64
+    )
+    current_canonical_path: str | None = Field(default=None, max_length=2048)
+    current_public_url: str | None = Field(default=None, max_length=2048)
+    current_classification_decision_set_digest: str | None = Field(
         default=None, pattern=_HEX64
     )
     current_inventory_evidence_ids: tuple[str, ...] = ()
@@ -108,6 +115,9 @@ def build_content_delivery_identity_drift_recovery(
         current_classification_run_id=run.run_id,
         current_classification_run_digest=run.run_digest,
         current_classification_source_row_digest=run.row.source_packet_row_digest,
+        current_canonical_path=run.row.canonical_path,
+        current_public_url=run.row.public_url,
+        current_classification_decision_set_digest=run.decision_set_digest,
         current_inventory_evidence_ids=tuple(
             sorted(set(run.row.primary_evidence_ids) | set(run.row.lineage_evidence_ids))
         ),
@@ -212,6 +222,49 @@ class ContentDeliveryIdentitySupersessionRecordResult(BaseModel):
     receipt: ContentDeliveryIdentitySupersession
 
 
+def build_content_delivery_identity_rebind_command(
+    recovery: ContentDeliveryIdentityDriftRecovery,
+    *,
+    recorded_by: str,
+    recorded_at: datetime | None = None,
+) -> ContentDeliveryIdentityCommand:
+    """Exact rebind command for a drifted identity; current/missing raise."""
+
+    if recovery.status != "drift":
+        raise ValueError("Only a drifted delivery identity may be rebound.")
+    if (
+        not recovery.superseded_binding_digest
+        or not recovery.current_work_item_id
+        or not recovery.current_canonical_path
+        or not recovery.current_public_url
+        or not recovery.current_classification_run_id
+        or not recovery.current_classification_run_digest
+        or not recovery.current_classification_decision_set_digest
+        or not recovery.current_classification_source_row_digest
+        or not recovery.current_inventory_evidence_ids
+        or recovery.current_final_disposition is None
+    ):
+        raise ValueError("Drifted recovery must carry the exact rebind inputs.")
+    return ContentDeliveryIdentityCommand(
+        canonical_path=recovery.current_canonical_path,
+        public_url=recovery.current_public_url,
+        current_work_item_id=recovery.current_work_item_id,
+        classification_run_id=recovery.current_classification_run_id,
+        classification_run_digest=recovery.current_classification_run_digest,
+        classification_decision_set_digest=(
+            recovery.current_classification_decision_set_digest
+        ),
+        classification_source_row_digest=recovery.current_classification_source_row_digest,
+        inventory_evidence_ids=recovery.current_inventory_evidence_ids,
+        inventory_evidence_digest=inventory_evidence_digest(
+            recovery.current_inventory_evidence_ids
+        ),
+        final_disposition=recovery.current_final_disposition,
+        recorded_by=recorded_by,
+        recorded_at=(recorded_at or utc_now()).astimezone(UTC),
+    )
+
+
 __all__ = [
     "CLASSIFICATION_MISSING_SAFE_NEXT_STEP",
     "CURRENT_SAFE_NEXT_STEP",
@@ -220,5 +273,6 @@ __all__ = [
     "ContentDeliveryIdentitySupersession",
     "ContentDeliveryIdentitySupersessionRecordResult",
     "build_content_delivery_identity_drift_recovery",
+    "build_content_delivery_identity_rebind_command",
     "build_content_delivery_identity_supersession",
 ]

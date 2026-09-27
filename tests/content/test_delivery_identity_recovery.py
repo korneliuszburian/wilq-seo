@@ -20,6 +20,7 @@ from wilq.content.workflow.delivery_identity_recovery import (
     CURRENT_SAFE_NEXT_STEP,
     DRIFT_SAFE_NEXT_STEP,
     build_content_delivery_identity_drift_recovery,
+    build_content_delivery_identity_rebind_command,
     build_content_delivery_identity_supersession,
 )
 
@@ -127,3 +128,36 @@ def test_supersession_requires_a_drifted_identity() -> None:
     ):
         with pytest.raises(ValueError, match="Only a drifted delivery identity"):
             build_content_delivery_identity_supersession(blocked, recorded_by="wilku")
+
+
+def test_rebind_command_matches_the_recovered_row() -> None:
+    recovery = build_content_delivery_identity_drift_recovery(
+        reconciled_binding(),
+        classification_lookup(
+            row_digest="f" * 64,
+            run_id="content_production_classification_new",
+            run_digest="9" * 64,
+        ),
+    )
+    command = build_content_delivery_identity_rebind_command(
+        recovery, recorded_by="wilku"
+    )
+
+    assert command.canonical_path == recovery.current_canonical_path
+    assert command.public_url == recovery.current_public_url
+    assert command.current_work_item_id == WORK_ITEM_ID
+    assert command.classification_run_id == "content_production_classification_new"
+    assert command.classification_decision_set_digest == "b" * 64
+    assert command.classification_source_row_digest == "f" * 64
+    assert command.inventory_evidence_ids == ("ev_current",)
+
+    for blocked in (
+        build_content_delivery_identity_drift_recovery(
+            reconciled_binding(), classification_lookup()
+        ),
+        build_content_delivery_identity_drift_recovery(
+            reconciled_binding(), classification_lookup(row_status="missing")
+        ),
+    ):
+        with pytest.raises(ValueError, match="Only a drifted delivery identity"):
+            build_content_delivery_identity_rebind_command(blocked, recorded_by="wilku")
