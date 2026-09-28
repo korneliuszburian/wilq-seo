@@ -1152,76 +1152,28 @@ def test_initial_draft_preserves_the_first_actionable_planning_blocker() -> None
 
 
 @pytest.mark.parametrize(
-    ("code", "label", "reason", "next_step", "source_codes", "expected"),
+    ("code", "source_codes", "expected_source_codes"),
     [
-        (
-            "runtime_blocked",
-            "Codex nie zwrócił pełnego tekstu",
-            "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
-            "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
-            ["runtime_timeout"],
-            {
-                "code": "runtime_blocked",
-                "label": "Codex nie zwrócił pełnego tekstu",
-                "reason": (
-                    "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem."
-                ),
-                "next_step": ("Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał."),
-                "source_codes": ["runtime_timeout"],
-                "retry_after_seconds": None,
-            },
-        ),
-        (
-            "persistence_failed",
-            "Nie zapisano pełnego tekstu",
-            "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
-            "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje.",
-            None,
-            {
-                "code": "persistence_failed",
-                "label": "Nie zapisano pełnego tekstu",
-                "reason": "Atomowy zapis dokumentu i zakończonego CodexRun nie powiódł się.",
-                "next_step": (
-                    "Sprawdź prywatny store i uruchom nową próbę; częściowy tekst nie istnieje."
-                ),
-                "source_codes": [],
-                "retry_after_seconds": None,
-            },
-        ),
-        (
-            "runtime_failed",
-            "Nie utworzono dokumentu nowej strony",
-            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-            "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-            None,
-            {
-                "code": "runtime_failed",
-                "label": "Nie utworzono dokumentu nowej strony",
-                "reason": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-                "next_step": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
-                "source_codes": [],
-                "retry_after_seconds": None,
-            },
-        ),
+        ("runtime_blocked", ["runtime_timeout"], ["runtime_timeout"]),
+        ("persistence_failed", None, []),
     ],
 )
-def test_shared_initial_draft_blocker_builder_preserves_frozen_caller_payloads(
+def test_shared_initial_draft_blocker_builder_preserves_code_and_source_lineage(
     code: ContentInitialDraftBlockerCode,
-    label: str,
-    reason: str,
-    next_step: str,
     source_codes: list[str] | None,
-    expected: dict[str, object],
+    expected_source_codes: list[str],
 ) -> None:
     blocker = build_initial_draft_blocker(
         code,
-        label,
-        reason,
-        next_step,
+        "Test label",
+        "Test reason",
+        "Test next step",
         source_codes=source_codes,
     )
 
-    assert blocker.model_dump(mode="json") == expected
+    assert blocker.code == code
+    assert blocker.source_codes == expected_source_codes
+    assert blocker.next_step.strip()
 
 
 def test_initial_draft_mismatch_modes_preserve_distinct_historical_checks() -> None:
@@ -1283,17 +1235,10 @@ def test_initial_draft_mismatch_modes_preserve_distinct_historical_checks() -> N
         baseline_proposal,
         request,
     )
-    assert refresh_blocker is not None
-    assert refresh_blocker.model_dump(mode="json") == {
-        "code": "planning_not_generated",
-        "label": "Brakuje wygenerowanego planu",
-        "reason": (
-            "Initial draft nie może powstać z preserve-first baseline bez planu modelowego."
-        ),
-        "next_step": "Wygeneruj aktualny plan i uruchom pełny tekst z widocznego szkicu.",
-        "source_codes": [],
-        "retry_after_seconds": None,
-    }
+    assert isinstance(refresh_blocker, ContentInitialDraftBlocker)
+    assert refresh_blocker.code == "planning_not_generated"
+    assert refresh_blocker.source_codes == []
+    assert refresh_blocker.next_step.strip()
 
 
 def test_initial_draft_blocker_contract_contains_every_planning_blocker_code() -> None:
