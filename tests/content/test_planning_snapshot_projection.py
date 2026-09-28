@@ -29,7 +29,7 @@ def test_selected_workspace_uses_persisted_source_without_starting_planning(
     planning_harness: tuple[TestClient, PlanningClient],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client, _runtime = planning_harness
+    client, runtime = planning_harness
     live_material_reads: list[str] = []
     live_material = inventory_binding.read_content_inventory_material
 
@@ -92,6 +92,7 @@ def test_selected_workspace_uses_persisted_source_without_starting_planning(
         },
     )
 
-    assert posted.status_code == 200
-    assert posted.json()["status"] == "generating"
-    assert posted.json()["planning_input_digest"] == planning_input_digest
+    assert posted.status_code == 409
+    assert posted.json()["status"] == "blocked"
+    assert posted.json()["blockers"][0]["code"] == "research_packet_missing"
+    assert runtime.calls == 0
