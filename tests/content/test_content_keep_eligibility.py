@@ -393,10 +393,14 @@ def test_duplicate_json_keys_are_rejected_before_projection() -> None:
         _parse_json(b'{"schema_version":"one","schema_version":"two"}', "fixture.json")
 
 
-def test_cli_check_is_deterministic_and_source_drift_fails(
+def test_cli_check_fails_closed_on_current_source_and_authoring_drift(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["--output", str(ARTIFACT_PATH), "--check"]) == 0
+    assert main(["--output", str(ARTIFACT_PATH), "--check"]) == 1
+    current_source_error = capsys.readouterr().err
+    assert "Niezgodny SHA-256" in current_source_error
+    assert "wilq/content/knowledge/source_facts.py" in current_source_error
+
     drifted = tmp_path / "authoring.json"
     drifted.write_bytes(AUTHORING_PATH.read_bytes() + b"\n")
     assert (
@@ -411,7 +415,9 @@ def test_cli_check_is_deterministic_and_source_drift_fails(
         )
         == 1
     )
-    assert "Niezgodny SHA-256" in capsys.readouterr().err
+    authoring_error = capsys.readouterr().err
+    assert "Niezgodny SHA-256" in authoring_error
+    assert "docs/content-dev-authoring-inventory-20260828.json" in authoring_error
 
 
 def test_cli_check_fails_on_binding_source_drift(
