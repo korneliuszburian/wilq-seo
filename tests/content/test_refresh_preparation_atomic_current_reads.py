@@ -8,7 +8,7 @@ import pytest
 
 from tests.content.test_current_preparation_readiness import (
     WORK_ITEM_ID,
-    _seed_exact_current_receipts,
+    _seed_unprotected_exact_current_receipts,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.workflow.content_kind_receipt import (
@@ -53,7 +53,6 @@ from wilq.storage.local_state import LocalStateStore
 
 
 def _editorial_context(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> tuple[
     ContentWorkflowStore,
@@ -62,14 +61,14 @@ def _editorial_context(
     ContentKindReceipt,
     ContentRefreshPreparationAuthorization,
 ]:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_unprotected_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     planning_input_digest = "f" * 64
     inventory = ContentKindInventoryBinding(
         work_item_id=WORK_ITEM_ID,
         canonical_path=row.canonical_path,
         public_url=row.public_url,
-        wordpress_content_type="post",
+        wordpress_content_type="page",
         content_kind="editorial",
         inventory_evidence_ids=("ev_wp_current_readiness",),
         trusted=True,
@@ -281,16 +280,15 @@ def _write_real_plan_and_revision(
 
 
 def test_editorial_receipt_persistence_accepts_ready_blocked_classification(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_unprotected_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     inventory = ContentKindInventoryBinding(
         work_item_id=WORK_ITEM_ID,
         canonical_path=row.canonical_path,
         public_url=row.public_url,
-        wordpress_content_type="post",
+        wordpress_content_type="page",
         content_kind="editorial",
         inventory_evidence_ids=("ev_wp_current_readiness",),
         trusted=True,
@@ -315,17 +313,16 @@ def test_editorial_receipt_persistence_accepts_ready_blocked_classification(
 
 
 def test_editorial_authorization_persistence_accepts_same_ready_blocked_row(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run = _seed_exact_current_receipts(monkeypatch, tmp_path)
+    store, run = _seed_unprotected_exact_current_receipts(tmp_path)
     row = next(item for item in run.rows if item.current_work_item_id == WORK_ITEM_ID)
     planning_input_digest = "f" * 64
     inventory = ContentKindInventoryBinding(
         work_item_id=WORK_ITEM_ID,
         canonical_path=row.canonical_path,
         public_url=row.public_url,
-        wordpress_content_type="post",
+        wordpress_content_type="page",
         content_kind="editorial",
         inventory_evidence_ids=("ev_wp_current_readiness",),
         trusted=True,
@@ -370,10 +367,9 @@ def test_editorial_authorization_persistence_accepts_same_ready_blocked_row(
 
 
 def test_plan_and_draft_guards_accept_ready_blocked_row_in_one_outer_transaction(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run, row, _receipt, authorization = _editorial_context(monkeypatch, tmp_path)
+    store, run, row, _receipt, authorization = _editorial_context(tmp_path)
     assert store.record_refresh_preparation_authorization(authorization).status == "created"
     proposal = _proposal(authorization)
     revision = _revision(authorization)
@@ -398,10 +394,9 @@ def test_plan_and_draft_guards_accept_ready_blocked_row_in_one_outer_transaction
 
 
 def test_newer_blocked_pack_before_authorization_rejects_without_authorization_artifact(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run, row, _receipt, authorization = _editorial_context(monkeypatch, tmp_path)
+    store, run, row, _receipt, authorization = _editorial_context(tmp_path)
     before_payload = _classification_payload(store)
     blocked_pack = _append_newer_blocked_pack(store)
 
@@ -422,10 +417,9 @@ def test_newer_blocked_pack_before_authorization_rejects_without_authorization_a
 
 
 def test_newer_blocked_pack_after_authorization_rejects_plan_and_draft_guards(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, run, row, _receipt, authorization = _editorial_context(monkeypatch, tmp_path)
+    store, run, row, _receipt, authorization = _editorial_context(tmp_path)
     assert store.record_refresh_preparation_authorization(authorization).status == "created"
     _append_newer_blocked_pack(store)
     proposal = _proposal(authorization)
@@ -465,10 +459,9 @@ def test_newer_blocked_pack_after_authorization_rejects_plan_and_draft_guards(
 
 
 def test_real_plan_and_revision_writers_accept_ready_blocked_row_with_readback(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, _run, _row, _receipt, authorization = _editorial_context(monkeypatch, tmp_path)
+    store, _run, _row, _receipt, authorization = _editorial_context(tmp_path)
     assert store.record_refresh_preparation_authorization(authorization).status == "created"
 
     proposal_store, proposal, _revision_command, revision = _write_real_plan_and_revision(
@@ -480,10 +473,9 @@ def test_real_plan_and_revision_writers_accept_ready_blocked_row_with_readback(
 
 
 def test_real_writers_reject_distinct_attempts_after_newer_blocked_pack(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    store, _run, _row, _receipt, authorization = _editorial_context(monkeypatch, tmp_path)
+    store, _run, _row, _receipt, authorization = _editorial_context(tmp_path)
     assert store.record_refresh_preparation_authorization(authorization).status == "created"
     proposal_store, proposal, revision_command, revision = _write_real_plan_and_revision(
         store, authorization

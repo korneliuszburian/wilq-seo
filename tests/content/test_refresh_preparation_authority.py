@@ -152,6 +152,7 @@ def _authority(
         canonical_path="/analiza-pozwolen-zintegrowanych",
         public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
         source_packet_row_digest=ROW_DIGEST,
+        blocked_historical_protection=None,
         blockers=(SimpleNamespace(code="lineage_needs_review"),),
         next_step_pl="Sprawdź źródła.",
     )
@@ -660,6 +661,7 @@ def _run(
         canonical_path="/analiza-pozwolen-zintegrowanych",
         public_url="https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/",
         source_packet_row_digest=ROW_DIGEST,
+        blocked_historical_protection=None,
         blockers=(SimpleNamespace(code="lineage_needs_review"),),
         next_step_pl="Sprawdź źródła.",
     )
