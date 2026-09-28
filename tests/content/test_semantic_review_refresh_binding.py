@@ -262,37 +262,35 @@ def test_refresh_bound_semantic_review_uses_authority_digest_before_packet_bindi
         packet_digest=revision.research_packet_digest,
         current_work_item_id=work_item_id,
         status="exact_current",
-    )
-    current_packet: Any = SimpleNamespace(
-        status="current",
-        packet_id=packet.packet_id,
-        packet_digest=packet.packet_digest,
-        current_work_item_id=work_item_id,
+        approved_source_fact_ids=("unregistered_source_fact_for_test",),
+        evidence_ids=("ev_missing_fact",),
     )
     base_input = SimpleNamespace(
         work_item_id=work_item_id,
         planning_input_digest=authorization.planning_input_digest,
-    )
-    packet_input = SimpleNamespace(
-        work_item_id=work_item_id,
-        planning_input_digest=packet_binding.planning_input_digest,
-        research_packet_id=packet.packet_id,
-        research_packet_digest=packet.packet_digest,
     )
 
     class ReviewStore:
         def load_content_research_packet(self, _packet_id: str) -> object:
             return packet
 
+    def unexpected_packet_path(*_args: object, **_kwargs: object) -> Any:
+        pytest.fail("Unregistered source facts must block before packet binding or revalidation.")
+
+    monkeypatch.setattr(
+        review_packet_binding,
+        "ekologus_source_facts",
+        lambda: (),
+    )
     monkeypatch.setattr(
         review_packet_binding,
         "bind_research_packet_to_planning_input",
-        lambda _base, _packet: packet_input,
+        unexpected_packet_path,
     )
     monkeypatch.setattr(
         review_packet_binding,
         "revalidate_content_research_packet",
-        lambda **_kwargs: current_packet,
+        unexpected_packet_path,
     )
     resolution = resolve_content_review_inputs(
         snapshot=result,
@@ -304,20 +302,21 @@ def test_refresh_bound_semantic_review_uses_authority_digest_before_packet_bindi
             blockers=[],
         ),
     )
-    assert resolution.inputs is not None, resolution.blocker
-    assert (
-        resolution.inputs.planning_input.planning_input_digest
-        == packet_binding.planning_input_digest
-    )
-    assert resolution.inputs.packet is packet
-    assert resolution.inputs.current_packet is current_packet
+    assert resolution.inputs is None
+    assert resolution.blocker is not None
+    assert resolution.blocker.code == "research_packet_blocked"
+    assert "source_fact_not_registered" in resolution.blocker.source_codes
+    assert "ev_missing_fact" in resolution.blocker.source_codes
 
 
 def test_legacy_semantic_review_snapshot_keeps_default_loader(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     work_item_id = "content_work_item_legacy"
-    expected_snapshot = object()
+    expected_snapshot = ContentWorkItemWorkflowSnapshotResponse.model_construct(
+        planning_workspace=None,
+        revision_workspace=None,
+    )
 
     monkeypatch.setattr(
         content_workflow_router,
