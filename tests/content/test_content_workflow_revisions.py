@@ -7,11 +7,15 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from apps.api.wilq_api.routers import content_workflow as content_workflow_router
 from apps.api.wilq_api.routers.content_workflow import _revision_conflict_response
-from wilq.content.workflow.contracts.contracts import ContentDraftRevisionSaveRequest
+from wilq.content.workflow.contracts.contracts import (
+    ContentDraftRevisionSaveRequest,
+    ContentDraftRevisionWorkspace,
+)
 from wilq.content.workflow.documents.codex_revision_commit import (
     ContentDraftRevisionContext,
     current_editor_draft_context_guard,
@@ -343,17 +347,22 @@ def test_editor_save_route_rechecks_planning_digest_at_append(
                 intended_final_url=expected.final_canonical_url,
             )
         ),
-        revision_workspace=SimpleNamespace(
+        revision_workspace=ContentDraftRevisionWorkspace(
+            status="unreviewed",
             latest_revision=first,
-            can_save=True,
+            revision_count=1,
             context_current=True,
+            editor_title=first.title,
+            editor_sections=first.sections,
+            can_save=True,
+            can_review=False,
             safe_next_step="Odśwież workspace.",
         ),
         planning_workspace=SimpleNamespace(section_map_current=True),
     )
     monkeypatch.setattr(
         content_workflow_router,
-        "_snapshot_for_work_item_or_404",
+        "semantic_review_snapshot_for_work_item_or_404",
         lambda _work_item_id: snapshot,
     )
     monkeypatch.setattr(
@@ -387,6 +396,7 @@ def test_editor_save_route_rechecks_planning_digest_at_append(
         request,
     )
 
+    assert isinstance(response, JSONResponse)
     assert response.status_code == 409
     assert json.loads(response.body)["code"] == "stale_context"
     assert store.list_draft_revisions(first.work_item_id) == [first]
