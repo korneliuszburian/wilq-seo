@@ -98,6 +98,7 @@ def test_refresh_runtime_failure_preserves_trace_terminal_status_and_error(
     }
     assert result.blockers[0].model_dump(mode="json") == {
         "code": "runtime_blocked",
+        "owner": None,
         "label": "Codex nie zwrócił pełnego tekstu",
         "reason": "App-server nie zakończył turnu poprawnym ustrukturyzowanym dokumentem.",
         "next_step": "Sprawdź runtime i rozpocznij nową próbę; WILQ nic nie zapisał.",
