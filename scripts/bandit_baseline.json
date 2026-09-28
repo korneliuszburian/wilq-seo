@@ -2,7 +2,7 @@
   "version": 1,
   "findings": [
     {"path":"apps/api/wilq_api/routers/content_source_pack_v3.py","line":116,"test_id":"B101","severity":"LOW","confidence":"HIGH","code_sha256":"6c0fa3dc1c1b14f7275520e0c4aa674dbfe28e43248090b52e5d74d7d5a13113","count":1},
-    {"path":"wilq/audit/trusted_local_confirmation.py","line":274,"test_id":"B112","severity":"LOW","confidence":"HIGH","code_sha256":"790e7eeed221d326f4e69f13415e6026878fecf8e7fb283f8bd976fc206fa995","count":1},
+    {"path":"wilq/audit/trusted_local_confirmation.py","line":275,"test_id":"B112","severity":"LOW","confidence":"HIGH","code_sha256":"bd36388d7275775628558aa29cd33567e9ddb3f1cc8a313bc8e1eadd8c29de61","count":1},
     {"path":"wilq/content/regulatory/source_selection.py","line":29,"test_id":"B101","severity":"LOW","confidence":"HIGH","code_sha256":"c6f828bdc8cbac602045872357e96c5e08cac09fbfc215012bdbabeb91e869f8","count":1},
     {"path":"wilq/content/regulatory/source_selection.py","line":30,"test_id":"B101","severity":"LOW","confidence":"HIGH","code_sha256":"3836e1312ceb073051b604d873715f826386a2342e012b9fc98d5d743cb5e2c0","count":1},
     {"path":"wilq/content/workflow/_source_fact_authority_snapshot.py","line":255,"test_id":"B101","severity":"LOW","confidence":"HIGH","code_sha256":"4c69d2c673df6746cfd5800ebbea33e0aa72ae836270d97f53525b757265d261","count":1},

@@ -102,9 +102,10 @@ def test_attempt_zero_keeps_historical_authority_identity_and_json_readable() ->
     identity_binding_id = "content_delivery_identity_bdo"
     source_fact_ids = ("ekologus_public_bdo_faq_2026_07_01",)
 
+    # Static digest fixture; not a credential.
     assert (
         source_fact_authority_proposal_digest(identity_binding_id, source_fact_ids)
-        == "d9197eec0c1f2e98ca317eceed4de644157eeb056e269a0f6c66bbfcf323a852"
+        == "d9197eec0c1f2e98ca317eceed4de644157eeb056e269a0f6c66bbfcf323a852"  # pragma: allowlist secret  # noqa: E501
     )
     assert (
         source_fact_authority_action_id(identity_binding_id, source_fact_ids)
