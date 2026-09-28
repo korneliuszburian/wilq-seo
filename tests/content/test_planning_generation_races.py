@@ -97,7 +97,10 @@ def test_legacy_no_pack_parallel_posts_block_before_worker_submission(
     payloads = [json.loads(response.body) for response in responses]
     assert [response.status_code for response in responses] == [409, 409]
     assert [payload["status"] for payload in payloads] == ["blocked", "blocked"]
-    assert all(payload["blockers"][0]["code"] == "research_packet_missing" for payload in payloads)
+    assert all(
+        payload["blockers"][0]["code"] == "research_packet_action_required"
+        for payload in payloads
+    )
     assert executor.calls == 0
 
 
@@ -372,9 +375,10 @@ def test_legacy_no_pack_snapshot_reads_and_post_do_not_create_planning_jobs(
     created_payload = json.loads(created.body)
     assert created.status_code == 409
     assert created_payload["status"] == "blocked"
-    assert created_payload["blockers"][0]["code"] == "research_packet_missing"
+    assert created_payload["blockers"][0]["code"] == "research_packet_action_required"
     assert _planning_generation_job_count(store.path) == 0
     assert executor.calls == 0
+    assert runtime.calls == 0
 
 
 def _planning_endpoint(method: str, *, snapshot: Any) -> Any:
