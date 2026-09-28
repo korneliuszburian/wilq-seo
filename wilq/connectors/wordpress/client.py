@@ -11,16 +11,18 @@ import httpx
 
 from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress import html_material
-from wilq.connectors.wordpress.errors import WordPressDraftReadError
+from wilq.connectors.wordpress.errors import WordPressDraftReadError as WordPressDraftReadError
 from wilq.connectors.wordpress.inventory import (
     WORDPRESS_CONTENT_PER_PAGE,
     WORDPRESS_CONTENT_TYPES,
     WORDPRESS_READ_FIELDS,
     WordPressInventoryPayloadError,
-    _HtmlMetadataParser,
     acf_inventory,
     content_inventory,
     fetch_content_inventory,
+)
+from wilq.connectors.wordpress.inventory import (
+    _HtmlMetadataParser as _HtmlMetadataParser,
 )
 from wilq.connectors.wordpress.text import (
     clean_metadata_text,

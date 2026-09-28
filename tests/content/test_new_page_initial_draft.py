@@ -366,7 +366,7 @@ def test_new_page_run_record_uses_project_model_policy_for_prompt_audit(
     assert result.status == "created"
     assert result.run_id is not None
     run = next(run for run in case.run_store.list_codex_runs() if run.id == result.run_id)
-    assert run.model == "gpt-5.6-terra"
+    assert run.model == "gpt-6-luna"
     assert run.model_reasoning_effort == "max"
     assert run.prompt_digest == sha256(client.requests[0].instruction.encode()).hexdigest()
     assert run.prompt_template_id is not None
@@ -467,6 +467,7 @@ def test_new_page_runtime_failure_preserves_historical_terminal_payload(
     }
     assert result.blockers[0].model_dump(mode="json") == {
         "code": "runtime_failed",
+        "owner": None,
         "label": "Nie utworzono dokumentu nowej strony",
         "reason": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
         "next_step": "Codex nie zwrócił poprawnego dokumentu; nic nie zapisano.",
@@ -494,6 +495,7 @@ def test_new_page_goal_mismatch_preserves_historical_blocker_copy(
     assert result.status == "blocked"
     assert result.blockers[0].model_dump(mode="json") == {
         "code": "proposal_mismatch",
+        "owner": None,
         "label": "Nie utworzono dokumentu nowej strony",
         "reason": "Odśwież dokładny plan przed generowaniem.",
         "next_step": "Odśwież dokładny plan przed generowaniem.",

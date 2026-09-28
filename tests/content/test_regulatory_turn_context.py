@@ -61,7 +61,14 @@ def test_planning_and_draft_turns_share_the_assertion_context(
         StructuredDraftGenerationContract,
         SimpleNamespace(model_input=SimpleNamespace(model_dump=lambda *, mode: {})),
     )
-    expected = regulatory_document_assertion_context(planning_input)
+    expected = [
+        {
+            "requirement_id": "access",
+            "assertion_id": "roles",
+            "label": "Role i uprawnienia",
+            "required_any_of": ["rola", "uprawnien"],
+        }
+    ]
     projected_inputs: list[ContentPlanningInput] = []
 
     def shared_projection(value: ContentPlanningInput) -> list[dict[str, object]]:
@@ -84,15 +91,28 @@ def test_planning_and_draft_turns_share_the_assertion_context(
         generation_contract=generation_contract,
     )
 
-    planning_assertions = json.loads(planning_turn.application_context)[
-        "regulatory_document_assertions"
+    planning_application_context = json.loads(planning_turn.application_context)
+    planning_untrusted_context = json.loads(planning_turn.untrusted_context)
+    planning_requirements = planning_untrusted_context["planning_input"][
+        "regulatory_coverage"
+    ]["requirements"]
+    planning_assertions = [
+        {
+            "requirement_id": requirement["id"],
+            "assertion_id": assertion["id"],
+            "label": assertion["label"],
+            "required_any_of": assertion["required_any_of"],
+        }
+        for requirement in planning_requirements
+        for assertion in requirement["document_assertions"]
     ]
     draft_assertions = json.loads(draft_turn.application_context)[
         "regulatory_document_assertions"
     ]
+    assert "regulatory_document_assertions" not in planning_application_context
     assert planning_assertions == expected
     assert draft_assertions == expected
-    assert projected_inputs == [planning_input, planning_input]
+    assert projected_inputs == [planning_input]
 
 
 def test_approved_regulatory_facts_filter_is_shared(

@@ -36,6 +36,7 @@ ContentRefreshPreparationBlockerCode = Literal[
     "production_classification_item_missing",
     "refresh_preparation_alias_not_current",
     "refresh_preparation_decision_not_refresh",
+    "refresh_preparation_protected_revision_reconciliation_required",
     "stale_production_classification",
     "refresh_preparation_service_required",
     "refresh_preparation_service_unavailable",

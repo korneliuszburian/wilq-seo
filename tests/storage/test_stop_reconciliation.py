@@ -28,6 +28,10 @@ from wilq.storage.local_state_stop_reconciliation import SqliteStopReconciliatio
 from wilq.storage.model_json import model_json
 from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
 
+UNSUPPORTED_SCHEMA_VERSION_PATTERN = (
+    r"^Stop reconciliation apply requires SQLite schema version 6, 7, 8, "
+    rf"{SQLITE_SCHEMA_VERSION}$"
+)
 SOURCE_FIXED_POINT = "test-source-fixed-point"
 BATCH_ID = "run_s5_batch_20260824"
 GENERATED_AT = datetime(2026, 8, 24, 12, 0, tzinfo=UTC)
@@ -386,7 +390,10 @@ def test_dry_run_rejects_unsupported_schema_before_classification(tmp_path: Path
     manifest = _manifest(state_path)
     before = state_path.read_bytes()
 
-    with pytest.raises(StopReconciliationManifestError, match="schema version 6, 7, 8, 11"):
+    with pytest.raises(
+        StopReconciliationManifestError,
+        match=UNSUPPORTED_SCHEMA_VERSION_PATTERN,
+    ):
         plan_stop_reconciliation(
             LocalStateStore(state_path),
             manifest=manifest,
@@ -412,7 +419,7 @@ def test_apply_rejects_unsupported_schema_before_transaction(tmp_path: Path) -> 
 
     with pytest.raises(
         StopReconciliationManifestError,
-        match="schema version 6, 7, 8, 11",
+        match=UNSUPPORTED_SCHEMA_VERSION_PATTERN,
     ) as failure:
         _apply(store=LocalStateStore(state_path), manifest=manifest, backup_path=backup_path)
 

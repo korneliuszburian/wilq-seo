@@ -129,20 +129,23 @@ record that state rather than silently publishing.
 ## Execution and review protocol
 
 - **Codex is the implementation executor.** Run it non-interactively with
-  Terra at maximum reasoning effort and capture the result:
-  `codex exec --ephemeral -m gpt-5.6-terra -c 'model_reasoning_effort="max"' -C <workdir> -o <last-message-file> "<task>"`
+  `gpt-6-luna` at maximum reasoning effort and capture the result:
+  `codex exec --ephemeral -m gpt-6-luna -c 'model_reasoning_effort="max"' -C <workdir> -o <last-message-file> "<task>"`
   (add `-s read-only` unless the slice explicitly authorizes writes,
   `--json` for an inspectable trace, `--approve-for-me` only for authorized
-  workspace-write slices). Use `gpt-5.6-luna` at `max` for bounded,
-  high-volume execution or independent review when it fits the task. Do not
-  delegate to `gpt-5.6-sol` unless the owner explicitly reauthorizes it.
-- **The opencode agent is the reviewer.** It owns the task contract, delegates
+  workspace-write slices). Reserve `gpt-6-sol` at `max` for genuinely difficult
+  architectural questions and `gpt-6-astra` at `max` for the hardest ones.
+  Never start a new task or an embedded WILQ app-server turn on a `gpt-5.6` model;
+  historical run records may retain their actual model identity.
+- **The delivery owner is the reviewer.** It owns the task contract, delegates
   execution to Codex, verifies every Codex claim against local evidence
   (re-run the focused falsifier, inspect the diff), records proof in the
-  active Bead, and decides. Codex proposes; the reviewer verifies and commits.
+  active Bead, and decides. Codex proposes; the owner verifies and commits.
 - Codex never owns workflow state, approval, Beads, publication, or vendor
-  mutation. A second-opinion pass (e.g. `opencode-second-opinion`) is a
-  read-only advisory layer; the owner runs it and dispositions its findings.
+  mutation. If an advisory model pass is useful, use only a fresh read-only
+  Codex context over a bounded fixed artifact. A same-family pass is not
+  independent approval; verify and disposition each finding locally. Do not
+  invoke OpenCode or DeepSeek for this repository.
 - Keep WIP at one: exactly one implementation Bead may be `in_progress`. Do
   not claim another Bead to bypass a blocker or to parallelize investigation.
   This applies regardless of the agent's named role or invoked skill; a

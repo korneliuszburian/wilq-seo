@@ -35,6 +35,7 @@ from wilq.content.workflow.source_pack_binding import (
     source_fact_registry_digest,
 )
 from wilq.content.workflow.store.store import ContentWorkflowStore
+from wilq.storage.schema_versions import SQLITE_SCHEMA_VERSION
 
 SOURCE_PACK_ID = "source_pack_bdo_2026_09"
 SOURCE_PACK_HASH = "a" * 64
@@ -59,7 +60,9 @@ def test_schema_v8_store_is_upgraded_before_source_pack_write(tmp_path: Path) ->
     assert store.load_content_source_pack_binding("missing") is None
 
     with sqlite3.connect(path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone() == (11,)
+        assert connection.execute("PRAGMA user_version").fetchone() == (
+            SQLITE_SCHEMA_VERSION,
+        )
         assert connection.execute(
             """
             SELECT 1 FROM sqlite_master

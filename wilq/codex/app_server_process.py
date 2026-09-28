@@ -101,7 +101,7 @@ def prepare_codex_app_server_launch(root: Path) -> CodexAppServerLaunch:
     if selection is None:
         raise CodexAppServerProcessFailure(
             "codex_model_policy_invalid",
-            "Wbudowana polityka app-servera WILQ musi wskazywać gpt-5.6-terra z wysiłkiem max.",
+            "Wbudowana polityka app-servera WILQ musi wskazywać gpt-6-luna z wysiłkiem max.",
         )
     runtime = _prepare_isolated_runtime(root)
     return CodexAppServerLaunch(

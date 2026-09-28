@@ -323,7 +323,7 @@ def _editor_client(
 
     monkeypatch.setattr(
         workflow_router,
-        "_snapshot_for_work_item_or_404",
+        "semantic_review_snapshot_for_work_item_or_404",
         snapshot_loader,
     )
     monkeypatch.setattr(workflow_router, "_editor_save_context", lambda _snapshot: context)

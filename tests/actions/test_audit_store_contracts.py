@@ -160,7 +160,7 @@ def test_audit_details_for_operator_keeps_only_canonical_digest_values() -> None
         "planning_digest": "[REDACTED]",
         "service_digest": "[REDACTED]",
         "unknown_digest": "[REDACTED]",
-        "trusted_local_confirmation_grant_digest": "[REDACTED]",
+        "trusted_local_confirmation_grant_digest": valid_digest,
         "payload-digest": "[REDACTED]",
         "nested": {
             "prompt_digest": valid_digest,

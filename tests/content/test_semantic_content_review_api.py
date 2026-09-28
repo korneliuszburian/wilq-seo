@@ -650,11 +650,13 @@ def test_semantic_turn_rejects_unmapped_draftable_section() -> None:
 def test_stale_semantic_run_becomes_terminal_after_deadline(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    now = datetime.now(UTC)
     old = CodexRun(
         id="codex_content_semantic_review_old",
         hook="content_semantic_review",
         status="started",
-        started_at=datetime.now(UTC) - timedelta(seconds=301),
+        started_at=now - timedelta(seconds=301),
+        deadline_at=now - timedelta(seconds=1),
         used_endpoints=["/api/content/work-items/work/draft-revisions/revision/semantic-review"],
     )
     saved: list[CodexRun] = []

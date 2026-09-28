@@ -13,8 +13,10 @@ from wilq.connectors.wordpress.inventory_metadata import (
     WORDPRESS_METADATA_TIMEOUT_SECONDS,
     WORDPRESS_SECTION_HEADING_LIMIT,
     _enrich_sitemap_objects_with_page_metadata,
-    _HtmlMetadataParser,  # noqa: F401 - compatibility export for WordPress material reads
     _summary_text,
+)
+from wilq.connectors.wordpress.inventory_metadata import (
+    _HtmlMetadataParser as _HtmlMetadataParser,
 )
 from wilq.connectors.wordpress.sitemap_policy import is_commerce_only_url
 from wilq.connectors.wordpress.sitemap_read import (

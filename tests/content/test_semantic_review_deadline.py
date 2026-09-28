@@ -207,7 +207,28 @@ def test_parallel_claims_share_one_semantic_run(tmp_path) -> None:
     ) == 1
 
 
-def test_claim_terminalizes_legacy_started_run_without_deadline(tmp_path) -> None:
+@pytest.mark.parametrize(
+    ("age_seconds", "timeout_seconds", "environment_timeout_seconds", "replaced"),
+    [
+        pytest.param(301, 180, None, False, id="caller-timeout-does-not-shorten"),
+        pytest.param(301, 211, 211, False, id="environment-timeout-does-not-shorten"),
+        pytest.param(901, 180, 211, True, id="conservative-fallback-expires"),
+    ],
+)
+def test_legacy_started_run_uses_conservative_deadline(
+    tmp_path,
+    monkeypatch,
+    age_seconds: int,
+    timeout_seconds: int,
+    environment_timeout_seconds: int | None,
+    replaced: bool,
+) -> None:
+    env_name = "WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS"
+    if environment_timeout_seconds is None:
+        monkeypatch.delenv(env_name, raising=False)
+    else:
+        monkeypatch.setenv(env_name, str(environment_timeout_seconds))
+
     db = tmp_path / "state.sqlite3"
     run_store = LocalStateStore(db)
     review_store = ContentSemanticReviewStore(db)
@@ -217,7 +238,7 @@ def test_claim_terminalizes_legacy_started_run_without_deadline(tmp_path) -> Non
         hook="content_semantic_review",
         source="wilq_api",
         status="started",
-        started_at=datetime.now(UTC) - timedelta(seconds=301),
+        started_at=datetime.now(UTC) - timedelta(seconds=age_seconds),
         planning_input_digest="b" * 64,
         used_endpoints=[endpoint],
         evidence_ids=["ev"],
@@ -231,52 +252,28 @@ def test_claim_terminalizes_legacy_started_run_without_deadline(tmp_path) -> Non
         endpoint=endpoint,
         evidence_ids=["ev"],
         planning_input_digest="b" * 64,
-        timeout_seconds=180,
+        timeout_seconds=timeout_seconds,
     )
 
-    assert claim.newly_claimed is True
     assert claim.run is not None
-    assert claim.run.id != legacy.id
-    persisted = next(
-        run for run in run_store.list_codex_runs() if run.id == legacy.id
-    )
-    assert persisted.status == "failed"
-    assert persisted.error == "semantic_review_timeout"
+    persisted_by_id = {run.id: run for run in run_store.list_codex_runs()}
+    expected_run_ids = {legacy.id}
+    if replaced:
+        assert claim.newly_claimed is True
+        assert claim.run.id != legacy.id
+        expected_run_ids.add(claim.run.id)
+        assert persisted_by_id[legacy.id].status == "failed"
+        assert persisted_by_id[legacy.id].error == "semantic_review_timeout"
+        assert claim.run.status == "started"
+        assert persisted_by_id[claim.run.id] == claim.run
+    else:
+        assert claim.newly_claimed is False
+        assert claim.run.id == legacy.id
+        assert claim.run.status == "started"
+        assert persisted_by_id[legacy.id].status == "started"
+        assert persisted_by_id[legacy.id].error is None
 
-
-def test_legacy_deadline_uses_one_conservative_fallback(tmp_path, monkeypatch) -> None:
-    monkeypatch.setenv("WILQ_SEMANTIC_REVIEW_CODEX_TIMEOUT_SECONDS", "211")
-    db = tmp_path / "state.sqlite3"
-    run_store = LocalStateStore(db)
-    review_store = ContentSemanticReviewStore(db)
-    endpoint = "/api/content/work-items/work/draft-revisions/revision/semantic-review"
-    legacy = CodexRun(
-        id="codex_content_semantic_review_legacy_211",
-        hook="content_semantic_review",
-        source="wilq_api",
-        status="started",
-        started_at=datetime.now(UTC) - timedelta(seconds=190),
-        planning_input_digest="b" * 64,
-        used_endpoints=[endpoint],
-    )
-    run_store.save_codex_run(legacy)
-
-    claim = review_store.claim_run(
-        work_item_id="work",
-        revision_id="revision",
-        revision_digest="a" * 64,
-        endpoint=endpoint,
-        evidence_ids=["ev"],
-        planning_input_digest="b" * 64,
-        timeout_seconds=211,
-    )
-
-    assert claim.newly_claimed is True
-    persisted = next(
-        run for run in run_store.list_codex_runs() if run.id == legacy.id
-    )
-    assert persisted.status == "failed"
-    assert persisted.error == "semantic_review_timeout"
+    assert set(persisted_by_id) == expected_run_ids
 
 
 def test_commit_timeout_preserves_source_code_in_run_error() -> None:

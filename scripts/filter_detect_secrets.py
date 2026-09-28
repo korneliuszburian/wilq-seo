@@ -27,6 +27,31 @@ TARGET_MAPPING_SNAPSHOT = "docs/content-keep-target-mapping-snapshot-20260828.js
 STATE_JOURNAL = "docs/content-dev-state-journal-20260828.json"
 
 LOWER_HEX_64 = re.compile(r"[0-9a-f]{64}")
+BEADS_ISSUES = ".beads/issues.jsonl"
+BEADS_LINEAGE_ISSUE_ID = "wilq-seo-y980"
+BEADS_LINEAGE_NOTE_LABELS = ("Fixed point:", "Plan SHA-256:", "Edge SHA-256:")
+BEADS_LINEAGE_NOTE = re.compile(
+    r"\AFixed point: (?P<fixed_point>[0-9a-f]{40})\. "
+    r"Plan SHA-256: (?P<plan_sha256>[0-9a-f]{64})\. "
+    r"Edge SHA-256: (?P<edge_sha256>[0-9a-f]{64})\."
+)
+BEADS_LINEAGE_NOTES_SHA256 = (
+    "09ca7bcf7cbdfd035232ab207f5d4a5aac75434339bcc790bcec1cefe8eb682c"  # pragma: allowlist secret
+)
+BEADS_LINEAGE_SHA1_BY_FIELD = {
+    # Reviewed lineage fingerprint, not a credential.
+    "fixed_point": (
+        "9d9f7e0ef15e4147f7a365f62db939d90e578e5d"  # pragma: allowlist secret
+    ),
+    # Reviewed lineage fingerprint, not a credential.
+    "plan_sha256": (
+        "e45acf3286152ef146b6150a00645a9517667206"  # pragma: allowlist secret
+    ),
+    # Reviewed lineage fingerprint, not a credential.
+    "edge_sha256": (
+        "fc9c49b9be783618fe41bbaffff85d38cf4950be"  # pragma: allowlist secret
+    ),
+}
 SAFE_REGULATORY_EVIDENCE_ID = re.compile(r"ev_regulatory_source_review_[0-9a-f]{24}")
 SAFE_TARGET_MAPPING_ENDPOINT = "".join(
     (
@@ -93,7 +118,11 @@ def filter_detect_secrets_results(
             filtered[relative_path] = raw_findings
             continue
 
-        allowed = _allowed_finding_identities(relative_path, repository_root)
+        allowed = (
+            _validated_beads_issue_finding_identities(raw_findings, repository_root)
+            if relative_path == BEADS_ISSUES
+            else _allowed_finding_identities(relative_path, repository_root)
+        )
         remaining = [
             finding
             for finding in raw_findings
@@ -153,6 +182,56 @@ def _allowed_finding_identities(
                     candidate.hashed_secret,
                 )
             )
+    return allowed
+
+
+def _validated_beads_issue_finding_identities(
+    findings: Sequence[object], repository_root: Path
+) -> set[tuple[str, int, str, str]]:
+    try:
+        source_lines = (repository_root / BEADS_ISSUES).read_text(encoding="utf-8").splitlines()
+        issue_rows: list[tuple[int, dict[str, Any]]] = []
+        for line_number, line in enumerate(source_lines, start=1):
+            record = json.loads(line, object_pairs_hook=_reject_duplicate_keys)
+            if isinstance(record, dict) and record.get("id") == BEADS_LINEAGE_ISSUE_ID:
+                issue_rows.append((line_number, record))
+    except (OSError, UnicodeError, ValueError):
+        return set()
+
+    if len(issue_rows) != 1:
+        return set()
+    line_number, record = issue_rows[0]
+    notes = record.get("notes")
+    metadata = record.get("metadata")
+    if not isinstance(notes, str) or not isinstance(metadata, dict):
+        return set()
+    if any(notes.count(label) != 1 for label in BEADS_LINEAGE_NOTE_LABELS):
+        return set()
+    if hashlib.sha256(notes.encode("utf-8")).hexdigest() != BEADS_LINEAGE_NOTES_SHA256:
+        return set()
+
+    note_match = BEADS_LINEAGE_NOTE.match(notes)
+    if note_match is None:
+        return set()
+    lineage_values = note_match.groupdict()
+    if any(metadata.get(key) != value for key, value in lineage_values.items()):
+        return set()
+
+    allowed: set[tuple[str, int, str, str]] = set()
+    for field, expected_hashed_secret in BEADS_LINEAGE_SHA1_BY_FIELD.items():
+        value = lineage_values[field]
+        hashed_secret = hashlib.sha1(value.encode("utf-8"), usedforsecurity=False).hexdigest()
+        if hashed_secret != expected_hashed_secret:
+            return set()
+        allowed.add((BEADS_ISSUES, line_number, HEX_HIGH_ENTROPY, expected_hashed_secret))
+
+    finding_identities = {
+        identity
+        for finding in findings
+        if (identity := _finding_identity(finding, BEADS_ISSUES)) is not None
+    }
+    if len(finding_identities) != len(findings) or finding_identities != allowed:
+        return set()
     return allowed
 
 

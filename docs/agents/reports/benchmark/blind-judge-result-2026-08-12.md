@@ -5,7 +5,7 @@ publikacją ani aprobatą człowieka; bieżący stan prowadzą PLANS, Beads, CSV
 
 ## Metoda
 
-- Sędzia: Codex SOL-ULTRA (gpt-5.6-sol, read-only), na wejściu
+- Historyczny sędzia: Codex SOL-ULTRA (gpt-5.6-sol, read-only), na wejściu
   `docs/agents/reports/benchmark/llm-judge-input.json`.
 - Pary `text_a`/`text_b` NIE były oznaczone (blind). Sędzia nie znał, które
   jest istniejącą stroną WordPress, a które rewizją WILQ.

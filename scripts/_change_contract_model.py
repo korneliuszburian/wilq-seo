@@ -60,6 +60,10 @@ _PROOFS: dict[tuple[str, str], ProofCommand] = {
         "scripts/test.sh",
         "tests/scripts/test_changes_check.py::test_changes_check_observes_before_state_through_candidate_snapshot",
     ),
+    ("security-gate", "bandit-regression-baseline"): (
+        "scripts/test.sh",
+        "tests/test_security_script_contract.py::test_security_gate_uses_reviewed_bandit_baseline",
+    ),
     ("complexity-audit", "shrinking-frozen-facade"): (
         "scripts/test.sh",
         "tests/test_audit_complexity.py::test_frozen_growth_gate_accepts_a_shrinking_facade",
@@ -618,6 +622,11 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-preparation", "exact-downstream-receipts")
             else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
             if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
+            else (
+                "tests/test_security_script_contract.py::"
+                "test_security_gate_uses_reviewed_bandit_baseline",
+            )
+            if key == ("security-gate", "bandit-regression-baseline")
             else _test_selectors(proof)
         ),
         observer_paths=(
@@ -652,6 +661,8 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
             if key == ("current-preparation", "exact-downstream-receipts")
             else ("tests/content/test_source_fact_authority_attempt_change_contract.py",)
             if key == ("source-fact-source-pack", "exact-reviewed-row-consumption")
+            else ("tests/test_security_script_contract.py",)
+            if key == ("security-gate", "bandit-regression-baseline")
             else ("tests/content/test_current_page_evidence.py",)
             if key == ("current-page-evidence", "stable-per-url-material-meaning")
             else ("tests/content/test_current_page_disposition_v2_action.py",)
@@ -673,6 +684,7 @@ _MAPPINGS: dict[tuple[str, str], MappingDescriptor] = {
         allow_new_mapping=key
         in {
             ("change-contract-gate", "observed-before-state"),
+            ("security-gate", "bandit-regression-baseline"),
             ("complexity-audit", "shrinking-frozen-facade"),
             ("complexity-audit", "unchanged-hotspot-budget"),
             ("material-review-ui", "explicit-exact-attestation"),

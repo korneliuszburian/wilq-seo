@@ -6,7 +6,7 @@ import {
   type ContentIntakeQueueItem
 } from "./content_intake";
 
-const DIGEST = "c47b408cbdf7d42231f3a277e6294e1ea74266dc18718c4b8a14173ec248171b";
+const DIGEST = "c47b408cbdf7d42231f3a277e6294e1ea74266dc18718c4b8a14173ec248171b"; // pragma: allowlist secret (fixture digest; not a credential)
 
 function blockedItem(): ContentIntakeQueueItem {
   return ContentIntakeQueueItemSchema.parse({

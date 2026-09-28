@@ -178,9 +178,10 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
         'web_search="disabled"',
         "mcp_servers={}",
         "features.remote_models=false",
-        'model="gpt-5.6-terra"',
+        'model="gpt-6-luna"',
         'model_reasoning_effort="max"',
     } <= overrides
+    assert 'model="gpt-5.6-terra"' not in overrides
     assert 'model="gpt-5.6-sol"' not in overrides
     assert 'model_reasoning_effort="ultra"' not in overrides
     assert not any(value.startswith("model_provider=") for value in overrides)
@@ -193,7 +194,7 @@ def test_structured_turn_isolates_login_and_disables_runtime_capabilities(
     assert thread["dynamicTools"] == []
     assert thread["config"]["web_search"] == "disabled"
     assert thread["config"]["mcp_servers"] == {}
-    assert payload["turn_params"]["model"] == "gpt-5.6-terra"
+    assert payload["turn_params"]["model"] == "gpt-6-luna"
     assert payload["turn_params"]["effort"] == "max"
     turn = payload["turn_params"]
     assert turn["environments"] == []
@@ -240,6 +241,7 @@ def test_structured_turn_classifies_protocol_failures(
     [
         "",
         'model = "gpt-5.6-sol"\nmodel_reasoning_effort = "max"\n',
+        'model = "gpt-5.6-terra"\nmodel_reasoning_effort = "max"\n',
         'model = "gpt-5.6-terra"\nmodel_reasoning_effort = "high"\n',
     ],
 )
@@ -255,13 +257,23 @@ def test_invalid_owner_project_model_policy_does_not_change_embedded_selection(
     assert model_policy.configured_codex_runtime_selection() is None
     embedded = model_policy.embedded_codex_runtime_selection()
     assert embedded is not None
-    assert embedded.model == "gpt-5.6-terra"
+    assert embedded.model == "gpt-6-luna"
     assert embedded.model_reasoning_effort == "max"
 
 
+@pytest.mark.parametrize(
+    ("constant", "value"),
+    [
+        ("_CONTENT_RUNTIME_MODEL", "gpt-5.6-sol"),
+        ("_CONTENT_RUNTIME_MODEL", "gpt-5.6-terra"),
+        ("_CONTENT_RUNTIME_REASONING_EFFORT", "high"),
+    ],
+)
 def test_embedded_policy_fails_closed_when_pinned_constant_is_unsupported(
     monkeypatch: MonkeyPatch,
+    constant: str,
+    value: str,
 ) -> None:
-    monkeypatch.setattr(model_policy, "_CONTENT_RUNTIME_MODEL", "gpt-5.6-sol")
+    monkeypatch.setattr(model_policy, constant, value)
 
     assert model_policy.embedded_codex_runtime_selection() is None

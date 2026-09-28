@@ -15,6 +15,7 @@ import json
 import os
 import secrets
 import sqlite3
+import string
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -614,7 +615,13 @@ def _b64url_encode(value: bytes) -> str:
 
 
 def _b64url_decode(value: str) -> bytes:
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    # The base64url alphabet is a public constant, not a credential.
+    alphabet = (
+        string.ascii_uppercase
+        + string.ascii_lowercase
+        + string.digits
+        + "-_"
+    )
     if not value or any(character not in alphabet for character in value):
         raise ValueError("Invalid base64url value")
     return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))

@@ -62,7 +62,9 @@ def test_rebind_adapter_records_supersession_and_mints_the_identity(tmp_path) ->
         workflow_store=store,
         audit_store_factory=lambda: None,
     )
-    assert blockers == ["Exact preview, approved review, confirmation and impact check are required."]
+    assert blockers == [
+        "Exact preview, approved review, confirmation and impact check are required."
+    ]
 
     result, blockers = execute_local_content_mutation_adapter(
         action,

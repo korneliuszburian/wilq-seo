@@ -9,7 +9,7 @@ const READ_BACK = {
   schema_version: "wilq_content_intake_v1" as const,
   queue_id: "content_intake_c47b408cbdf7d42231f3a277",
   request_id: "11111111-1111-4111-8111-111111111111",
-  input_digest: "c47b408cbdf7d42231f3a277e6294e1ea74266dc18718c4b8a14173ec248171b",
+  input_digest: "c47b408cbdf7d42231f3a277e6294e1ea74266dc18718c4b8a14173ec248171b", // pragma: allowlist secret (fixture digest; not a credential)
   actor_id: "local_operator",
   actor_trust_level: "local_unverified" as const,
   status: "queued" as const,

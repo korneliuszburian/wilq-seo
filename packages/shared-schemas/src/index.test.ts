@@ -3718,6 +3718,21 @@ describe("MerchantDiagnosticsResponseSchema", () => {
         },
         supported_actions: ["merchant_feed_issue"]
       },
+      data_readiness: {
+        state: "refresh_available",
+        state_label: "Wymagany odczyt danych",
+        reason:
+          "Źródło jest skonfigurowane, ale WILQ nie ma jeszcze utrwalonych metryk do tej decyzji.",
+        coverage_label: "Brak potwierdzonych metryk do pokazania.",
+        refresh_allowed: true,
+        safe_next_step: "Sprawdź źródło danych przed użyciem metryk w decyzji.",
+        factual_metric_count: 0,
+        factual_metrics: [],
+        evidence_ids: ["ev_refresh_merchant_feed"],
+        connector_id: "google_merchant_center",
+        connector_label: "Merchant Center",
+        latest_refresh_id: "refresh_google_merchant_center_live"
+      },
       latest_refresh: {
         id: "refresh_google_merchant_center_live",
         connector_id: "google_merchant_center",

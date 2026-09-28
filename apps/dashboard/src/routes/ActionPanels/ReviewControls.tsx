@@ -118,7 +118,7 @@ export function ActionHumanReviewControls({ action }: ActionPanelProps) {
           />
         ) : (
           <p className="mt-3 rounded-md border border-risk/30 p-3 text-risk">
-            Brakuje dokładnego pakietu do przeglądu. Odśwież akcję w WILQ.
+            Brakuje dokładnego pakietu do przeglądu. Odśwież propozycję w WILQ.
           </p>
         )
       ) : null}

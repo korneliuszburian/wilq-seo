@@ -14,9 +14,9 @@ MODEL_POLICY_NOTES = [
 
 _SAFE_MODEL_VALUE_LENGTH = 200
 _PROJECT_CODEX_CONFIG_PATH = Path(__file__).resolve().parents[2] / ".codex" / "config.toml"
-_CONTENT_RUNTIME_MODEL = "gpt-5.6-terra"
+_CONTENT_RUNTIME_MODEL = "gpt-6-luna"
 _CONTENT_RUNTIME_REASONING_EFFORT = "max"
-_SUPPORTED_EMBEDDED_MODELS = frozenset({"gpt-5.6-terra"})
+_SUPPORTED_EMBEDDED_MODELS = frozenset({"gpt-6-luna"})
 _SUPPORTED_EMBEDDED_REASONING_EFFORTS = frozenset({"max"})
 
 

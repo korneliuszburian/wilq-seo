@@ -4,10 +4,10 @@ from os import environ
 
 DEFAULT_PLANNING_CODEX_TIMEOUT_SECONDS = 900.0
 # Keep the deadline in one contract. The async API returns a queued state, so
-# the browser request never waits for the model. A live BDO editorial planning
-# turn on gpt-5.6-terra at max effort completed in 613.4 seconds and returned a
-# valid 9-section plan, so the default keeps real margin above that observed
-# need instead of guaranteeing a typed codex_timeout. The explicit zero grace
+# the browser request never waits for the model. The historical live BDO editorial
+# planning turn on gpt-5.6-terra at max effort completed in 613.4 seconds and
+# returned a valid 9-section plan, so the default keeps real margin above that
+# observed need instead of guaranteeing a typed codex_timeout. The explicit zero grace
 # keeps stale-job recovery tied to the same bounded Codex deadline.
 PLANNING_JOB_STALE_GRACE_SECONDS = 0.0
 

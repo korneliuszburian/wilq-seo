@@ -1263,13 +1263,13 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
 ) -> None:
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
     clear_wordpress_env(monkeypatch)
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.test")
-    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://ekologus.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.host == "ekologus.test"
+        assert request.url.host == "www.ekologus.pl"
         if request.url.path == "/wp-json/wp/v2/posts":
             assert request.headers["authorization"].startswith("Basic ")
             assert request.url.params["per_page"] == "100"
@@ -1285,7 +1285,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                         "id": 1,
                         "status": "publish",
                         "modified_gmt": "2026-06-15T10:00:00",
-                        "link": "https://ekologus.test/blog/remediacja/",
+                        "link": "https://www.ekologus.pl/blog/remediacja/",
                         "title": {"rendered": "Remediacja środowiska"},
                     }
                 ],
@@ -1305,7 +1305,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                         "id": 2,
                         "status": "publish",
                         "modified_gmt": "2026-06-16T10:00:00",
-                        "link": "https://ekologus.test/oferta/",
+                        "link": "https://www.ekologus.pl/oferta/",
                         "title": {"rendered": "Oferta Ekologus"},
                     }
                 ],
@@ -1316,7 +1316,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                 text=(
                     '<?xml version="1.0" encoding="UTF-8"?>'
                     '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                    "<sitemap><loc>https://ekologus.test/page-sitemap.xml</loc>"
+                    "<sitemap><loc>https://www.ekologus.pl/page-sitemap.xml</loc>"
                     "<lastmod>2026-06-16T12:00:00+00:00</lastmod></sitemap>"
                     "</sitemapindex>"
                 ),
@@ -1327,7 +1327,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                 text=(
                     '<?xml version="1.0" encoding="UTF-8"?>'
                     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                    "<url><loc>https://ekologus.test/europejski-zielony-lad-co-to-takiego/</loc>"
+                    "<url><loc>https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/</loc>"
                     "<lastmod>2026-06-16T12:00:00+00:00</lastmod></url>"
                     "</urlset>"
                 ),
@@ -1353,11 +1353,13 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
             "sitemap_url_count": 1,
             "sitemap_url_source_count": 1,
             "sitemap_url_returned_count": 1,
+            "sitemap_url_uncovered_count": 0,
             "sitemap_url_truncated": False,
                 "sitemap_url_limit": 2000,
                 "public_sitemap_url_count": 0,
                 "public_sitemap_url_source_count": 0,
                 "public_sitemap_url_returned_count": 0,
+                "public_sitemap_url_uncovered_count": 0,
                 "public_sitemap_url_truncated": False,
         "inventory_coverage_status": "complete",
         "aggregate_data_completeness": "complete",
@@ -1385,7 +1387,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "site_kind": "primary",
         "content_type": "posts",
         "object_id": "1",
-        "content_url": "https://ekologus.test/blog/remediacja/",
+        "content_url": "https://www.ekologus.pl/blog/remediacja/",
         "status": "publish",
         "modified_gmt": "2026-06-15T10:00:00",
         "title_or_h1": "Remediacja środowiska",
@@ -1406,7 +1408,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "site_kind": "primary",
         "content_type": "sitemap",
         "object_id": "",
-        "content_url": "https://ekologus.test/europejski-zielony-lad-co-to-takiego/",
+        "content_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
         "status": "indexed",
         "modified_gmt": "2026-06-16T12:00:00+00:00",
         "title_or_h1": "",

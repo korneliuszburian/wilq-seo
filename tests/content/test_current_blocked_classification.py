@@ -17,11 +17,16 @@ from wilq.content.workflow.decisions.production import (
     WAVE0_PRODUCTION_ACCEPTANCE_POLICY,
     ContentProductionClassificationRun,
     ContentProductionClassificationValidationError,
+    project_content_production_classification,
 )
 from wilq.content.workflow.workspace.catalog import (
     ContentInventoryCatalogItem,
     ContentInventoryCatalogResponse,
     ContentInventoryCoverage,
+)
+from wilq.content.workflow.workspace.production_decision import (
+    ContentProductionDecisionBlocked,
+    build_content_production_decision,
 )
 from wilq.schemas import ConnectorCoveredWindow, ContentFreshnessAssessment
 
@@ -225,6 +230,63 @@ def test_registered_current_inventory_remains_blocked_without_delivery_or_source
         == {"delivery_identity_binding", "source_pack_binding"}
         for row in registered
     )
+
+    protected = next(
+        row
+        for row in registered
+        if row.canonical_path == "/bdo-co-musi-wiedziec-przedsiebiorca"
+    )
+    unprotected = next(
+        row for row in registered if row.blocked_historical_protection is None
+    )
+    assert protected.current_work_item_id is not None
+    assert protected.blocked_historical_protection is not None
+    protection = protected.blocked_historical_protection
+    protected_decision = build_content_production_decision(
+        protected.current_work_item_id,
+        classification=project_content_production_classification(run, protected),
+    )
+    assert isinstance(protected_decision, ContentProductionDecisionBlocked)
+    assert protected_decision.generation_allowed is False
+    assert "revision_binding" not in protected_decision.model_dump()
+    assert protected_decision.reason_pl == (
+        "Historyczna klasyfikacja wskazuje chronioną rewizję; przed dalszą pracą "
+        "trzeba zweryfikować jej dokładną tożsamość i skrót."
+    )
+    assert protected_decision.safe_next_step_pl == (
+        "Przejrzyj w historycznej klasyfikacji dokładny identyfikator chronionej "
+        "rewizji i jej skrót; nie uzgadniaj rewizji wyłącznie na podstawie URL."
+    )
+    operator_guidance = (
+        protected_decision.reason_pl + protected_decision.safe_next_step_pl
+    )
+    assert protection.historical_revision_id not in operator_guidance
+    assert protection.historical_revision_digest not in operator_guidance
+    assert tuple(blocker.code for blocker in protected_decision.blockers) == (
+        "current_content_binding_missing",
+        "protected_revision_reconciliation_required",
+    )
+    protection_blocker = protected_decision.blockers[-1]
+    assert protection_blocker.sources == (protection.current_verification_evidence_id,)
+    assert protection_blocker.blocks_initial_generation is True
+    assert protection_blocker.next_step_pl == (
+        "Przed dalszą pracą przeprowadź review dokładnej pary "
+        f"revision_id={protection.historical_revision_id} i "
+        f"revision_digest={protection.historical_revision_digest}; "
+        "nie uzgadniaj rewizji wyłącznie na podstawie URL."
+    )
+
+    assert unprotected.current_work_item_id is not None
+    unprotected_decision = build_content_production_decision(
+        unprotected.current_work_item_id,
+        classification=project_content_production_classification(run, unprotected),
+    )
+    assert isinstance(unprotected_decision, ContentProductionDecisionBlocked)
+    assert tuple(blocker.code for blocker in unprotected_decision.blockers) == (
+        "current_content_binding_missing",
+    )
+    assert unprotected_decision.reason_pl == unprotected.rationale_pl
+    assert unprotected_decision.safe_next_step_pl == unprotected.next_step_pl
 
 
 def test_current_builder_rejects_stale_state_even_when_refresh_flag_is_false() -> None:

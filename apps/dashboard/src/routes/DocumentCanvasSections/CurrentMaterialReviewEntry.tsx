@@ -10,7 +10,7 @@ export function CurrentMaterialReviewEntry({ workItemId }: { workItemId: string 
   return (
     <div className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
       <p className="font-semibold text-ink">Przegląd obecnej strony</p>
-      <p className="mt-1 leading-5">Otwórz dokładny materiał i zapisz decyzję przez bezpieczną akcję WILQ.</p>
+      <p className="mt-1 leading-5">Otwórz dokładny materiał i zapisz decyzję przez bezpieczną akcję do sprawdzenia w WILQ.</p>
       <button
         type="button"
         onClick={() => preview.mutate()}

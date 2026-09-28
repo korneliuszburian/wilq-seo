@@ -8,8 +8,14 @@ from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_A
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
 )
+from wilq.content.workflow.current_disposition_authority import (
+    CURRENT_DISPOSITION_ACTION_TYPE,
+)
 from wilq.content.workflow.current_page_disposition_v2 import (
     CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE,
+)
+from wilq.content.workflow.delivery_identity_authority import (
+    DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE,
 )
 from wilq.content.workflow.material_review_action_v2 import MATERIAL_REVIEW_ACTION_V2_TYPE
 from wilq.content.workflow.per_url_delivery_identity_authority import (
@@ -102,6 +108,14 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
         PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
     } or (
         action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ) or (
+        action_type == CURRENT_DISPOSITION_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    ) or (
+        action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     )

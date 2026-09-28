@@ -40,7 +40,7 @@ describe("server-owned research packet bindings", () => {
       blocked_claims: [],
       evidence_ids: [],
       source_fact_registry_digest: "",
-      source_facts_digest: "8138e5e9bb95f27b029fa5e119d99c2e9a6b7f44c8a07faada29f295b76297d3",
+      source_facts_digest: "8138e5e9bb95f27b029fa5e119d99c2e9a6b7f44c8a07faada29f295b76297d3", // pragma: allowlist secret (fixture digest; not a credential)
       evidence_ids_digest: "8138e5e9bb95f27b029fa5e119d99c2e9a6b7f44c8a07faada29f295b76297d3",
       freshness: [],
       legal_source_requirements: [],
@@ -59,7 +59,7 @@ describe("server-owned research packet bindings", () => {
     } as const;
     const packetWithDigest = {
       ...packet,
-      packet_digest: "b7c264fcb77a5bc6d253bdc83c54959648c958b195900e2e87382b0dd9b9b860"
+      packet_digest: "b7c264fcb77a5bc6d253bdc83c54959648c958b195900e2e87382b0dd9b9b860" // pragma: allowlist secret (fixture digest; not a credential)
     };
     const digestSpy = vi.spyOn(globalThis.crypto.subtle, "digest");
 

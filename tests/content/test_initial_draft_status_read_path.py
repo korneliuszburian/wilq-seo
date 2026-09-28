@@ -677,11 +677,13 @@ def test_initial_draft_status_uses_latest_generated_plan(monkeypatch) -> None:
 def test_initial_draft_status_terminalizes_a_stalled_current_run(monkeypatch) -> None:
     app = FastAPI()
     endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    now = datetime.now(UTC)
     stale_run = CodexRun(
         id="stalled-initial-draft",
         hook="content_initial_full_draft",
         status="started",
-        started_at=datetime.now(UTC) - timedelta(seconds=2401),
+        started_at=now - timedelta(seconds=2401),
+        deadline_at=now - timedelta(seconds=1),
         used_endpoints=[endpoint],
         proposal_id="current-proposal",
         planning_input_digest="1" * 64,
@@ -1107,11 +1109,13 @@ def test_status_does_not_reuse_a_stale_context_run_for_an_inexact_current_propos
 ) -> None:
     app = FastAPI()
     endpoint = "/api/content/work-items/content_work_item_bdo/initial-draft"
+    now = datetime.now(UTC)
     started_run = CodexRun(
         id="stale-context-run",
         hook="content_initial_full_draft",
         status="started",
-        started_at=datetime(2026, 9, 27, tzinfo=UTC),
+        started_at=now,
+        deadline_at=now + timedelta(hours=1),
         used_endpoints=[endpoint],
         proposal_id="approved-plan-proposal",
         planning_digest="2" * 64,

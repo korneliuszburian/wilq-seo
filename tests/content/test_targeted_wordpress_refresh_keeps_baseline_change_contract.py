@@ -19,9 +19,9 @@ def test_targeted_refresh_preserves_baseline_page_metadata() -> None:
         "WordPress public sitemap inventory seam is required"
     )
 
-    baseline_url = "https://public.example/baseline/"
-    other_baseline_url = "https://public.example/other-baseline/"
-    target_url = "https://public.example/target/"
+    baseline_url = "https://www.ekologus.pl/baseline/"
+    other_baseline_url = "https://www.ekologus.pl/other-baseline/"
+    target_url = "https://www.ekologus.pl/target/"
     labels = {
         "/baseline/": "Baseline",
         "/other-baseline/": "Other baseline",
@@ -57,7 +57,7 @@ def test_targeted_refresh_preserves_baseline_page_metadata() -> None:
         result = fetch_public_sitemap_objects(
             client,
             "https://dev.example",
-            "https://public.example",
+            "https://www.ekologus.pl/",
             priority_urls=[target_url],
         )
 

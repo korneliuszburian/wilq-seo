@@ -425,9 +425,9 @@ def test_planning_snapshot_failure_does_not_create_a_generating_job(
         },
     )
 
-    assert response.status_code == 200
-    assert response.json()["status"] == "failed"
-    assert response.json()["blockers"][0]["code"] == "runtime_failed"
+    assert response.status_code == 409
+    assert response.json()["status"] == "blocked"
+    assert response.json()["blockers"][0]["code"] == "research_packet_action_required"
     assert executor.calls == 0
     assert (
         store.queued_response(

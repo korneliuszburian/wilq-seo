@@ -35,6 +35,12 @@ BLOCKER_COPY: dict[str, tuple[str, str]] = {
         "Receipt refresh nie może przejąć aliasu ani historycznego work itemu.",
         "Otwórz exact current work item wskazany przez bieżącą klasyfikację.",
     ),
+    "protected_revision_reconciliation_required": (
+        "Historyczna klasyfikacja wskazuje chronioną rewizję, której dokładna tożsamość "
+        "wymaga uzgodnienia przed odświeżeniem.",
+        "Przed przygotowaniem refresh ręcznie uzgodnij dokładny identyfikator i skrót "
+        "chronionej rewizji z jej źródłem; nie opieraj uzgodnienia wyłącznie na URL.",
+    ),
     "current_content_binding_missing": (
         "Ten wyjątek dotyczy wyłącznie blocked row z jednym blockerem "
         "current_content_binding_missing.",
@@ -118,7 +124,8 @@ def latest_source_pack(
 
 def is_safe_blocked_row(row: ContentProductionClassificationRow) -> bool:
     return (
-        row.decision == "blocked"
+        row.blocked_historical_protection is None
+        and row.decision == "blocked"
         and len(row.blockers) == 1
         and row.blockers[0].code == "current_content_binding_missing"
     )

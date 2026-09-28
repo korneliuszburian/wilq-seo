@@ -56,6 +56,12 @@ def resolve_current_preparation_readiness(
         return _blocked(work_item_id, "classification_item_missing", **current_context)
     if current_row.current_work_item_id != work_item_id:
         return _blocked(work_item_id, "current_work_item_mismatch", **current_context)
+    if current_row.blocked_historical_protection is not None:
+        return _blocked(
+            work_item_id,
+            "protected_revision_reconciliation_required",
+            **current_context,
+        )
     if not is_safe_blocked_row(current_row):
         return _blocked(work_item_id, "current_content_binding_missing", **current_context)
     if not registered_inventory_is_pending(current_row):
@@ -67,6 +73,22 @@ def resolve_current_preparation_readiness(
     if current_run.freshness.state != "fresh" or current_run.freshness.requires_refresh:
         return _blocked(work_item_id, "classification_stale", **current_context)
 
+    return _resolve_exact_current_receipt_readiness(
+        store,
+        work_item_id,
+        current_run,
+        current_row,
+        current_context,
+    )
+
+
+def _resolve_exact_current_receipt_readiness(
+    store: CurrentPreparationReadinessStore,
+    work_item_id: str,
+    current_run: ContentProductionClassificationRun,
+    current_row: ContentProductionClassificationRow,
+    current_context: dict[str, str | None],
+) -> ContentCurrentPreparationReadiness:
     binding_id = identity_id(current_run, current_row)
     identity = load_identity(store, binding_id)
     if identity is None:

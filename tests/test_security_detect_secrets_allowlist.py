@@ -23,6 +23,8 @@ from scripts.filter_detect_secrets import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+BEADS_ISSUES_PATH = ".beads/issues.jsonl"
+BEADS_ISSUE_ID = "wilq-seo-y980"
 AUDIT_STORE_FIXTURE = REPO_ROOT / "tests/actions/test_audit_store_contracts.py"
 KNOWLEDGE_SOURCE_MATERIALS = REPO_ROOT / "wilq/content/knowledge/source_materials.py"
 KNOWLEDGE_SURFACE_FIXTURE = REPO_ROOT / "apps/dashboard/src/routes/KnowledgeSurface.test.tsx"
@@ -306,6 +308,205 @@ def test_detect_secrets_still_flags_the_same_unallowlisted_field_in_another_file
         if isinstance(findings, list)
         for finding in findings
     )
+
+
+@pytest.fixture(scope="module")
+def beads_y980_real_scan() -> dict[str, object]:
+    return _detect_secret_results(REPO_ROOT / BEADS_ISSUES_PATH)
+
+
+def _y980_beads_issue_record() -> dict[str, object]:
+    issue_records: list[dict[str, object]] = []
+    source = (REPO_ROOT / BEADS_ISSUES_PATH).read_text(encoding="utf-8")
+    for line in source.splitlines():
+        record = json.loads(line)
+        if isinstance(record, dict) and record.get("id") == BEADS_ISSUE_ID:
+            issue_records.append(record)
+    if len(issue_records) != 1:
+        pytest.fail("expected exactly one y980 issue record")
+    return issue_records[0]
+
+
+def _y980_beads_findings_at_line(
+    results: dict[str, object], line_number: int
+) -> list[dict[str, object]]:
+    raw_findings = results.get(BEADS_ISSUES_PATH)
+    if not isinstance(raw_findings, list) or len(raw_findings) != 3:
+        pytest.fail("expected the three real y980 lineage findings")
+    findings: list[dict[str, object]] = []
+    for finding in raw_findings:
+        if not isinstance(finding, dict):
+            pytest.fail("expected dictionary-shaped detector findings")
+        findings.append({**finding, "line_number": line_number})
+    return findings
+
+
+def test_y980_beads_lineage_rejects_appended_note_suffix(tmp_path: Path) -> None:
+    source_path = REPO_ROOT / BEADS_ISSUES_PATH
+    source = source_path.read_text(encoding="utf-8")
+    source_lines = source.splitlines()
+    y980_line_numbers: list[int] = []
+
+    for line_number, line in enumerate(source_lines, start=1):
+        record = json.loads(line)
+        if not isinstance(record, dict) or record.get("id") != BEADS_ISSUE_ID:
+            continue
+        notes = record.get("notes")
+        if not isinstance(notes, str):
+            pytest.fail("expected string-valued y980 notes")
+        original_metadata = json.dumps(record.get("metadata"), sort_keys=True)
+        record["notes"] = notes + " Harmless suffix."
+        if json.dumps(record.get("metadata"), sort_keys=True) != original_metadata:
+            pytest.fail("the suffix mutation must preserve y980 metadata")
+        source_lines[line_number - 1] = json.dumps(record)
+        y980_line_numbers.append(line_number)
+
+    if len(y980_line_numbers) != 1:
+        pytest.fail("expected exactly one y980 issue record")
+
+    source_copy = tmp_path / BEADS_ISSUES_PATH
+    source_copy.parent.mkdir(parents=True, exist_ok=True)
+    source_copy.write_text(
+        "\n".join(source_lines) + ("\n" if source.endswith("\n") else ""),
+        encoding="utf-8",
+    )
+    results = _detect_secret_results_from(tmp_path, BEADS_ISSUES_PATH)
+    findings = results.get(BEADS_ISSUES_PATH)
+    if not isinstance(findings, list) or len(findings) != 3:
+        pytest.fail("the appended suffix should preserve exactly three detector findings")
+
+    remaining = filter_detect_secrets_results(results, tmp_path)
+    remaining_findings = remaining.get(BEADS_ISSUES_PATH)
+    if not isinstance(remaining_findings, list) or len(remaining_findings) != 3:
+        pytest.fail("the appended suffix must leave all three findings reportable")
+
+
+def test_y980_beads_hashed_lineage_is_filtered_from_the_real_scan(
+    beads_y980_real_scan: dict[str, object],
+) -> None:
+    results = beads_y980_real_scan
+    findings = results.get(BEADS_ISSUES_PATH)
+
+    if not isinstance(findings, list) or len(findings) != 3:
+        pytest.fail("the real scan should return exactly three y980 findings")
+    if not all(
+        isinstance(finding, dict) and finding.get("type") == HEX_HIGH_ENTROPY
+        for finding in findings
+    ):
+        pytest.fail("the real y980 findings should all be Hex High Entropy")
+
+    line_numbers = {
+        finding.get("line_number") for finding in findings if isinstance(finding, dict)
+    }
+    if len(line_numbers) != 1:
+        pytest.fail("the real y980 findings should share their source row")
+
+    if filter_detect_secrets_results(results, REPO_ROOT):
+        pytest.fail("the verified y980 lineage triple should be filtered")
+
+
+def test_y980_beads_lineage_uses_its_current_source_line(
+    tmp_path: Path, beads_y980_real_scan: dict[str, object]
+) -> None:
+    _write_jsonl(
+        tmp_path,
+        BEADS_ISSUES_PATH,
+        [{"id": "wilq-seo-prefix"}, _y980_beads_issue_record()],
+    )
+    findings = _y980_beads_findings_at_line(beads_y980_real_scan, 2)
+
+    if filter_detect_secrets_results({BEADS_ISSUES_PATH: findings}, tmp_path):
+        pytest.fail("the y980 lineage should remain filterable after its row moves")
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_findings"),
+    (
+        ("foreign_issue", 3),
+        ("altered_note_label", 3),
+        ("altered_note_content", 4),
+        ("duplicate_key", 3),
+        ("new_fourth_candidate", 4),
+    ),
+)
+def test_y980_beads_allowlist_fails_closed_on_changed_source(
+    tmp_path: Path,
+    beads_y980_real_scan: dict[str, object],
+    mutation: str,
+    expected_findings: int,
+) -> None:
+    issue = _y980_beads_issue_record()
+    findings = _y980_beads_findings_at_line(beads_y980_real_scan, 1)
+    duplicate_key_source: str | None = None
+
+    if mutation == "foreign_issue":
+        issue["id"] = "wilq-seo-y981"
+    elif mutation == "altered_note_label":
+        notes = issue.get("notes")
+        if not isinstance(notes, str) or "Plan SHA-256:" not in notes:
+            pytest.fail("expected the exact Plan SHA-256 note label")
+        issue["notes"] = notes.replace("Plan SHA-256:", "Plan SHA256:", 1)
+    elif mutation == "altered_note_content":
+        notes = issue.get("notes")
+        if not isinstance(notes, str):
+            pytest.fail("expected string-valued y980 notes")
+        note_match = re.search(r"Fixed point: ([0-9a-f]{40})", notes)
+        if note_match is None:
+            pytest.fail("expected a fixed-point note value")
+        current_value = note_match.group(1)
+        changed_value = ("0" if current_value[0] != "0" else "1") + current_value[1:]
+        issue["notes"] = (
+            notes[: note_match.start(1)]
+            + changed_value
+            + notes[note_match.end(1) :]
+        )
+        findings.append(_finding_at_line(BEADS_ISSUES_PATH, changed_value, 1))
+    elif mutation == "duplicate_key":
+        serialized_record = json.dumps(issue)
+        duplicate_key_source = (
+            serialized_record[:-1]
+            + ", "
+            + json.dumps("id")
+            + ": "
+            + json.dumps(BEADS_ISSUE_ID)
+            + "}"
+        )
+    elif mutation == "new_fourth_candidate":
+        metadata = issue.get("metadata")
+        if not isinstance(metadata, dict):
+            pytest.fail("expected y980 metadata object")
+        candidate = _sha256("synthetic additional y980 candidate")[:40]
+        metadata["new_candidate"] = candidate
+        findings.append(_finding_at_line(BEADS_ISSUES_PATH, candidate, 1))
+
+    if duplicate_key_source is None:
+        _write_jsonl(tmp_path, BEADS_ISSUES_PATH, [issue])
+    else:
+        path = tmp_path / BEADS_ISSUES_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(duplicate_key_source + "\n", encoding="utf-8")
+
+    if len(findings) != expected_findings:
+        pytest.fail("the detector fixture does not match the expected finding count")
+    remaining = filter_detect_secrets_results(
+        {BEADS_ISSUES_PATH: findings}, tmp_path
+    )
+    remaining_findings = remaining.get(BEADS_ISSUES_PATH)
+    if not isinstance(remaining_findings, list) or len(remaining_findings) != expected_findings:
+        pytest.fail("changed y980 source must leave every finding reportable")
+
+
+@pytest.mark.parametrize(
+    "relative_path", (".beads/foreign.jsonl", "tests/foreign_fixture.py")
+)
+def test_y980_beads_allowlist_is_not_a_directory_exclusion(
+    tmp_path: Path, relative_path: str
+) -> None:
+    finding = _finding_at_line(
+        relative_path, _sha256("unrelated path candidate"), 1
+    )
+    if not filter_detect_secrets_results({relative_path: [finding]}, tmp_path):
+        pytest.fail("the y980 allowlist must not cover other Beads or test paths")
 
 
 def test_security_script_keeps_all_retained_evidence_in_full_repository_scan_scope() -> None:

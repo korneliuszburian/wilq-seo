@@ -20,6 +20,7 @@ from wilq.content.workflow.content_kind_receipt import (
 )
 from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
 from wilq.content.workflow.current_preparation_readiness import (
+    ContentCurrentPreparationReadinessBlocked,
     ContentCurrentPreparationReadyForRefreshAuthorization,
     CurrentPreparationReadinessStore,
     resolve_current_preparation_readiness,
@@ -78,6 +79,17 @@ def classified_refresh_context(
         )
         if isinstance(readiness, ContentCurrentPreparationReadyForRefreshAuthorization):
             return _classified_refresh_context(run, row, work_item_id)
+        if (
+            isinstance(readiness, ContentCurrentPreparationReadinessBlocked)
+            and readiness.code == "protected_revision_reconciliation_required"
+        ):
+            return blocker(
+                "refresh_preparation_protected_revision_reconciliation_required",
+                "Wymagane uzgodnienie chronionej rewizji",
+                readiness.reason_pl,
+                readiness.safe_next_step_pl,
+                source_codes=[readiness.code],
+            )
         return blocker(
             "refresh_preparation_decision_not_refresh",
             "Klasyfikacja nie pozwala na autoryzację refresh",
