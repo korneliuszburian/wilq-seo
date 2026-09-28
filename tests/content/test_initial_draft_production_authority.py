@@ -160,66 +160,57 @@ def test_authorized_current_preparation_bypasses_canonical_guard_without_duplica
 
 
 @pytest.mark.parametrize(
-    ("request_payload", "expected_code"),
+    "request_payload",
     [
-        (
+        pytest.param(
             {
                 "expected_proposal_id": "proposal",
                 "expected_planning_digest": "a" * 64,
                 "expected_planning_input_digest": "b" * 64,
                 "requested_by": "wilku",
             },
-            "production_classification_digest_required",
+            id="missing-classification-digest",
         ),
-        (
+        pytest.param(
             {
                 "expected_production_classification_run_digest": "f" * 64,
                 "requested_by": "wilku",
             },
-            "stale_production_classification",
+            id="stale-classification-digest",
+        ),
+        pytest.param(
+            {
+                "expected_production_classification_run_digest": "a" * 64,
+                "requested_by": "wilku",
+            },
+            id="missing-classification",
         ),
     ],
 )
-def test_missing_or_stale_submit_digest_is_409_before_dependencies(
-    tmp_path: Path,
+def test_submit_requires_actionobject_before_classification_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     request_payload: dict[str, str],
-    expected_code: str,
 ) -> None:
-    store = _ready_store(tmp_path / "state.sqlite3")
     _patch_all_legacy_side_effects(monkeypatch)
-    submit_endpoint, _read_endpoint = _registered_endpoints(store)
+    app = FastAPI()
+    register_content_initial_draft_route(
+        app,
+        snapshot_loader=_bomb,
+        authority_resolver=cast(Any, _bomb),
+    )
+    submit_endpoint, _read_endpoint = _initial_draft_endpoints(app)
 
     response = _call_submit(
         submit_endpoint,
-        WAVE0_PRODUCTION_ACCEPTANCE_POLICY.protected_binding.current_work_item_id,
+        "unclassified",
         request_payload,
     )
 
     assert response[0] == 409
-    assert response[1]["status"] == "conflict"
-    assert response[1]["blockers"][0]["code"] == expected_code
-
-
-def test_reuse_submit_without_any_classification_is_409(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    store = ContentWorkflowStore(tmp_path / "state.sqlite3")
-    _patch_all_legacy_side_effects(monkeypatch)
-
-    submit_endpoint, _read_endpoint = _registered_endpoints(store)
-    response = _call_submit(
-        submit_endpoint,
-        "unclassified",
-        {
-            "expected_production_classification_run_digest": "a" * 64,
-            "requested_by": "wilku",
-        },
-    )
-
-    assert response[0] == 409
-    assert response[1]["blockers"][0]["code"] == "production_classification_missing"
+    body = response[1]
+    assert body["status"] == "conflict"
+    assert body["blockers"][0]["code"] == "initial_draft_action_required"
+    assert body["runtime"]["external_call_attempted"] is False
 
 
 @pytest.mark.parametrize(
@@ -259,12 +250,14 @@ def test_reuse_revision_or_review_drift_blocks_without_fallback(
         },
     )
 
-    assert read[0] == submit[0] == 200
-    assert read[1]["status"] == submit[1]["status"] == "blocked"
+    assert read[0] == 200
+    assert submit[0] == 409
+    assert read[1]["status"] == "blocked"
     assert read[1]["blockers"][0]["code"] == expected_code
-    assert submit[1]["blockers"][0]["code"] == expected_code
     assert read[1]["revision"] is None
-    assert submit[1]["revision"] is None
+    assert submit[1]["status"] == "conflict"
+    assert submit[1]["blockers"][0]["code"] == "initial_draft_action_required"
+    assert submit[1]["runtime"]["external_call_attempted"] is False
 
 
 def test_retained_missing_without_a_distinct_historical_owner_blocks(
@@ -313,8 +306,11 @@ def test_stale_accepted_reuse_authority_blocks_with_freshness_lineage(
         },
     )
 
-    assert read[0] == submit[0] == 200
-    assert read[1] == submit[1]
+    assert read[0] == 200
+    assert submit[0] == 409
+    assert submit[1]["status"] == "conflict"
+    assert submit[1]["blockers"][0]["code"] == "initial_draft_action_required"
+    assert submit[1]["runtime"]["external_call_attempted"] is False
     blocker = cast(dict[str, object], read[1]["blockers"][0])
     assert blocker["code"] == "stale_production_classification"
     assert blocker["source_codes"] == list(run.freshness.connector_ids)
@@ -345,14 +341,17 @@ def test_nonreuse_classification_disables_generation_with_row_sources(
         },
     )
 
-    assert response[0] == submit[0] == 200
+    assert response[0] == 200
+    assert submit[0] == 409
     body = response[1]
-    assert submit[1] == body
     assert body["status"] == "blocked"
     assert body["blockers"][0]["code"] == "production_generation_disabled"
     assert body["blockers"][0]["reason"] == row.rationale_pl
     assert body["blockers"][0]["next_step"] == row.next_step_pl
     assert body["blockers"][0]["source_codes"] == [item.code for item in row.blockers]
+    assert submit[1]["status"] == "conflict"
+    assert submit[1]["blockers"][0]["code"] == "initial_draft_action_required"
+    assert submit[1]["runtime"]["external_call_attempted"] is False
 
 
 @pytest.mark.parametrize(
