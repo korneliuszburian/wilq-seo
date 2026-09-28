@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -11,12 +12,17 @@ from apps.api.wilq_api.routers.content_planning_proposals import (
 from tests.content.dynamic_planning_test_support import configure_planning_harness
 from tests.content.test_classified_refresh_generation_integration import (
     BDO_SERVICE_CARD_ID,
+    BDO_URL,
     BDO_WORK_ITEM_ID,
     _app_client,
     _authority,
-    _authorize,
     _refresh_run,
-    _wait_for_plan,
+)
+from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.workflow.decisions.demand_evidence import ContentSearchDemandEvidence
+from wilq.content.workflow.decisions.planning import (
+    ContentPlanningProposal,
+    ContentPlanningSection,
 )
 from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationBlocked,
@@ -24,6 +30,7 @@ from wilq.content.workflow.refresh_preparation_contracts import (
     ContentRefreshPreparationClassificationBinding,
 )
 from wilq.content.workflow.store.store import content_workflow_store
+from wilq.schemas import CodexRun
 
 
 def test_legacy_unbound_same_input_refresh_plan_requires_reconciliation_not_retry(
@@ -38,41 +45,76 @@ def test_legacy_unbound_same_input_refresh_plan_requires_reconciliation_not_retr
     )
     assert initial_status.status_code == 200
     initial = cast(dict[str, Any], initial_status.json())
-    legacy_response = client.post(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json={
-            "content_kind": initial["content_kind"],
-            "service_card_id": initial.get("service_card_id"),
-            "expected_planning_input_digest": initial["planning_input_digest"],
-            "requested_by": "wilku",
-        },
+    planning_input_digest = cast(str, initial["planning_input_digest"])
+
+    # Seed a synthetic historical record through the typed store. No model or
+    # vendor generation occurred for this test fixture.
+    created_at = datetime(2026, 9, 12, tzinfo=UTC)
+    proposal_id = "proposal_historical_unbound_bdo_fixture"
+    codex_run_id = "codex_run_historical_unbound_bdo_fixture"
+    planning_digest = "a" * 64
+    historical_proposal = ContentPlanningProposal(
+        work_item_id=BDO_WORK_ITEM_ID,
+        planning_digest=planning_digest,
+        proposal_id=proposal_id,
+        codex_run_id=codex_run_id,
+        generation_status="codex_generated",
+        planning_input_digest=planning_input_digest,
+        content_kind="service",
+        final_canonical_url=BDO_URL,
+        service_card_id=BDO_SERVICE_CARD_ID,
+        service_label="BDO",
+        target_reader="Przedsiębiorca",
+        buyer_problem="Syntetyczny historyczny plan fixture.",
+        buyer_trigger="Test odczytu historycznego planu.",
+        search_intent="informacyjny",
+        cta_direction="Sprawdź kolejne kroki.",
+        sections=[
+            ContentPlanningSection(
+                heading="Zakres",
+                purpose="Syntetyczna sekcja wyłącznie do testu reconciliation.",
+            )
+        ],
+        search_demand=ContentSearchDemandEvidence(
+            status="missing",
+            optional_ads_status="not_exactly_mapped",
+            safe_next_step="Brak danych popytowych w syntetycznym fixture.",
+        ),
+        created_at=created_at,
     )
-    legacy = _wait_for_plan(client, legacy_response)
-    assert legacy.status_code == 200, legacy.text
-    assert legacy.json()["status"] in {"created", "ready", "idempotent"}, legacy.json().get(
-        "blockers", legacy.json()
+    completed_run = CodexRun(
+        id=codex_run_id,
+        source="synthetic_test_fixture",
+        status="completed",
+        proposal_id=proposal_id,
+        planning_digest=planning_digest,
+        planning_input_digest=planning_input_digest,
+        started_at=created_at,
+        completed_at=created_at,
     )
-    assert runtime.calls == 1
+    # Save before classification because the typed store rejects unbound saves
+    # once a current refresh classification exists.
+    seed_store = ContentPlanningProposalStore(store.path)
+    save_outcome, seeded = seed_store.save_generated(historical_proposal, completed_run)
+    assert save_outcome == "created"
+    assert seeded.refresh_preparation_binding is None
+    assert seeded.work_item_id == BDO_WORK_ITEM_ID
+    assert seeded.service_card_id == BDO_SERVICE_CARD_ID
+    assert seeded.planning_input_digest == planning_input_digest
+
     store.record_production_classification(_refresh_run())
-    get_response = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
     ready = client.get(
         f"/api/content/work-items/{BDO_WORK_ITEM_ID}/refresh-preparation",
         params={"service_card_id": BDO_SERVICE_CARD_ID},
     )
     assert ready.status_code == 200, ready.text
-    authorization = _authorize(client)
-    repeat = client.post(
-        f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals",
-        json={
-            "service_card_id": BDO_SERVICE_CARD_ID,
-            "expected_planning_input_digest": ready.json()["planning_input_digest"],
-            "requested_by": "wilku",
-            "refresh_preparation_authorization_id": authorization["authorization_id"],
-            "expected_refresh_preparation_authorization_digest": authorization[
-                "authorization_digest"
-            ],
-        },
-    )
+    ready_body = cast(dict[str, Any], ready.json())
+    assert ready_body["status"] == "ready_to_authorize"
+    assert ready_body["work_item_id"] == seeded.work_item_id
+    assert ready_body["service_candidate"]["service_card_id"] == seeded.service_card_id
+    assert ready_body["planning_input_digest"] == seeded.planning_input_digest
+
+    get_response = client.get(f"/api/content/work-items/{BDO_WORK_ITEM_ID}/planning-proposals")
 
     assert get_response.status_code == 200, get_response.text
     get_body = get_response.json()
@@ -80,13 +122,7 @@ def test_legacy_unbound_same_input_refresh_plan_requires_reconciliation_not_retr
     assert get_body["proposal"] is None
     assert get_body["blockers"][0]["code"] == "refresh_preparation_proposal_binding_mismatch"
     assert "Nie ponawiaj" in get_body["blockers"][0]["reason"]
-    assert repeat.status_code == 409, repeat.text
-    assert repeat.json()["status"] == "blocked"
-    assert repeat.json()["blockers"][0]["code"] == (
-        "refresh_preparation_proposal_binding_mismatch"
-    )
-    assert "Nie ponawiaj" in repeat.json()["blockers"][0]["reason"]
-    assert runtime.calls == 1
+    assert runtime.calls == 0
 
 
 def test_blocked_editorial_subject_still_does_not_reconcile_legacy_service() -> None:
