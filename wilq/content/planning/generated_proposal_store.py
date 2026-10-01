@@ -44,6 +44,9 @@ from wilq.content.planning.generated_proposal_rows import (
     table_exists as _table_exists,
 )
 from wilq.content.planning.generated_proposal_rows import (
+    v3_plan_generation_linkage_exact as _v3_plan_generation_linkage_exact,
+)
+from wilq.content.planning.generated_proposal_rows import (
     validate_generated_proposal as _validate_generated_proposal,
 )
 from wilq.content.planning.generated_proposal_schema import ensure_generated_proposal_schema
@@ -419,6 +422,13 @@ class ContentPlanningProposalStore(
 
     def _read_connection(self) -> sqlite3.Connection | None:
         return _open_read_connection(self.path)
+
+    def v3_plan_generation_linkage_exact(
+        self,
+        proposal: ContentPlanningProposal,
+    ) -> str | None:
+        """Return the input digest only for this exact frozen plan and generation run."""
+        return _v3_plan_generation_linkage_exact(self._read_connection, proposal)
 
 
 def _enqueue(
