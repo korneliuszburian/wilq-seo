@@ -126,7 +126,10 @@ def verify_current_v3_packet_for_planning_input(
     )
     if blocker is not None:
         return blocker
-    assert record is not None
+    if record is None:
+        return _context_blocked(
+            "research_packet_v3_receipt_unavailable", "Odczytaj ponownie lokalny store pakietów v3."
+        )
     snapshot = record.snapshot
     currentness_blocker = _currentness_blocker(
         snapshot=snapshot,
@@ -269,7 +272,10 @@ def resolve_v3_planning_packet_context(
     )
     if blocker is not None:
         return blocker
-    assert record is not None and receipt is not None
+    if record is None or receipt is None:
+        return _context_blocked(
+            "research_packet_v3_receipt_unavailable", "Odczytaj ponownie lokalny store."
+        )
     retained = _retained_v3_context(proposal, record, receipt, current_input, plan_store)
     if isinstance(retained, V3PacketPlanningRead):
         return retained

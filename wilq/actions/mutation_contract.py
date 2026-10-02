@@ -3,6 +3,10 @@ from __future__ import annotations
 from wilq.actions._mutation_contract_dispatch import (
     mutation_apply_contract as _mutation_apply_contract,
 )
+from wilq.content.drafts.full_draft_generation_v3 import (
+    FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+    FULL_DRAFT_GENERATION_V3_ADAPTER,
+)
 from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ACTION_TYPE,
     PLANNING_GENERATION_INTENT_ADAPTER,
@@ -71,6 +75,7 @@ from wilq.schemas import ActionMutationApplyContract, ActionObject
 _PLANNING_GENERATION_INTENT_ADAPTERS = {
     PLANNING_GENERATION_INTENT_ACTION_TYPE: PLANNING_GENERATION_INTENT_ADAPTER,
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: PLANNING_GENERATION_INTENT_V3_ADAPTER,
+    FULL_DRAFT_GENERATION_V3_ACTION_TYPE: FULL_DRAFT_GENERATION_V3_ADAPTER,
 }
 _LOCAL_DISPOSITION_ADAPTERS = {
     CURRENT_DISPOSITION_ACTION_TYPE: CURRENT_DISPOSITION_MUTATION_ADAPTER,
@@ -90,8 +95,7 @@ def mutation_apply_contract(
 def supported_mutation_adapter(action: ActionObject) -> str | None:
     action_type = action.payload.get("action_type")
     if (
-        action_type
-        in (PLANNING_GENERATION_INTENT_ACTION_TYPE, PLANNING_GENERATION_INTENT_V3_ACTION_TYPE)
+        action_type in _PLANNING_GENERATION_INTENT_ADAPTERS
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     ):

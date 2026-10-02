@@ -6,6 +6,10 @@ from collections.abc import Callable
 from typing import Any
 
 from wilq.audit.trusted_local_confirmation import TrustedLocalPrincipalReceipt
+from wilq.content.drafts.full_draft_generation_v3 import (
+    FULL_DRAFT_GENERATION_V3_ADAPTER,
+    execute_full_draft_generation_v3_action,
+)
 from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ADAPTER,
     execute_planning_generation_intent_action,
@@ -73,6 +77,7 @@ _LOCAL_ADAPTERS = frozenset(
         DELIVERY_IDENTITY_AUTHORITY_MUTATION_ADAPTER,
         PLANNING_GENERATION_INTENT_ADAPTER,
         PLANNING_GENERATION_INTENT_V3_ADAPTER,
+        FULL_DRAFT_GENERATION_V3_ADAPTER,
         CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
     }
 )
@@ -121,13 +126,8 @@ def execute_local_content_mutation_adapter(
             audit_events=action.audit_events,
             confirmed_by=_confirmation_actor(action),
         )
-    if adapter == PLANNING_GENERATION_INTENT_V3_ADAPTER:
-        return execute_planning_generation_intent_v3_action(
-            action,
-            store=workflow_store,
-            audit_events=action.audit_events,
-            confirmed_by=_confirmation_actor(action),
-        )
+    if adapter in {FULL_DRAFT_GENERATION_V3_ADAPTER, PLANNING_GENERATION_INTENT_V3_ADAPTER}:
+        return _execute_v3_generation_authority(action, adapter, workflow_store)
     if adapter == MATERIAL_REVIEW_ACTION_V2_ADAPTER:
         return execute_current_material_review_action_v2(
             action,
@@ -187,6 +187,24 @@ def execute_local_content_mutation_adapter(
             audit_events=action.audit_events,
         )
     return None
+
+
+def _execute_v3_generation_authority(
+    action: ActionObject,
+    adapter: str,
+    workflow_store: ContentWorkflowStore,
+) -> tuple[dict[str, Any] | None, list[str]]:
+    execute = (
+        execute_full_draft_generation_v3_action
+        if adapter == FULL_DRAFT_GENERATION_V3_ADAPTER
+        else execute_planning_generation_intent_v3_action
+    )
+    return execute(
+        action,
+        store=workflow_store,
+        audit_events=action.audit_events,
+        confirmed_by=_confirmation_actor(action),
+    )
 
 
 def _confirmation_actor(action: ActionObject) -> str:

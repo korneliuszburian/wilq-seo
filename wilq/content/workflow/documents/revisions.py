@@ -16,6 +16,7 @@ from pydantic import (
 
 from wilq.audit.identity import LOCAL_PILOT_AUDIT_IDENTITY, LocalAuditTrustLevel
 from wilq.content.claims.ledger import ContentClaimLedger
+from wilq.content.drafts.full_draft_generation_v3_contracts import FullDraftGenerationV3Binding
 from wilq.content.workflow.documents.content_html import validate_content_html
 from wilq.content.workflow.documents.revision_binding import (
     ContentDraftRevisionBinding as ContentDraftRevisionBinding,
@@ -422,6 +423,7 @@ class ContentDraftRevision(BaseModel):
     claim_ledger: ContentClaimLedger | None = None
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
+    generation_authorization: FullDraftGenerationV3Binding | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)
@@ -523,6 +525,7 @@ class ContentDraftRevisionAppendCommand(BaseModel):
     )
     proposal_metadata: ContentDraftRevisionProposalMetadata | None = None
     refresh_preparation_binding: ContentRefreshPreparationBinding | None = None
+    generation_authorization: FullDraftGenerationV3Binding | None = None
     correction_reason: ContentDraftRevisionCorrectionReason | None = None
     publish_ready: Literal[False] = False
     created_by: str = Field(min_length=1)

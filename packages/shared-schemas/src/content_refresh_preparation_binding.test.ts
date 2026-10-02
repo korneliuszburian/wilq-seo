@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import {
   ContentDraftRevisionSchema,
   ContentPlanningProposalRequestSchema,
   ContentPlanningProposalResponseSchema,
   ContentPlanningProposalSchema,
-  ContentRefreshPreparationBindingSchema
+  ContentRefreshPreparationBindingSchema,
+  FullDraftGenerationV3BindingSchema
 } from "./contentWorkflow";
 import {
   ContentInitialDraftRequestSchema,
@@ -13,6 +15,51 @@ import {
 } from "./content_initial_draft";
 
 const hex = (character: string): string => character.repeat(64);
+
+describe("full draft v3 generation binding", () => {
+  const generation = {
+    action_id: "act_content_full_draft_generation_v3_test",
+    authorization_digest: hex("a"),
+    payload_digest: hex("b"),
+    context_digest: hex("c"),
+    run_id: "codex_content_initial_draft_test"
+  };
+
+  it("validates exact bindings and rejects invalid digests and extra fields", () => {
+    expect(FullDraftGenerationV3BindingSchema.parse(generation)).toEqual(generation);
+    for (const key of ["authorization_digest", "payload_digest", "context_digest"]) {
+      expect(FullDraftGenerationV3BindingSchema.safeParse({
+        ...generation, [key]: "invalid-digest"
+      }).success).toBe(false);
+    }
+    expect(FullDraftGenerationV3BindingSchema.safeParse({
+      ...generation, unapproved: true
+    }).success).toBe(false);
+  });
+
+  it("accepts nullable and omitted generation bindings on retained revisions", () => {
+    expect(ContentDraftRevisionSchema.parse({
+      ...revision, generation_authorization: null
+    }).generation_authorization).toBeNull();
+    expect(ContentDraftRevisionSchema.parse(revision).generation_authorization).toBeUndefined();
+    expect(ContentDraftRevisionSchema.parse({
+      ...revision, generation_authorization: generation
+    }).generation_authorization).toEqual(generation);
+  });
+
+  it.skipIf(!process.env.WILQ_FULL_DRAFT_V3_CONTRACT_FIXTURE)(
+    "validates the actual assured Python producer response", () => {
+      const path = process.env.WILQ_FULL_DRAFT_V3_CONTRACT_FIXTURE;
+      if (!path) throw new Error("producer fixture path required");
+      const payload: unknown = JSON.parse(readFileSync(path, "utf8"));
+      const response = ContentInitialDraftResponseSchema.parse(payload);
+      expect(response.status).toBe("created");
+      if (response.status !== "created") throw new Error("created response required");
+      expect(response.revision.generation_authorization?.run_id).toBe(response.run_id);
+      expect(response.revision.proposal_metadata?.codex_run_id).toBe(response.run_id);
+    }
+  );
+});
 const workItemId = "content_work_item_operat_wodnoprawny";
 const serviceCardId = "ekologus_service_operat_wodnoprawny";
 const publicUrl = "https://www.ekologus.pl/analiza-pozwolen-zintegrowanych/";

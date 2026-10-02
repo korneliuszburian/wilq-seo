@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -94,28 +95,35 @@ def validate_action(
 
 def _local_connector_configuration_not_required(action: ActionObject) -> bool:
     action_type = action.payload.get("action_type")
-    return action_type in {
-        CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
-        SOURCE_FACT_AUTHORITY_ACTION_TYPE,
-        SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
-        CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
-        MATERIAL_REVIEW_ACTION_V2_TYPE,
-        RESEARCH_PACKET_V2_ACTION_TYPE,
-        RESEARCH_PACKET_V3_ACTION_TYPE,
-        PLANNING_GENERATION_INTENT_ACTION_TYPE,
-        PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
-        PER_URL_DISPOSITION_ACTION_TYPE,
-        PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
-    } or (
-        action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
-        and action.payload.get("local_authority_only") is True
-        and action.connector == "wordpress_ekologus"
-    ) or (
-        action_type == CURRENT_DISPOSITION_ACTION_TYPE
-        and action.payload.get("local_authority_only") is True
-        and action.connector == "wordpress_ekologus"
-    ) or (
-        action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
-        and action.payload.get("local_authority_only") is True
-        and action.connector == "wordpress_ekologus"
+    return (
+        action_type
+        in {
+            CONTENT_NEW_PAGE_DEV_DRAFT_ACTION_TYPE,
+            SOURCE_FACT_AUTHORITY_ACTION_TYPE,
+            SOURCE_FACT_AUTHORITY_V2_ACTION_TYPE,
+            CONTENT_RESEARCH_FACT_PROMOTION_ACTION_TYPE,
+            MATERIAL_REVIEW_ACTION_V2_TYPE,
+            RESEARCH_PACKET_V2_ACTION_TYPE,
+            RESEARCH_PACKET_V3_ACTION_TYPE,
+            PLANNING_GENERATION_INTENT_ACTION_TYPE,
+            PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+            FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+            PER_URL_DISPOSITION_ACTION_TYPE,
+            PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
+        }
+        or (
+            action_type == CURRENT_PAGE_DISPOSITION_V2_ACTION_TYPE
+            and action.payload.get("local_authority_only") is True
+            and action.connector == "wordpress_ekologus"
+        )
+        or (
+            action_type == CURRENT_DISPOSITION_ACTION_TYPE
+            and action.payload.get("local_authority_only") is True
+            and action.connector == "wordpress_ekologus"
+        )
+        or (
+            action_type == DELIVERY_IDENTITY_AUTHORITY_ACTION_TYPE
+            and action.payload.get("local_authority_only") is True
+            and action.connector == "wordpress_ekologus"
+        )
     )

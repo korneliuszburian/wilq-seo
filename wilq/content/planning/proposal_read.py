@@ -546,7 +546,6 @@ def _v3_packet_gated_status_response(
     store: ContentPlanningProposalStore,
 ) -> ContentPlanningProposalResponse:
     planning_input_digest = latest.planning_input_digest
-    assert planning_input_digest is not None
 
     def blocked(source_code: str, next_step: str) -> ContentPlanningProposalResponse:
         return _v3_packet_blocked_response(
@@ -561,6 +560,10 @@ def _v3_packet_gated_status_response(
             missing=False,
         )
 
+    if planning_input_digest is None:
+        return blocked(
+            "research_packet_v3_frozen_input_unavailable", "Odczytaj zapisane wejście planu."
+        )
     try:
         frozen_input = store.frozen_planning_input(
             latest.work_item_id, planning_input_digest

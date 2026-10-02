@@ -416,15 +416,12 @@ def _prepare_inputs(
     )
     if isinstance(planning_input_or_response, ContentInitialDraftResponse):
         return planning_input_or_response
-    packet_context = (
-        planning_input_or_response
-        if isinstance(planning_input_or_response, V3PlanningPacketContext)
-        else None
-    )
-    planning_input = (
-        packet_context.planning_input if packet_context is not None else planning_input_or_response
-    )
-    assert isinstance(planning_input, ContentPlanningInput)
+    packet_context: V3PlanningPacketContext | None = None
+    if isinstance(planning_input_or_response, V3PlanningPacketContext):
+        packet_context = planning_input_or_response
+        planning_input = packet_context.planning_input
+    else:
+        planning_input = planning_input_or_response
     if planning_input.planning_input_digest != request.expected_planning_input_digest:
         return _blocked_response(
             snapshot,
