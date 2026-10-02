@@ -31,17 +31,14 @@ from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     contract_for_planning_proposal,
 )
-from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_initial_draft_planning_input,
     compact_proposal,
     strip_existing_content_from_initial_draft_planning_input,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.packet_model_projection import current_research_packet_for_model
-from wilq.content.planning.source_pack_projection import (
-    project_selected_source_pack_facts,
-)
+from wilq.content.planning.packet_model_projection import content_packet_model_input
+from wilq.content.planning.proposal_v3_packet_read import V3PlanningPacketContext
 from wilq.content.regulatory import turn_context as regulatory_turn_context
 from wilq.content.workflow.decisions.planning import (
     ContentPlanningProposal,
@@ -76,14 +73,9 @@ def initial_full_draft_turn_request(
         if prepared_plan is not None
         else draftable_planning_proposal(proposal)
     )
-    packet = current_research_packet_for_model(planning_input)
-    if packet is not None:
-        planning_input = project_selected_source_pack_facts(
-            planning_input,
-            packet.approved_source_fact_ids,
-            ekologus_source_facts(),
-        )
-    allowed_source_fact_ids = None if packet is None else set(packet.approved_source_fact_ids)
+    model_input = content_packet_model_input(planning_input, proposal)
+    planning_input, packet = model_input.planning_input, model_input.packet
+    allowed_source_fact_ids = model_input.allowed_source_fact_ids
     generation_contract = _project_prepared_generation_contract(
         generation_contract,
         draftable_proposal,
@@ -97,6 +89,7 @@ def initial_full_draft_turn_request(
         packet=packet,
         allowed_source_fact_ids=allowed_source_fact_ids,
         prepared_plan=prepared_plan,
+        packet_context=model_input.packet_context,
     )
     prompt_template = resolve_prompt_template("content_initial_draft")
     return CodexAppServerStructuredTurnRequest(
@@ -131,6 +124,7 @@ def _initial_full_draft_contexts(
     packet: ContentResearchPacket | None,
     allowed_source_fact_ids: set[str] | None,
     prepared_plan: PreparedDraftPlan | None,
+    packet_context: V3PlanningPacketContext | None = None,
 ) -> tuple[str, str]:
     application_context = json.dumps(
         {
@@ -139,7 +133,9 @@ def _initial_full_draft_contexts(
             "proposal_id": proposal.proposal_id,
             "planning_digest": proposal.planning_digest,
             "planning_input_digest": planning_input.planning_input_digest,
-            "research_packet_binding": _research_packet_binding(planning_input, proposal),
+            "research_packet_binding": _research_packet_binding(
+                planning_input, proposal, packet_context
+            ),
             "service_card_id": planning_input.confirmed_service_card_id,
             "regulatory_document_assertions": (
                 regulatory_turn_context.regulatory_document_assertion_context(planning_input)
@@ -169,7 +165,9 @@ def _initial_full_draft_contexts(
                 draftable_proposal,
                 draftable_sections_only=False,
             ),
-            "research_packet_binding": _research_packet_binding(planning_input, proposal),
+            "research_packet_binding": _research_packet_binding(
+                planning_input, proposal, packet_context
+            ),
             "generation_constraints": generation_constraints,
             "document_scope": {
                 "included_section_ids": [
@@ -216,13 +214,8 @@ def regulatory_assertion_repair_turn_request(
 ) -> CodexAppServerStructuredTurnRequest:
     """Make one bounded correction turn for deterministic regulatory omissions."""
 
-    packet = current_research_packet_for_model(planning_input)
-    if packet is not None:
-        planning_input = project_selected_source_pack_facts(
-            planning_input,
-            packet.approved_source_fact_ids,
-            ekologus_source_facts(),
-        )
+    model_input = content_packet_model_input(planning_input, proposal)
+    planning_input, packet = model_input.planning_input, model_input.packet
 
     assertions, section_ids = _missing_assertions_for_repair(
         planning_input, proposal, missing_assertion_codes
@@ -288,7 +281,10 @@ def regulatory_assertion_repair_turn_request(
 def _research_packet_binding(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
-) -> dict[str, str] | None:
+    packet_context: V3PlanningPacketContext | None = None,
+) -> dict[str, object] | None:
+    if packet_context is not None:
+        return packet_context.model_binding()
     packet_id = planning_input.research_packet_id or proposal.research_packet_id
     packet_digest = planning_input.research_packet_digest or proposal.research_packet_digest
     if packet_id is None or packet_digest is None:
@@ -318,9 +314,7 @@ def _regulatory_repair_source_facts(
                 ),
             )
         ]
-    required_pairs = {
-        (str(item["section_id"]), str(item["requirement_id"])) for item in assertions
-    }
+    required_pairs = {(str(item["section_id"]), str(item["requirement_id"])) for item in assertions}
     return [
         {
             **fact,
@@ -575,9 +569,7 @@ def _prepared_readability_assignments(
         return []
     affected = set(affected_section_ids)
     candidate_body_ids = {section.section_id for section in candidate.sections}
-    targets_by_id = {
-        target.section.section_id: target for target in prepared_plan.target_supports
-    }
+    targets_by_id = {target.section.section_id: target for target in prepared_plan.target_supports}
     missing_assignments = sorted(
         affected.intersection(candidate_body_ids).difference(targets_by_id)
     )

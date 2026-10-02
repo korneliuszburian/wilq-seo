@@ -9,9 +9,15 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
 
+from pydantic import BaseModel
+
+from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
+from wilq.content.planning.proposal_v3_packet_read import resolve_v3_planning_packet_context
 from wilq.content.quality.review_packet_binding import (
     ContentReviewBindingBlocker,
     ContentReviewClaimToken,
+    ContentReviewInputs,
+    content_review_inputs_match_revision,
 )
 from wilq.content.quality.semantic_review_contracts import (
     ContentSemanticReview,
@@ -21,7 +27,9 @@ from wilq.content.workflow.documents.codex_revision_commit import (
     codex_completion_state,
     persist_codex_completion,
 )
+from wilq.content.workflow.research_packet_v3_receipt import ResearchPacketV3PreviewRecord
 from wilq.content.workflow.runtime.codex_run_lifecycle import effective_deadline
+from wilq.content.workflow.store.store import ContentWorkflowStore
 from wilq.schemas import CodexRun
 from wilq.schemas.core import utc_now
 from wilq.security.redaction import redact_mapping
@@ -56,6 +64,72 @@ class SemanticReviewClaim:
 SemanticReviewClaimGuard = Callable[
     [sqlite3.Connection], ContentSemanticReviewBlocker | None
 ]
+
+
+def v3_review_claim_blocker(
+    connection: sqlite3.Connection,
+    inputs: ContentReviewInputs,
+) -> ContentReviewBindingBlocker | None:
+    """Recheck retained bindings under the claim lock, then current source authority."""
+    context = inputs.packet_context
+    if context is None or not content_review_inputs_match_revision(inputs.revision, inputs):
+        return _v3_claim_conflict("research_packet_v3_subject_mismatch")
+    bindings: tuple[tuple[str, str | tuple[str | None, ...], BaseModel], ...] = (
+        (
+            "SELECT payload_json FROM content_draft_revisions WHERE revision_id = ?",
+            inputs.revision.revision_id,
+            inputs.revision,
+        ),
+        (
+            "SELECT payload_json FROM content_planning_proposals WHERE work_item_id = ? "
+            "AND planning_input_digest = ? ORDER BY proposal_version DESC LIMIT 1",
+            (inputs.revision.work_item_id, inputs.proposal.planning_input_digest),
+            inputs.proposal,
+        ),
+        (
+            "SELECT payload_json FROM content_research_packet_v3_approval_receipts "
+            "WHERE packet_id = ?",
+            context.receipt.packet_id,
+            context.receipt,
+        ),
+        (
+            "SELECT payload_json FROM content_research_packet_v3_previews WHERE preview_hash = ?",
+            context.receipt.packet_digest,
+            ResearchPacketV3PreviewRecord.from_preview(context.packet),
+        ),
+        (
+            "SELECT input_json FROM content_planning_input_snapshots WHERE work_item_id = ? "
+            "AND planning_input_digest = ?",
+            (inputs.revision.work_item_id, inputs.proposal.planning_input_digest),
+            inputs.planning_input,
+        ),
+    )
+    try:
+        for query, key, expected in bindings:
+            row = connection.execute(query, key if isinstance(key, tuple) else (key,)).fetchone()
+            if row is None or json.loads(row[0]) != json.loads(expected.model_dump_json()):
+                return _v3_claim_conflict("research_packet_v3_claim_binding_drift")
+        path = Path(connection.execute("PRAGMA database_list").fetchone()[2])
+        resolved = resolve_v3_planning_packet_context(
+            proposal=inputs.proposal,
+            proposal_store=ContentPlanningProposalStore(path),
+            workflow_store=ContentWorkflowStore(path),
+        )
+    except (OSError, RuntimeError, ValueError, sqlite3.Error):
+        return _v3_claim_conflict("research_packet_v3_claim_read_unavailable")
+    if resolved.context != context:
+        return _v3_claim_conflict(resolved.blocker_code or "research_packet_v3_current_drift")
+    return None
+
+
+def _v3_claim_conflict(code: str) -> ContentReviewBindingBlocker:
+    return ContentReviewBindingBlocker(
+        code="research_packet_conflict",
+        label="Zmienił się kontekst review",
+        reason="Exact pakiet, rewizja albo bieżąca zgoda nie odpowiadają preflight.",
+        next_step="Odśwież workspace i uruchom review dla bieżącej rewizji.",
+        source_codes=(code,),
+    )
 
 
 def validate_content_review_claim_token(
@@ -734,4 +808,5 @@ __all__ = [
     "SemanticReviewStorageActivationRequired",
     "content_semantic_review_store",
     "validate_content_review_claim_token",
+    "v3_review_claim_blocker",
 ]

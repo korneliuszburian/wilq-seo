@@ -1,11 +1,8 @@
 """Resolve the exact planning context used by advisory content reviews.
 
-The planning and draft seams persist a planning-input digest after binding an
-immutable research packet.  A review must therefore rebuild the ordinary
-planning input first, bind the persisted packet, and only then compare the
-digest and current authority.  Keeping that work behind one domain interface
-prevents semantic and independent review from quietly growing two different
-revalidation ladders.
+V3 reviews consume the same retained input, subject and receipt as initial
+drafts. Current source and identity authority is required for a new claim;
+reading retained context alone never supplies that permission.
 """
 
 from __future__ import annotations
@@ -19,6 +16,11 @@ from wilq.content.planning.dynamic_input import (
     ContentPlanningInput,
     bind_research_packet_to_planning_input,
     build_content_planning_input,
+)
+from wilq.content.planning.proposal_v3_packet_read import (
+    V3PlanningPacketContext,
+    is_v3_research_packet_id,
+    resolve_v3_planning_packet_context,
 )
 from wilq.content.planning.source_pack_projection import (
     project_selected_source_pack_facts,
@@ -55,6 +57,7 @@ class ContentReviewInputs:
     proposal: ContentPlanningProposal
     packet: ContentResearchPacket | None = None
     current_packet: ContentResearchPacketCurrentProjection | None = None
+    packet_context: V3PlanningPacketContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,28 +125,18 @@ def same_content_review_inputs(
         and first.proposal.planning_input_digest == second.proposal.planning_input_digest
         and first.proposal.research_packet_id == second.proposal.research_packet_id
         and first.proposal.research_packet_digest == second.proposal.research_packet_digest
-        and (
-            None
-            if getattr(first, "packet", None) is None
-            else first.packet.packet_id
-        )
-        == (
-            None
-            if getattr(second, "packet", None) is None
-            else second.packet.packet_id
-        )
-        and (
-            None
-            if getattr(first, "packet", None) is None
-            else first.packet.packet_digest
-        )
-        == (
-            None
-            if getattr(second, "packet", None) is None
-            else second.packet.packet_digest
-        )
+        and (None if getattr(first, "packet", None) is None else first.packet.packet_id)
+        == (None if getattr(second, "packet", None) is None else second.packet.packet_id)
+        and (None if getattr(first, "packet", None) is None else first.packet.packet_digest)
+        == (None if getattr(second, "packet", None) is None else second.packet.packet_digest)
         and _current_packet_projection(first) == _current_packet_projection(second)
+        and _v3_packet_context(first) == _v3_packet_context(second)
     )
+
+
+def _v3_packet_context(inputs: Any) -> V3PlanningPacketContext | None:
+    binding = getattr(inputs, "review_inputs", None) or inputs
+    return getattr(binding, "packet_context", None)
 
 
 def _current_packet_projection(inputs: Any) -> tuple[Any, ...] | None:
@@ -218,6 +211,17 @@ def content_review_inputs_match_revision(
     ):
         return False
     packet_bound = content_review_revision_is_packet_bound(expected, proposal)
+    if actual.packet_context is not None:
+        context = actual.packet_context
+        return (
+            context.current_authority
+            and context.proposal == proposal
+            and context.planning_input == actual.planning_input
+            and context.receipt.packet_id == expected.research_packet_id
+            and context.receipt.packet_digest == expected.research_packet_digest
+            and context.subject.content_kind == expected.content_kind
+            and context.subject.service_card_id == expected.service_card_id
+        )
     if not packet_bound:
         return actual.packet is None and actual.current_packet is None
     if actual.packet is None or actual.current_packet is None:
@@ -285,9 +289,7 @@ def claim_token_for_review_inputs(
         identity_binding_id=packet.identity_binding_id,
         identity_binding_digest=packet.identity_binding_digest,
         classification_run_id=None if context is None else context.classification_run_id,
-        classification_run_digest=(
-            None if context is None else context.classification_run_digest
-        ),
+        classification_run_digest=(None if context is None else context.classification_run_digest),
         classification_source_row_digest=(
             None if context is None else context.classification_source_row_digest
         ),
@@ -306,8 +308,6 @@ def claim_token_for_review_inputs(
         source_fact_registry_digest=packet.source_fact_registry_digest,
         source_facts_digest=packet.source_facts_digest,
     )
-
-
 
 
 def content_review_snapshot_packet_pair(
@@ -349,6 +349,7 @@ def resolve_content_review_inputs(
     workflow_store: ResearchPacketPreparationStore,
     snapshot_loader: ReviewSnapshotLoader | None = None,
     planning_input_builder: Callable[..., Any] | None = None,
+    require_current_authority: bool = True,
 ) -> ContentReviewInputResolution:
     """Load and validate the exact persisted proposal, packet and current state.
 
@@ -374,6 +375,7 @@ def resolve_content_review_inputs(
         snapshot=current_snapshot,
         revision_id=revision_id,
         expected_revision_digest=expected_revision_digest,
+        require_current_authority=require_current_authority,
     )
     if isinstance(revision_and_proposal, ContentReviewInputResolution):
         return revision_and_proposal
@@ -399,34 +401,14 @@ def resolve_content_review_inputs(
                 "Odśwież exact packet i wygeneruj nową wersję planu.",
             )
     else:
-        packet_id, packet_digest = packet_pair
-        packet = workflow_store.load_content_research_packet(packet_id)
-        if packet is None:
-            return _blocked(
-                "research_packet_missing",
-                "Brakuje exact research packetu",
-                "Persisted revision wskazuje packet, którego WILQ nie może odczytać.",
-                "Odczytaj bieżący research packet i utwórz nową wersję planu.",
-            )
-        if (
-            packet.packet_digest != packet_digest
-            or packet.current_work_item_id != revision.work_item_id
-            or packet.packet_id != packet_id
-        ):
-            return _blocked(
-                "research_packet_conflict",
-                "Research packet nie odpowiada dokładnej wersji",
-                "Packet ID, digest albo work item nie zgadza się z persisted revision.",
-                "Odśwież exact packet i wygeneruj nową wersję planu.",
-                source_codes=(packet.packet_id, packet.packet_digest),
-            )
-        return _resolve_packet_bound(
+        return _resolve_packet_pair(
             snapshot=current_snapshot,
             revision=revision,
             proposal=proposal,
-            packet=packet,
+            packet_pair=packet_pair,
             workflow_store=workflow_store,
             planning_input_builder=planning_input_builder,
+            require_current_authority=require_current_authority,
         )
 
     return _resolve_unbound(
@@ -437,11 +419,63 @@ def resolve_content_review_inputs(
     )
 
 
+def _resolve_packet_pair(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision: ContentDraftRevision,
+    proposal: ContentPlanningProposal,
+    packet_pair: tuple[str, str],
+    workflow_store: ResearchPacketPreparationStore,
+    planning_input_builder: Callable[..., Any] | None,
+    require_current_authority: bool,
+) -> ContentReviewInputResolution:
+    """Route an exact packet binding to its existing version-specific resolver."""
+    packet_id, packet_digest = packet_pair
+    if is_v3_research_packet_id(packet_id):
+        return _resolve_v3_packet_bound(
+            snapshot=snapshot,
+            revision=revision,
+            proposal=proposal,
+            workflow_store=workflow_store,
+            planning_input_builder=planning_input_builder,
+            require_current_authority=require_current_authority,
+        )
+    packet = workflow_store.load_content_research_packet(packet_id)
+    if packet is None:
+        return _blocked(
+            "research_packet_missing",
+            "Brakuje exact research packetu",
+            "Persisted revision wskazuje packet, którego WILQ nie może odczytać.",
+            "Odczytaj bieżący research packet i utwórz nową wersję planu.",
+        )
+    if (
+        packet.packet_digest != packet_digest
+        or packet.current_work_item_id != revision.work_item_id
+        or packet.packet_id != packet_id
+    ):
+        return _blocked(
+            "research_packet_conflict",
+            "Research packet nie odpowiada dokładnej wersji",
+            "Packet ID, digest albo work item nie zgadza się z persisted revision.",
+            "Odśwież exact packet i wygeneruj nową wersję planu.",
+            source_codes=(packet.packet_id, packet.packet_digest),
+        )
+    return _resolve_packet_bound(
+        snapshot=snapshot,
+        revision=revision,
+        proposal=proposal,
+        packet=packet,
+        workflow_store=workflow_store,
+        planning_input_builder=planning_input_builder,
+    )
+
+
 def _load_revision_and_proposal(
     *,
     snapshot: ContentWorkItemWorkflowSnapshotResponse,
     revision_id: str,
     expected_revision_digest: str,
+    require_current_authority: bool = True,
 ) -> tuple[ContentDraftRevision, ContentPlanningProposal] | ContentReviewInputResolution:
     revision = snapshot.revision_workspace.latest_revision
     if revision is None:
@@ -465,7 +499,7 @@ def _load_revision_and_proposal(
             "Review wymaga rewizji v2 z page assets, FAQ i CTA.",
             "Utwórz pełny dokument v2 przed review.",
         )
-    if not snapshot.revision_workspace.context_current:
+    if require_current_authority and not snapshot.revision_workspace.context_current:
         return _blocked(
             "stale_content_context",
             "Zmienił się kontekst treści",
@@ -482,6 +516,62 @@ def _load_revision_and_proposal(
             "Odśwież albo wygeneruj aktualny plan przed review.",
         )
     return revision, proposal
+
+
+def _resolve_v3_packet_bound(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    revision: ContentDraftRevision,
+    proposal: ContentPlanningProposal,
+    workflow_store: ResearchPacketPreparationStore,
+    planning_input_builder: Callable[..., Any] | None,
+    require_current_authority: bool,
+) -> ContentReviewInputResolution:
+    if (
+        revision.work_item_id != snapshot.preflight.item.id
+        or revision.work_item_id != proposal.work_item_id
+        or revision.content_kind != proposal.content_kind
+        or revision.service_card_id != proposal.service_card_id
+    ):
+        return _blocked(
+            "planning_digest_mismatch",
+            "Plan nie odpowiada dokładnej wersji",
+            "Subject rewizji nie zgadza się z planem i bieżącą stroną.",
+            "Odczytaj exact plan i rewizję dla tej samej strony.",
+            source_codes=("research_packet_v3_subject_mismatch",),
+        )
+    base: ContentPlanningInput | None = None
+    if require_current_authority:
+        built = _build_base_input(snapshot, proposal, planning_input_builder)
+        if isinstance(built, ContentReviewInputResolution):
+            return built
+        base = built
+    context_read = resolve_v3_planning_packet_context(
+        proposal=proposal,
+        current_input=base,
+        workflow_store=workflow_store,  # type: ignore[arg-type]
+        require_current_authority=require_current_authority,
+    )
+    if context_read.context is None:
+        return _blocked(
+            "research_packet_conflict" if context_read.missing else "research_packet_blocked",
+            "Pakiet planu nie daje bieżącej zgody na review",
+            context_read.blocker_next_step,
+            context_read.blocker_next_step,
+            source_codes=(
+                context_read.blocker_code or "research_packet_blocked",
+                *context_read.blocker_evidence_ids,
+            ),
+        )
+    context = context_read.context
+    return ContentReviewInputResolution(
+        inputs=ContentReviewInputs(
+            revision=revision,
+            proposal=proposal,
+            planning_input=context.planning_input,
+            packet_context=context,
+        )
+    )
 
 
 def _resolve_packet_bound(
@@ -653,12 +743,8 @@ def _build_base_input(
         blocker = result.blockers[0] if result.blockers else None
         return _blocked(
             "missing_planning_input" if blocker is None else str(blocker.code),
-            "Brakuje aktualnego wejścia strategicznego"
-            if blocker is None
-            else blocker.label,
-            "Planning input ma typed blocker przed review."
-            if blocker is None
-            else blocker.reason,
+            "Brakuje aktualnego wejścia strategicznego" if blocker is None else blocker.label,
+            "Planning input ma typed blocker przed review." if blocker is None else blocker.reason,
             "Odśwież albo wygeneruj aktualny plan przed review."
             if blocker is None
             else blocker.next_step,

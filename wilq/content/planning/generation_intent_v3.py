@@ -300,6 +300,12 @@ def resolve_approved_packet_v3_for_planning(
             current.verification_evidence_ids,
             "Pakiet v3 zmienił się semantycznie. Przygotuj i zatwierdź nowy dokładny pakiet.",
         )
+    if current.planning_input_digest != approved.planning_input_digest:
+        return _blocked(
+            "research_packet_v3_input_drift",
+            current.verification_evidence_ids,
+            "Bieżące dane planowania zmieniły się. Przygotuj i zatwierdź nowy dokładny pakiet.",
+        )
     return ApprovedPacketV3PlanningView(
         packet_id=receipt.packet_id,
         packet_digest=receipt.packet_digest,

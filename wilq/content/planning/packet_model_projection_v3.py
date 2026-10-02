@@ -77,6 +77,29 @@ def project_planning_input_for_packet_v3(
     )
 
 
+def validate_frozen_input_for_packet_v3(
+    planning_input: ContentPlanningInput,
+    *,
+    packet: ResearchPacketV3Preview,
+    source_facts: tuple[ContentSourceFact, ...],
+) -> None:
+    """Prove retained model facts still equal the packet's approved projection."""
+    selected = _select_current_v3_facts(packet, source_facts)
+    evidence = _packet_model_evidence(packet, selected)
+    projected = _project_planning_input(
+        planning_input,
+        packet=packet,
+        selected=selected,
+        allowed_evidence=evidence,
+        internal_links=_packet_model_links(packet, evidence),
+    )
+    if projected != planning_input:
+        raise ResearchPacketV3ModelProjectionBlocked(
+            "research_packet_v3_frozen_projection_mismatch",
+            "Odczytaj frozen input z tej samej zatwierdzonej projekcji pakietu v3.",
+        )
+
+
 def _validate_projection_identity(
     planning_input: ContentPlanningInput,
     packet: ResearchPacketV3Preview,
@@ -169,9 +192,7 @@ def _select_current_v3_facts(
 
     required_ids = {requirement.requirement_id for requirement in packet.legal_requirements}
     fact_requirement_ids = {
-        requirement_id
-        for fact in selected
-        for requirement_id in fact.regulatory_requirement_ids
+        requirement_id for fact in selected for requirement_id in fact.regulatory_requirement_ids
     }
     if required_ids != fact_requirement_ids:
         raise ResearchPacketV3ModelProjectionBlocked(
@@ -204,9 +225,7 @@ def _packet_model_evidence(
     selected: tuple[ContentSourceFact, ...],
 ) -> set[str]:
     allowed_evidence = set(packet.verification_evidence_ids)
-    allowed_evidence.update(
-        evidence_id for fact in selected for evidence_id in fact.evidence_ids
-    )
+    allowed_evidence.update(evidence_id for fact in selected for evidence_id in fact.evidence_ids)
     allowed_evidence.update(
         evidence_id for link in packet.internal_links for evidence_id in link.evidence_ids
     )
@@ -267,8 +286,7 @@ def _project_planning_input(
             "buyer_problem": context.buyer_problem,
             "buyer_trigger": context.buyer_trigger,
             "search_intent": (
-                context.search_intent
-                or "Brak zatwierdzonej intencji wyszukiwania w pakiecie v3."
+                context.search_intent or "Brak zatwierdzonej intencji wyszukiwania w pakiecie v3."
             ),
             "inventory": inventory,
             "source_facts": selected_facts,
@@ -286,10 +304,12 @@ def _project_planning_input(
             "measurement_baseline_evidence_ids": [],
             "knowledge_card_ids": [],
             "evidence_ids": sorted(allowed_evidence),
-            "source_connectors": sorted({
-                *(connector for fact in selected for connector in fact.source_connectors),
-                *(link.source_connector for link in packet.internal_links),
-            }),
+            "source_connectors": sorted(
+                {
+                    *(connector for fact in selected for connector in fact.source_connectors),
+                    *(link.source_connector for link in packet.internal_links),
+                }
+            ),
             "baseline_cta_direction": packet.cta_direction,
             "minimum_cta_blocks": packet.minimum_cta_blocks,
             "required_cta_patterns": list(packet.required_cta_patterns),
@@ -359,11 +379,13 @@ def _project_v3_regulatory_coverage(
             for requirement in packet.legal_requirements
         ],
         source_fact_ids=list(selected_ids),
-        evidence_ids=sorted({
-            evidence_id
-            for requirement in packet.legal_requirements
-            for evidence_id in requirement.evidence_ids
-        }),
+        evidence_ids=sorted(
+            {
+                evidence_id
+                for requirement in packet.legal_requirements
+                for evidence_id in requirement.evidence_ids
+            }
+        ),
         source_facts=list(selected),
     )
     return regulatory_coverage
@@ -477,4 +499,5 @@ __all__ = [
     "ResearchPacketV3ModelProjectionBlocked",
     "content_planning_turn_request_v3",
     "project_planning_input_for_packet_v3",
+    "validate_frozen_input_for_packet_v3",
 ]

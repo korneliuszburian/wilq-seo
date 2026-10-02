@@ -10,16 +10,12 @@ from wilq.content.codex_turn import (
     require_all_object_properties,
     restrict_array_with_empty_placeholder,
 )
-from wilq.content.knowledge.source_facts import ekologus_source_facts
 from wilq.content.planning.compact_projections import (
     compact_proposal,
     compact_semantic_review_planning_input,
 )
 from wilq.content.planning.dynamic_input import ContentPlanningInput
-from wilq.content.planning.packet_model_projection import current_research_packet_for_model
-from wilq.content.planning.source_pack_projection import (
-    project_selected_source_pack_facts,
-)
+from wilq.content.planning.packet_model_projection import content_packet_model_input
 from wilq.content.quality.semantic_review_contracts import (
     CONTENT_SEMANTIC_DIMENSIONS,
     ContentSemanticReviewModelOutput,
@@ -99,13 +95,13 @@ def semantic_review_turn_request(
     planning_input: ContentPlanningInput,
     proposal: ContentPlanningProposal,
 ) -> CodexAppServerStructuredTurnRequest:
-    packet = current_research_packet_for_model(planning_input)
-    if packet is not None:
-        planning_input = project_selected_source_pack_facts(
-            planning_input,
-            packet.approved_source_fact_ids,
-            ekologus_source_facts(),
-        )
+    model_input = content_packet_model_input(planning_input, proposal)
+    planning_input = model_input.planning_input
+    packet_binding = (
+        model_input.packet_context.model_binding()
+        if model_input.packet_context is not None
+        else None
+    )
     allowed_targets = _allowed_targets(revision)
     allowed_evidence_ids = _revision_evidence_ids(revision)
     application_context = json.dumps(
@@ -115,6 +111,7 @@ def semantic_review_turn_request(
             "revision_id": revision.revision_id,
             "revision_digest": revision.content_digest,
             "planning_input_digest": revision.planning_input_digest,
+            **({"research_packet_binding": packet_binding} if packet_binding is not None else {}),
             "criteria_version": "wilq_semantic_content_review_v1",
             "scope_rules": {
                 "advisory_only": True,
@@ -168,6 +165,7 @@ def semantic_review_turn_request(
             "revision": revision.model_dump(mode="json"),
             "approved_planning_proposal": proposal_context,
             "planning_input": compact_semantic_review_planning_input(planning_input),
+            **({"research_packet_binding": packet_binding} if packet_binding is not None else {}),
         },
         ensure_ascii=False,
         sort_keys=True,

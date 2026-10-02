@@ -43,6 +43,7 @@ from wilq.content.quality.semantic_review_service import (
 from wilq.content.quality.semantic_review_store import (
     SemanticReviewClaimGuard,
     content_semantic_review_store,
+    v3_review_claim_blocker,
     validate_content_review_claim_token,
 )
 from wilq.content.quality.semantic_run_state import (
@@ -309,6 +310,17 @@ def _packet_claim_guard(
     initial: object,
 ) -> SemanticReviewClaimGuard | None:
     review_inputs = getattr(initial, "review_inputs", None)
+    if review_inputs is not None and review_inputs.packet_context is not None:
+
+        def v3_guard(connection: sqlite3.Connection) -> ContentSemanticReviewBlocker | None:
+            blocker = v3_review_claim_blocker(connection, review_inputs)
+            return (
+                None
+                if blocker is None
+                else semantic_binding_blocker(ContentReviewInputResolution(blocker=blocker))
+            )
+
+        return v3_guard
     token = None if review_inputs is None else claim_token_for_review_inputs(review_inputs)
     if token is None:
         return None

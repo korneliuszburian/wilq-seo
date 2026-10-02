@@ -19,6 +19,9 @@ from wilq.content.drafts.generated_claim_safety import (
     generated_claim_safety_issues,
 )
 from wilq.content.drafts.grounding import document_ready_fact_text
+from wilq.content.drafts.initial_draft_authority import (
+    validate_legacy_research_packet as _validate_research_packet,
+)
 from wilq.content.drafts.initial_draft_persistence import (
     InitialDraftRevisionStore,
     persist_initial_draft,
@@ -71,6 +74,11 @@ from wilq.content.planning.generated_proposal import (
     with_explicit_content_service_selection,
 )
 from wilq.content.planning.generated_proposal_store import content_planning_proposal_store
+from wilq.content.planning.proposal_v3_packet_read import (
+    V3PlanningPacketContext,
+    is_v3_research_packet_id,
+    resolve_v3_planning_packet_context,
+)
 from wilq.content.quality.benefit_signal import (
     BENEFIT_BODY_MARKER,
     BENEFIT_HEADING_SIGNAL,
@@ -94,6 +102,7 @@ class _InitialDraftInputs:
     generation_contract: StructuredDraftGenerationContract
     base_revision_id: str | None = None
     draft_plan: PreparedDraftPlan | None = None
+    packet_context: V3PlanningPacketContext | None = None
 
 
 BENEFIT_SOURCE_FACT_LIMIT = 2
@@ -407,7 +416,15 @@ def _prepare_inputs(
     )
     if isinstance(planning_input_or_response, ContentInitialDraftResponse):
         return planning_input_or_response
-    planning_input = planning_input_or_response
+    packet_context = (
+        planning_input_or_response
+        if isinstance(planning_input_or_response, V3PlanningPacketContext)
+        else None
+    )
+    planning_input = (
+        packet_context.planning_input if packet_context is not None else planning_input_or_response
+    )
+    assert isinstance(planning_input, ContentPlanningInput)
     if planning_input.planning_input_digest != request.expected_planning_input_digest:
         return _blocked_response(
             snapshot,
@@ -415,12 +432,15 @@ def _prepare_inputs(
             status="conflict",
             blockers=[_stale_input_blocker()],
         )
-    return _prepare_generation_contract(
+    prepared = _prepare_generation_contract(
         snapshot=snapshot,
         proposal=proposal,
         planning_input=planning_input,
         base_revision_id=None if latest_revision is None else latest_revision.revision_id,
     )
+    if isinstance(prepared, _InitialDraftInputs):
+        return replace(prepared, packet_context=packet_context)
+    return prepared
 
 
 def _prepare_draft_planning_input(
@@ -429,7 +449,7 @@ def _prepare_draft_planning_input(
     proposal: ContentPlanningProposal,
     service_card_id: str | None,
     workflow_store: InitialDraftRevisionStore | None,
-) -> ContentPlanningInput | ContentInitialDraftResponse:
+) -> ContentPlanningInput | V3PlanningPacketContext | ContentInitialDraftResponse:
     planning_result = _current_planning_input(
         snapshot,
         proposal.content_kind,
@@ -443,12 +463,44 @@ def _prepare_draft_planning_input(
             blockers=[_planning_input_blocker(planning_result.blockers)],
         )
     planning_input = planning_result.planning_input
+    if proposal.research_packet_id is not None and is_v3_research_packet_id(
+        proposal.research_packet_id
+    ):
+        context_read = resolve_v3_planning_packet_context(
+            proposal=proposal,
+            current_input=planning_input,
+            proposal_store=content_planning_proposal_store(),
+            workflow_store=cast(Any, workflow_store),
+        )
+        if context_read.context is not None:
+            return context_read.context
+        return _blocked_response(
+            snapshot,
+            proposal=proposal,
+            status="blocked",
+            blockers=[
+                build_blocker(
+                    ContentInitialDraftBlocker,
+                    code="research_packet_conflict"
+                    if context_read.missing
+                    else "research_packet_blocked",
+                    label="Pakiet planu nie daje bieżącej zgody na tekst",
+                    reason=context_read.blocker_next_step,
+                    next_step=context_read.blocker_next_step,
+                    source_codes=[
+                        context_read.blocker_code or "research_packet_blocked",
+                        *context_read.blocker_evidence_ids,
+                    ],
+                )
+            ],
+        )
     frozen_planning_input = frozen_input_for_proposal(proposal, content_planning_proposal_store)
     packet_blocker = _validate_research_packet(
         snapshot=snapshot,
         planning_input=planning_input,
         proposal=proposal,
         workflow_store=workflow_store,
+        current_blocker=current_research_packet_blocker,
     )
     if packet_blocker is not None:
         return _blocked_response(
@@ -484,84 +536,6 @@ def _planning_input_with_packet(
         ekologus_source_facts(),
     )
     return bind_research_packet_to_planning_input(projected_input, packet)
-
-
-def _validate_research_packet(
-    *,
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-    planning_input: ContentPlanningInput,
-    proposal: ContentPlanningProposal,
-    workflow_store: InitialDraftRevisionStore | None,
-) -> ContentInitialDraftBlocker | None:
-    if proposal.research_packet_id is None or proposal.research_packet_digest is None:
-        if proposal.content_kind == "editorial":
-            return _research_packet_blocker(
-                "research_packet_missing",
-                "Initial draft editorial wymaga server-owned research packetu.",
-            )
-        if workflow_store is None:
-            return None
-        list_source_packs = getattr(
-            workflow_store,
-            "list_content_source_pack_bindings",
-            None,
-        )
-        if callable(list_source_packs) and list_source_packs(
-            current_work_item_id=planning_input.work_item_id
-        ):
-            return _research_packet_blocker(
-                "research_packet_missing",
-                "Initial draft wymaga server-owned research packetu.",
-            )
-        return None
-    loader = getattr(workflow_store, "load_content_research_packet", None)
-    if not callable(loader):
-        return _research_packet_blocker(
-            "research_packet_missing",
-            "Initial draft wymaga odczytanego research packetu.",
-        )
-    packet = loader(proposal.research_packet_id)
-    if packet is None or packet.packet_digest != proposal.research_packet_digest:
-        return _research_packet_blocker(
-            "research_packet_conflict",
-            "Research packet nie odpowiada digestowi exact planu.",
-        )
-    blocker = current_research_packet_blocker(
-        store=cast(Any, workflow_store),
-        packet=packet,
-        snapshot=snapshot,
-        planning_input=planning_input,
-    )
-    if blocker is not None:
-        code = {
-            "source_pack_binding_missing": "research_packet_missing",
-            "packet_conflict": "research_packet_conflict",
-        }.get(blocker.reason, "research_packet_blocked")
-        return _research_packet_blocker(
-            cast(
-                Literal[
-                    "research_packet_missing",
-                    "research_packet_blocked",
-                    "research_packet_conflict",
-                ],
-                code,
-            ),
-            blocker.next_step_pl,
-        )
-    return None
-
-
-def _research_packet_blocker(
-    code: Literal["research_packet_missing", "research_packet_blocked", "research_packet_conflict"],
-    next_step: str,
-) -> ContentInitialDraftBlocker:
-    return build_blocker(
-        ContentInitialDraftBlocker,
-        code=code,
-        label="Research packet nie jest aktualny",
-        reason=next_step,
-        next_step=next_step,
-    )
 
 
 def _prepare_generation_contract(
@@ -774,9 +748,7 @@ def _output_blocker(
             source_codes=errors,
         )
     claim_safety_proposal = (
-        inputs.draft_plan.draftable_proposal
-        if inputs.draft_plan is not None
-        else inputs.proposal
+        inputs.draft_plan.draftable_proposal if inputs.draft_plan is not None else inputs.proposal
     )
     issues = generated_claim_safety_issues(
         claim_safety_output(
