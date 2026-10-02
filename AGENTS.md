@@ -128,21 +128,29 @@ record that state rather than silently publishing.
 
 ## Execution and review protocol
 
-- **Codex is the implementation executor.** Run it non-interactively with
-  `gpt-6-luna` at maximum reasoning effort and capture the result:
-  `codex exec --ephemeral -m gpt-6-luna -c 'model_reasoning_effort="max"' -C <workdir> -o <last-message-file> "<task>"`
-  (add `-s read-only` unless the slice explicitly authorizes writes,
-  `--json` for an inspectable trace, `--approve-for-me` only for authorized
-  workspace-write slices). Reserve `gpt-6-sol` at `max` for genuinely difficult
-  architectural questions and `gpt-6-astra` at `max` for the hardest ones.
-  Never start a new task or an embedded WILQ app-server turn on a `gpt-5.6` model;
-  historical run records may retain their actual model identity.
-- **The delivery owner is the reviewer.** It owns the task contract, delegates
-  execution to Codex, verifies every Codex claim against local evidence
-  (re-run the focused falsifier, inspect the diff), records proof in the
-  active Bead, and decides. Codex proposes; the owner verifies and commits.
-- Codex never owns workflow state, approval, Beads, publication, or vendor
-  mutation. If an advisory model pass is useful, use only a fresh read-only
+- **Use Codex through the operator's existing login.** Implementation may run
+  directly in Pi with provider `openai-codex`, or through authenticated Codex
+  CLI when delegation is useful. Use the user-approved session model and
+  reasoning settings; do not force a separate model or `codex exec` wrapper.
+  Do not substitute Pi's API-key `openai` provider. Let the installed harness
+  resolve its login credential store; never copy or print credential JSON.
+- A delegated Codex executor implements its bounded slice itself; it must not
+  spawn another executor to satisfy this instruction. Keep one writer. CLI
+  reads use read-only permissions; writes require explicit bounded authority.
+  For login-based CLI runs, exclude inherited `CODEX_API_KEY` and
+  `OPENAI_API_KEY` from the child environment (`env -u CODEX_API_KEY
+  -u OPENAI_API_KEY codex exec ...`), without changing global config or secrets.
+  A quota/auth error alone does not establish an account limit; verify routing.
+- This implementation policy does not change the embedded WILQ app-server's
+  typed model policy or its server-side login seam. Do not introduce another
+  product model API, SDK, key, or browser-to-model path.
+- **The delivery owner owns verification.** It owns the task contract, executes
+  directly through the approved Codex session or delegates a bounded slice,
+  verifies model claims against local evidence (focused falsifier and diff),
+  records proof in the active Bead, and decides. Direct implementation is not
+  independent review; required fixed-point review still uses a separate context.
+- A delegated executor never owns workflow state, approval, Beads, publication,
+  or vendor mutation. If an advisory model pass is useful, use only a fresh read-only
   Codex context over a bounded fixed artifact. A same-family pass is not
   independent approval; verify and disposition each finding locally. Do not
   invoke OpenCode or DeepSeek for this repository.
@@ -163,7 +171,9 @@ record that state rather than silently publishing.
 
 ## Model orchestration and test economics
 
-- The owner records each exact model run command through terminal public readback; model output is untrusted input.
+- Record the effective provider/model and returned proof for direct harness work;
+  for delegated CLI runs, also record the exact command through terminal public
+  readback. Model output is untrusted input; execution style is not approval.
 - One deep module owns mutation → observation → seal. After matching PASS, only read-only validation, sealing, and persistence may follow.
 - Tests target stable public/deep seams and content-agnostic invariants, not generated prose or source-string topology. Replace or delete shallow tests when a deep falsifier supersedes them.
 
