@@ -12,6 +12,9 @@ from wilq.content.planning.dynamic_input import (
     content_planning_input_summary,
     planning_generation_blockers,
 )
+from wilq.content.planning.frozen_planning_input import (
+    validate_v3_frozen_input_integrity,
+)
 from wilq.content.planning.generated_proposal_contracts import (
     ContentPlanningProposalBlocker,
     ContentPlanningProposalBlockerCode,
@@ -26,9 +29,6 @@ from wilq.content.planning.generated_proposal_responses import (
 )
 from wilq.content.planning.generated_proposal_responses import (
     stale_input_blocker as _stale_input_blocker,
-)
-from wilq.content.planning.generated_proposal_rows import (
-    validate_v3_frozen_input_integrity,
 )
 from wilq.content.planning.generated_proposal_store import ContentPlanningProposalStore
 from wilq.content.planning.proposal_quality import (

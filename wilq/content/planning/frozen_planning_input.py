@@ -11,6 +11,10 @@ from uuid import uuid4
 
 from wilq.content.planning.dynamic_input import ContentPlanningInput
 from wilq.content.planning.generated_proposal_rows import table_exists as _table_exists
+from wilq.content.planning.packet_input_binding import (
+    bind_packet_identity_to_planning_input,
+    is_v3_research_packet_id,
+)
 from wilq.content.planning.subject import ContentPlanningSubject
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.schemas import CodexRun
@@ -28,6 +32,26 @@ def validate_frozen_input_identity(
     proposal: ContentPlanningProposal,
     planning_input: ContentPlanningInput,
 ) -> None:
+    _validate_frozen_input_scalar_identity(proposal, planning_input)
+    if _is_v3_research_packet_id(proposal.research_packet_id):
+        _validate_v3_packet_bound_input(proposal, planning_input)
+
+
+def validate_v3_frozen_input_integrity(
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+) -> None:
+    """Validate the exact packet-bound payload behind a v3 planning digest."""
+    _validate_frozen_input_scalar_identity(proposal, planning_input)
+    if not _is_v3_research_packet_id(proposal.research_packet_id):
+        raise ValueError("Frozen planning input proposal does not identify a v3 packet.")
+    _validate_v3_packet_bound_input(proposal, planning_input)
+
+
+def _validate_frozen_input_scalar_identity(
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+) -> None:
     if (
         planning_input.work_item_id != proposal.work_item_id
         or planning_input.content_kind != proposal.content_kind
@@ -37,6 +61,41 @@ def validate_frozen_input_identity(
         raise ValueError("Planning input snapshot must match the generated proposal identity.")
 
 
+def _validate_v3_packet_bound_input(
+    proposal: ContentPlanningProposal,
+    planning_input: ContentPlanningInput,
+) -> None:
+    packet_id = proposal.research_packet_id
+    packet_digest = proposal.research_packet_digest
+    if (
+        packet_id is None
+        or packet_digest is None
+        or planning_input.research_packet_id != packet_id
+        or planning_input.research_packet_digest != packet_digest
+    ):
+        raise ValueError("Frozen planning input packet differs from its proposal.")
+    _validate_v3_packet_bound_digest(planning_input)
+
+
+def _validate_v3_packet_bound_digest(planning_input: ContentPlanningInput) -> None:
+    packet_id = planning_input.research_packet_id
+    packet_digest = planning_input.research_packet_digest
+    if packet_id is None or packet_digest is None:
+        raise ValueError("Frozen planning input is missing its v3 packet identity.")
+    rebound = bind_packet_identity_to_planning_input(
+        planning_input,
+        work_item_id=planning_input.work_item_id,
+        packet_id=packet_id,
+        packet_digest=packet_digest,
+    )
+    if rebound.planning_input_digest != planning_input.planning_input_digest:
+        raise ValueError("Frozen planning input payload digest does not match its contents.")
+
+
+def _is_v3_research_packet_id(packet_id: str | None) -> bool:
+    return packet_id is not None and is_v3_research_packet_id(packet_id)
+
+
 def persist_frozen_planning_input(
     connection: sqlite3.Connection,
     planning_input: ContentPlanningInput | None,
@@ -44,6 +103,8 @@ def persist_frozen_planning_input(
 ) -> None:
     if planning_input is None:
         return
+    if _is_v3_research_packet_id(planning_input.research_packet_id):
+        _validate_v3_packet_bound_digest(planning_input)
     subject = ContentPlanningSubject(
         content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
@@ -165,6 +226,8 @@ def _frozen_planning_input_from_row(
             or planning_input.planning_input_digest != planning_input_digest
         ):
             return None
+        if _is_v3_research_packet_id(planning_input.research_packet_id):
+            _validate_v3_packet_bound_digest(planning_input)
     except (KeyError, TypeError, ValueError):
         return None
     return planning_input

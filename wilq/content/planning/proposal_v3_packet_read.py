@@ -18,13 +18,15 @@ from dataclasses import dataclass
 
 from wilq.content.knowledge.source_facts import ContentSourceFact
 from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.planning.packet_input_binding import (
+    V3_PACKET_ID_PREFIX,
+    is_v3_research_packet_id,
+)
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.decisions.production import canonical_json_digest
 from wilq.content.workflow.research_packet_v3_preview import ResearchPacketV3Preview
 from wilq.content.workflow.research_packet_v3_receipt import ResearchPacketV3PreviewRecord
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
-
-V3_PACKET_ID_PREFIX = "content_research_packet_v3_"
 
 # The exact record is gone or does not match the plan; that is a conflict, not a
 # freshness finding.  Every other v3 blocker keeps its own typed reason.
@@ -41,10 +43,6 @@ _MISSING_RECORD_CODES = frozenset(
 
 SourceFactsLoader = Callable[[], tuple[ContentSourceFact, ...]]
 GenerationLinkageReader = Callable[[ContentPlanningProposal], str | None]
-
-
-def is_v3_research_packet_id(packet_id: str) -> bool:
-    return packet_id.startswith(V3_PACKET_ID_PREFIX)
 
 
 @dataclass(frozen=True, slots=True)

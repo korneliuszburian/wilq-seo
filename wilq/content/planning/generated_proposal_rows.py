@@ -11,9 +11,6 @@ from wilq.content.planning.generated_proposal_contracts import ContentPlanningPr
 from wilq.content.planning.generated_proposal_queries import (
     V3_PLAN_GENERATION_LINKAGE_SELECT,
 )
-from wilq.content.planning.packet_input_binding import (
-    bind_packet_identity_to_planning_input,
-)
 from wilq.content.planning.runtime_contract import planning_job_stale_after_seconds
 from wilq.content.planning.subject import ContentPlanningSubject
 from wilq.content.workflow.decisions.planning import ContentPlanningProposal
@@ -131,35 +128,6 @@ def v3_plan_generation_linkage_digest(
     return proposal.planning_input_digest
 
 
-def validate_v3_frozen_input_integrity(
-    proposal: ContentPlanningProposal,
-    frozen: ContentPlanningInput,
-) -> None:
-    """Validate the exact packet-bound payload behind a v3 planning digest."""
-    from wilq.content.planning.frozen_planning_input import (
-        validate_frozen_input_identity,
-    )
-
-    validate_frozen_input_identity(proposal, frozen)
-    packet_id = proposal.research_packet_id
-    packet_digest = proposal.research_packet_digest
-    if (
-        packet_id is None
-        or packet_digest is None
-        or frozen.research_packet_id != packet_id
-        or frozen.research_packet_digest != packet_digest
-    ):
-        raise ValueError("Frozen planning input packet differs from its proposal.")
-    rebound = bind_packet_identity_to_planning_input(
-        frozen,
-        work_item_id=proposal.work_item_id,
-        packet_id=packet_id,
-        packet_digest=packet_digest,
-    )
-    if rebound.planning_input_digest != frozen.planning_input_digest:
-        raise ValueError("Frozen planning input payload digest does not match its contents.")
-
-
 def _v3_frozen_input_matches(
     row: sqlite3.Row,
     proposal: ContentPlanningProposal,
@@ -188,6 +156,10 @@ def _v3_frozen_input_matches(
     )
     if frozen_row_identity != frozen_payload_identity:
         raise ValueError("Frozen planning input row differs from its payload.")
+    from wilq.content.planning.frozen_planning_input import (
+        validate_v3_frozen_input_integrity,
+    )
+
     validate_v3_frozen_input_integrity(proposal, frozen)
     return True
 
@@ -383,7 +355,6 @@ __all__ = [
     "response_from_job_row",
     "table_exists",
     "validate_generated_proposal",
-    "validate_v3_frozen_input_integrity",
     "v3_plan_generation_linkage_digest",
     "v3_plan_generation_linkage_exact",
 ]
