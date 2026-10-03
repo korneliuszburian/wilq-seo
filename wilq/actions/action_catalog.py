@@ -67,6 +67,8 @@ from wilq.actions.wordpress_handoff import (
     build_draft_handoff_preview_item,
 )
 from wilq.connectors.refresh import list_connector_refresh_runs
+from wilq.content.drafts.full_draft_generation_v3 import load_full_draft_generation_v3_action
+from wilq.content.drafts.revision_repair_action import content_revision_repair_action
 from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.planning.generation_intent import load_planning_generation_intent_action
 from wilq.content.planning.generation_intent_v3 import (
@@ -181,6 +183,8 @@ def get_action(action_id: str) -> ActionObject | None:
         or load_research_packet_v3_action(action_id)
         or load_planning_generation_intent_action(action_id, store=content_workflow_store())
         or load_planning_generation_intent_v3_action(action_id, store=content_workflow_store())
+        or load_full_draft_generation_v3_action(action_id, store=content_workflow_store())
+        or _load_content_revision_repair_action(action_id)
         or load_content_source_fact_authority_action(action_id)
         or _load_source_fact_authority_v2_action(action_id)
         or load_content_research_fact_promotion_action(action_id, store=content_workflow_store())
@@ -191,6 +195,11 @@ def get_action(action_id: str) -> ActionObject | None:
 def _load_source_fact_authority_v2_action(action_id: str) -> ActionObject | None:
     proposal = content_workflow_store().load_source_fact_authority_v2_proposal(action_id)
     return None if proposal is None else source_fact_authority_v2_action(proposal)
+
+
+def _load_content_revision_repair_action(action_id: str) -> ActionObject | None:
+    snapshot = content_workflow_store().load_content_revision_repair_snapshot(action_id)
+    return None if snapshot is None else content_revision_repair_action(snapshot)
 
 
 def _read_action_list_cache() -> list[ActionObject] | None:

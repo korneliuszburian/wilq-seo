@@ -37,14 +37,15 @@ from wilq.content.workflow.documents.revisions import (
 )
 from wilq.content.workflow.documents.store_measurement import MeasurementStoreMixin
 from wilq.content.workflow.documents.store_revision_review import record_draft_revision_review
-from wilq.content.workflow.store.refresh_preparation_atomic import (
-    assert_refresh_preparation_revision_current,
-)
 from wilq.content.workflow.store.store_authoring_inventory_receipt import (
     ContentAuthoringInventoryReceiptStoreMixin,
 )
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
+)
+from wilq.content.workflow.store.store_content_revision_repair import (
+    ContentRevisionRepairStoreMixin,
+    ensure_content_revision_repair_schema,
 )
 from wilq.content.workflow.store.store_current_acceptance import (
     CurrentAcceptanceStoreMixin,
@@ -68,6 +69,11 @@ from wilq.content.workflow.store.store_delivery_identity_authority import (
 from wilq.content.workflow.store.store_evidence import _EvidenceStoreMixin
 from wilq.content.workflow.store.store_evidence_acquisition import (
     EvidenceAcquisitionStoreMixin,
+)
+from wilq.content.workflow.store.store_full_draft_generation_v3 import (
+    FullDraftGenerationV3StoreMixin,
+    assert_draft_revision_authority,
+    ensure_full_draft_generation_v3_schema,
 )
 from wilq.content.workflow.store.store_initial_draft_authority import (
     InitialDraftAuthorityStoreMixin,
@@ -225,7 +231,9 @@ class _DraftRevisionStoreMixin(_StoreConnectionMixin):
         content_digest = draft_revision_content_digest(redacted_command)
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            assert_refresh_preparation_revision_current(connection, redacted_command)
+            assert_draft_revision_authority(
+                connection, redacted_command, completed_codex_run, self.path
+            )
             redacted_completion = prepare_codex_completion(
                 redacted_command,
                 completed_codex_run,
@@ -683,6 +691,8 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 
 
 class ContentWorkflowStore(
+    FullDraftGenerationV3StoreMixin,
+    ContentRevisionRepairStoreMixin,
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
     ContentMaterialReviewStoreMixin,
@@ -736,6 +746,8 @@ class ContentWorkflowStore(
         ensure_research_packet_v3_schema(connection)
         ensure_planning_generation_intent_schema(connection)
         ensure_planning_generation_intent_v3_schema(connection)
+        ensure_full_draft_generation_v3_schema(connection)
+        ensure_content_revision_repair_schema(connection)
         ensure_per_url_decision_authority_schema(connection)
         ensure_current_acceptance_schema(connection)
         ensure_content_intake_schema(connection)

@@ -3083,6 +3083,14 @@ export const ContentDraftRevisionOfficialSourceReferenceSchema = z.object({
   regulatory_requirement_ids: z.array(z.string().trim().min(1)).min(1)
 });
 
+export const FullDraftGenerationV3BindingSchema = z.object({
+  action_id: z.string().min(1),
+  authorization_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  payload_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  context_digest: z.string().regex(/^[0-9a-f]{64}$/),
+  run_id: z.string().min(1)
+}).strict();
+
 export const ContentDraftRevisionSchema = z.object({
   schema_version: z
     .enum(["wilq_content_draft_revision_v1", "wilq_content_draft_revision_v2"])
@@ -3116,6 +3124,7 @@ export const ContentDraftRevisionSchema = z.object({
   official_source_references: z.array(ContentDraftRevisionOfficialSourceReferenceSchema).default([]),
   claim_ledger: ContentClaimLedgerSchema.nullable().optional(),
   proposal_metadata: ContentDraftRevisionProposalMetadataSchema.nullable().optional(),
+  generation_authorization: FullDraftGenerationV3BindingSchema.nullable().optional(),
   refresh_preparation_binding: ContentRefreshPreparationBindingSchema.nullable().optional(),
   correction_reason: z
     .enum([

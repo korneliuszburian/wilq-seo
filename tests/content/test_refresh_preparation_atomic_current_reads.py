@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -535,3 +536,62 @@ def _count_rows(path: Path, table: str) -> int:
         row = connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()  # noqa: S608
     assert row is not None
     return int(row[0])
+
+
+def test_exact_v3_preview_without_review_receipt_or_current_authority_cannot_persist(
+    tmp_path: Path,
+) -> None:
+    store, run, _row, _receipt, authorization = _editorial_context(tmp_path)
+    preview_digest = "a" * 64
+    preview_id = f"content_research_packet_v3_{preview_digest[:24]}"
+    proposal = _proposal(authorization).model_copy(
+        update={
+            "research_packet_id": preview_id,
+            "research_packet_digest": preview_digest,
+            "refresh_preparation_binding": None,
+        }
+    )
+    proposal_store = ContentPlanningProposalStore(store.path)
+    with proposal_store.run_transaction():
+        pass
+
+    with sqlite3.connect(store.path) as connection:
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS content_research_packet_v3_previews "
+            "(preview_hash TEXT PRIMARY KEY, work_item_id TEXT NOT NULL, "
+            "payload_json TEXT NOT NULL)"
+        )
+        connection.execute(
+            "INSERT INTO content_research_packet_v3_previews "
+            "(preview_hash, work_item_id, payload_json) VALUES (?, ?, ?)",
+            (
+                preview_digest,
+                WORK_ITEM_ID,
+                json.dumps(
+                    {
+                        "preview_id": preview_id,
+                        "preview_hash": preview_digest,
+                        "work_item_id": WORK_ITEM_ID,
+                    }
+                ),
+            ),
+        )
+
+    tables = (
+        "content_planning_input_snapshots",
+        "content_planning_proposals",
+        "content_planning_proposal_repairs",
+        "codex_runs",
+    )
+    before = tuple(_count_rows(store.path, table) for table in tables)
+
+    with pytest.raises(
+        RefreshPreparationAtomicityError,
+        match="refresh_preparation_authorization_missing",
+    ):
+        proposal_store.save_generated(proposal, _completed_planning_run(proposal))
+
+    assert tuple(_count_rows(store.path, table) for table in tables) == before
+    current = store.load_latest_production_classification()
+    assert current is not None
+    assert current.run_digest == run.run_digest

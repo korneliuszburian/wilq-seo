@@ -84,9 +84,7 @@ def build_initial_draft_revision_command(
         content_kind=planning_input.content_kind,
         service_card_id=planning_input.confirmed_service_card_id,
         service_digest=(
-            _service_digest(planning_input)
-            if planning_input.content_kind == "service"
-            else None
+            _service_digest(planning_input) if planning_input.content_kind == "service" else None
         ),
         inventory_digest=content_planning_inventory_digest(planning_input.inventory),
         source_material_ids=sorted(
@@ -117,6 +115,7 @@ def build_initial_draft_revision_command(
             regulatory_assurance=regulatory_assurance,
         ),
         refresh_preparation_binding=proposal.refresh_preparation_binding,
+        generation_authorization=request.generation_authorization,
         created_by=request.requested_by,
     )
 

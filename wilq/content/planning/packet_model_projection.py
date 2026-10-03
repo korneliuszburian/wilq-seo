@@ -10,10 +10,16 @@ from wilq.content.planning.packet_input_binding import (
     bind_packet_identity_to_planning_input,
     unbind_packet_identity_from_planning_input,
 )
+from wilq.content.planning.proposal_v3_packet_read import (
+    V3PlanningPacketContext,
+    is_v3_research_packet_id,
+    resolve_v3_planning_packet_context,
+)
 from wilq.content.planning.source_pack_projection import (
     project_research_packet_v2_facts,
     project_selected_source_pack_facts,
 )
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.research_packet import ContentResearchPacket
 from wilq.content.workflow.research_packet_v2_preview import ResearchPacketV2Preview
 from wilq.content.workflow.store.store import ContentWorkflowStore, content_workflow_store
@@ -25,6 +31,48 @@ class ResearchPacketV2ModelProjection:
     packet_digest: str
     preview: ResearchPacketV2Preview
     planning_input: ContentPlanningInput
+
+
+@dataclass(frozen=True, slots=True)
+class ContentPacketModelInput:
+    planning_input: ContentPlanningInput
+    packet: ContentResearchPacket | None = None
+    packet_context: V3PlanningPacketContext | None = None
+
+    @property
+    def allowed_source_fact_ids(self) -> set[str] | None:
+        if self.packet_context is not None:
+            return {fact.source_fact_id for fact in self.packet_context.packet.selected_facts}
+        return None if self.packet is None else set(self.packet.approved_source_fact_ids)
+
+
+def content_packet_model_input(
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+) -> ContentPacketModelInput:
+    """Use one verified frozen v3 context, retaining the legacy projection seam."""
+    if any(
+        packet_id is not None and is_v3_research_packet_id(packet_id)
+        for packet_id in (planning_input.research_packet_id, proposal.research_packet_id)
+    ):
+        result = resolve_v3_planning_packet_context(proposal=proposal)
+        context = result.context
+        if context is None:
+            raise ValueError(result.blocker_code)
+        if context.planning_input != planning_input:
+            raise ValueError("research_packet_v3_frozen_input_identity_mismatch")
+        return ContentPacketModelInput(planning_input=planning_input, packet_context=context)
+    packet = current_research_packet_for_model(planning_input)
+    projected = (
+        planning_input
+        if packet is None
+        else project_selected_source_pack_facts(
+            planning_input,
+            packet.approved_source_fact_ids,
+            ekologus_source_facts(),
+        )
+    )
+    return ContentPacketModelInput(planning_input=projected, packet=packet)
 
 
 def current_research_packet_v2_for_model(
@@ -41,11 +89,7 @@ def current_research_packet_v2_for_model(
         raise ValueError("Approved v2 packet model input requires its exact digest.")
     workflow_store = store or content_workflow_store()
     receipt = workflow_store.load_research_packet_v2_approval_receipt(packet_id)
-    if (
-        receipt is None
-        or receipt.packet_id != packet_id
-        or receipt.packet_digest != packet_digest
-    ):
+    if receipt is None or receipt.packet_id != packet_id or receipt.packet_digest != packet_digest:
         raise ValueError("Approved v2 packet receipt is missing or differs from the input.")
     record = workflow_store.load_research_packet_v2_preview(receipt.packet_digest)
     if record is None or record.preview_hash != receipt.packet_digest:
@@ -148,12 +192,16 @@ def _authorized_v2_claims(
 ) -> object:
     if isinstance(value, dict):
         entries = value.get("entries")
-        return {
-            **value,
-            "entries": _authorized_v2_claim_entries(
-                entries, selected_fact_evidence, allowed_evidence
-            ),
-        } if isinstance(entries, list) else {**value, "entries": []}
+        return (
+            {
+                **value,
+                "entries": _authorized_v2_claim_entries(
+                    entries, selected_fact_evidence, allowed_evidence
+                ),
+            }
+            if isinstance(entries, list)
+            else {**value, "entries": []}
+        )
     if isinstance(value, list):
         return _authorized_v2_claim_entries(value, selected_fact_evidence, allowed_evidence)
     return {}

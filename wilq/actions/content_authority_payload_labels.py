@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.actions.operator_labels import payload_with_operator_labels
+from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
 from wilq.content.workflow.research_packet_v2_action import RESEARCH_PACKET_V2_ACTION_TYPE
 from wilq.content.workflow.research_packet_v3_action import RESEARCH_PACKET_V3_ACTION_TYPE
 from wilq.content.workflow.research_promotion_authority import (
@@ -20,6 +21,7 @@ def payload_with_authority_snapshot_labels(payload: dict[str, Any]) -> dict[str,
         SOURCE_FACT_AUTHORITY_ACTION_TYPE,
         RESEARCH_PACKET_V2_ACTION_TYPE,
         RESEARCH_PACKET_V3_ACTION_TYPE,
+        FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
     }:
         return payload_with_operator_labels(payload)
     snapshot_key = {
@@ -27,6 +29,7 @@ def payload_with_authority_snapshot_labels(payload: dict[str, Any]) -> dict[str,
         SOURCE_FACT_AUTHORITY_ACTION_TYPE: "source_fact_authority",
         RESEARCH_PACKET_V2_ACTION_TYPE: "research_packet_v2_preview",
         RESEARCH_PACKET_V3_ACTION_TYPE: "research_packet_v3_preview",
+        FULL_DRAFT_GENERATION_V3_ACTION_TYPE: "full_draft_generation_v3",
     }[action_type]
     snapshot = payload.get(snapshot_key)
     enriched = payload_with_operator_labels(

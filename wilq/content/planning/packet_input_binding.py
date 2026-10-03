@@ -7,6 +7,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from wilq.content.planning.dynamic_input import ContentPlanningInput
 
+V3_PACKET_ID_PREFIX = "content_research_packet_v3_"
+
+
+def is_v3_research_packet_id(packet_id: str) -> bool:
+    return packet_id.startswith(V3_PACKET_ID_PREFIX)
+
 
 def bind_research_packet_to_planning_input(
     planning_input: ContentPlanningInput,
@@ -84,7 +90,9 @@ def _digest_bound_payload(payload: dict[str, Any]) -> str:
 
 
 __all__ = [
+    "V3_PACKET_ID_PREFIX",
     "bind_packet_identity_to_planning_input",
     "bind_research_packet_to_planning_input",
+    "is_v3_research_packet_id",
     "unbind_packet_identity_from_planning_input",
 ]

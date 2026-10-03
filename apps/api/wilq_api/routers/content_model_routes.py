@@ -124,6 +124,9 @@ from apps.api.wilq_api.routers.content_research_read import (
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
 )
+from apps.api.wilq_api.routers.content_revision_repair_action import (
+    register_content_revision_repair_action_routes,
+)
 from apps.api.wilq_api.routers.content_section_focus import (
     register_content_section_focus_routes,
 )
@@ -162,25 +165,6 @@ def register_content_model_routes(
     snapshot_loader: ContentModelSnapshotLoader,
     semantic_review_snapshot_loader: ContentModelSnapshotLoader | None = None,
 ) -> None:
-    from apps.api.wilq_api.routers.content_current_page_identity_v2 import (
-        register_content_current_page_identity_v2_route,
-    )
-    from apps.api.wilq_api.routers.content_current_page_identity_v3 import (
-        register_content_current_page_identity_v3_route,
-    )
-    from apps.api.wilq_api.routers.content_source_fact_candidate_v2 import (
-        register_content_source_fact_candidate_v2_route,
-    )
-    from apps.api.wilq_api.routers.content_source_fact_candidate_v3 import (
-        register_content_source_fact_candidate_v3_route,
-    )
-    from apps.api.wilq_api.routers.content_source_pack_v2 import (
-        register_content_source_pack_v2_route,
-    )
-    from apps.api.wilq_api.routers.content_source_pack_v3 import (
-        register_content_source_pack_v3_route,
-    )
-
     review_snapshot_loader = (
         snapshot_loader
         if semantic_review_snapshot_loader is None
@@ -214,21 +198,25 @@ def register_content_model_routes(
     register_content_material_review_action_v2_routes(router)
     register_content_current_page_evidence_route(router)
     register_content_current_page_disposition_v2_routes(router)
-    register_content_current_page_identity_v2_route(router)
-    register_content_current_page_identity_v3_route(router)
-    register_content_source_fact_candidate_v2_route(router)
-    register_content_source_fact_candidate_v3_route(router)
-    register_content_source_pack_v2_route(router)
-    register_content_source_pack_v3_route(router)
+    _register_current_page_source_routes(router)
     register_content_production_command_route(router, snapshot_loader=snapshot_loader)
     register_content_selected_workspace_route(router)
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
+    register_content_revision_repair_action_routes(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_official_source_lineage_route(
         router,
         snapshot_loader=review_snapshot_loader,
     )
+    from apps.api.wilq_api.routers.content_full_draft_generation_v3 import (
+        register_content_full_draft_generation_v3_routes,
+    )
+
+    register_content_full_draft_generation_v3_routes(router, snapshot_loader=snapshot_loader)
     register_content_initial_draft_route(router, snapshot_loader=snapshot_loader)
     register_content_independent_review_routes(
         router,
@@ -255,6 +243,34 @@ def register_content_model_routes(
     )
     register_content_target_discovery_route(router)
     register_content_target_mapping_route(router)
+
+
+def _register_current_page_source_routes(router: APIRouter) -> None:
+    from apps.api.wilq_api.routers.content_current_page_identity_v2 import (
+        register_content_current_page_identity_v2_route,
+    )
+    from apps.api.wilq_api.routers.content_current_page_identity_v3 import (
+        register_content_current_page_identity_v3_route,
+    )
+    from apps.api.wilq_api.routers.content_source_fact_candidate_v2 import (
+        register_content_source_fact_candidate_v2_route,
+    )
+    from apps.api.wilq_api.routers.content_source_fact_candidate_v3 import (
+        register_content_source_fact_candidate_v3_route,
+    )
+    from apps.api.wilq_api.routers.content_source_pack_v2 import (
+        register_content_source_pack_v2_route,
+    )
+    from apps.api.wilq_api.routers.content_source_pack_v3 import (
+        register_content_source_pack_v3_route,
+    )
+
+    register_content_current_page_identity_v2_route(router)
+    register_content_current_page_identity_v3_route(router)
+    register_content_source_fact_candidate_v2_route(router)
+    register_content_source_fact_candidate_v3_route(router)
+    register_content_source_pack_v2_route(router)
+    register_content_source_pack_v3_route(router)
 
 
 __all__ = ["register_content_model_routes"]

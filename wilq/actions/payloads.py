@@ -35,6 +35,14 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.validation_copy import missing, wrong
 from wilq.connectors.registry import get_connector_status
+from wilq.content.drafts.full_draft_generation_v3 import (
+    FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+    validate_full_draft_generation_v3_payload,
+)
+from wilq.content.drafts.revision_repair_action import (
+    CONTENT_REVISION_REPAIR_ACTION_TYPE,
+    validate_content_revision_repair_payload,
+)
 from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ACTION_TYPE,
     validate_planning_generation_intent_action_payload,
@@ -164,6 +172,14 @@ _LOCAL_ACTION_VALIDATORS: dict[str, tuple[str, Callable[[dict[str, Any]], list[s
     PLANNING_GENERATION_INTENT_ACTION_TYPE: (
         "Zamiar planowania treści",
         validate_planning_generation_intent_action_payload,
+    ),
+    FULL_DRAFT_GENERATION_V3_ACTION_TYPE: (
+        "Autoryzacja pełnego tekstu v3",
+        validate_full_draft_generation_v3_payload,
+    ),
+    CONTENT_REVISION_REPAIR_ACTION_TYPE: (
+        "Poprawka exact rewizji",
+        validate_content_revision_repair_payload,
     ),
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE: (
         "Zamiar planowania treści v3",

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal, cast
 
+from wilq.content.drafts.initial_draft_persistence import InitialDraftRevisionStore
 from wilq.content.drafts.initial_draft_response import initial_draft_packet_fields
 from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftApprovedReview,
@@ -11,12 +13,17 @@ from wilq.content.drafts.initial_full_draft_contracts import (
     ContentInitialDraftResponse,
     ContentInitialDraftReuseBinding,
 )
+from wilq.content.operator_copy import build_blocker
+from wilq.content.planning.dynamic_input import ContentPlanningInput
+from wilq.content.workflow.contracts.contracts import ContentWorkItemWorkflowSnapshotResponse
+from wilq.content.workflow.decisions.planning import ContentPlanningProposal
 from wilq.content.workflow.decisions.production import ClassificationLookupBasis
 from wilq.content.workflow.decisions.production_reuse import ProductionReuseBlockCode
 from wilq.content.workflow.documents.revisions import (
     ContentDraftRevision,
     ContentDraftRevisionReview,
 )
+from wilq.content.workflow.research_packet import ContentResearchPacketBlocker
 
 InitialDraftAuthorityConflictCode = Literal[
     "production_classification_missing",
@@ -202,6 +209,85 @@ def _authority_blocker_copy(
     )
 
 
+def validate_legacy_research_packet(
+    *,
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+    planning_input: ContentPlanningInput,
+    proposal: ContentPlanningProposal,
+    workflow_store: InitialDraftRevisionStore | None,
+    current_blocker: Callable[..., ContentResearchPacketBlocker | None],
+) -> ContentInitialDraftBlocker | None:
+    if proposal.research_packet_id is None or proposal.research_packet_digest is None:
+        if proposal.content_kind == "editorial":
+            return _research_packet_blocker(
+                "research_packet_missing",
+                "Initial draft editorial wymaga server-owned research packetu.",
+            )
+        if workflow_store is None:
+            return None
+        list_source_packs = getattr(
+            workflow_store,
+            "list_content_source_pack_bindings",
+            None,
+        )
+        if callable(list_source_packs) and list_source_packs(
+            current_work_item_id=planning_input.work_item_id
+        ):
+            return _research_packet_blocker(
+                "research_packet_missing",
+                "Initial draft wymaga server-owned research packetu.",
+            )
+        return None
+    loader = getattr(workflow_store, "load_content_research_packet", None)
+    if not callable(loader):
+        return _research_packet_blocker(
+            "research_packet_missing",
+            "Initial draft wymaga odczytanego research packetu.",
+        )
+    packet = loader(proposal.research_packet_id)
+    if packet is None or packet.packet_digest != proposal.research_packet_digest:
+        return _research_packet_blocker(
+            "research_packet_conflict",
+            "Research packet nie odpowiada digestowi exact planu.",
+        )
+    blocker = current_blocker(
+        store=cast(Any, workflow_store),
+        packet=packet,
+        snapshot=snapshot,
+        planning_input=planning_input,
+    )
+    if blocker is not None:
+        code = {
+            "source_pack_binding_missing": "research_packet_missing",
+            "packet_conflict": "research_packet_conflict",
+        }.get(blocker.reason, "research_packet_blocked")
+        return _research_packet_blocker(
+            cast(
+                Literal[
+                    "research_packet_missing",
+                    "research_packet_blocked",
+                    "research_packet_conflict",
+                ],
+                code,
+            ),
+            blocker.next_step_pl,
+        )
+    return None
+
+
+def _research_packet_blocker(
+    code: Literal["research_packet_missing", "research_packet_blocked", "research_packet_conflict"],
+    next_step: str,
+) -> ContentInitialDraftBlocker:
+    return build_blocker(
+        ContentInitialDraftBlocker,
+        code=code,
+        label="Research packet nie jest aktualny",
+        reason=next_step,
+        next_step=next_step,
+    )
+
+
 __all__ = [
     "InitialDraftAuthorityBlocked",
     "InitialDraftAuthorityConflict",
@@ -212,4 +298,5 @@ __all__ = [
     "StatusRead",
     "SubmitExpectation",
     "map_initial_draft_authority_response",
+    "validate_legacy_research_packet",
 ]

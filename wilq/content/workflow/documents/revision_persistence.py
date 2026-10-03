@@ -88,6 +88,10 @@ def _full_document_digest_payload(
             else command.refresh_preparation_binding.model_dump(mode="json")
         ),
     }
+    if command.generation_authorization is not None:
+        payload["generation_authorization"] = command.generation_authorization.model_dump(
+            mode="json"
+        )
     if command.content_kind == "editorial":
         payload["content_kind"] = command.content_kind
     return payload

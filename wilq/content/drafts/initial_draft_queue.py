@@ -242,6 +242,9 @@ class _ContextCheckedWorkflowStore:
                 command, completed_codex_run=completed_codex_run
             )
 
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._base, name)
+
     def load_content_research_packet(self, packet_id: str) -> ContentResearchPacket | None:
         return self._base.load_content_research_packet(packet_id)
 
@@ -704,9 +707,7 @@ def safe_initial_draft_worker_error(error: Exception) -> str:
 
     if isinstance(error, ValidationError):
         details = ",".join(
-            (
-                ".".join(str(part) for part in item.get("loc", ())) or "<model>"
-            )
+            (".".join(str(part) for part in item.get("loc", ())) or "<model>")
             + ":"
             + str(item.get("type", "unknown"))
             for item in error.errors()[:5]

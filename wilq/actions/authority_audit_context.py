@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -66,9 +68,12 @@ from wilq.schemas import ActionObject, AuditEvent
 def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> None:
     """Add exact authority snapshot/payload digests without changing audit identity."""
 
-    action_type = action.payload.get("action_type")
+    action_type = _stamp_revision_repair(action, event)
     if action_type == PLANNING_GENERATION_INTENT_ACTION_TYPE:
         _stamp_planning_generation_intent(action, event)
+        return
+    if action_type == FULL_DRAFT_GENERATION_V3_ACTION_TYPE:
+        _stamp_full_draft_generation_v3(action, event)
         return
     if action_type == PLANNING_GENERATION_INTENT_V3_ACTION_TYPE:
         _stamp_planning_generation_intent_v3(action, event)
@@ -79,9 +84,7 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
             if action_type == RESEARCH_PACKET_V2_ACTION_TYPE
             else ("research_packet_v3_preview", research_packet_v3_action_id)
         )
-        _stamp_exact_preview(
-            action, event, snapshot_key, "preview_hash", action_id_for_digest
-        )
+        _stamp_exact_preview(action, event, snapshot_key, "preview_hash", action_id_for_digest)
         return
     if action_type == MATERIAL_REVIEW_ACTION_V2_TYPE:
         _stamp_exact_preview(
@@ -161,6 +164,34 @@ def stamp_authority_audit_context(action: ActionObject, event: AuditEvent) -> No
         "source_fact_authority_action_payload_digest": source_fact_authority_action_payload_digest(
             action
         ),
+    }
+
+
+def _stamp_revision_repair(action: ActionObject, event: AuditEvent) -> object | None:
+    action_type: object | None = action.payload.get("action_type")
+    if action_type != CONTENT_REVISION_REPAIR_ACTION_TYPE:
+        return action_type
+    snapshot = action.payload.get("content_revision_repair_v1")
+    if not isinstance(snapshot, dict):
+        return action_type
+    event.details = {
+        **event.details,
+        "context_digest": canonical_json_digest(snapshot),
+        "payload_digest": canonical_json_digest(action.payload),
+    }
+    return action_type
+
+
+def _stamp_full_draft_generation_v3(action: ActionObject, event: AuditEvent) -> None:
+    from wilq.content.drafts.full_draft_generation_v3_contracts import FullDraftGenerationV3Snapshot
+
+    snapshot = FullDraftGenerationV3Snapshot.model_validate(
+        action.payload["full_draft_generation_v3"]
+    )
+    event.details = {
+        **event.details,
+        "context_digest": snapshot.context_digest,
+        "payload_digest": canonical_json_digest(action.payload),
     }
 
 

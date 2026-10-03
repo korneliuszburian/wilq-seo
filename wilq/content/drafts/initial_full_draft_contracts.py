@@ -16,6 +16,7 @@ from pydantic import (
 
 from wilq.content.canonical.urls import content_is_safe_public_url
 from wilq.content.drafts.codex_runtime import ContentCodexRuntimeTrace
+from wilq.content.drafts.full_draft_generation_v3_contracts import FullDraftGenerationV3Binding
 from wilq.content.planning.dynamic_input import ContentPlanningInputBlockerCode
 from wilq.content.workflow.decisions.production import ClassificationLookupBasis
 from wilq.content.workflow.decisions.production_reuse import ProductionReuseBlockCode
@@ -108,6 +109,7 @@ class ContentInitialDraftRequest(BaseModel):
     expected_planning_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     expected_planning_input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     requested_by: str = Field(min_length=1)
+    generation_authorization: FullDraftGenerationV3Binding | None = None
     research_packet_id: str | None = Field(default=None, min_length=1)
     research_packet_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     refresh_preparation_authorization_id: str | None = Field(default=None, min_length=1)

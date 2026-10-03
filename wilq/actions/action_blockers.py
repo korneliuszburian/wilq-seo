@@ -4,6 +4,8 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from wilq.actions.metric_utils import unique_values
+from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -148,6 +150,7 @@ def action_impact_check_blockers(
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)
+        or _is_local_revision_repair(action)
     ):
         blockers.append("metric_facts_required")
     if not action.evidence_ids:
@@ -216,6 +219,7 @@ def action_apply_preflight_blockers(
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)
+        or _is_local_revision_repair(action)
     ):
         blockers.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
@@ -357,9 +361,7 @@ def _is_local_delivery_identity_rebind_action(action: ActionObject) -> bool:
         CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE,
     )
 
-    return action.payload.get("action_type") == (
-        CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE
-    )
+    return action.payload.get("action_type") == (CONTENT_DELIVERY_IDENTITY_REBIND_ACTION_TYPE)
 
 
 def _is_local_research_fact_promotion_action(action: ActionObject) -> bool:
@@ -376,9 +378,18 @@ def _is_local_planning_generation_intent(action: ActionObject) -> bool:
     )
 
 
+def _is_local_revision_repair(action: ActionObject) -> bool:
+    return (
+        action.payload.get("action_type") == CONTENT_REVISION_REPAIR_ACTION_TYPE
+        and action.payload.get("local_authority_only") is True
+        and action.connector == "wordpress_ekologus"
+    )
+
+
 def _is_local_planning_generation_intent_v3(action: ActionObject) -> bool:
     return (
-        action.payload.get("action_type") == PLANNING_GENERATION_INTENT_V3_ACTION_TYPE
+        action.payload.get("action_type")
+        in {PLANNING_GENERATION_INTENT_V3_ACTION_TYPE, FULL_DRAFT_GENERATION_V3_ACTION_TYPE}
         and action.payload.get("local_authority_only") is True
     )
 
@@ -399,6 +410,7 @@ def _requires_approved_action_review(action: ActionObject) -> bool:
         or _is_local_research_fact_promotion_action(action)
         or _is_local_planning_generation_intent(action)
         or _is_local_planning_generation_intent_v3(action)
+        or _is_local_revision_repair(action)
     )
 
 
