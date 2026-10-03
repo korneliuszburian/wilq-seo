@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
+import tempfile
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -209,36 +211,114 @@ def _resolve_codex_executable(*, deadline_monotonic: float | None = None) -> str
     except OSError:
         return resolved
     first_line = text.splitlines()[0] if text else ""
-    if not first_line.startswith("#!") or "bash" not in first_line:
+    if not first_line.startswith("#!") or re.search(
+        r"(?:^|[/\s])(?:sh|bash|dash|zsh|ksh)(?:\s|$)", first_line,
+    ) is None:
         return resolved
     if "mise" not in text and "npm" not in text:
         return resolved
+    mise = shutil.which("mise")
+    if mise is None:
+        raise _resolution_failure()
+    mise_path = Path(mise).resolve()
+    if not mise_path.is_file() or not os.access(mise_path, os.X_OK):
+        raise _resolution_failure()
+    data = Path(os.environ.get("MISE_DATA_DIR", str(Path.home() / ".local/share/mise"))).resolve()
+    deadline = time.monotonic() + 10
+    if deadline_monotonic is not None:
+        deadline = min(deadline, deadline_monotonic)
     try:
-        completed = subprocess.run(
-            ["mise", "which", "codex"],
-            capture_output=True,
-            text=True,
-            timeout=_lookup_timeout(deadline_monotonic),
-            check=False,
-            env={
-                key: value
-                for key, value in os.environ.items()
-                if key in {"PATH", "HOME", "MISE_DATA_DIR", "LANG", "LC_ALL", "LC_CTYPE"}
-            },
-        )
-    except (OSError, subprocess.SubprocessError):
-        _lookup_timeout(deadline_monotonic)
-        return resolved
-    _lookup_timeout(deadline_monotonic)
-    candidate = completed.stdout.strip()
-    if (
-        completed.returncode == 0
-        and candidate
-        and Path(candidate).is_file()
-        and os.access(candidate, os.X_OK)
-    ):
-        return candidate
-    return resolved
+        with tempfile.TemporaryDirectory(prefix="wilq-codex-lookup-") as directory:
+            root = Path(directory)
+            environment = _mise_lookup_environment(root, data)
+            inventory = _run_mise_lookup(
+                [str(mise_path), "ls", "--installed", "--json", "codex"],
+                root=root, environment=environment, deadline=deadline,
+            )
+            version, install_root = _installed_codex(inventory, data)
+            output = _run_mise_lookup(
+                [str(mise_path), "which", "codex", "--tool", f"codex@{version}"],
+                root=root, environment=environment, deadline=deadline,
+            )
+            candidate = Path(output.strip())
+            if not candidate.is_absolute():
+                raise _resolution_failure()
+            candidate = candidate.resolve(strict=True)
+            if (
+                not candidate.is_relative_to(install_root)
+                or not candidate.is_file()
+                or not os.access(candidate, os.X_OK)
+            ):
+                raise _resolution_failure()
+            _lookup_timeout(deadline)
+            return str(candidate)
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        _lookup_timeout(deadline)
+        raise _resolution_failure() from exc
+
+
+def _resolution_failure() -> CodexAppServerProcessFailure:
+    return CodexAppServerProcessFailure(
+        "codex_not_available",
+        "Nie udało się bezpiecznie wskazać już zainstalowanego Codexa.",
+    )
+
+
+def _mise_lookup_environment(root: Path, data: Path) -> dict[str, str]:
+    environment = {
+        key: value for key, value in os.environ.items()
+        if key in {"PATH", "LANG", "LC_ALL", "LC_CTYPE"}
+    }
+    for name in ("home", "config", "cache", "state"):
+        (root / name).mkdir(mode=0o700)
+    environment.update({
+        "HOME": str(root / "home"), "MISE_DATA_DIR": str(data),
+        "MISE_CONFIG_DIR": str(root / "config"), "MISE_CACHE_DIR": str(root / "cache"),
+        "MISE_STATE_DIR": str(root / "state"), "MISE_SYSTEM_CONFIG_DIR": str(root / "config"),
+        "MISE_NO_CONFIG": "1", "MISE_OFFLINE": "1", "MISE_AUTO_INSTALL": "0",
+    })
+    return environment
+
+
+def _run_mise_lookup(
+    args: list[str], *, root: Path, environment: Mapping[str, str], deadline: float,
+) -> str:
+    result = subprocess.run(
+        args, cwd=root, env=dict(environment), stdin=subprocess.DEVNULL,
+        capture_output=True, text=True, timeout=_lookup_timeout(deadline), check=False,
+    )
+    _lookup_timeout(deadline)
+    if result.returncode != 0 or len(result.stdout) > 65536:
+        raise _resolution_failure()
+    return result.stdout
+
+
+def _installed_codex(output: str, data: Path) -> tuple[str, Path]:
+    payload = json.loads(output)
+    rows = payload.get("codex") if isinstance(payload, dict) else payload
+    if not isinstance(rows, list) or not rows:
+        raise _resolution_failure()
+    installed: list[tuple[tuple[int, ...], str, Path]] = []
+    base = (data / "installs").resolve()
+    for row in rows:
+        if not isinstance(row, dict) or row.get("installed") is not True:
+            continue
+        version, location = row.get("version"), row.get("install_path")
+        if not isinstance(version, str) or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
+            raise _resolution_failure()
+        if not isinstance(location, str) or not Path(location).is_absolute():
+            raise _resolution_failure()
+        path = Path(location).resolve(strict=True)
+        if (
+            not path.is_relative_to(base) or path == base
+            or path.name != version or not path.is_dir()
+        ):
+            raise _resolution_failure()
+        installed.append((tuple(map(int, version.split("."))), version, path))
+    if not installed:
+        raise _resolution_failure()
+    _, version, path = max(installed, key=lambda entry: entry[0])
+    return version, path
 
 
 def _lookup_timeout(deadline_monotonic: float | None) -> float:
