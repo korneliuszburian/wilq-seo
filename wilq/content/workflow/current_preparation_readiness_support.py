@@ -36,10 +36,10 @@ BLOCKER_COPY: dict[str, tuple[str, str]] = {
         "Otwórz exact current work item wskazany przez bieżącą klasyfikację.",
     ),
     "protected_revision_reconciliation_required": (
-        "Historyczna klasyfikacja wskazuje chronioną rewizję, której dokładna tożsamość "
-        "wymaga uzgodnienia przed odświeżeniem.",
-        "Przed przygotowaniem refresh ręcznie uzgodnij dokładny identyfikator i skrót "
-        "chronionej rewizji z jej źródłem; nie opieraj uzgodnienia wyłącznie na URL.",
+        "Historyczna klasyfikacja wskazuje chronioną wersję, którą trzeba najpierw "
+        "potwierdzić.",
+        "Potwierdź z właścicielem strony dokładny identyfikator i skrót chronionej wersji "
+        "— samo porównanie adresu URL nie wystarcza.",
     ),
     "current_content_binding_missing": (
         "Ten wyjątek dotyczy wyłącznie blocked row z jednym blockerem "

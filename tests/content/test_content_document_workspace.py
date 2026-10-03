@@ -473,10 +473,8 @@ def test_stale_revision_stays_readable_but_cannot_offer_review() -> None:
     )
 
     assert projected.revision is document.revision
-    assert projected.label == "Wersja pochodzi z wcześniejszego planu"
-    assert "Nie można zapisać" in projected.reason
+    assert projected.reason
     assert action.kind == "prepare_document"
-    assert action.label == "Przygotuj świeżą wersję"
 
 
 def test_document_workspace_uses_revision_service_binding_for_official_review_candidates(

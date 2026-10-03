@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CurrentSource, EditorialProvenance } from "./ContentDocumentWorkspaceCanvas";
 
 import {
   getContentWorkItemInitialDraft,
@@ -1757,3 +1758,108 @@ function uniqueTestEvidence(revision: ContentDraftRevision) {
     ])
   ];
 }
+
+describe("CurrentSource outline", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  function sourceSnapshot(
+    sections: Array<{ heading: string; excerpt: string | null }>
+  ): ContentDocumentWorkspace["source_snapshot"] {
+    return {
+      status: "partial",
+      status_label: "materiał zapisany częściowo",
+      title: "Zapisany materiał strony",
+      url: "https://www.ekologus.pl/",
+      extraction_method: null,
+      lead: null,
+      content_excerpt: null,
+      ordered_sections: sections,
+      faq_status: "not_observed",
+      cta_status: "not_observed",
+      reason: "Zapisana struktura nie zastępuje aktualnego odczytu strony.",
+      caveats: [],
+      evidence_ids: []
+    };
+  }
+
+  it("explains a saved outline once instead of repeating an empty excerpt per heading", () => {
+    render(
+      <CurrentSource
+        source={sourceSnapshot([
+          { heading: "Kto musi złożyć wniosek o wpis do Rejestru?", excerpt: null },
+          { heading: "Jak zalogować się do systemu BDO?", excerpt: null }
+        ])}
+      />
+    );
+
+    expect(screen.getByTestId("content-source-outline-note")).toBeInTheDocument();
+    expect(screen.queryAllByText(/WILQ odczytał ten nagłówek/)).toHaveLength(0);
+    expect(screen.getByText("Kto musi złożyć wniosek o wpis do Rejestru?")).toBeInTheDocument();
+    expect(screen.getByText("Jak zalogować się do systemu BDO?")).toBeInTheDocument();
+  });
+
+  it("keeps exact excerpts and omits the outline note when text is available", () => {
+    render(
+      <CurrentSource
+        source={sourceSnapshot([
+          { heading: "Kto powinien sprawdzić obowiązek wpisu?", excerpt: "Aktualna odpowiedź." }
+        ])}
+      />
+    );
+
+    expect(screen.queryByTestId("content-source-outline-note")).not.toBeInTheDocument();
+    expect(screen.getByText("Aktualna odpowiedź.")).toBeInTheDocument();
+  });
+
+  it("does not claim an outline exists when there are no saved sections", () => {
+    render(<CurrentSource source={sourceSnapshot([])} />);
+    expect(screen.queryByTestId("content-source-outline-note")).not.toBeInTheDocument();
+  });
+
+  it("does not treat whitespace as a saved excerpt", () => {
+    render(<CurrentSource source={sourceSnapshot([{ heading: "Zakres", excerpt: "  \n " }])} />);
+    expect(screen.getByTestId("content-source-outline-note")).toBeInTheDocument();
+  });
+
+  it("reports missing section fragments even when another excerpt and the lead are available", () => {
+    const source = sourceSnapshot([
+      { heading: "Z wycinkiem", excerpt: "Dokładny wycinek." },
+      { heading: "Bez wycinka", excerpt: null }
+    ]);
+    source.lead = "Zapisany wstęp.";
+    render(<CurrentSource source={source} />);
+    expect(screen.getByTestId("content-source-outline-note")).toHaveTextContent("1");
+    expect(screen.getByText("Dokładny wycinek.")).toBeInTheDocument();
+    expect(screen.getByText("Zapisany wstęp.")).toBeInTheDocument();
+  });
+
+  it("does not count a whitespace-only source reviewer as assigned", () => {
+    render(<EditorialProvenance provenance={[{
+      source_fact_id: "fact_blank", source_url_or_path: "https://example.org/blank",
+      freshness_date: "2020-01-01", reviewer: " ", evidence_ids: ["ev_blank"]
+    }]} />);
+    expect(screen.getByTestId("content-provenance-summary"))
+      .toHaveTextContent("bez przypisanego weryfikatora: 1");
+  });
+
+  it("keeps older source dates and missing reviewers visible without blanket approval", () => {
+    render(<EditorialProvenance provenance={[
+      {
+        source_fact_id: "fact_older", source_url_or_path: "https://example.org/older",
+        freshness_date: "2020-01-01", reviewer: null, evidence_ids: ["ev_older"]
+      },
+      {
+        source_fact_id: "fact_newer", source_url_or_path: "https://example.org/newer",
+        freshness_date: "2026-01-01", reviewer: "Weryfikator", evidence_ids: ["ev_newer"]
+      }
+    ]} />);
+    const summary = screen.getByTestId("content-provenance-summary");
+    expect(summary).toHaveTextContent("Zapisy pochodzenia: 2");
+    expect(summary).toHaveTextContent("bez przypisanego weryfikatora: 1");
+    fireEvent.click(screen.getByText("Pokaż wszystkie daty i weryfikacje"));
+    expect(screen.getByText(/2020-01-01/)).toBeVisible();
+    expect(screen.getByText(/2026-01-01/)).toBeVisible();
+  });
+});

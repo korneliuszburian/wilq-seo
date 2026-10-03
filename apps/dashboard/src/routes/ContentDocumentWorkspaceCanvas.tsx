@@ -119,7 +119,7 @@ export function ContentDocumentWorkspaceCanvas({
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <section className="min-w-0 rounded-2xl border border-line bg-white p-5 shadow-sm lg:p-7" data-testid="content-workspace-canvas">
-          {view === "source" ? <CurrentSource workspace={workspace} /> : null}
+          {view === "source" ? <CurrentSource source={workspace.source_snapshot} /> : null}
           {view === "document" ? <CanonicalDocument workspace={workspace} /> : null}
           {view === "comparison" ? <Comparison workspace={workspace} /> : null}
         </section>
@@ -127,13 +127,15 @@ export function ContentDocumentWorkspaceCanvas({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Szczegóły i dev</p>
           <StatusCard label="Materiał obecnej strony" value={workspace.source_snapshot.status_label} />
           {workspace.source_snapshot.url ? (
-            <>
+            <details className="mt-3 rounded-xl border border-line p-3 text-sm text-slate-700">
+              <summary className="cursor-pointer font-semibold text-ink">Sprawdź źródła</summary>
+              <p className="mt-3 leading-6">Sprawdź zapisany materiał strony oraz stan przeglądu źródeł. Wymagane decyzje wskaże WILQ.</p>
               <CurrentMaterialReviewEntry workItemId={workspace.work_item_id} />
               <CurrentResearchPacketEntry
                 workItemId={workspace.work_item_id}
                 perUrlDeliveryIdentityActionId={workspace.per_url_delivery_identity_action_id}
               />
-            </>
+            </details>
           ) : null}
           {workspace.canonical_document.status === "approved" && workspace.canonical_document.revision_id && workspace.canonical_document.content_digest ? (
             <ContentApprovedHtmlPackage
@@ -193,7 +195,7 @@ export function ContentDocumentLineageDisclosure({ workspace }: { workspace: Con
   </details>;
 }
 
-function EditorialProvenance({
+export function EditorialProvenance({
   provenance
 }: {
   provenance: NonNullable<ContentDocumentWorkspace["canonical_document"]["source_provenance"]>;
@@ -201,11 +203,16 @@ function EditorialProvenance({
   if (provenance.length === 0) {
     return <p className="mt-3 leading-6 text-slate-600">Brak zapisanej daty świeżości i weryfikacji eksperckiej dla tej rewizji.</p>;
   }
+  const missingReviewerCount = provenance.filter((item) => !item.reviewer?.trim()).length;
   return <div className="mt-3 rounded-lg bg-slate-50 p-3">
-    <p className="font-semibold text-ink">Aktualność i weryfikacja</p>
-    {provenance.map((item) => <p key={item.source_fact_id} className="mt-2 leading-6">
-      {item.freshness_date} · {item.reviewer ? `weryfikacja: ${item.reviewer}` : "brak przypisanego eksperta"}
-    </p>)}
+    <p className="font-semibold text-ink">Daty i przypisania źródeł</p>
+    <p className="mt-2 leading-6" data-testid="content-provenance-summary">Zapisy pochodzenia: {provenance.length} · bez przypisanego weryfikatora: {missingReviewerCount}. To nie oznacza zatwierdzenia tekstu.</p>
+    <details className="mt-2">
+      <summary className="cursor-pointer font-semibold text-slate-700">Pokaż wszystkie daty i weryfikacje</summary>
+      {provenance.map((item, index) => <p key={`${item.source_fact_id}-${index}`} className="mt-2 leading-6">
+        {item.freshness_date} · {item.reviewer?.trim() ? `weryfikator źródła: ${item.reviewer}` : "brak przypisanego weryfikatora"}
+      </p>)}
+    </details>
   </div>;
 }
 
@@ -234,18 +241,21 @@ function StatusCard({ label, value }: { label: string; value: string }) {
   return <div className="mt-4 rounded-xl bg-slate-50 p-3"><p className="text-sm font-semibold text-ink">{label}</p><p className="mt-1 text-sm text-slate-700">{value}</p></div>;
 }
 
-function CurrentSource({ workspace }: { workspace: ContentDocumentWorkspace }) {
+export function CurrentSource({ source }: { source: ContentDocumentWorkspace["source_snapshot"] }) {
+  const sections = source.ordered_sections;
+  const missingExcerptCount = sections.filter((section) => !section.excerpt?.trim()).length;
   return <div data-testid="content-source-snapshot">
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-action">Obecna strona</p>
-    <h2 className="mt-2 text-2xl font-semibold text-ink">{workspace.source_snapshot.title ?? "Publiczny materiał źródłowy"}</h2>
-    <p className="mt-3 text-sm leading-6 text-slate-700">{workspace.source_snapshot.reason}</p>
-    {workspace.source_snapshot.lead ? <p className="mt-6 border-l-2 border-action/40 pl-4 text-base leading-7 text-slate-700">{workspace.source_snapshot.lead}</p> : null}
+    <h2 className="mt-2 text-2xl font-semibold text-ink">{source.title ?? "Publiczny materiał źródłowy"}</h2>
+    <p className="mt-3 text-sm leading-6 text-slate-700">{source.reason}</p>
+    {source.lead ? <p className="mt-6 border-l-2 border-action/40 pl-4 text-base leading-7 text-slate-700">{source.lead}</p> : null}
     <div className="mt-7 space-y-5">
-      {workspace.source_snapshot.ordered_sections.map((section, index) => (
+      {missingExcerptCount > 0 ? <p className="text-sm leading-6 text-slate-600" data-testid="content-source-outline-note">Sekcje bez zapisanego wycinka: {missingExcerptCount}. Nagłówki tych sekcji pokazują tylko strukturę, nie pełny tekst.</p> : null}
+      {sections.map((section, index) => (
         <section key={`${section.heading}-${index}`} className="border-t border-line pt-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{index + 1}. fragment obecnej strony</p>
           <h3 className="mt-2 text-lg font-semibold text-ink">{section.heading}</h3>
-          <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{section.excerpt ?? "WILQ odczytał ten nagłówek, ale nie ma bezpiecznego wycinka tekstu do pokazania."}</p>
+          {section.excerpt?.trim() ? <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{section.excerpt}</p> : null}
         </section>
       ))}
     </div>

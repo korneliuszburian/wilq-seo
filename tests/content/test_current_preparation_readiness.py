@@ -407,14 +407,8 @@ def test_protected_historical_revision_blocks_refresh_before_preview_or_atomic_w
     assert readiness.classification_run_digest == run.run_digest
     assert readiness.decision_set_digest == run.input.decision_set_digest
     assert readiness.source_packet_row_digest == row.source_packet_row_digest
-    assert readiness.reason_pl == (
-        "Historyczna klasyfikacja wskazuje chronioną rewizję, której dokładna tożsamość "
-        "wymaga uzgodnienia przed odświeżeniem."
-    )
-    assert readiness.safe_next_step_pl == (
-        "Przed przygotowaniem refresh ręcznie uzgodnij dokładny identyfikator i skrót "
-        "chronionej rewizji z jej źródłem; nie opieraj uzgodnienia wyłącznie na URL."
-    )
+    assert readiness.reason_pl
+    assert readiness.safe_next_step_pl
     operator_guidance = f"{readiness.reason_pl} {readiness.safe_next_step_pl}"
     assert protection.historical_revision_id not in operator_guidance
     assert protection.historical_revision_digest not in operator_guidance

@@ -560,11 +560,11 @@ def _document_for_current_context(
         return document
     return document.model_copy(
         update={
-            "label": "Wersja pochodzi z wcześniejszego planu",
+            "label": "Wersja z wcześniejszego planu",
             "reason": (
-                "Ta immutable rewizja pozostaje w historii, ale jej dokładny plan "
-                "nie odpowiada już aktualnym danym strony. Nie można zapisać dla niej "
-                "review ani przekazać jej dalej."
+                "Ta wersja pochodzi ze starszego planu. Możesz ją odczytać w historii, "
+                "ale nie zapisać dla niej nowej oceny ani przekazać dalej. "
+                "Przygotuj świeżą wersję."
             ),
         }
     )

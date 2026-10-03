@@ -553,7 +553,7 @@ def _review_blocker(
     if not facts.revision_context_current:
         return ContentWorkflowOperatorBlocker(
             code="revision_context_changed",
-            label="Wersja pochodzi z wcześniejszego planu",
+            label="Wersja z wcześniejszego planu",
             reason=(
                 "Plan sekcji albo adres strony zmienił się po zapisaniu tej wersji. "
                 "Najpierw wygeneruj świeżą wersję z aktualnego planu."
