@@ -5,6 +5,7 @@ from collections.abc import Callable
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
 from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -108,6 +109,7 @@ def _local_connector_configuration_not_required(action: ActionObject) -> bool:
             PLANNING_GENERATION_INTENT_ACTION_TYPE,
             PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
             FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+            CONTENT_REVISION_REPAIR_ACTION_TYPE,
             PER_URL_DISPOSITION_ACTION_TYPE,
             PER_URL_DELIVERY_IDENTITY_ACTION_TYPE,
         }

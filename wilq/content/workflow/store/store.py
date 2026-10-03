@@ -43,6 +43,10 @@ from wilq.content.workflow.store.store_authoring_inventory_receipt import (
 from wilq.content.workflow.store.store_content_kind_receipt import (
     ContentKindReceiptStoreMixin,
 )
+from wilq.content.workflow.store.store_content_revision_repair import (
+    ContentRevisionRepairStoreMixin,
+    ensure_content_revision_repair_schema,
+)
 from wilq.content.workflow.store.store_current_acceptance import (
     CurrentAcceptanceStoreMixin,
     ensure_current_acceptance_schema,
@@ -688,6 +692,7 @@ class _ReviewStoreMixin(_StoreConnectionMixin):
 
 class ContentWorkflowStore(
     FullDraftGenerationV3StoreMixin,
+    ContentRevisionRepairStoreMixin,
     _DraftRevisionStoreMixin,
     ContentAuthoringInventoryReceiptStoreMixin,
     ContentMaterialReviewStoreMixin,
@@ -742,6 +747,7 @@ class ContentWorkflowStore(
         ensure_planning_generation_intent_schema(connection)
         ensure_planning_generation_intent_v3_schema(connection)
         ensure_full_draft_generation_v3_schema(connection)
+        ensure_content_revision_repair_schema(connection)
         ensure_per_url_decision_authority_schema(connection)
         ensure_current_acceptance_schema(connection)
         ensure_content_intake_schema(connection)

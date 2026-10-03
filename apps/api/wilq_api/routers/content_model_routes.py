@@ -124,6 +124,9 @@ from apps.api.wilq_api.routers.content_research_read import (
 from apps.api.wilq_api.routers.content_revision_html_package import (
     register_content_revision_html_package_route,
 )
+from apps.api.wilq_api.routers.content_revision_repair_action import (
+    register_content_revision_repair_action_routes,
+)
 from apps.api.wilq_api.routers.content_section_focus import (
     register_content_section_focus_routes,
 )
@@ -201,6 +204,10 @@ def register_content_model_routes(
     register_content_dev_draft_cleanup_route(router)
     register_content_editorial_integrity_route(router)
     register_content_revision_repair_route(router, snapshot_loader=snapshot_loader)
+    register_content_revision_repair_action_routes(
+        router,
+        snapshot_loader=review_snapshot_loader,
+    )
     register_content_official_source_lineage_route(
         router,
         snapshot_loader=review_snapshot_loader,

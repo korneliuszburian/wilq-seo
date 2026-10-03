@@ -133,9 +133,7 @@ def persist_independent_review_run(
         research_packet_id=persisted_run.research_packet_id,
         research_packet_digest=persisted_run.research_packet_digest,
         run=persisted_run,
-        safe_next_step=(
-            "Rozlicz każde finding exact evidence albo odłóż je do decyzji człowieka."
-        ),
+        safe_next_step=("Rozlicz każde finding exact evidence albo odłóż je do decyzji człowieka."),
     )
 
 
@@ -157,13 +155,10 @@ def record_independent_finding_disposition(
     )
     _require_exact_identity(result, work_item_id, revision_id)
     critical_child = (
-        result.finding.severity == "critical"
-        and result.finding.disposition == "accept_and_fix"
+        result.finding.severity == "critical" and result.finding.disposition == "accept_and_fix"
     )
     status: Literal["recorded", "idempotent", "child_revision_required"] = (
-        "child_revision_required"
-        if critical_child
-        else result.status
+        "child_revision_required" if critical_child else result.status
     )
     return ContentIndependentFindingDispositionResponse(
         status=status,
@@ -287,9 +282,7 @@ def _validate_planning_context(
     resolved_inputs: ContentReviewInputs | None,
 ) -> None:
     if planning_input.planning_input_digest != revision.planning_input_digest:
-        raise IndependentReviewConflict(
-            "Independent review planning input is stale or incomplete."
-        )
+        raise IndependentReviewConflict("Independent review planning input is stale or incomplete.")
     if resolved_inputs is None:
         return
     if (
@@ -330,23 +323,25 @@ def _bind_run_packet(
     run: ContentIndependentReviewRun,
     inputs: ContentReviewInputs,
 ) -> ContentIndependentReviewRun:
-    packet = inputs.packet
-    if packet is None:
+    packet_context = inputs.packet_context
+    if packet_context is not None:
+        packet_id = packet_context.receipt.packet_id
+        packet_digest = packet_context.receipt.packet_digest
+    elif inputs.packet is not None:
+        packet_id = inputs.packet.packet_id
+        packet_digest = inputs.packet.packet_digest
+    else:
         if run.research_packet_id is not None or run.research_packet_digest is not None:
             raise _packet_conflict()
         return run
-    if (
-        run.research_packet_id is not None
-        and (
-            run.research_packet_id != packet.packet_id
-            or run.research_packet_digest != packet.packet_digest
-        )
+    if (run.research_packet_id is not None and run.research_packet_id != packet_id) or (
+        run.research_packet_digest is not None and run.research_packet_digest != packet_digest
     ):
         raise _packet_conflict()
     return run.model_copy(
         update={
-            "research_packet_id": packet.packet_id,
-            "research_packet_digest": packet.packet_digest,
+            "research_packet_id": packet_id,
+            "research_packet_digest": packet_digest,
         }
     )
 
@@ -406,11 +401,7 @@ def _independent_planning_blocker(
         "blocked_planning_sources": "missing_planning_input",
     }
     mapped = code_map.get(raw_code, raw_code)
-    code = (
-        mapped
-        if mapped in _INDEPENDENT_REVIEW_BLOCKER_CODES
-        else "missing_planning_input"
-    )
+    code = mapped if mapped in _INDEPENDENT_REVIEW_BLOCKER_CODES else "missing_planning_input"
     label = (
         "Brakuje aktualnego wejścia strategicznego"
         if raw is None
@@ -441,8 +432,7 @@ def _packet_conflict() -> IndependentReviewConflict:
         code="research_packet_conflict",
         label="Review packet nie odpowiada exact revision",
         reason=(
-            "Nadesłany independent review wskazuje inny packet ID albo digest "
-            "niż bieżąca revision."
+            "Nadesłany independent review wskazuje inny packet ID albo digest niż bieżąca revision."
         ),
         next_step="Wyślij wynik dla tego samego exact packetu albo uruchom nowy review.",
     )

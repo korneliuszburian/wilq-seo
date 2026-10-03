@@ -10,6 +10,10 @@ from wilq.content.drafts.full_draft_generation_v3 import (
     FULL_DRAFT_GENERATION_V3_ADAPTER,
     execute_full_draft_generation_v3_action,
 )
+from wilq.content.drafts.revision_repair_action import (
+    CONTENT_REVISION_REPAIR_ADAPTER,
+    execute_content_revision_repair_action,
+)
 from wilq.content.planning.generation_intent import (
     PLANNING_GENERATION_INTENT_ADAPTER,
     execute_planning_generation_intent_action,
@@ -78,6 +82,7 @@ _LOCAL_ADAPTERS = frozenset(
         PLANNING_GENERATION_INTENT_ADAPTER,
         PLANNING_GENERATION_INTENT_V3_ADAPTER,
         FULL_DRAFT_GENERATION_V3_ADAPTER,
+        CONTENT_REVISION_REPAIR_ADAPTER,
         CONTENT_DELIVERY_IDENTITY_REBIND_ADAPTER,
     }
 )
@@ -186,7 +191,22 @@ def execute_local_content_mutation_adapter(
             store=workflow_store,
             audit_events=action.audit_events,
         )
-    return None
+    return _execute_revision_repair(action, adapter, workflow_store)
+
+
+def _execute_revision_repair(
+    action: ActionObject,
+    adapter: str,
+    workflow_store: ContentWorkflowStore,
+) -> tuple[dict[str, Any] | None, list[str]] | None:
+    if adapter != CONTENT_REVISION_REPAIR_ADAPTER:
+        return None
+    return execute_content_revision_repair_action(
+        action,
+        store=workflow_store,
+        audit_events=action.audit_events,
+        confirmed_by=_confirmation_actor(action),
+    )
 
 
 def _execute_v3_generation_authority(

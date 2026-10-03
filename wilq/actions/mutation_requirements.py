@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
 )
@@ -135,7 +136,11 @@ def _connector_readiness_requirement(
     )
     is_local_v3_intent = (
         action.payload.get("action_type")
-        in {PLANNING_GENERATION_INTENT_V3_ACTION_TYPE, FULL_DRAFT_GENERATION_V3_ACTION_TYPE}
+        in {
+            PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
+            FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+            CONTENT_REVISION_REPAIR_ACTION_TYPE,
+        }
         and action.payload.get("local_authority_only") is True
         and action.connector == "wordpress_ekologus"
     )

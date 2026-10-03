@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -59,6 +60,12 @@ class _LocalContractSpec:
 
 
 _LOCAL_CONTRACTS = {
+    CONTENT_REVISION_REPAIR_ACTION_TYPE: _LocalContractSpec(
+        "authorize_one_exact_revision_repair",
+        "exact_needs_changes_base|semantic_and_three_role_review|local_receipt_before_dispatch",
+        ("vendor_write", "wordpress_publish", "wordpress_draft", "unbound_child_revision"),
+        "Apply zapisuje exact lokalną zgodę; osobny jednorazowy dispatch tworzy child rewizję.",
+    ),
     FULL_DRAFT_GENERATION_V3_ACTION_TYPE: _LocalContractSpec(
         "authorize_one_full_draft_v3",
         "exact_current_plan_v3|approved_packet_v3|audited_local_receipt",

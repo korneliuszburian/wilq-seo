@@ -21,6 +21,7 @@ from wilq.actions.payload_readiness import (
     payload_preview_items,
 )
 from wilq.content.drafts.full_draft_generation_v3 import FULL_DRAFT_GENERATION_V3_ACTION_TYPE
+from wilq.content.drafts.revision_repair_action import CONTENT_REVISION_REPAIR_ACTION_TYPE
 from wilq.content.planning.generation_intent import PLANNING_GENERATION_INTENT_ACTION_TYPE
 from wilq.content.planning.generation_intent_v3 import (
     PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
@@ -282,6 +283,7 @@ def _resolve_apply_capability(
             PLANNING_GENERATION_INTENT_ACTION_TYPE,
             PLANNING_GENERATION_INTENT_V3_ACTION_TYPE,
             FULL_DRAFT_GENERATION_V3_ACTION_TYPE,
+            CONTENT_REVISION_REPAIR_ACTION_TYPE,
         }
         and action.payload.get("local_authority_only") is True
     ):
