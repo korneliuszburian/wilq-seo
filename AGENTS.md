@@ -154,9 +154,10 @@ record that state rather than silently publishing.
   Codex context over a bounded fixed artifact. A same-family pass is not
   independent approval; verify and disposition each finding locally. Do not
   invoke OpenCode or DeepSeek for this repository.
-- Pin new code reviews explicitly to `gpt-6-sol` rather than an inherited
-  reviewer default. Use the highest supported, approved reasoning setting and
-  record the requested model, observed model when available, and actual effort.
+- Use only `gpt-6.1-sol` or `gpt-6-luna` for new implementation, review,
+  and advisory runs. Pin the chosen review model explicitly rather than using
+  an inherited default. Use the highest supported, approved reasoning setting
+  and record the requested model, observed model when available, and actual effort.
   Never report a timed-out or unreturned run as a completed review. Do not start
   new tasks or reviews on `gpt-5.6`; retained records and negative fixtures may
   keep their historical model identity. This does not alter embedded model policy.
