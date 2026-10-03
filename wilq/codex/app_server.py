@@ -5,6 +5,7 @@ import json
 import os
 import signal
 import tempfile
+import time
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -103,6 +104,7 @@ class _TurnObserver:
     final_output_text: str | None = None
     unphased_output_text: str | None = None
     stderr_stream_disconnected: bool = False
+    stderr_usage_limit_exceeded: bool = False
 
     def add_event_method(self, method: str) -> None:
         if method not in self.event_methods:
@@ -200,25 +202,17 @@ class StdioCodexAppServerClient:
         try:
             return asyncio.run(
                 asyncio.wait_for(
-                    self._run_turn(request, observer),
+                    self._run_turn(
+                        request, observer,
+                        deadline_monotonic=time.monotonic() + self._timeout_seconds,
+                    ),
                     timeout=self._timeout_seconds,
                 )
             )
         except TimeoutError:
-            if observer.stderr_stream_disconnected:
-                return observer.result(
-                    "failed",
-                    blocker=CodexAppServerTurnBlocker(
-                        code="codex_response_stream_disconnected",
-                        message=(
-                            "Provider Codexa przerwał strumień odpowiedzi przed "
-                            "zakończeniem tury."
-                        ),
-                    ),
-                )
             return observer.result(
                 "failed",
-                blocker=CodexAppServerTurnBlocker(
+                blocker=_stderr_blocker(observer) or CodexAppServerTurnBlocker(
                     code="codex_timeout",
                     message="Codex nie zakończył generowania w dozwolonym czasie.",
                 ),
@@ -235,20 +229,11 @@ class StdioCodexAppServerClient:
                 blocker=CodexAppServerTurnBlocker(code=exc.code, message=exc.safe_message),
             )
         except _SafeTransportFailure as exc:
-            if observer.stderr_stream_disconnected:
-                return observer.result(
-                    "failed",
-                    blocker=CodexAppServerTurnBlocker(
-                        code="codex_response_stream_disconnected",
-                        message=(
-                            "Provider Codexa przerwał strumień odpowiedzi przed "
-                            "zakończeniem tury."
-                        ),
-                    ),
-                )
             return observer.result(
                 "failed",
-                blocker=CodexAppServerTurnBlocker(code=exc.code, message=exc.safe_message),
+                blocker=_stderr_blocker(observer) or CodexAppServerTurnBlocker(
+                    code=exc.code, message=exc.safe_message,
+                ),
             )
         except FileNotFoundError:
             return observer.result(
@@ -271,9 +256,15 @@ class StdioCodexAppServerClient:
         self,
         request: CodexAppServerStructuredTurnRequest,
         observer: _TurnObserver,
+        *,
+        deadline_monotonic: float,
     ) -> CodexAppServerTurnResult:
         with tempfile.TemporaryDirectory(prefix="wilq-codex-app-server-") as root:
-            launch = prepare_codex_app_server_launch(Path(root))
+            launch = prepare_codex_app_server_launch(
+                Path(root), deadline_monotonic=deadline_monotonic,
+            )
+            if time.monotonic() >= deadline_monotonic:
+                raise TimeoutError
             process = await asyncio.create_subprocess_exec(
                 *launch.command,
                 stdin=asyncio.subprocess.PIPE,
@@ -476,15 +467,37 @@ async def _complete_turn(
 async def _observe_stderr(
     stderr: asyncio.StreamReader, *, observer: _TurnObserver
 ) -> None:
-    """Classify one safe provider signal without retaining stderr payloads."""
+    """Classify signals; keep only a bounded transient suffix across reads."""
 
+    suffix = b""
     while True:
         chunk = await stderr.read(4096)
         if not chunk:
             return
-        lowered = chunk.decode("utf-8", errors="ignore").lower()
+        joined = suffix + chunk
+        lowered = joined.decode("utf-8", errors="ignore").lower()
+        suffix = joined[-32:]
         if "responsestreamdisconnected" in lowered or "stream disconnected" in lowered:
             observer.stderr_stream_disconnected = True
+        if "usage_limit_exceeded" in lowered or "quota exceeded" in lowered:
+            observer.stderr_usage_limit_exceeded = True
+
+
+def _stderr_blocker(observer: _TurnObserver) -> CodexAppServerTurnBlocker | None:
+    if observer.stderr_stream_disconnected:
+        return CodexAppServerTurnBlocker(
+            code="codex_response_stream_disconnected",
+            message="Provider Codexa przerwał strumień odpowiedzi przed zakończeniem tury.",
+        )
+    if observer.stderr_usage_limit_exceeded:
+        return CodexAppServerTurnBlocker(
+            code="codex_usage_limit_exceeded",
+            message=(
+                "Codex zgłosił ograniczenie użycia. Sprawdź sesję "
+                "i routing przed ponowieniem tury."
+            ),
+        )
+    return None
 
 
 def _validate_request(
@@ -622,6 +635,12 @@ def _observe_inbound_method(
         )
     if method == "error":
         params = _as_object(message.get("params"))
+        if _is_usage_limit_params(message.get("params")):
+            raise _SafeTransportFailure(
+                "codex_usage_limit_exceeded",
+                "Codex zgłosił ograniczenie użycia. "
+                "Sprawdź sesję i routing przed ponowieniem tury.",
+            )
         if params is not None and params.get("willRetry") is True:
             # Reconnect notices are transient app-server events. Let its
             # retry loop reach turn/completed before classifying the turn.
@@ -642,6 +661,24 @@ def _observe_inbound_method(
     return params
 
 
+def _is_usage_limit_params(params_value: object) -> bool:
+    params = _as_object(params_value)
+    error = None if params is None else _as_object(params.get("error"))
+    message = None if error is None else error.get("message")
+    codex_error_info = None if error is None else _as_object(error.get("codexErrorInfo"))
+    if codex_error_info is not None and "usageLimitExceeded" in codex_error_info:
+        return True
+    lowered_parts: list[str] = []
+    if isinstance(message, str):
+        lowered_parts.append(message.lower())
+    if codex_error_info is not None:
+        lowered_parts.append(json.dumps(codex_error_info, ensure_ascii=False).lower())
+    return any(
+        "usage_limit_exceeded" in part or "quota exceeded" in part
+        for part in lowered_parts
+    )
+
+
 def _codex_error_blocker(params_value: object) -> _SafeTransportFailure:
     """Expose a small safe error class, never Codex's error payload."""
 
@@ -655,6 +692,11 @@ def _codex_error_blocker(params_value: object) -> _SafeTransportFailure:
             "Schemat odpowiedzi WILQ został odrzucony przez lokalny runtime Codexa.",
         )
     codex_error_info = None if error is None else _as_object(error.get("codexErrorInfo"))
+    if _is_usage_limit_params(params_value):
+        return _SafeTransportFailure(
+            "codex_usage_limit_exceeded",
+            "Codex zgłosił ograniczenie użycia. Sprawdź sesję i routing przed ponowieniem tury.",
+        )
     if (
         codex_error_info is not None
         and "responseStreamDisconnected" in codex_error_info

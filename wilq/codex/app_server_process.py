@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -94,7 +96,9 @@ class _IsolatedCodexRuntime:
     environment: Mapping[str, str]
 
 
-def prepare_codex_app_server_launch(root: Path) -> CodexAppServerLaunch:
+def prepare_codex_app_server_launch(
+    root: Path, *, deadline_monotonic: float | None = None,
+) -> CodexAppServerLaunch:
     """Build one isolated launch from WILQ's embedded model policy."""
 
     selection = embedded_codex_runtime_selection()
@@ -108,6 +112,7 @@ def prepare_codex_app_server_launch(root: Path) -> CodexAppServerLaunch:
         command=_codex_process_command(
             model=selection.model,
             model_reasoning_effort=selection.model_reasoning_effort,
+            deadline_monotonic=deadline_monotonic,
         ),
         cwd=runtime.cwd,
         environment=runtime.environment,
@@ -187,8 +192,70 @@ def _codex_process_environment(
     return environment
 
 
-def _codex_process_command(*, model: str, model_reasoning_effort: str) -> tuple[str, ...]:
-    command = ["codex", "app-server", "--stdio"]
+def _resolve_codex_executable(*, deadline_monotonic: float | None = None) -> str:
+    """Resolve the real Codex binary instead of an npm/mise launcher wrapper.
+
+    A launcher script can stall or reinstall when it runs under the isolated
+    HOME, so ask mise for the installed binary with only lookup-specific
+    environment values, never the parent's credentials or runtime overrides.
+    """
+
+    resolved = shutil.which("codex")
+    if resolved is None:
+        return "codex"
+    try:
+        with Path(resolved).open("rb") as executable:
+            text = executable.read(4096).decode("utf-8", errors="ignore")
+    except OSError:
+        return resolved
+    first_line = text.splitlines()[0] if text else ""
+    if not first_line.startswith("#!") or "bash" not in first_line:
+        return resolved
+    if "mise" not in text and "npm" not in text:
+        return resolved
+    try:
+        completed = subprocess.run(
+            ["mise", "which", "codex"],
+            capture_output=True,
+            text=True,
+            timeout=_lookup_timeout(deadline_monotonic),
+            check=False,
+            env={
+                key: value
+                for key, value in os.environ.items()
+                if key in {"PATH", "HOME", "MISE_DATA_DIR", "LANG", "LC_ALL", "LC_CTYPE"}
+            },
+        )
+    except (OSError, subprocess.SubprocessError):
+        _lookup_timeout(deadline_monotonic)
+        return resolved
+    _lookup_timeout(deadline_monotonic)
+    candidate = completed.stdout.strip()
+    if (
+        completed.returncode == 0
+        and candidate
+        and Path(candidate).is_file()
+        and os.access(candidate, os.X_OK)
+    ):
+        return candidate
+    return resolved
+
+
+def _lookup_timeout(deadline_monotonic: float | None) -> float:
+    if deadline_monotonic is None:
+        return 10
+    remaining = deadline_monotonic - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError
+    return min(10, remaining)
+
+
+def _codex_process_command(
+    *, model: str, model_reasoning_effort: str, deadline_monotonic: float | None = None,
+) -> tuple[str, ...]:
+    command = [
+        _resolve_codex_executable(deadline_monotonic=deadline_monotonic), "app-server", "--stdio",
+    ]
     overrides = [
         *_CONFIG_OVERRIDES,
         f"model={json.dumps(model, ensure_ascii=False)}",
